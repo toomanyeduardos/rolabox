@@ -1,0 +1,29 @@
+# Built application files
+*.apk
+*.aab
+*.ap_
+
+# Generated files
+bin/
+gen/
+out/
+build/
+.gradle/
+
+# Local configuration (SDK path, signing keys info)
+local.properties
+
+# Sensitive credentials & Google Services (keep out of git)
+google-services.json
+*.jks
+*.keystore
+
+# Android Studio / IntelliJ
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/caches/
+.idea/libraries/
+*.iml
+captures/
+.cxx/
+.externalNativeBuild/
