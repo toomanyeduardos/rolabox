@@ -4,6 +4,19 @@
 
 Yet another offline music player.
 
+## Decisions
+
+The reasoning behind the architecture is recorded as [Architecture Decision Records](docs/adr/README.md):
+
+- [ADR-000](docs/adr/000-record-architecture-decisions.md): Record architecture decisions
+- [ADR-001](docs/adr/001-layered-architecture.md): Layered architecture with a domain layer that owns the repository interfaces
+- [ADR-002](docs/adr/002-offline-first-data-flow.md): Offline-first data flow with the local database as the single source of truth
+- [ADR-003](docs/adr/003-module-boundaries.md): Module boundaries and dependency rules
+- [ADR-004](docs/adr/004-convention-plugins.md): Share build configuration through convention plugins
+- [ADR-005](docs/adr/005-hilt-dependency-injection.md): Use Hilt for dependency injection
+- [ADR-006](docs/adr/006-async-api-shape.md): Async API shape: `Flow` for observed state, `suspend` for single operations
+- [ADR-007](docs/adr/007-error-handling.md): Typed errors with Arrow `Either` for every fallible operation
+
 ## CI
 
 [GitHub Actions](.github/workflows/ci.yml) runs on every pull request and every push to `main`: ktlint, detekt, `assembleDebug`, unit tests and Android Lint. Test and lint reports are uploaded as a `reports` artifact on each run.
@@ -49,7 +62,7 @@ Bypass it for a single commit with `git commit --no-verify`.
 
 ### Dependency rules
 
-These are enforced by the build (see `build-logic/.../ModuleRules.kt`); breaking one fails configuration.
+The full set of rules, and the reasoning behind them, is in [ADR-003](docs/adr/003-module-boundaries.md). These are enforced by the build (see `build-logic/.../ModuleRules.kt`); breaking one fails configuration.
 
 - Feature modules never depend on other feature modules.
 - `:core:model` depends on no other module.
