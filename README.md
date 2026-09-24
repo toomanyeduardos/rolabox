@@ -1,6 +1,29 @@
 # rolabox
 Offline music player
 
+## Static analysis
+
+Every module gets [ktlint](https://pinterest.github.io/ktlint/) (with the [Compose rules](https://mrmans0n.github.io/compose-rules/)) and [detekt](https://detekt.dev/) through the convention plugins in `build-logic`. There is no baseline: the codebase is expected to pass cleanly.
+
+- Style settings: [`.editorconfig`](.editorconfig) (read by ktlint and the IDE)
+- detekt overrides: [`config/detekt/detekt.yml`](config/detekt/detekt.yml) (on top of detekt's defaults)
+
+| Command | What it does |
+| --- | --- |
+| `./gradlew check` | Everything: ktlint, detekt (including type-resolved rules), Android Lint and unit tests |
+| `./gradlew ktlintCheck detekt` | Static analysis only (fast) |
+| `./gradlew ktlintFormat` | Auto-fix ktlint violations |
+
+### Pre-commit hook
+
+A hook in [`.githooks/pre-commit`](.githooks/pre-commit) runs `ktlintCheck` and `detekt` before each commit. Enable it once per clone:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+Bypass it for a single commit with `git commit --no-verify`.
+
 ## Modules
 
 | Module | Purpose |

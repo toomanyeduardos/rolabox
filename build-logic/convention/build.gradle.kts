@@ -10,6 +10,8 @@ dependencies {
     implementation(libs.kotlin.composeCompiler.gradlePlugin)
     implementation(libs.hilt.gradlePlugin)
     implementation(libs.ksp.gradlePlugin)
+    implementation(libs.ktlint.gradlePlugin)
+    implementation(libs.detekt.gradlePlugin)
 }
 
 gradlePlugin {
@@ -37,6 +39,14 @@ gradlePlugin {
         register("moduleGraph") {
             id = "rolabox.module.graph"
             implementationClass = "RolaboxModuleGraphConventionPlugin"
+        }
+        register("ktlint") {
+            id = "rolabox.ktlint"
+            implementationClass = "RolaboxKtlintConventionPlugin"
+        }
+        register("detekt") {
+            id = "rolabox.detekt"
+            implementationClass = "RolaboxDetektConventionPlugin"
         }
         register("jvmLibrary") {
             id = "rolabox.jvm.library"

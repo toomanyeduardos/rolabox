@@ -6,13 +6,11 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.eduardoflores.rolabox.core.model.DarkThemeConfig
 import com.eduardoflores.rolabox.core.model.UserData
+import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import javax.inject.Inject
 
-class RolaboxPreferencesDataSource @Inject constructor(
-    private val preferences: DataStore<Preferences>,
-) {
+class RolaboxPreferencesDataSource @Inject constructor(private val preferences: DataStore<Preferences>) {
     val userData: Flow<UserData> = preferences.data.map { prefs ->
         UserData(
             darkThemeConfig = DarkThemeConfig.entries

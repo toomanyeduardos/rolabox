@@ -1,5 +1,6 @@
 import com.android.build.api.dsl.ApplicationExtension
 import com.eduardoflores.rolabox.buildlogic.ProjectConfig
+import com.eduardoflores.rolabox.buildlogic.applyStaticAnalysis
 import com.eduardoflores.rolabox.buildlogic.enforceModuleRules
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -10,6 +11,7 @@ class RolaboxAndroidApplicationConventionPlugin : Plugin<Project> {
         with(target) {
             pluginManager.apply("com.android.application")
             enforceModuleRules()
+            applyStaticAnalysis()
 
             extensions.configure<ApplicationExtension> {
                 compileSdk = ProjectConfig.COMPILE_SDK
