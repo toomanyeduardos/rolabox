@@ -1,4 +1,4 @@
-package com.eduardoflores.rolabox.ui.theme
+package com.eduardoflores.rolabox.core.designsystem.theme
 
 import android.app.Activity
 import android.os.Build

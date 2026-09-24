@@ -23,6 +23,8 @@ google-services.json
 .idea/tasks.xml
 .idea/caches/
 .idea/libraries/
+.idea*
+.idea/*
 *.iml
 captures/
 .cxx/
