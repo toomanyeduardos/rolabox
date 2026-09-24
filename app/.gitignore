@@ -8,6 +8,7 @@ bin/
 gen/
 out/
 build/
+build-logic/convention/build
 .gradle/
 
 # Local configuration (SDK path, signing keys info)
