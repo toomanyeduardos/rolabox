@@ -12,6 +12,7 @@ dependencies {
     implementation(libs.ksp.gradlePlugin)
     implementation(libs.ktlint.gradlePlugin)
     implementation(libs.detekt.gradlePlugin)
+    implementation(libs.googleServices.gradlePlugin)
 }
 
 gradlePlugin {
@@ -23,6 +24,10 @@ gradlePlugin {
         register("androidLibrary") {
             id = "rolabox.android.library"
             implementationClass = "RolaboxAndroidLibraryConventionPlugin"
+        }
+        register("androidApplicationFirebase") {
+            id = "rolabox.android.application.firebase"
+            implementationClass = "RolaboxAndroidApplicationFirebaseConventionPlugin"
         }
         register("androidCompose") {
             id = "rolabox.android.compose"

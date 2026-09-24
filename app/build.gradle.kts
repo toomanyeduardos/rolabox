@@ -1,5 +1,6 @@
 plugins {
     id("rolabox.android.application")
+    id("rolabox.android.application.firebase")
     id("rolabox.android.compose")
     id("rolabox.hilt")
 }
@@ -31,8 +32,8 @@ dependencies {
     implementation(project(":core:designsystem"))
     implementation(project(":core:model"))
     implementation(project(":core:sync"))
-    implementation(project(":feature:account"))
     implementation(project(":feature:settings"))
+    cloudImplementation(project(":feature:account"))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)

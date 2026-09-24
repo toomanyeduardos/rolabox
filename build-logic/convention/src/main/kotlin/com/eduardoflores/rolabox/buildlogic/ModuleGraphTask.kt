@@ -12,7 +12,7 @@ import org.gradle.work.DisableCachingByDefault
 private const val START_MARKER = "<!-- module-graph:start -->"
 private const val END_MARKER = "<!-- module-graph:end -->"
 
-/** Each entry in [edges] is "fromPath -> toPath". */
+/** Each entry in [edges] is "fromPath -> toPath", optionally followed by " [flavor]" for a flavor-only dependency. */
 @DisableCachingByDefault(because = "Rewrites a section of a checked-in file")
 abstract class ModuleGraphTask : DefaultTask() {
 
@@ -45,8 +45,11 @@ abstract class ModuleGraphTask : DefaultTask() {
         appendLine("graph TD")
         modules.get().forEach { appendLine("    ${nodeId(it)}[\"$it\"]") }
         edges.get().forEach { edge ->
-            val (from, to) = edge.split(" -> ")
-            appendLine("    ${nodeId(from)} --> ${nodeId(to)}")
+            val (from, target) = edge.split(" -> ")
+            val to = target.substringBefore(" [")
+            val label = target.substringAfter(" [", "").removeSuffix("]")
+            val arrow = if (label.isEmpty()) "-->" else "-->|$label|"
+            appendLine("    ${nodeId(from)} $arrow ${nodeId(to)}")
         }
         append("```")
     }
