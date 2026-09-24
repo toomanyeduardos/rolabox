@@ -1,5 +1,12 @@
 # rolabox
-Offline music player
+
+[![CI](https://github.com/toomanyeduardos/rolabox/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/toomanyeduardos/rolabox/actions/workflows/ci.yml)
+
+Yet another offline music player.
+
+## CI
+
+[GitHub Actions](.github/workflows/ci.yml) runs on every pull request and every push to `main`: ktlint, detekt, `assembleDebug`, unit tests and Android Lint. Test and lint reports are uploaded as a `reports` artifact on each run.
 
 ## Static analysis
 
