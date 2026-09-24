@@ -9,6 +9,7 @@ dependencies {
     implementation(libs.kotlin.gradlePlugin)
     implementation(libs.kotlin.composeCompiler.gradlePlugin)
     implementation(libs.hilt.gradlePlugin)
+    implementation(libs.ksp.gradlePlugin)
 }
 
 gradlePlugin {

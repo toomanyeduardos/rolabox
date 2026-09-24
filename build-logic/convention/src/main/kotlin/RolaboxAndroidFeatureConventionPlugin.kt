@@ -1,5 +1,7 @@
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.kotlin.dsl.dependencies
+import org.gradle.kotlin.dsl.project
 
 class RolaboxAndroidFeatureConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
@@ -7,6 +9,10 @@ class RolaboxAndroidFeatureConventionPlugin : Plugin<Project> {
             pluginManager.apply("rolabox.android.library")
             pluginManager.apply("rolabox.android.compose")
             pluginManager.apply("rolabox.hilt")
+
+            dependencies {
+                add("implementation", project(":core:designsystem"))
+            }
         }
     }
 }
