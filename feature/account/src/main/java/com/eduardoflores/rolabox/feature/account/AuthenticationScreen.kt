@@ -9,7 +9,7 @@ import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxTheme
 @Composable
 fun AuthenticationScreen(modifier: Modifier = Modifier) {
     Text(
-        text = "Hello Android!",
+        text = "Hello from AuthenticationScreen!",
         modifier = modifier
     )
 }

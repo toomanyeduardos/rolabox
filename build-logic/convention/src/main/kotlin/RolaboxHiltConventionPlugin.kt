@@ -7,11 +7,31 @@ class RolaboxHiltConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
         with(target) {
             pluginManager.apply("com.google.devtools.ksp")
-            pluginManager.apply("com.google.dagger.hilt.android")
+            val hiltCompiler = libs.findLibrary("hilt-compiler").get()
 
             dependencies {
-                add("implementation", libs.findLibrary("hilt-android").get())
-                add("ksp", libs.findLibrary("hilt-compiler").get())
+                add("ksp", hiltCompiler)
+            }
+
+            pluginManager.withPlugin("org.jetbrains.kotlin.jvm") {
+                dependencies {
+                    add("implementation", libs.findLibrary("hilt-core").get())
+                }
+            }
+
+            listOf("com.android.application", "com.android.library").forEach { androidPlugin ->
+                pluginManager.withPlugin(androidPlugin) {
+                    pluginManager.apply("com.google.dagger.hilt.android")
+                    val hiltTesting = libs.findLibrary("hilt-android-testing").get()
+
+                    dependencies {
+                        add("implementation", libs.findLibrary("hilt-android").get())
+                        add("testImplementation", hiltTesting)
+                        add("kspTest", hiltCompiler)
+                        add("androidTestImplementation", hiltTesting)
+                        add("kspAndroidTest", hiltCompiler)
+                    }
+                }
             }
         }
     }

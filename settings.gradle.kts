@@ -33,6 +33,7 @@ include(":core:data")
 include(":core:datastore")
 include(":core:auth")
 include(":core:sync")
+include(":core:testing")
 
 include(":feature:account")
 include(":feature:settings")

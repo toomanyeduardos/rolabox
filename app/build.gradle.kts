@@ -1,6 +1,7 @@
 plugins {
     id("rolabox.android.application")
     id("rolabox.android.compose")
+    id("rolabox.hilt")
 }
 
 android {
@@ -11,7 +12,7 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "com.eduardoflores.rolabox.core.testing.RolaboxTestRunner"
     }
 
     buildTypes {
@@ -32,6 +33,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     testImplementation(libs.junit)
+    androidTestImplementation(project(":core:testing"))
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }
