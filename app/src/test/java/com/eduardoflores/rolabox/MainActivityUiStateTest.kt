@@ -13,6 +13,13 @@ class MainActivityUiStateTest {
     }
 
     @Test
+    fun preferencesUnavailable_followsSystem() {
+        val state = MainActivityUiState.PreferencesUnavailable
+        assertEquals(true, state.shouldUseDarkTheme(isSystemDarkTheme = true))
+        assertEquals(false, state.shouldUseDarkTheme(isSystemDarkTheme = false))
+    }
+
+    @Test
     fun followSystem_followsSystem() {
         val state = success(DarkThemeConfig.FOLLOW_SYSTEM)
         assertEquals(true, state.shouldUseDarkTheme(isSystemDarkTheme = true))

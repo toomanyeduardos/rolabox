@@ -90,10 +90,10 @@ operation, so the logic never ends up in two places.
 
 ## Rules
 
-1. `[planned]` Feature modules depend on `:core:domain` and never on data-layer modules
+1. `[enforced]` Feature modules depend on `:core:domain` and never on data-layer modules
    (`:core:data`, `:core:datastore`, `:core:auth`, `:core:sync`, and future ones such as
    `:core:database`).
-2. `[planned]` `:core:domain` is a JVM module with no Android dependencies, and depends only on
+2. `[enforced]` `:core:domain` is a JVM module with no Android dependencies, and depends only on
    `:core:model` and `:core:common`.
 3. `[convention]` Every repository interface that a feature or use case consumes is declared in
    `:core:domain`, and implemented in the data layer.
@@ -105,7 +105,3 @@ operation, so the logic never ends up in two places.
    repository directly.
 7. `[convention]` A ViewModel that needs data from more than one repository gets it through a use
    case.
-
-**Conformance.** The code doesn't match this ADR yet. `:core:domain` doesn't exist, and the
-repository interfaces live in `:core:data` and `:core:auth`. Moving them, and enforcing rules 1
-and 2 in the build, is tracked in the follow-up enforcement ticket.

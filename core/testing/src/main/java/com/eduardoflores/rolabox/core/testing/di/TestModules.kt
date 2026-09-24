@@ -1,13 +1,13 @@
 package com.eduardoflores.rolabox.core.testing.di
 
-import com.eduardoflores.rolabox.core.auth.AuthRepository
 import com.eduardoflores.rolabox.core.auth.di.AuthModule
 import com.eduardoflores.rolabox.core.common.Dispatcher
 import com.eduardoflores.rolabox.core.common.RolaboxDispatchers.Default
 import com.eduardoflores.rolabox.core.common.RolaboxDispatchers.IO
 import com.eduardoflores.rolabox.core.common.di.DispatchersModule
 import com.eduardoflores.rolabox.core.data.di.DataModule
-import com.eduardoflores.rolabox.core.data.repository.UserDataRepository
+import com.eduardoflores.rolabox.core.domain.repository.AuthRepository
+import com.eduardoflores.rolabox.core.domain.repository.UserDataRepository
 import com.eduardoflores.rolabox.core.sync.SyncManager
 import com.eduardoflores.rolabox.core.sync.di.SyncModule
 import com.eduardoflores.rolabox.core.testing.FakeAuthRepository

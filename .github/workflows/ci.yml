@@ -49,7 +49,7 @@ jobs:
       # Pure Kotlin modules have no variants, so they run `test` instead.
       # Add new rolabox.jvm.library modules here.
       - name: Unit tests
-        run: ./gradlew testDebugUnitTest :core:model:test :core:common:test
+        run: ./gradlew testDebugUnitTest :core:model:test :core:common:test :core:domain:test
 
       - name: Android lint
         run: ./gradlew lintDebug

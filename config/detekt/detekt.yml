@@ -16,9 +16,15 @@ complexity:
     ignoreAnnotated: ['Composable']
 
 coroutines:
+  GlobalCoroutineUsage:
+    # ADR-006 rule 7: work that must outlive a screen uses the injected @ApplicationScope.
+    active: true
   InjectDispatcher:
     # Hilt @Provides functions are where dispatchers get injected from.
     ignoreAnnotated: ['Provides']
+  SuspendFunSwallowedCancellation:
+    # ADR-007 rule 5: CancellationException is never swallowed.
+    active: true
 
 style:
   AbstractClassCanBeInterface:

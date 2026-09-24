@@ -1,7 +1,7 @@
 package com.eduardoflores.rolabox.core.auth.di
 
-import com.eduardoflores.rolabox.core.auth.AuthRepository
 import com.eduardoflores.rolabox.core.auth.SignedOutAuthRepository
+import com.eduardoflores.rolabox.core.domain.repository.AuthRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn

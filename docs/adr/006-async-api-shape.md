@@ -90,8 +90,4 @@ sync, runs in WorkManager. `GlobalScope` is never used.
    `WhileSubscribed`.
 6. `[convention]` Work that must outlive a screen runs in the injected application scope or in
    WorkManager.
-7. `[planned]` `GlobalScope` is never used (detekt `GlobalCoroutineUsage`, currently inactive by
-   default).
-
-**Conformance.** No application-level scope is provided yet. Existing repositories don't return
-`Either` yet (see ADR-007). Both are covered by the follow-up enforcement ticket.
+7. `[enforced]` `GlobalScope` is never used (detekt `GlobalCoroutineUsage`).

@@ -10,4 +10,5 @@ android {
 dependencies {
     api(project(":core:model"))
     implementation(project(":core:common"))
+    implementation(project(":core:domain"))
 }
