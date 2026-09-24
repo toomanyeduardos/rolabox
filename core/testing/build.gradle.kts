@@ -16,5 +16,6 @@ dependencies {
     api(project(":core:auth"))
     api(project(":core:common"))
     api(project(":core:data"))
+    api(project(":core:domain"))
     api(project(":core:sync"))
 }

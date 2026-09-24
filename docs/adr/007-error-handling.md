@@ -128,14 +128,9 @@ mapping, return plain values.
    inherit from them.
 4. `[convention]` The data layer converts only specific, named exceptions. Nothing catches
    `Throwable` or `Exception` in general.
-5. `[planned]` `CancellationException` is never swallowed (detekt `SuspendFunSwallowedCancellation`,
-   currently inactive by default).
+5. `[enforced]` `CancellationException` is never swallowed (detekt `SuspendFunSwallowedCancellation`).
 6. `[convention]` `kotlin.Result` and `runCatching` are not used in production code.
 7. `[convention]` Errors aren't discarded: no `getOrNull()` or `getOrElse { default }` that ignores
    the error case without a comment explaining why.
 8. `[convention]` ViewModels fold `Either` into UI state. `Either` and domain error types don't
    appear in UI state classes or composables.
-
-**Conformance.** Arrow isn't a dependency yet, and existing repositories (`UserDataRepository`,
-`AuthRepository`) return plain values and flows. Adding Arrow, the error types and the shared
-helpers, and migrating those repositories, is covered by the follow-up enforcement ticket.

@@ -13,7 +13,7 @@ class RolaboxAndroidFeatureConventionPlugin : Plugin<Project> {
             dependencies {
                 add("implementation", project(":core:designsystem"))
                 add("implementation", project(":core:model"))
-                add("implementation", project(":core:data"))
+                add("implementation", project(":core:domain"))
             }
         }
     }

@@ -73,23 +73,15 @@ Guidelines that go with the table:
 
 1. `[enforced]` Feature modules never depend on other feature modules.
 2. `[enforced]` `:core:model` depends on no other module.
-3. `[planned]` `:core:*` modules never depend on `:feature:*` modules.
-4. `[planned]` Only `:app` depends on `:feature:*` modules.
-5. `[planned]` Feature modules never depend on data-layer modules (see ADR-001, rule 1).
-6. `[planned]` `:core:domain`, `:core:model` and `:core:common` are JVM modules with no Android
+3. `[enforced]` `:core:*` modules never depend on `:feature:*` modules.
+4. `[enforced]` Only `:app` depends on `:feature:*` modules.
+5. `[enforced]` Feature modules never depend on data-layer modules (see ADR-001, rule 1).
+6. `[enforced]` `:core:domain`, `:core:model` and `:core:common` are JVM modules with no Android
    dependencies.
-7. `[planned]` `:core:designsystem` never depends on `:core:domain` or data-layer modules.
-8. `[planned]` `:core:testing` is only used from test configurations (`testImplementation`,
+7. `[enforced]` `:core:designsystem` never depends on `:core:domain` or data-layer modules.
+8. `[enforced]` `:core:testing` is only used from test configurations (`testImplementation`,
    `androidTestImplementation`).
 9. `[convention]` Dependencies use `implementation` unless the module's public signatures expose
    the other module's types.
 
-**Conformance.** Rules 1 and 2 are checked by `ModuleRules.kt`. The code breaks two of the planned
-rules today:
-
-- the feature convention plugin adds `:core:data` to every feature, and `:feature:account` depends
-  on `:core:auth` (rule 5);
-- `:core:domain` doesn't exist yet (rule 6).
-
-The follow-up enforcement ticket adds the planned rules to `ModuleRules.kt` and fixes these
-dependencies.
+**Conformance.** Rules 1 to 8 are checked by `ModuleRules.kt` when the build is configured.

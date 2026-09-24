@@ -1,9 +1,10 @@
 package com.eduardoflores.rolabox
 
-import com.eduardoflores.rolabox.core.auth.AuthRepository
+import arrow.core.right
 import com.eduardoflores.rolabox.core.common.Dispatcher
 import com.eduardoflores.rolabox.core.common.RolaboxDispatchers.IO
-import com.eduardoflores.rolabox.core.data.repository.UserDataRepository
+import com.eduardoflores.rolabox.core.domain.repository.AuthRepository
+import com.eduardoflores.rolabox.core.domain.repository.UserDataRepository
 import com.eduardoflores.rolabox.core.model.AuthUser
 import com.eduardoflores.rolabox.core.model.DarkThemeConfig
 import com.eduardoflores.rolabox.core.sync.SyncManager
@@ -65,7 +66,10 @@ class FakeBindingsTest {
         fakeAuthRepository.setUser(AuthUser(id = "1", displayName = "Ada"))
         userDataRepository.setDarkThemeConfig(DarkThemeConfig.DARK)
 
-        assertEquals("Ada", authRepository.currentUser.first()?.displayName)
-        assertEquals(DarkThemeConfig.DARK, fakeUserDataRepository.userData.first().darkThemeConfig)
+        assertEquals(AuthUser(id = "1", displayName = "Ada").right(), authRepository.observeCurrentUser().first())
+        assertEquals(
+            DarkThemeConfig.DARK.right(),
+            fakeUserDataRepository.observeUserData().first().map { it.darkThemeConfig },
+        )
     }
 }

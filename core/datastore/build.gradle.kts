@@ -9,6 +9,8 @@ android {
 
 dependencies {
     api(project(":core:model"))
+    // asDataStoreError() returns a domain error type.
+    api(project(":core:domain"))
     implementation(project(":core:common"))
     implementation(libs.androidx.datastore.preferences)
 }

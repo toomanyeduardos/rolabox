@@ -5,7 +5,3 @@ plugins {
 android {
     namespace = "com.eduardoflores.rolabox.feature.account"
 }
-
-dependencies {
-    implementation(project(":core:auth"))
-}

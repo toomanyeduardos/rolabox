@@ -25,7 +25,9 @@ android {
 }
 
 dependencies {
+    implementation(project(":core:auth"))
     implementation(project(":core:data"))
+    implementation(project(":core:domain"))
     implementation(project(":core:designsystem"))
     implementation(project(":core:model"))
     implementation(project(":core:sync"))
@@ -35,6 +37,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    testImplementation(project(":core:testing"))
     testImplementation(libs.junit)
     androidTestImplementation(project(":core:testing"))
     androidTestImplementation(libs.androidx.junit)

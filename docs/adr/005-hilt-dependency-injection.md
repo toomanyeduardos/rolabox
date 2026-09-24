@@ -66,7 +66,7 @@ the `rolabox.hilt` convention plugin ([ADR-004](004-convention-plugins.md)).
    only in Android entry points.
 2. `[convention]` Interfaces are bound with `@Binds` in a Hilt module in the implementing module's
    `di` package. Implementations are `internal` where possible.
-3. `[planned]` `:core:domain` depends only on `javax.inject` for injection, and contains no Hilt
+3. `[enforced]` `:core:domain` depends only on `javax.inject` for injection, and contains no Hilt
    modules.
 4. `[convention]` Tests replace production bindings with `@TestInstallIn` modules in `:core:testing`,
    not by editing production modules.

@@ -1,7 +1,7 @@
 package com.eduardoflores.rolabox.core.data.di
 
 import com.eduardoflores.rolabox.core.data.repository.DefaultUserDataRepository
-import com.eduardoflores.rolabox.core.data.repository.UserDataRepository
+import com.eduardoflores.rolabox.core.domain.repository.UserDataRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
