@@ -1,5 +1,6 @@
 import com.android.build.api.dsl.LibraryExtension
 import com.eduardoflores.rolabox.buildlogic.ProjectConfig
+import com.eduardoflores.rolabox.buildlogic.applyStaticAnalysis
 import com.eduardoflores.rolabox.buildlogic.enforceModuleRules
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -10,6 +11,7 @@ class RolaboxAndroidLibraryConventionPlugin : Plugin<Project> {
         with(target) {
             pluginManager.apply("com.android.library")
             enforceModuleRules()
+            applyStaticAnalysis()
 
             extensions.configure<LibraryExtension> {
                 compileSdk = ProjectConfig.COMPILE_SDK

@@ -1,0 +1,10 @@
+#!/bin/sh
+# Runs the static analysis that CI enforces. Enable with: git config core.hooksPath .githooks
+# Skip once with: git commit --no-verify
+
+echo "Running ktlint and detekt..."
+if ! ./gradlew ktlintCheck detekt --quiet; then
+    echo
+    echo "Static analysis failed. Auto-fix formatting with ./gradlew ktlintFormat, then re-stage."
+    exit 1
+fi

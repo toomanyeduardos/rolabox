@@ -12,6 +12,7 @@ import com.eduardoflores.rolabox.core.testing.FakeSyncManager
 import com.eduardoflores.rolabox.core.testing.FakeUserDataRepository
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.TestDispatcher
@@ -21,7 +22,6 @@ import org.junit.Assert.assertSame
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import javax.inject.Inject
 
 @HiltAndroidTest
 class FakeBindingsTest {
@@ -30,11 +30,17 @@ class FakeBindingsTest {
     val hiltRule = HiltAndroidRule(this)
 
     @Inject lateinit var authRepository: AuthRepository
+
     @Inject lateinit var fakeAuthRepository: FakeAuthRepository
+
     @Inject lateinit var userDataRepository: UserDataRepository
+
     @Inject lateinit var fakeUserDataRepository: FakeUserDataRepository
+
     @Inject lateinit var syncManager: SyncManager
+
     @Inject lateinit var fakeSyncManager: FakeSyncManager
+
     @Inject lateinit var testDispatcher: TestDispatcher
 
     @Inject

@@ -10,7 +10,7 @@ import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxTheme
 fun AuthenticationScreen(modifier: Modifier = Modifier) {
     Text(
         text = "Hello from AuthenticationScreen!",
-        modifier = modifier
+        modifier = modifier,
     )
 }
 

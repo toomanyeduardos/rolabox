@@ -2,10 +2,10 @@ package com.eduardoflores.rolabox.core.testing
 
 import com.eduardoflores.rolabox.core.auth.AuthRepository
 import com.eduardoflores.rolabox.core.model.AuthUser
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 
 @Singleton
 class FakeAuthRepository @Inject constructor() : AuthRepository {

@@ -1,0 +1,35 @@
+# Overrides on top of detekt's default config (buildUponDefaultConfig = true).
+# Only list what differs from the defaults: https://detekt.dev/docs/rules/
+
+naming:
+  FunctionNaming:
+    # @Composable functions are PascalCase by convention.
+    ignoreAnnotated: ['Composable']
+  TopLevelPropertyNaming:
+    # Compose theme colors and similar constants are PascalCase vals.
+    constantPattern: '[A-Z][A-Za-z0-9]*'
+
+complexity:
+  LongParameterList:
+    # Composables take many optional parameters by design.
+    ignoreDefaultParameters: true
+    ignoreAnnotated: ['Composable']
+
+coroutines:
+  InjectDispatcher:
+    # Hilt @Provides functions are where dispatchers get injected from.
+    ignoreAnnotated: ['Provides']
+
+style:
+  AbstractClassCanBeInterface:
+    # Dagger/Hilt modules with @Binds are abstract classes by convention.
+    ignoreAnnotated: ['Module']
+  MagicNumber:
+    # Color literals and dimensions in the design system are the definitions themselves.
+    ignorePropertyDeclaration: true
+    excludes: ['**/test/**', '**/androidTest/**', '**/designsystem/**/theme/**']
+  UnusedPrivateFunction:
+    # @Preview functions are only called by tooling.
+    ignoreAnnotated: ['Preview']
+  UnusedImport:
+    active: true

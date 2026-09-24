@@ -1,4 +1,5 @@
 import com.eduardoflores.rolabox.buildlogic.ProjectConfig
+import com.eduardoflores.rolabox.buildlogic.applyStaticAnalysis
 import com.eduardoflores.rolabox.buildlogic.enforceModuleRules
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -13,6 +14,7 @@ class RolaboxJvmLibraryConventionPlugin : Plugin<Project> {
             pluginManager.apply("java-library")
             pluginManager.apply("org.jetbrains.kotlin.jvm")
             enforceModuleRules()
+            applyStaticAnalysis()
 
             extensions.configure<JavaPluginExtension> {
                 sourceCompatibility = ProjectConfig.JAVA_VERSION
