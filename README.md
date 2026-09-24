@@ -13,6 +13,7 @@ Offline music player
 | `:core:datastore` | Local preferences |
 | `:core:auth` | Authentication abstraction; the Firebase implementation lives behind an interface |
 | `:core:sync` | Sync abstraction |
+| `:core:testing` | Test-only: Hilt test runner, fakes, and `@TestInstallIn` modules that swap production bindings |
 | `:feature:account` | Sign-in and account UI |
 | `:feature:settings` | Settings UI |
 
@@ -38,6 +39,7 @@ graph TD
     core_designsystem[":core:designsystem"]
     core_model[":core:model"]
     core_sync[":core:sync"]
+    core_testing[":core:testing"]
     feature_account[":feature:account"]
     feature_settings[":feature:settings"]
     app --> core_designsystem
@@ -53,6 +55,11 @@ graph TD
     core_datastore --> core_model
     core_sync --> core_common
     core_sync --> core_data
+    core_testing --> core_auth
+    core_testing --> core_common
+    core_testing --> core_data
+    core_testing --> core_model
+    core_testing --> core_sync
     feature_account --> core_auth
     feature_account --> core_data
     feature_account --> core_designsystem

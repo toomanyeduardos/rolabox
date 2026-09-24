@@ -1,5 +1,6 @@
 plugins {
     id("rolabox.android.library")
+    id("rolabox.hilt")
 }
 
 android {

@@ -1,5 +1,6 @@
 plugins {
     id("rolabox.android.library")
+    id("rolabox.hilt")
 }
 
 android {
@@ -9,4 +10,5 @@ android {
 dependencies {
     api(project(":core:model"))
     implementation(project(":core:common"))
+    implementation(libs.androidx.datastore.preferences)
 }
