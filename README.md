@@ -13,8 +13,7 @@ Offline music player
 | `:core:datastore` | Local preferences |
 | `:core:auth` | Authentication abstraction; the Firebase implementation lives behind an interface |
 | `:core:sync` | Sync abstraction |
-| `:feature:authentication` | Sign-in UI |
-| `:feature:account` | Account UI |
+| `:feature:account` | Sign-in and account UI |
 | `:feature:settings` | Settings UI |
 
 ### Dependency rules
@@ -40,12 +39,10 @@ graph TD
     core_model[":core:model"]
     core_sync[":core:sync"]
     feature_account[":feature:account"]
-    feature_authentication[":feature:authentication"]
     feature_settings[":feature:settings"]
     app --> core_designsystem
     app --> core_sync
     app --> feature_account
-    app --> feature_authentication
     app --> feature_settings
     core_auth --> core_common
     core_auth --> core_model
@@ -60,10 +57,6 @@ graph TD
     feature_account --> core_data
     feature_account --> core_designsystem
     feature_account --> core_model
-    feature_authentication --> core_auth
-    feature_authentication --> core_data
-    feature_authentication --> core_designsystem
-    feature_authentication --> core_model
     feature_settings --> core_data
     feature_settings --> core_designsystem
     feature_settings --> core_model

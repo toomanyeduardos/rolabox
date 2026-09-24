@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxTheme
-import com.eduardoflores.rolabox.feature.authentication.AuthenticationScreen
+import com.eduardoflores.rolabox.feature.account.AuthenticationScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -1,4 +1,4 @@
-package com.eduardoflores.rolabox.feature.authentication
+package com.eduardoflores.rolabox.feature.account
 
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable

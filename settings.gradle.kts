@@ -34,6 +34,5 @@ include(":core:datastore")
 include(":core:auth")
 include(":core:sync")
 
-include(":feature:authentication")
 include(":feature:account")
 include(":feature:settings")
