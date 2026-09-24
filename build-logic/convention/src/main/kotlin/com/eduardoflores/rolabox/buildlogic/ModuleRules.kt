@@ -20,8 +20,9 @@ private val JVM_ONLY_PATHS = setOf(DOMAIN_PATH, MODEL_PATH, COMMON_PATH)
 private val DOMAIN_ALLOWED_PATHS = setOf(MODEL_PATH, COMMON_PATH)
 private val ANDROID_PLUGINS = listOf("com.android.application", "com.android.library")
 private const val DAGGER_GROUP = "com.google.dagger"
+private const val FIREBASE_GROUP = "com.google.firebase"
 
-/** Checks the `[enforced]` rules of ADR-001, ADR-003 and ADR-005 while the build is configured. */
+/** Checks the `[enforced]` rules of ADR-001, ADR-003, ADR-005 and ADR-008 while the build is configured. */
 internal fun Project.enforceModuleRules() {
     val modulePath = path
 
@@ -48,25 +49,35 @@ internal fun Project.enforceModuleRules() {
         }
     }
 
-    if (modulePath == DOMAIN_PATH) {
-        enforceNoDagger()
-    }
+    enforceExternalDependencyRules()
 }
 
 // Catalog dependencies are added lazily, and resolution doesn't pass them through configureEach,
 // so they're checked once the build file has been evaluated.
-private fun Project.enforceNoDagger() = afterEvaluate {
+private fun Project.enforceExternalDependencyRules() = afterEvaluate {
     configurations.forEach { configuration ->
-        configuration.dependencies.withType(ExternalModuleDependency::class.java)
-            .firstOrNull { it.group == DAGGER_GROUP }
-            ?.let { dependency ->
+        configuration.dependencies.withType(ExternalModuleDependency::class.java).forEach { dependency ->
+            val violation = externalDependencyViolation(path, dependency.group, configuration.name)
+            if (violation != null) {
                 throw GradleException(
                     "Module rule violated: $path -> ${dependency.group}:${dependency.name} (${configuration.name}). " +
-                        "ADR-005 rule 3: $DOMAIN_PATH uses only javax.inject and contains no Hilt modules.",
+                        "$violation.",
                 )
             }
+        }
     }
 }
+
+private fun externalDependencyViolation(modulePath: String, group: String?, configurationName: String): String? =
+    when {
+        modulePath == DOMAIN_PATH && group == DAGGER_GROUP ->
+            "ADR-005 rule 3: $DOMAIN_PATH uses only javax.inject and contains no Hilt modules"
+
+        group == FIREBASE_GROUP && !configurationName.isCloudConfiguration() ->
+            "ADR-008 rule 2: Firebase dependencies are only declared in cloud configurations (cloudImplementation)"
+
+        else -> null
+    }
 
 private fun projectDependencyViolation(modulePath: String, dependencyPath: String, configurationName: String): String? =
     when {

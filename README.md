@@ -4,6 +4,44 @@
 
 Yet another offline music player.
 
+## Building
+
+The app has two flavors ([ADR-008](docs/adr/008-offline-and-cloud-flavors.md)):
+
+| Flavor | What it is | Firebase config needed |
+| --- | --- | --- |
+| `offline` (default) | The full player with no backend: no Firebase, no Play services, and no account features | No |
+| `cloud` | Adds Firebase: sign-in and account features, and later sync | Yes, your own `google-services.json` |
+
+A fresh clone builds the offline flavor with no setup:
+
+```bash
+./gradlew assembleOfflineDebug
+```
+
+Install it on a connected device or emulator with `./gradlew installOfflineDebug`, or pick the
+`offlineDebug` build variant in Android Studio (it's selected by default).
+
+### Building the cloud flavor
+
+`google-services.json` identifies a Firebase project, so it isn't checked in. To build `cloud`,
+use your own Firebase project:
+
+1. In the [Firebase console](https://console.firebase.google.com/), create a project (or open an
+   existing one) and add an Android app with the package name `com.eduardoflores.rolabox`.
+2. Enable the sign-in providers you want under **Authentication**.
+3. Download `google-services.json` and save it as `app/google-services.json`. It's already
+   git-ignored, so don't commit it.
+4. Build it:
+
+   ```bash
+   ./gradlew assembleCloudDebug
+   ```
+
+Without the file, `:app` has no cloud variants, so `./gradlew check` and the offline build still
+work. Asking for a cloud app task (such as `assembleCloudDebug`) fails with a message pointing
+here.
+
 ## Decisions
 
 The reasoning behind the architecture is recorded as [Architecture Decision Records](docs/adr/README.md):
@@ -16,10 +54,16 @@ The reasoning behind the architecture is recorded as [Architecture Decision Reco
 - [ADR-005](docs/adr/005-hilt-dependency-injection.md): Use Hilt for dependency injection
 - [ADR-006](docs/adr/006-async-api-shape.md): Async API shape: `Flow` for observed state, `suspend` for single operations
 - [ADR-007](docs/adr/007-error-handling.md): Typed errors with Arrow `Either` for every fallible operation
+- [ADR-008](docs/adr/008-offline-and-cloud-flavors.md): Offline and cloud build flavors, with Firebase only in cloud
 
 ## CI
 
-[GitHub Actions](.github/workflows/ci.yml) runs on every pull request and every push to `main`: ktlint, detekt, `assembleDebug`, unit tests and Android Lint. Test and lint reports are uploaded as a `reports` artifact on each run.
+[GitHub Actions](.github/workflows/ci.yml) runs two jobs in parallel on every pull request and every push to `main`:
+
+- **`build`** (the `offline` flavor, built the way a fresh clone is): ktlint, detekt, `assembleOfflineDebug`, a check that no Firebase or Play services code reaches the offline app, unit tests and Android Lint.
+- **`cloud`**: writes a placeholder `google-services.json`, then runs detekt on `:app`, `assembleCloudDebug`, unit tests and Android Lint. This catches cloud-only breakage, such as a missing Hilt binding. It needs no secrets, because nothing talks to Firebase.
+
+Test and lint reports are uploaded as `reports` and `reports-cloud` artifacts on each run.
 
 ## Static analysis
 
@@ -30,7 +74,7 @@ Every module gets [ktlint](https://pinterest.github.io/ktlint/) (with the [Compo
 
 | Command | What it does |
 | --- | --- |
-| `./gradlew check` | Everything: ktlint, detekt (including type-resolved rules), Android Lint and unit tests |
+| `./gradlew check` | Everything: ktlint, detekt (including type-resolved rules), Android Lint and unit tests, for both flavors (`:app`'s cloud variants only when `google-services.json` is present) |
 | `./gradlew ktlintCheck detekt` | Static analysis only (fast) |
 | `./gradlew ktlintFormat` | Auto-fix ktlint violations |
 
@@ -55,8 +99,8 @@ Bypass it for a single commit with `git commit --no-verify`.
 | `:core:designsystem` | Theme and shared composables |
 | `:core:data` | Repository implementations, and helpers that turn exceptions into typed errors |
 | `:core:datastore` | Local preferences |
-| `:core:auth` | Authentication abstraction; the Firebase implementation lives behind an interface |
-| `:core:sync` | Sync abstraction |
+| `:core:auth` | Authentication: Firebase in `cloud`, always signed out in `offline` |
+| `:core:sync` | Sync abstraction (no-op in both flavors until there is data to sync) |
 | `:core:testing` | Test-only: Hilt test runner, fakes, and `@TestInstallIn` modules that swap production bindings |
 | `:feature:account` | Sign-in and account UI |
 | `:feature:settings` | Settings UI |
@@ -75,7 +119,7 @@ The full set of rules, and the reasoning behind them, is in [ADR-003](docs/adr/0
 
 ### Module graph
 
-Generated from the build. After changing module dependencies, regenerate with `./gradlew moduleGraph`.
+Generated from the build. After changing module dependencies, regenerate with `./gradlew moduleGraph`. Edges labelled with a flavor exist only in that flavor.
 
 <!-- module-graph:start -->
 ```mermaid
@@ -98,7 +142,7 @@ graph TD
     app --> core_domain
     app --> core_model
     app --> core_sync
-    app --> feature_account
+    app -->|cloud| feature_account
     app --> feature_settings
     core_auth --> core_common
     core_auth --> core_domain

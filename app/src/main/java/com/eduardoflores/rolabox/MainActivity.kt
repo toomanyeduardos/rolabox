@@ -18,7 +18,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.eduardoflores.rolabox.core.designsystem.component.RolaboxTopBar
 import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxTheme
-import com.eduardoflores.rolabox.feature.account.AuthenticationScreen
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -47,7 +46,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     topBar = { RolaboxTopBar(title = stringResource(R.string.app_name)) },
                 ) { innerPadding ->
-                    AuthenticationScreen(modifier = Modifier.padding(innerPadding))
+                    HomeContent(modifier = Modifier.padding(innerPadding))
                 }
             }
         }

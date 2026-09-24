@@ -16,3 +16,4 @@ New ADR: copy [`template.md`](template.md), take the next number, and add it to 
 | [005](005-hilt-dependency-injection.md) | Use Hilt for dependency injection | Accepted |
 | [006](006-async-api-shape.md) | Async API shape: `Flow` for observed state, `suspend` for single operations | Accepted |
 | [007](007-error-handling.md) | Typed errors with Arrow `Either` for every fallible operation | Accepted |
+| [008](008-offline-and-cloud-flavors.md) | Offline and cloud build flavors, with Firebase only in cloud | Accepted |
