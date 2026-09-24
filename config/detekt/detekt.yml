@@ -29,7 +29,7 @@ style:
     ignorePropertyDeclaration: true
     excludes: ['**/test/**', '**/androidTest/**', '**/designsystem/**/theme/**']
   UnusedPrivateFunction:
-    # @Preview functions are only called by tooling.
-    ignoreAnnotated: ['Preview']
+    # @Preview functions (and multipreview annotations, named Preview* per compose-rules) are only called by tooling.
+    ignoreAnnotated: ['Preview', 'Preview*']
   UnusedImport:
     active: true
