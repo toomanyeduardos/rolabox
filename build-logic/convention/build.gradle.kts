@@ -34,6 +34,10 @@ gradlePlugin {
             id = "rolabox.hilt"
             implementationClass = "RolaboxHiltConventionPlugin"
         }
+        register("moduleGraph") {
+            id = "rolabox.module.graph"
+            implementationClass = "RolaboxModuleGraphConventionPlugin"
+        }
         register("jvmLibrary") {
             id = "rolabox.jvm.library"
             implementationClass = "RolaboxJvmLibraryConventionPlugin"

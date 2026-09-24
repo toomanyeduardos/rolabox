@@ -25,7 +25,9 @@ android {
 
 dependencies {
     implementation(project(":core:designsystem"))
-    implementation(project(":feature:authentication"))
+    implementation(project(":core:sync"))
+    implementation(project(":feature:account"))
+    implementation(project(":feature:settings"))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

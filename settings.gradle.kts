@@ -25,5 +25,14 @@ dependencyResolutionManagement {
 
 rootProject.name = "Rolabox"
 include(":app")
+
+include(":core:model")
+include(":core:common")
 include(":core:designsystem")
-include(":feature:authentication")
+include(":core:data")
+include(":core:datastore")
+include(":core:auth")
+include(":core:sync")
+
+include(":feature:account")
+include(":feature:settings")
