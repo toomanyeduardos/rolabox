@@ -28,6 +28,7 @@ include(":app")
 
 include(":core:common")
 include(":core:designsystem")
+include(":core:domain")
 include(":core:testing")
 
 include(":core:auth:api")

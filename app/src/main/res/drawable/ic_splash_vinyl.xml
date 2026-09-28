@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The record on the splash screen. avd_vinyl_spin animates it in the system splash, and RolaboxSplash
+  rotates it in Compose, so both draw the same shapes at the same size.
+  The canvas is 288dp, which is what the system draws a splash icon at when it has no icon
+  background (masked to a 192dp circle). The disc is drawn at the design's size, 133dp (60 units of
+  a 129.6 unit viewport), centered.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="288dp"
+    android:height="288dp"
+    android:viewportWidth="129.6"
+    android:viewportHeight="129.6">
+    <group android:translateX="10.8" android:translateY="10.8">
+    <group android:name="disc" android:pivotX="54" android:pivotY="54">
+        <path android:fillColor="#0B0B0B" android:pathData="M54,24 a30,30 0 1,1 0,60 a30,30 0 1,1 0,-60 Z"/>
+        <path android:strokeColor="#1F1F1F" android:strokeWidth="0.6" android:pathData="M54,42 a12,12 0 1,1 0,24 a12,12 0 1,1 0,-24 Z"/>
+        <path android:strokeColor="#1F1F1F" android:strokeWidth="0.6" android:pathData="M54,38 a16,16 0 1,1 0,32 a16,16 0 1,1 0,-32 Z"/>
+        <path android:strokeColor="#1F1F1F" android:strokeWidth="0.6" android:pathData="M54,34 a20,20 0 1,1 0,40 a20,20 0 1,1 0,-40 Z"/>
+        <path android:strokeColor="#1F1F1F" android:strokeWidth="0.6" android:pathData="M54,30 a24,24 0 1,1 0,48 a24,24 0 1,1 0,-48 Z"/>
+        <path android:strokeColor="#1F1F1F" android:strokeWidth="0.6" android:pathData="M54,26 a28,28 0 1,1 0,56 a28,28 0 1,1 0,-56 Z"/>
+        <path android:fillColor="#29FFFFFF" android:pathData="M59.21,24.46 A30,30 0 0,1 76.98,34.72 L62.43,46.93 A11,11 0 0,0 55.91,43.17 Z"/>
+        <path android:fillColor="#29FFFFFF" android:pathData="M48.79,83.54 A30,30 0 0,1 31.02,73.28 L45.57,61.07 A11,11 0 0,0 52.09,64.83 Z"/>
+        <path android:fillColor="#E4572E" android:pathData="M54,44 a10,10 0 1,1 0,20 a10,10 0 1,1 0,-20 Z"/>
+        <path android:fillColor="#D9FFFFFF" android:pathData="M54,46.3 a1.2,1.2 0 1,1 0,2.4 a1.2,1.2 0 1,1 0,-2.4 Z"/>
+        <path android:fillColor="@color/splash_bg" android:pathData="M54,52.2 a1.8,1.8 0 1,1 0,3.6 a1.8,1.8 0 1,1 0,-3.6 Z"/>
+    </group>
+    </group>
+</vector>

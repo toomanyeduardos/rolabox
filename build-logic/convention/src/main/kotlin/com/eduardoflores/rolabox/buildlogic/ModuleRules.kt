@@ -11,8 +11,7 @@ private const val FEATURE_PREFIX = ":feature:"
 private const val COMMON_PATH = ":core:common"
 private const val DESIGNSYSTEM_PATH = ":core:designsystem"
 
-// Planned: created with the first use case that combines more than one area, so the rules already
-// hold when it's added.
+// Holds the use cases that combine more than one area (ADR-003).
 private const val DOMAIN_PATH = ":core:domain"
 
 // Each area is split into :core:<area>:api, :core:<area>:impl and :core:<area>:testing (ADR-003).
@@ -116,7 +115,7 @@ private fun projectDependencyViolation(modulePath: String, dependencyPath: Strin
         modulePath.isImpl() && !dependencyPath.isTesting() && !dependencyPath.isApiOrIn(IMPL_ALLOWED_PATHS) ->
             "ADR-003 rule 7: *:impl modules may only depend on *:api modules and $COMMON_PATH"
 
-        modulePath == DOMAIN_PATH && !dependencyPath.isApiOrIn(API_ALLOWED_PATHS) ->
+        modulePath == DOMAIN_PATH && !dependencyPath.isTesting() && !dependencyPath.isApiOrIn(API_ALLOWED_PATHS) ->
             "ADR-003 rule 8: $DOMAIN_PATH may only depend on *:api modules and $COMMON_PATH"
 
         modulePath == DESIGNSYSTEM_PATH && dependencyPath !in API_ALLOWED_PATHS ->

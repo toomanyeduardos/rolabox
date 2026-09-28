@@ -18,6 +18,12 @@
   interfaces, so it uses every type in their signatures, and rule 15 requires declaring those
   modules. Rule 13's goal, never putting an implementation on a test classpath, is unchanged, since
   `:api` modules have none.
+- **Revised 2026-09-28:** `:core:domain` may also depend on `:testing` modules from test
+  configurations (rule 8), as `:impl` modules already could (rule 7), and it now exists, created
+  with the start-destination use case. Its use cases combine several areas, and the "Where things
+  live" rule that fakes live in each area's `:testing` module means their tests need those fakes.
+  Rule 8 as written made that impossible. The goal is unchanged: no implementation ends up on a
+  classpath, since `:testing` modules depend only on `:api` modules.
 
 ## Context
 
@@ -65,7 +71,7 @@ graph in the `@HiltAndroidApp` module, so `:app` must see every implementation a
 | `:core:<area>:api` | Interfaces, models, error types, and pure-logic use cases for this area (pure JVM) | Other `:core:<area>:api`, `:core:common` |
 | `:core:<area>:impl` | Implementations of the `:api` and their Hilt modules, with backend-specific code in flavor source sets ([ADR-008](008-offline-and-cloud-flavors.md)) | `:core:<area>:api` (its own and others), `:core:common` |
 | `:core:<area>:testing` | Fakes of the area's `:api` (pure JVM) | Its own `:api` |
-| `:core:domain` (not yet created) | Pure-logic use cases that combine more than one area (pure JVM) | `:core:<area>:api`, `:core:common` |
+| `:core:domain` | Pure-logic use cases that combine more than one area (pure JVM) | `:core:<area>:api`, `:core:common` (plus testing modules from test configurations) |
 | `:core:common` | Utility: dispatchers, exception-to-error helpers (pure JVM) | Nothing |
 | `:core:designsystem` | Utility: theme and shared composables | `:core:common` |
 | `:core:testing` | Utility: Hilt test runner, `MainDispatcherRule` | Anything except `:impl` modules |
@@ -191,7 +197,8 @@ Guidelines that go with the table:
 6. `[enforced]` `:api` modules depend only on `:core:common` and other `:api` modules.
 7. `[enforced]` `:impl` modules depend only on `:api` modules and `:core:common` (plus testing
    modules from test configurations).
-8. `[enforced]` `:core:domain` depends only on `:api` modules and `:core:common`.
+8. `[enforced]` `:core:domain` depends only on `:api` modules and `:core:common` (plus testing
+   modules from test configurations).
 9. `[enforced]` `:core:designsystem` depends only on `:core:common`.
 10. `[enforced]` Testing modules (`:core:testing` and every `:core:<area>:testing`) are only used
     from test configurations (`testImplementation`, `androidTestImplementation`).

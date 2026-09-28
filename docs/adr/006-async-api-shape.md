@@ -6,6 +6,9 @@
 - **Reviewers:** AI-assisted review
 - **Revised 2026-09-26:** Renamed `DatabaseError` to `StorageError` in the examples, following
   [ADR-007](007-error-handling.md). The decision is unchanged.
+- **Revised 2026-09-28:** Rule 5 now covers a value that is resolved once, such as the start
+  destination, which uses `Eagerly` because restarting it when the screen resubscribes would
+  resolve it again. The rule for observed state is unchanged.
 
 ## Context
 
@@ -89,7 +92,9 @@ sync, runs in WorkManager. `GlobalScope` is never used.
 4. `[convention]` Repository and use case functions are main-safe. They switch to an injected
    dispatcher internally.
 5. `[convention]` Repositories return cold flows. ViewModels share them with `stateIn` and
-   `WhileSubscribed`.
+   `WhileSubscribed`. A ViewModel may use `Eagerly` for a value that is resolved once and must not
+   be resolved again when the screen resubscribes, and says why in a comment. It isn't used to
+   keep observing a repository flow.
 6. `[convention]` Work that must outlive a screen runs in the injected application scope or in
    WorkManager.
 7. `[enforced]` `GlobalScope` is never used (detekt `GlobalCoroutineUsage`).
