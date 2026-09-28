@@ -1,0 +1,17 @@
+{
+  "name": "rolabox-firebase",
+  "private": true,
+  "description": "Firestore security rules and their emulator tests (ADR-010)",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "firebase emulators:exec --only firestore --project demo-rolabox \"node --test\""
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
+    "firebase": "^12.19.0",
+    "firebase-tools": "^15.31.0"
+  }
+}
