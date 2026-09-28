@@ -30,6 +30,7 @@ class FakeUserDataRepository @Inject constructor() :
     SyncedPreferencesRepository {
     private val preferences = MutableStateFlow(SyncedPreferences())
     private val readError = MutableStateFlow<StorageError?>(null)
+    private val offlineModeChosen = MutableStateFlow(false)
 
     /** When set, writes fail with this error and leave the data unchanged. */
     var writeError: StorageError? = null
@@ -53,6 +54,16 @@ class FakeUserDataRepository @Inject constructor() :
 
     override suspend fun setAccentColor(color: AccentColor): Either<StorageError, Unit> =
         write { it.copy(accentColor = SyncedValue(color, now)) }
+
+    override fun observeOfflineModeChosen(): Flow<Either<StorageError, Boolean>> =
+        combine(offlineModeChosen, readError) { chosen, error -> error?.left() ?: chosen.right() }
+            .transformWhile {
+                emit(it)
+                it.isRight()
+            }
+
+    override suspend fun setOfflineModeChosen(chosen: Boolean): Either<StorageError, Unit> =
+        writeError?.left() ?: offlineModeChosen.update { chosen }.right()
 
     // Like a real repository, a Left ends the flow.
     override fun observeSyncedPreferences(): Flow<Either<StorageError, SyncedPreferences>> =

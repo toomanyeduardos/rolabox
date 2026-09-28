@@ -143,6 +143,7 @@ implementation and its Hilt bindings) and a `:testing` module (fakes).
 | `:core:userdata:api` | User preferences API: `UserDataRepository`, `UserData`, `SyncedPreferencesRepository` |
 | `:core:userdata:impl` | User preferences, stored through `PreferencesStore` |
 | `:core:userdata:testing` | `FakeUserDataRepository` |
+| `:core:domain` | Use cases that combine more than one area, such as `ResolveStartDestination` (pure Kotlin) |
 | `:core:common` | Utility: coroutine dispatchers, helpers that turn exceptions into typed errors |
 | `:core:designsystem` | Utility: theme and shared composables |
 | `:core:testing` | Utility, test-only: Hilt test runner, `MainDispatcherRule` |
@@ -155,8 +156,8 @@ The full set of rules, and the reasoning behind them, is in [ADR-003](docs/adr/0
 
 - Feature modules never depend on other feature modules, and only `:app` depends on feature modules.
 - Only `:app` depends on `:impl` modules, and an `:impl` depends only on `:api` modules and `:core:common`.
-- Feature modules depend only on `:api` modules, `:core:domain` (once it exists), `:core:common` and `:core:designsystem`.
-- `:api` modules and `:core:common` are JVM modules. `:api` modules depend only on `:core:common` and other `:api` modules, with no Hilt.
+- Feature modules depend only on `:api` modules, `:core:domain`, `:core:common` and `:core:designsystem`.
+- `:api` modules, `:core:common` and `:core:domain` are JVM modules. `:api` modules depend only on `:core:common` and other `:api` modules, with no Hilt. `:core:domain` depends only on `:api` modules and `:core:common`.
 - `:core:designsystem` depends only on `:core:common`.
 - Testing modules (`:core:testing` and every `:core:<area>:testing`) are only used from test configurations.
 
@@ -175,6 +176,7 @@ graph TD
     core_auth_testing[":core:auth:testing"]
     core_common[":core:common"]
     core_designsystem[":core:designsystem"]
+    core_domain[":core:domain"]
     core_storage_api[":core:storage:api"]
     core_storage_impl[":core:storage:impl"]
     core_storage_testing[":core:storage:testing"]
@@ -187,8 +189,10 @@ graph TD
     core_userdata_testing[":core:userdata:testing"]
     feature_account[":feature:account"]
     feature_settings[":feature:settings"]
+    app --> core_auth_api
     app --> core_auth_impl
     app --> core_designsystem
+    app --> core_domain
     app --> core_storage_impl
     app --> core_sync_api
     app --> core_sync_impl
@@ -199,6 +203,8 @@ graph TD
     core_auth_impl --> core_auth_api
     core_auth_impl --> core_common
     core_auth_testing --> core_auth_api
+    core_domain --> core_auth_api
+    core_domain --> core_userdata_api
     core_storage_impl --> core_common
     core_storage_impl --> core_storage_api
     core_storage_testing --> core_storage_api

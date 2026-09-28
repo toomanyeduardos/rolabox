@@ -45,6 +45,36 @@ class DefaultUserDataRepositoryTest {
     }
 
     @Test
+    fun observeOfflineModeChosen_nothingStored_isFalse() = runTest {
+        assertEquals(false.right(), repository.observeOfflineModeChosen().first())
+    }
+
+    @Test
+    fun setOfflineModeChosen_isObserved() = runTest {
+        assertEquals(Unit.right(), repository.setOfflineModeChosen(true))
+        assertEquals(true.right(), repository.observeOfflineModeChosen().first())
+
+        assertEquals(Unit.right(), repository.setOfflineModeChosen(false))
+        assertEquals(false.right(), repository.observeOfflineModeChosen().first())
+    }
+
+    @Test
+    fun setOfflineModeChosen_isNotPartOfTheSyncedPreferences() = runTest {
+        val before = repository.getSyncedPreferences()
+
+        repository.setOfflineModeChosen(true)
+
+        assertEquals(before, repository.getSyncedPreferences())
+    }
+
+    @Test
+    fun observeOfflineModeChosen_readError_emitsErrorAndEnds() = runTest {
+        preferencesStore.setReadError(StorageError.Corrupted)
+
+        assertEquals(listOf(StorageError.Corrupted.left()), repository.observeOfflineModeChosen().toList())
+    }
+
+    @Test
     fun observeUserData_unknownStoredValue_usesDefault() = runTest {
         preferencesStore.setString("dark_theme_config", "SEPIA")
 

@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The branding image (wordmark and tagline) is only supported by the system splash on Android 12+. -->
+<!--
+  The system splash only supports a branding image (the wordmark and tagline) on Android 12+. It
+  repeats the theme in values/ because a style in a more specific folder replaces it whole. Older
+  versions show the wordmark once RolaboxSplash is up.
+-->
 <resources>
     <style name="Theme.Rolabox.Splash" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/splash_bg</item>

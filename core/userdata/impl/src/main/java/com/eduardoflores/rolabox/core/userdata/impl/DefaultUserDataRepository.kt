@@ -34,6 +34,12 @@ internal class DefaultUserDataRepository @Inject constructor(
 
     override suspend fun setAccentColor(color: AccentColor): Either<StorageError, Unit> = set(AccentColorField, color)
 
+    override fun observeOfflineModeChosen(): Flow<Either<StorageError, Boolean>> =
+        preferencesStore.observeString(OFFLINE_MODE_CHOSEN_KEY).map { result -> result.map { it == TRUE } }
+
+    override suspend fun setOfflineModeChosen(chosen: Boolean): Either<StorageError, Unit> =
+        preferencesStore.setString(OFFLINE_MODE_CHOSEN_KEY, chosen.toString())
+
     override fun observeSyncedPreferences(): Flow<Either<StorageError, SyncedPreferences>> =
         preferencesStore.observeStrings(ALL_KEYS).map { result -> result.map { it.toSyncedPreferences() } }
 
@@ -51,6 +57,11 @@ internal class DefaultUserDataRepository @Inject constructor(
         return preferencesStore.updateStrings(entries.keys) { entries }
     }
 }
+
+// Not one of the synced fields below: it's stored on this device only. The key is stored on users'
+// devices, so it doesn't change.
+private const val OFFLINE_MODE_CHOSEN_KEY = "offline_mode_chosen"
+private const val TRUE = "true"
 
 /**
  * A synced preference stored under two keys: its value (an enum name) and when it was last changed
