@@ -3,9 +3,8 @@ plugins {
 }
 
 dependencies {
-    // Re-exports kotlinx.coroutines, whose Flow appears in the repository signatures.
-    api(project(":core:common"))
-    // StorageError appears in the repository signatures.
-    api(project(":core:storage:api"))
+    // Flow, Either and StorageError appear in the public signatures.
+    api(libs.kotlinx.coroutines.core)
     api(libs.arrow.core)
+    api(project(":core:storage:api"))
 }

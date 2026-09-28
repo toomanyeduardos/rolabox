@@ -1,6 +1,7 @@
 import com.eduardoflores.rolabox.buildlogic.ProjectConfig
 import com.eduardoflores.rolabox.buildlogic.applyStaticAnalysis
 import com.eduardoflores.rolabox.buildlogic.enforceModuleRules
+import com.eduardoflores.rolabox.buildlogic.registerUnitTestTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPluginExtension
@@ -15,6 +16,7 @@ class RolaboxJvmLibraryConventionPlugin : Plugin<Project> {
             pluginManager.apply("org.jetbrains.kotlin.jvm")
             enforceModuleRules()
             applyStaticAnalysis()
+            registerUnitTestTask("test")
 
             extensions.configure<JavaPluginExtension> {
                 sourceCompatibility = ProjectConfig.JAVA_VERSION

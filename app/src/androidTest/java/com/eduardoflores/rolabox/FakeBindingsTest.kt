@@ -2,6 +2,7 @@ package com.eduardoflores.rolabox
 
 import arrow.core.right
 import com.eduardoflores.rolabox.core.auth.api.AuthRepository
+import com.eduardoflores.rolabox.core.auth.api.AuthState
 import com.eduardoflores.rolabox.core.auth.api.AuthUser
 import com.eduardoflores.rolabox.core.auth.testing.FakeAuthRepository
 import com.eduardoflores.rolabox.core.common.Dispatcher
@@ -63,10 +64,11 @@ class FakeBindingsTest {
 
     @Test
     fun drivingAFake_isVisibleThroughTheInterface() = runTest {
-        fakeAuthRepository.setUser(AuthUser(id = "1", displayName = "Ada"))
+        val ada = AuthState.SignedIn(AuthUser(id = "1", displayName = "Ada", photoUrl = null))
+        fakeAuthRepository.setAuthState(ada)
         userDataRepository.setDarkThemeConfig(DarkThemeConfig.DARK)
 
-        assertEquals(AuthUser(id = "1", displayName = "Ada"), authRepository.observeCurrentUser().first())
+        assertEquals(ada, authRepository.observeAuthState().first())
         assertEquals(
             DarkThemeConfig.DARK.right(),
             fakeUserDataRepository.observeUserData().first().map { it.darkThemeConfig },

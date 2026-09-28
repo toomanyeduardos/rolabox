@@ -8,6 +8,5 @@ android {
 }
 
 dependencies {
-    // SyncModule binds the :api interface, so :app's Hilt graph needs it on its classpath.
-    api(project(":core:sync:api"))
+    implementation(project(":core:sync:api"))
 }

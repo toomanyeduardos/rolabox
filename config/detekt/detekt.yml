@@ -5,9 +5,9 @@ naming:
   FunctionNaming:
     # @Composable functions are PascalCase by convention.
     ignoreAnnotated: ['Composable']
-  TopLevelPropertyNaming:
-    # Compose theme colors and similar constants are PascalCase vals.
-    constantPattern: '[A-Z][A-Za-z0-9]*'
+    # Test names use underscores. detekt's defaults exclude src/test but not the per-flavor test
+    # source sets (ADR-008).
+    excludes: ['**/test/**', '**/testOffline/**', '**/testCloud/**', '**/androidTest/**']
 
 complexity:
   LongParameterList:
@@ -33,7 +33,7 @@ style:
   MagicNumber:
     # Color literals and dimensions in the design system are the definitions themselves.
     ignorePropertyDeclaration: true
-    excludes: ['**/test/**', '**/androidTest/**', '**/designsystem/**/theme/**']
+    excludes: ['**/test/**', '**/testOffline/**', '**/testCloud/**', '**/androidTest/**', '**/designsystem/**/theme/**']
   UnusedPrivateFunction:
     # @Preview functions (and multipreview annotations, named Preview* per compose-rules) are only called by tooling.
     ignoreAnnotated: ['Preview', 'Preview*']

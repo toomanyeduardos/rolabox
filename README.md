@@ -55,6 +55,7 @@ The reasoning behind the architecture is recorded as [Architecture Decision Reco
 - [ADR-006](docs/adr/006-async-api-shape.md): Async API shape: `Flow` for observed state, `suspend` for single operations
 - [ADR-007](docs/adr/007-error-handling.md): Typed errors with Arrow `Either` for every fallible operation
 - [ADR-008](docs/adr/008-offline-and-cloud-flavors.md): Offline and cloud build flavors, with Firebase only in cloud
+- [ADR-009](docs/adr/009-ui-bound-sdks.md): SDK steps that need an Activity live in the UI, and only their results cross the `:api`
 
 ## CI
 
@@ -75,6 +76,8 @@ Every module gets [ktlint](https://pinterest.github.io/ktlint/) (with the [Compo
 | Command | What it does |
 | --- | --- |
 | `./gradlew check` | Everything: ktlint, detekt (including type-resolved rules), Android Lint and unit tests, for both flavors (`:app`'s cloud variants only when `google-services.json` is present) |
+| `./gradlew unitTest` | Unit tests of every module: the `offline` debug variant of Android modules, and the pure Kotlin modules |
+| `./gradlew test` | Unit tests of every variant of every module (both flavors, debug and release) |
 | `./gradlew ktlintCheck detekt` | Static analysis only (fast) |
 | `./gradlew ktlintFormat` | Auto-fix ktlint violations |
 
@@ -156,23 +159,24 @@ graph TD
     app --> core_auth_impl
     app --> core_designsystem
     app --> core_storage_impl
+    app --> core_sync_api
     app --> core_sync_impl
+    app --> core_userdata_api
     app --> core_userdata_impl
     app -->|cloud| feature_account
     app --> feature_settings
-    core_auth_api --> core_common
     core_auth_impl --> core_auth_api
+    core_auth_impl --> core_common
     core_auth_testing --> core_auth_api
-    core_storage_api --> core_common
     core_storage_impl --> core_common
     core_storage_impl --> core_storage_api
     core_storage_testing --> core_storage_api
     core_sync_impl --> core_sync_api
     core_sync_testing --> core_sync_api
-    core_userdata_api --> core_common
     core_userdata_api --> core_storage_api
     core_userdata_impl --> core_storage_api
     core_userdata_impl --> core_userdata_api
+    core_userdata_testing --> core_storage_api
     core_userdata_testing --> core_userdata_api
     feature_account --> core_designsystem
     feature_settings --> core_designsystem

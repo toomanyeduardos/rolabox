@@ -8,8 +8,7 @@ android {
 }
 
 dependencies {
-    // StorageModule binds the :api interface, so :app's Hilt graph needs it on its classpath.
-    api(project(":core:storage:api"))
+    implementation(project(":core:storage:api"))
     implementation(project(":core:common"))
     implementation(libs.androidx.datastore.preferences)
     testImplementation(libs.junit)

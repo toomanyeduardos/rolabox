@@ -3,6 +3,7 @@ plugins {
 }
 
 dependencies {
-    // Re-exports kotlinx.coroutines, whose Flow appears in the repository signatures.
-    api(project(":core:common"))
+    // Flow and Either appear in the public signatures.
+    api(libs.kotlinx.coroutines.core)
+    api(libs.arrow.core)
 }

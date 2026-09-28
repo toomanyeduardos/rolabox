@@ -103,13 +103,16 @@ Guidelines that go with the table:
 
 - **Features are independent.** A feature never depends on another feature. Navigation between
   features is wired in `:app`. If two features need the same code, it moves to a `:core` module.
-- **An `:impl` exposes its own `:api` with `api(...)`.** The Hilt graph in `:app` needs the
-  interfaces each `:impl` binds.
 - **Features declare the `:api` modules they use.** The `rolabox.android.feature` convention plugin
   adds only `:core:designsystem`, so a feature's build file lists the areas it depends on.
 - **Use `implementation` by default.** `api` is used only when a module's public signatures expose
   another module's types (for example, `:core:userdata:api` returns `StorageError` from
-  `:core:storage:api`).
+  `:core:storage:api`). It's never a way to hand consumers dependencies they'd otherwise declare.
+- **Every module declares what it uses directly,** even when another dependency's `api` already puts
+  it on the classpath. `:app` declares `:core:userdata:api` for its ViewModel, not only
+  `:core:userdata:impl`. So a build file lists every area the module's code touches, which is the
+  point of this layout. Hilt doesn't need an `:impl` to re-export its `:api`: it collects bindings
+  from `:app`'s whole classpath.
 - **Split modules when there's a reason.** A new area gets its `:api`, `:impl` and `:testing`
   modules when it has an interface of its own. A new feature module is created per user-facing
   area, not per screen.
@@ -194,7 +197,8 @@ Guidelines that go with the table:
     `:api`. `@TestInstallIn` modules live in `:app`'s test sources.
 14. `[convention]` Packages mirror module paths, and no package is split across modules.
 15. `[convention]` Dependencies use `implementation` unless the module's public signatures expose
-    the other module's types.
+    the other module's types. A module declares every project module whose types it uses directly,
+    even when it would get them through another dependency's `api`.
 
 **Conformance.** Rules 1 to 10 are checked by `ModuleRules.kt` when the build is configured. Rule 11
 could be checked with a Konsist test later.

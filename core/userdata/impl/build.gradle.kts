@@ -8,8 +8,7 @@ android {
 }
 
 dependencies {
-    // UserDataModule binds the :api interface, so :app's Hilt graph needs it on its classpath.
-    api(project(":core:userdata:api"))
+    implementation(project(":core:userdata:api"))
     implementation(project(":core:storage:api"))
     testImplementation(project(":core:storage:testing"))
     testImplementation(libs.junit)
