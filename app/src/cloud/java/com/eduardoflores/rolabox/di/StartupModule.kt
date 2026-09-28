@@ -1,7 +1,7 @@
 package com.eduardoflores.rolabox.di
 
 import com.eduardoflores.rolabox.core.auth.api.AuthRepository
-import com.eduardoflores.rolabox.core.domain.ResolveStartDestination
+import com.eduardoflores.rolabox.core.domain.ResolveStartDestinationUseCase
 import com.eduardoflores.rolabox.core.userdata.api.UserDataRepository
 import dagger.Module
 import dagger.Provides
@@ -13,10 +13,10 @@ import dagger.hilt.components.SingletonComponent
 @InstallIn(SingletonComponent::class)
 object StartupModule {
     @Provides
-    fun providesResolveStartDestination(
+    fun providesResolveStartDestinationUseCase(
         authRepository: AuthRepository,
         userDataRepository: UserDataRepository,
-    ): ResolveStartDestination = ResolveStartDestination(
+    ): ResolveStartDestinationUseCase = ResolveStartDestinationUseCase(
         authRepository = authRepository,
         userDataRepository = userDataRepository,
         accountsAvailable = true,

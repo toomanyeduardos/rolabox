@@ -13,6 +13,9 @@
   (several). This makes each capability self-contained, and each module's dependencies show which
   capabilities it uses. The layering is unchanged. See [ADR-003](003-module-boundaries.md) for the
   module layout.
+- **Revised 2026-09-28:** Added rule 8, which names use cases with a `UseCase` suffix so they are
+  easy to find and tell apart from repositories. The first cross-area use case,
+  `ResolveStartDestinationUseCase`, was named this way. The decision is unchanged.
 
 ## Context
 
@@ -129,3 +132,5 @@ operation, so the logic never ends up in two places.
    repository directly.
 7. `[convention]` A ViewModel that needs data from more than one repository gets it through a use
    case.
+8. `[convention]` A use case's class name ends in `UseCase` and starts with a verb, such as
+   `ResolveStartDestinationUseCase`.

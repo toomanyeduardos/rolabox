@@ -3,7 +3,7 @@ package com.eduardoflores.rolabox
 import com.eduardoflores.rolabox.core.auth.api.AuthState
 import com.eduardoflores.rolabox.core.auth.api.AuthUser
 import com.eduardoflores.rolabox.core.auth.testing.FakeAuthRepository
-import com.eduardoflores.rolabox.core.domain.ResolveStartDestination
+import com.eduardoflores.rolabox.core.domain.ResolveStartDestinationUseCase
 import com.eduardoflores.rolabox.core.domain.StartDestination
 import com.eduardoflores.rolabox.core.testing.MainDispatcherRule
 import com.eduardoflores.rolabox.core.userdata.testing.FakeUserDataRepository
@@ -20,7 +20,7 @@ class StartupViewModelTest {
     private val userDataRepository = FakeUserDataRepository()
 
     private fun viewModel(accountsAvailable: Boolean = true) = StartupViewModel(
-        ResolveStartDestination(authRepository, userDataRepository, accountsAvailable),
+        ResolveStartDestinationUseCase(authRepository, userDataRepository, accountsAvailable),
     )
 
     @Test

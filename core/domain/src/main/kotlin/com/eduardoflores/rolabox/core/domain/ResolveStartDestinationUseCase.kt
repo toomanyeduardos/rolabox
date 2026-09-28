@@ -18,7 +18,7 @@ enum class StartDestination {
  *
  * This combines two areas (auth and user data), so it's a use case (ADR-001).
  */
-class ResolveStartDestination(
+class ResolveStartDestinationUseCase(
     private val authRepository: AuthRepository,
     private val userDataRepository: UserDataRepository,
     private val accountsAvailable: Boolean,

@@ -143,7 +143,7 @@ implementation and its Hilt bindings) and a `:testing` module (fakes).
 | `:core:userdata:api` | User preferences API: `UserDataRepository`, `UserData`, `SyncedPreferencesRepository` |
 | `:core:userdata:impl` | User preferences, stored through `PreferencesStore` |
 | `:core:userdata:testing` | `FakeUserDataRepository` |
-| `:core:domain` | Use cases that combine more than one area, such as `ResolveStartDestination` (pure Kotlin) |
+| `:core:domain` | Use cases that combine more than one area, such as `ResolveStartDestinationUseCase` (pure Kotlin) |
 | `:core:common` | Utility: coroutine dispatchers, helpers that turn exceptions into typed errors |
 | `:core:designsystem` | Utility: theme and shared composables |
 | `:core:testing` | Utility, test-only: Hilt test runner, `MainDispatcherRule` |

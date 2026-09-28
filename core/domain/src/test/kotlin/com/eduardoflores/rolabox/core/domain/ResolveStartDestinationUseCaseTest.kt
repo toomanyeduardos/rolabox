@@ -9,12 +9,12 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class ResolveStartDestinationTest {
+class ResolveStartDestinationUseCaseTest {
     private val authRepository = FakeAuthRepository()
     private val userDataRepository = FakeUserDataRepository()
 
     private fun resolve(accountsAvailable: Boolean = true) =
-        ResolveStartDestination(authRepository, userDataRepository, accountsAvailable)
+        ResolveStartDestinationUseCase(authRepository, userDataRepository, accountsAvailable)
 
     @Test
     fun signedIn_isHome() = runTest {
