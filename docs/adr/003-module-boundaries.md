@@ -13,6 +13,11 @@
   feature could see every repository interface, so a module's dependencies didn't show which
   capabilities it used. An area's code was also spread across shared modules, so it couldn't be
   moved or reasoned about on its own.
+- **Revised 2026-09-28:** A `:testing` module may also depend on the `:api` modules whose types its
+  fakes use, not only its own `:api` (rule 13, "Where things live"). A fake implements its `:api`'s
+  interfaces, so it uses every type in their signatures, and rule 15 requires declaring those
+  modules. Rule 13's goal, never putting an implementation on a test classpath, is unchanged, since
+  `:api` modules have none.
 
 ## Context
 
@@ -88,7 +93,8 @@ The current areas are `auth`, `storage`, `sync` and `userdata`.
   and the build rules for it already exist. A use case for one area lives in that area's `:api`.
 - **Fakes live in each area's `:testing` module.** A module's test dependencies then name the
   same areas as its main dependencies, and an area carries its fakes with it. `:testing` modules
-  depend only on their `:api`, so using a fake never puts an implementation on a test classpath.
+  depend only on `:api` modules (their own, and those whose types their fakes use), so using a
+  fake never puts an implementation on a test classpath.
 - **`@TestInstallIn` modules live in `:app`'s androidTest sources.** Replacing a production Hilt
   module means referencing it, and only `:app` may see `:impl` modules. `:app` is also the only
   module that assembles a production Hilt graph, so it's the only place where there is something to
@@ -194,7 +200,8 @@ Guidelines that go with the table:
 12. `[convention]` Every type lives in the `:api` of the area that owns it, and other areas reach it
     by depending on that `:api`. There is no shared model module.
 13. `[convention]` Fakes live in their area's `:testing` module, which depends only on that area's
-    `:api`. `@TestInstallIn` modules live in `:app`'s test sources.
+    `:api` and the `:api` modules whose types it uses (never an `:impl`). `@TestInstallIn` modules
+    live in `:app`'s test sources.
 14. `[convention]` Packages mirror module paths, and no package is split across modules.
 15. `[convention]` Dependencies use `implementation` unless the module's public signatures expose
     the other module's types. A module declares every project module whose types it uses directly,

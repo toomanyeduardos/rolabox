@@ -159,6 +159,9 @@ same user or another one, merges them with that user's cloud copy.
   finds nothing to write. That costs a Firestore read, not a write.
 - Sync failures are invisible. There's no sync status in the UI, and no logging. A rejected write
   shows up only in WorkManager's state.
+- **A local read error stops the "after local changes" trigger** until the app restarts. The
+  observed flow ends on its first error (ADR-007), and resubscribing would loop on a corrupted
+  file. Sign-in and foreground still trigger sync, and each sync reports the same error itself.
 - Every kind of synced data needs a `Syncer`, a local repository that can store timestamps, a
   Firestore mapping, and rules with tests. That's the cost of adding data to sync, and it's intended.
 

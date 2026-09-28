@@ -17,6 +17,11 @@ internal class PreferencesSyncer @Inject constructor(
     // The first value is what's stored when collection starts, not a change.
     override fun observeLocalChanges(): Flow<Unit> = local.observeSyncedPreferences()
         .drop(1)
+        // A read error isn't a change, so it's dropped here (ADR-007 rule 7). It isn't lost: sync()
+        // reads the same storage through getSyncedPreferences() and reports it there, where it's
+        // retried or failed. The Left ends this flow, so local changes stop triggering sync until
+        // the app restarts, but sign-in and foreground still do. Retrying here instead would loop on
+        // a corrupted file.
         .filter { it.isRight() }
         .map { }
 
