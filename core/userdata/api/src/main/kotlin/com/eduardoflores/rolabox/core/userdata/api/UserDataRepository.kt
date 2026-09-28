@@ -8,4 +8,6 @@ interface UserDataRepository {
     fun observeUserData(): Flow<Either<StorageError, UserData>>
 
     suspend fun setDarkThemeConfig(config: DarkThemeConfig): Either<StorageError, Unit>
+
+    suspend fun setAccentColor(color: AccentColor): Either<StorageError, Unit>
 }

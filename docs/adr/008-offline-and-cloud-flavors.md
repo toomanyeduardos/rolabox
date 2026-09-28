@@ -9,6 +9,10 @@
   `core.auth.impl.di.AuthModule`, `AuthRepository` is in `:core:auth:api`, `:core:sync` is split
   into `:core:sync:api` and `:core:sync:impl`, and the `@TestInstallIn` modules are in `:app`'s
   androidTest sources. The decision is unchanged.
+- **Revised 2026-09-28:** `SyncManager` was renamed `SyncRepository`, and the cloud flavor now binds
+  a real implementation ([ADR-011](011-preferences-sync.md)): `NoOpSyncRepository` in offline,
+  `WorkManagerSyncRepository` in cloud. [ADR-010](010-firestore-security-rules.md) chose Firestore
+  for synced data (Consequences). The decision is unchanged.
 
 ## Context
 
@@ -26,7 +30,7 @@ CI has no Firebase config either, and shouldn't need a secret just to build a pu
 
 `:core:auth:impl` and `:core:sync:impl` already hide their implementations behind interfaces
 (`AuthRepository` in `:core:auth:api`, following [ADR-001](001-layered-architecture.md), and
-`SyncManager` in `:core:sync:api`), with no-op implementations bound through Hilt
+`SyncRepository` in `:core:sync:api`), with no-op implementations bound through Hilt
 ([ADR-005](005-hilt-dependency-injection.md)). What's missing is a way to choose between a build
 with Firebase and one without it.
 
@@ -51,8 +55,8 @@ We will add one product flavor dimension, `backend`, with two flavors:
   qualified name (for example `core.auth.impl.di.AuthModule`), so one
   `@TestInstallIn(replaces = …)` in `:app`'s androidTest sources replaces it in either flavor.
 - **Offline binds no-op implementations.** `:core:auth:impl` binds `SignedOutAuthRepository` in
-  offline and `FirebaseAuthRepository` in cloud. `:core:sync:impl` binds `NoOpSyncManager` in both
-  flavors until there is data to sync. The cloud binding is where the real implementation will go.
+  offline and `FirebaseAuthRepository` in cloud. `:core:sync:impl` binds `NoOpSyncRepository` in
+  offline and `WorkManagerSyncRepository` in cloud ([ADR-011](011-preferences-sync.md)).
 - **Firebase is declared only in cloud configurations** (`cloudImplementation`, with the Firebase
   BoM), by the modules that use it.
 - **The google-services plugin is applied through `rolabox.android.application.firebase`.** A
@@ -111,8 +115,8 @@ We will add one product flavor dimension, `backend`, with two flavors:
   in both must stay in `src/main`, or it will drift.
 - The cloud flavor of `:app` can only be built with a `google-services.json` for a Firebase project
   that registers `com.eduardoflores.rolabox`. Without one, `:app` has no cloud variants.
-- Choosing which Firebase product stores synced data (and so what the cloud `SyncManager` does) is
-  left to a later ADR.
+- Which Firebase product stores synced data, and how the cloud `SyncRepository` syncs it, are decided
+  in [ADR-010](010-firestore-security-rules.md) and [ADR-011](011-preferences-sync.md).
 
 ## Rules
 

@@ -2,6 +2,8 @@ package com.eduardoflores.rolabox
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxAccent
+import com.eduardoflores.rolabox.core.userdata.api.AccentColor
 import com.eduardoflores.rolabox.core.userdata.api.DarkThemeConfig
 import com.eduardoflores.rolabox.core.userdata.api.UserData
 import com.eduardoflores.rolabox.core.userdata.api.UserDataRepository
@@ -48,4 +50,17 @@ sealed interface MainActivityUiState {
             DarkThemeConfig.DARK -> true
         }
     }
+
+    /** The default accent until the stored preference has loaded, or if it can't be read. */
+    val accent: RolaboxAccent
+        get() = when (this) {
+            Loading, PreferencesUnavailable -> RolaboxAccent.Blue
+
+            is Success -> when (userData.accentColor) {
+                AccentColor.BLUE -> RolaboxAccent.Blue
+                AccentColor.GREEN -> RolaboxAccent.Green
+                AccentColor.PURPLE -> RolaboxAccent.Purple
+                AccentColor.PINK -> RolaboxAccent.Pink
+            }
+        }
 }

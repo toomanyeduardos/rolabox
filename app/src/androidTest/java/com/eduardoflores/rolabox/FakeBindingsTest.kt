@@ -7,8 +7,8 @@ import com.eduardoflores.rolabox.core.auth.api.AuthUser
 import com.eduardoflores.rolabox.core.auth.testing.FakeAuthRepository
 import com.eduardoflores.rolabox.core.common.Dispatcher
 import com.eduardoflores.rolabox.core.common.RolaboxDispatchers.IO
-import com.eduardoflores.rolabox.core.sync.api.SyncManager
-import com.eduardoflores.rolabox.core.sync.testing.FakeSyncManager
+import com.eduardoflores.rolabox.core.sync.api.SyncRepository
+import com.eduardoflores.rolabox.core.sync.testing.FakeSyncRepository
 import com.eduardoflores.rolabox.core.userdata.api.DarkThemeConfig
 import com.eduardoflores.rolabox.core.userdata.api.UserDataRepository
 import com.eduardoflores.rolabox.core.userdata.testing.FakeUserDataRepository
@@ -39,9 +39,9 @@ class FakeBindingsTest {
 
     @Inject lateinit var fakeUserDataRepository: FakeUserDataRepository
 
-    @Inject lateinit var syncManager: SyncManager
+    @Inject lateinit var syncRepository: SyncRepository
 
-    @Inject lateinit var fakeSyncManager: FakeSyncManager
+    @Inject lateinit var fakeSyncRepository: FakeSyncRepository
 
     @Inject lateinit var testDispatcher: TestDispatcher
 
@@ -58,7 +58,7 @@ class FakeBindingsTest {
     fun productionBindings_areReplacedByFakes() {
         assertSame(fakeAuthRepository, authRepository)
         assertSame(fakeUserDataRepository, userDataRepository)
-        assertSame(fakeSyncManager, syncManager)
+        assertSame(fakeSyncRepository, syncRepository)
         assertSame(testDispatcher, ioDispatcher)
     }
 

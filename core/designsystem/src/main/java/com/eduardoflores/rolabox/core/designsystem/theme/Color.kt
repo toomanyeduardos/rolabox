@@ -27,6 +27,28 @@ internal val Blue40 = Color(0xFF1F5FA9)
 internal val Blue80 = Color(0xFFA8C8FF)
 internal val Blue90 = Color(0xFFD6E3FF)
 
+// Accent palettes (RolaboxAccent). Blue above is the default accent.
+internal val Green10 = Color(0xFF002107)
+internal val Green20 = Color(0xFF003911)
+internal val Green30 = Color(0xFF00531C)
+internal val Green40 = Color(0xFF1B6C30)
+internal val Green80 = Color(0xFF88D992)
+internal val Green90 = Color(0xFFA3F5AC)
+
+internal val Purple10 = Color(0xFF21005D)
+internal val Purple20 = Color(0xFF381E72)
+internal val Purple30 = Color(0xFF4F378B)
+internal val Purple40 = Color(0xFF6750A4)
+internal val Purple80 = Color(0xFFD0BCFF)
+internal val Purple90 = Color(0xFFEADDFF)
+
+internal val Pink10 = Color(0xFF3E001D)
+internal val Pink20 = Color(0xFF5E1133)
+internal val Pink30 = Color(0xFF7B2949)
+internal val Pink40 = Color(0xFF984061)
+internal val Pink80 = Color(0xFFFFB0C8)
+internal val Pink90 = Color(0xFFFFD9E2)
+
 internal val Steel10 = Color(0xFF111C2B)
 internal val Steel20 = Color(0xFF263141)
 internal val Steel30 = Color(0xFF3C4758)

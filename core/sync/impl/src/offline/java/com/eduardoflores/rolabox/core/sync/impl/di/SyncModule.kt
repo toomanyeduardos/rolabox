@@ -1,7 +1,7 @@
 package com.eduardoflores.rolabox.core.sync.impl.di
 
-import com.eduardoflores.rolabox.core.sync.api.SyncManager
-import com.eduardoflores.rolabox.core.sync.impl.NoOpSyncManager
+import com.eduardoflores.rolabox.core.sync.api.SyncRepository
+import com.eduardoflores.rolabox.core.sync.impl.NoOpSyncRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -11,5 +11,5 @@ import dagger.hilt.components.SingletonComponent
 @InstallIn(SingletonComponent::class)
 abstract class SyncModule {
     @Binds
-    internal abstract fun bindsSyncManager(syncManager: NoOpSyncManager): SyncManager
+    internal abstract fun bindsSyncRepository(syncRepository: NoOpSyncRepository): SyncRepository
 }

@@ -22,6 +22,21 @@ internal class DataStorePreferencesStore @Inject constructor(private val dataSto
         .distinctUntilChanged()
         .catchNamed(Throwable::asDataStoreError)
 
+    override fun observeStrings(keys: Set<String>): Flow<Either<StorageError, Map<String, String?>>> = dataStore.data
+        .map { preferences -> keys.associateWith { preferences[stringPreferencesKey(it)] } }
+        .distinctUntilChanged()
+        .catchNamed(Throwable::asDataStoreError)
+
     override suspend fun setString(key: String, value: String): Either<StorageError, Unit> =
         catchNamed(Throwable::asDataStoreError) { dataStore.edit { it[stringPreferencesKey(key)] = value } }
+
+    override suspend fun updateStrings(
+        keys: Set<String>,
+        transform: (Map<String, String?>) -> Map<String, String>,
+    ): Either<StorageError, Unit> = catchNamed(Throwable::asDataStoreError) {
+        dataStore.edit { preferences ->
+            val current = keys.associateWith { preferences[stringPreferencesKey(it)] }
+            transform(current).forEach { (key, value) -> preferences[stringPreferencesKey(key)] = value }
+        }
+    }
 }

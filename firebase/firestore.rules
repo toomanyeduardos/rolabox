@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// Security rules for Rolabox's Firestore database (ADR-010).
+// Security rules for Rolabox's Firestore database (ADR-010, ADR-011).
 //
 // The Firebase config is public (it's inside every cloud APK), so these rules are the only thing
 // protecting user data. Anything not matched below is denied, including subcollections under
@@ -32,6 +32,42 @@ service cloud.firestore {
       allow update: if isOwner(uid)
         && isValidUser(request.resource.data)
         && request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    // Synced preferences (ADR-011). Each field is a map, { value, updatedAt }, and devices resolve
+    // conflicts with last-write-wins. The values must be the enum names the app knows, so a new
+    // value needs a rules change first. A timestamp may be at most a day ahead of the server, so a
+    // device with a badly wrong clock can't make its value win for years, and an update may never
+    // move a field back in time or remove it.
+    function isValidSyncedField(data, field, allowed) {
+      return !(field in data)
+        || (data[field] is map
+          && data[field].keys().hasOnly(['value', 'updatedAt'])
+          && data[field].keys().hasAll(['value', 'updatedAt'])
+          && data[field].value in allowed
+          && data[field].updatedAt is timestamp
+          && data[field].updatedAt <= request.time + duration.value(1, 'd'));
+    }
+
+    function isValidPreferences(data) {
+      return data.keys().hasOnly(['darkThemeConfig', 'accentColor'])
+        && isValidSyncedField(data, 'darkThemeConfig', ['FOLLOW_SYSTEM', 'LIGHT', 'DARK'])
+        && isValidSyncedField(data, 'accentColor', ['BLUE', 'GREEN', 'PURPLE', 'PINK']);
+    }
+
+    function isNotOlder(field) {
+      return !(field in resource.data)
+        || (field in request.resource.data
+          && request.resource.data[field].updatedAt >= resource.data[field].updatedAt);
+    }
+
+    match /users/{uid}/settings/preferences {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid) && isValidPreferences(request.resource.data);
+      allow update: if isOwner(uid)
+        && isValidPreferences(request.resource.data)
+        && isNotOlder('darkThemeConfig')
+        && isNotOlder('accentColor');
     }
   }
 }
