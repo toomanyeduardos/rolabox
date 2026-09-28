@@ -8,7 +8,8 @@
   [ADR-003](003-module-boundaries.md): `:core:auth` → `:core:auth:api`, `:core:sync` →
   `:core:sync:api`, and `:core:datastore` → `:core:storage` (preferences go through its
   `PreferencesStore`). Where the Room database lives is left to its own ADR, so this one no longer
-  names a module for it. The decision is unchanged.
+  names a module for it. Conformance now reflects the cloud flavor's Firebase `AuthRepository`. The
+  decision is unchanged.
 
 ## Context
 
@@ -119,5 +120,7 @@ detailed conflict rules for each type of data.
 9. `[convention]` Every feature works while the user is signed out.
 
 **Conformance.** Room, the library scan and a real sync implementation don't exist yet.
-`SyncManager` has only a no-op implementation, and `AuthRepository` only a signed-out one. This ADR
-sets the constraints those implementations must meet.
+`SyncManager` has only a no-op implementation. `AuthRepository` is always signed out in the offline
+flavor, and in the cloud flavor it observes the Firebase user, but signing in isn't built yet
+([ADR-008](008-offline-and-cloud-flavors.md)). This ADR sets the constraints those implementations
+must meet.

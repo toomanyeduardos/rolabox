@@ -6,12 +6,13 @@
 - **Reviewers:** AI-assisted review
 - **Revised 2026-09-26:** Every capability is now an area split into `:core:<area>:api`, `:impl` and
   `:testing`, instead of one shared `:core:domain` and `:core:data` plus standalone data modules.
-  `:api` modules hold only interfaces and models, and `:impl` modules depend only on `:api` modules.
-  Storage and sync became areas like the others, and there is no shared `:core:model`. The module
-  table, guidelines, alternatives and rules were rewritten, and decisions were added on where fakes,
-  use cases and shared types live. With the old layout, every feature could see every repository
-  interface, so a module's dependencies didn't show which capabilities it used. An area's code was
-  also spread across shared modules, so it couldn't be moved or reasoned about on its own.
+  `:api` modules hold only interfaces and models, and `:impl` modules depend only on `:api` modules
+  and the `:core:common` utilities. Storage and sync became areas like the others, and there is no
+  shared `:core:model`. The module table, guidelines, alternatives and rules were rewritten, and
+  decisions were added on where fakes, use cases and shared types live. With the old layout, every
+  feature could see every repository interface, so a module's dependencies didn't show which
+  capabilities it used. An area's code was also spread across shared modules, so it couldn't be
+  moved or reasoned about on its own.
 
 ## Context
 

@@ -8,10 +8,11 @@
   module holds its repository interfaces, models and error types, instead of one `:core:domain`
   holding them all (rules 1 to 3, Decision, Consequences). There is no shared `:core:model`: each
   type lives in the `:api` of the area that owns it. The data layer is each area's `:impl`, which
-  depends only on `:api` modules, so shared storage is an area too (`:core:storage`). Use cases are
-  pure logic and live in an `:api` (one area) or `:core:domain` (several). This makes each
-  capability self-contained, and each module's dependencies show which capabilities it uses. The
-  layering is unchanged. See [ADR-003](003-module-boundaries.md) for the module layout.
+  depends only on `:api` modules and the `:core:common` utilities, so shared storage is an area too
+  (`:core:storage`). Use cases are pure logic and live in an `:api` (one area) or `:core:domain`
+  (several). This makes each capability self-contained, and each module's dependencies show which
+  capabilities it uses. The layering is unchanged. See [ADR-003](003-module-boundaries.md) for the
+  module layout.
 
 ## Context
 
@@ -114,7 +115,7 @@ operation, so the logic never ends up in two places.
 ## Rules
 
 1. `[enforced]` Feature modules depend on `:api` modules and never on `:impl` modules. An `:impl`
-   depends only on `:api` modules.
+   depends only on `:api` modules and `:core:common` ([ADR-003](003-module-boundaries.md), rule 7).
 2. `[enforced]` Every `:api` module is a JVM module with no Android dependencies, and depends only
    on `:core:common` and other `:api` modules.
 3. `[convention]` Every repository interface that a feature or use case consumes is declared in its
