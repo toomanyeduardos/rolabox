@@ -90,18 +90,28 @@ Bypass it for a single commit with `git commit --no-verify`.
 
 ## Modules
 
+`:core` modules are organized by area ([ADR-003](docs/adr/003-module-boundaries.md)). Each area has
+an `:api` module (pure Kotlin interfaces, models and error types), an `:impl` module (the Android
+implementation and its Hilt bindings) and a `:testing` module (fakes).
+
 | Module | Purpose |
 | --- | --- |
-| `:app` | Application shell: entry point, app identity, wires features together |
-| `:core:model` | Pure Kotlin domain models (no Android dependencies) |
-| `:core:common` | Shared utilities: coroutine dispatchers, result types |
-| `:core:domain` | Pure Kotlin repository interfaces, use cases and domain error types |
-| `:core:designsystem` | Theme and shared composables |
-| `:core:data` | Repository implementations, and helpers that turn exceptions into typed errors |
-| `:core:datastore` | Local preferences |
-| `:core:auth` | Authentication: Firebase in `cloud`, always signed out in `offline` |
-| `:core:sync` | Sync abstraction (no-op in both flavors until there is data to sync) |
-| `:core:testing` | Test-only: Hilt test runner, fakes, and `@TestInstallIn` modules that swap production bindings |
+| `:app` | Application shell: entry point, app identity, wires features and `:impl` modules together |
+| `:core:auth:api` | Authentication API: `AuthRepository`, `AuthUser` |
+| `:core:auth:impl` | Authentication: Firebase in `cloud`, always signed out in `offline` |
+| `:core:auth:testing` | `FakeAuthRepository` |
+| `:core:storage:api` | Local storage API: `PreferencesStore` (key-value settings), `StorageError` |
+| `:core:storage:impl` | `PreferencesStore` backed by DataStore |
+| `:core:storage:testing` | `FakePreferencesStore` |
+| `:core:sync:api` | Sync API: `SyncManager` |
+| `:core:sync:impl` | Sync: no-op in both flavors until there is data to sync |
+| `:core:sync:testing` | `FakeSyncManager` |
+| `:core:userdata:api` | User preferences API: `UserDataRepository`, `UserData` |
+| `:core:userdata:impl` | User preferences, stored through `PreferencesStore` |
+| `:core:userdata:testing` | `FakeUserDataRepository` |
+| `:core:common` | Utility: coroutine dispatchers, helpers that turn exceptions into typed errors |
+| `:core:designsystem` | Utility: theme and shared composables |
+| `:core:testing` | Utility, test-only: Hilt test runner, `MainDispatcherRule` |
 | `:feature:account` | Sign-in and account UI |
 | `:feature:settings` | Settings UI |
 
@@ -109,13 +119,14 @@ Bypass it for a single commit with `git commit --no-verify`.
 
 The full set of rules, and the reasoning behind them, is in [ADR-003](docs/adr/003-module-boundaries.md). These are enforced by the build (see `build-logic/.../ModuleRules.kt`); breaking one fails configuration with an error naming the rule.
 
-- Feature modules never depend on other feature modules.
-- `:core:model` depends on no other module.
-- `:core` modules never depend on feature modules, and only `:app` does.
-- Feature modules depend on `:core:domain`, never on data-layer modules (`:core:data`, `:core:datastore`, `:core:auth`, `:core:sync`).
-- `:core:domain`, `:core:model` and `:core:common` are JVM modules. `:core:domain` depends only on `:core:model` and `:core:common`, with no Hilt.
-- `:core:designsystem` never depends on `:core:domain` or data-layer modules.
-- `:core:testing` is only used from test configurations.
+- Feature modules never depend on other feature modules, and only `:app` depends on feature modules.
+- Only `:app` depends on `:impl` modules, and an `:impl` depends only on `:api` modules and `:core:common`.
+- Feature modules depend only on `:api` modules, `:core:domain` (once it exists), `:core:common` and `:core:designsystem`.
+- `:api` modules and `:core:common` are JVM modules. `:api` modules depend only on `:core:common` and other `:api` modules, with no Hilt.
+- `:core:designsystem` depends only on `:core:common`.
+- Testing modules (`:core:testing` and every `:core:<area>:testing`) are only used from test configurations.
+
+`:api` modules hold only interfaces and models (plus pure-logic use cases), and there is no shared model module: each type lives in the `:api` of the area that owns it.
 
 ### Module graph
 
@@ -125,50 +136,45 @@ Generated from the build. After changing module dependencies, regenerate with `.
 ```mermaid
 graph TD
     app[":app"]
-    core_auth[":core:auth"]
+    core_auth_api[":core:auth:api"]
+    core_auth_impl[":core:auth:impl"]
+    core_auth_testing[":core:auth:testing"]
     core_common[":core:common"]
-    core_data[":core:data"]
-    core_datastore[":core:datastore"]
     core_designsystem[":core:designsystem"]
-    core_domain[":core:domain"]
-    core_model[":core:model"]
-    core_sync[":core:sync"]
+    core_storage_api[":core:storage:api"]
+    core_storage_impl[":core:storage:impl"]
+    core_storage_testing[":core:storage:testing"]
+    core_sync_api[":core:sync:api"]
+    core_sync_impl[":core:sync:impl"]
+    core_sync_testing[":core:sync:testing"]
     core_testing[":core:testing"]
+    core_userdata_api[":core:userdata:api"]
+    core_userdata_impl[":core:userdata:impl"]
+    core_userdata_testing[":core:userdata:testing"]
     feature_account[":feature:account"]
     feature_settings[":feature:settings"]
-    app --> core_auth
-    app --> core_data
+    app --> core_auth_impl
     app --> core_designsystem
-    app --> core_domain
-    app --> core_model
-    app --> core_sync
+    app --> core_storage_impl
+    app --> core_sync_impl
+    app --> core_userdata_impl
     app -->|cloud| feature_account
     app --> feature_settings
-    core_auth --> core_common
-    core_auth --> core_domain
-    core_auth --> core_model
-    core_data --> core_common
-    core_data --> core_datastore
-    core_data --> core_domain
-    core_data --> core_model
-    core_datastore --> core_common
-    core_datastore --> core_domain
-    core_datastore --> core_model
-    core_domain --> core_common
-    core_domain --> core_model
-    core_sync --> core_common
-    core_sync --> core_data
-    core_testing --> core_auth
-    core_testing --> core_common
-    core_testing --> core_data
-    core_testing --> core_domain
-    core_testing --> core_model
-    core_testing --> core_sync
+    core_auth_api --> core_common
+    core_auth_impl --> core_auth_api
+    core_auth_testing --> core_auth_api
+    core_storage_api --> core_common
+    core_storage_impl --> core_common
+    core_storage_impl --> core_storage_api
+    core_storage_testing --> core_storage_api
+    core_sync_impl --> core_sync_api
+    core_sync_testing --> core_sync_api
+    core_userdata_api --> core_common
+    core_userdata_api --> core_storage_api
+    core_userdata_impl --> core_storage_api
+    core_userdata_impl --> core_userdata_api
+    core_userdata_testing --> core_userdata_api
     feature_account --> core_designsystem
-    feature_account --> core_domain
-    feature_account --> core_model
     feature_settings --> core_designsystem
-    feature_settings --> core_domain
-    feature_settings --> core_model
 ```
 <!-- module-graph:end -->

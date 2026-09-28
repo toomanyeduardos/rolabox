@@ -42,7 +42,7 @@ The check always covers **committed** state, because that's what merges. Uncommi
 
 1. Read every ADR whose status is `accepted`. Read ADRs with status `unknown` too, and treat them as enforced. Note in the report that their status couldn't be parsed, since silently skipping them could hide a violation.
 2. Skip `proposed`, `draft`, `rejected`, `deprecated`, and `superseded`. List them in the report as skipped so the user can see nothing was dropped silently.
-3. If the branch itself adds or changes an ADR (`adrs_changed_in_branch.tsv`), use the branch's version. A newly accepted ADR on the branch applies to the branch's own code.
+3. If the branch itself adds or changes an ADR (`adrs_changed_in_branch.tsv`), use the branch's version. A newly accepted ADR on the branch applies to the branch's own code. Also check each edit to an already-accepted ADR against ADR-000's rules for changing a decision. For example, before 1.0 a revision must add a dated **Revised** line saying what changed and why, and from 1.0 on only typo, link and status edits are allowed. An edit that doesn't follow ADR-000 is a Violation of ADR-000.
 4. For each enforced ADR, write down its **checkable rules** in one line each, e.g. "UI layer must not import from `data` packages" or "new persistence uses SQLDelight, not Room". Some ADRs are purely rationale with nothing checkable. Mark those "Not applicable: no checkable rule" rather than inventing a rule.
 
 ## Step 3: Check the code
@@ -114,6 +114,6 @@ If there are Violations introduced by the branch:
 2. Ask the user which to apply (all, some by V-number, or none). **Don't edit anything until they answer.**
 3. Apply only the chosen fixes. Then re-read the edited files from the working tree and re-check only the affected ADRs. Label that result "verified in working tree, not committed yet". Do not commit. Tell the user to commit and run `/adr-enforcer` again for the official verdict, since the check runs against committed state.
 
-Never propose editing an Accepted ADR to make a violation go away. If the user says the ADR itself is outdated, suggest writing a new ADR that supersedes it (and updating the old one's status). That keeps the decision history honest, which is the point of having ADRs.
+Never propose editing an Accepted ADR to make a violation go away. If the user says the ADR itself is outdated, suggest changing the decision the way ADR-000 ("Changing a decision" and its rules) allows at the time. Before 1.0, that's a revision in place with a dated **Revised** line saying what changed and why. From 1.0 on, it's a new ADR that supersedes the old one, with the old one's status updated. Read ADR-000 rather than assuming which applies. Either way the change is explicit and recorded, which keeps the decision history honest, the point of having ADRs.
 
 For **Needs review** items, ask the user how to interpret the ADR. If their answer reveals the ADR is ambiguous, suggest clarifying its wording in a follow-up.

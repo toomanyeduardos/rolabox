@@ -8,16 +8,25 @@ import org.gradle.api.artifacts.ProjectDependency
 private const val APP_PATH = ":app"
 private const val CORE_PREFIX = ":core:"
 private const val FEATURE_PREFIX = ":feature:"
-private const val MODEL_PATH = ":core:model"
 private const val COMMON_PATH = ":core:common"
-private const val DOMAIN_PATH = ":core:domain"
 private const val DESIGNSYSTEM_PATH = ":core:designsystem"
-private const val TESTING_PATH = ":core:testing"
 
-// Includes planned modules, so the rules already hold when they are added.
-private val DATA_LAYER_PATHS = setOf(":core:data", ":core:database", ":core:datastore", ":core:auth", ":core:sync")
-private val JVM_ONLY_PATHS = setOf(DOMAIN_PATH, MODEL_PATH, COMMON_PATH)
-private val DOMAIN_ALLOWED_PATHS = setOf(MODEL_PATH, COMMON_PATH)
+// Planned: created with the first use case that combines more than one area, so the rules already
+// hold when it's added.
+private const val DOMAIN_PATH = ":core:domain"
+
+// Each area is split into :core:<area>:api, :core:<area>:impl and :core:<area>:testing (ADR-003).
+private const val API_SUFFIX = ":api"
+private const val IMPL_SUFFIX = ":impl"
+private const val TESTING_SUFFIX = ":testing"
+
+private val SHARED_JVM_PATHS = setOf(COMMON_PATH, DOMAIN_PATH)
+
+// Besides *:api modules. :core:common is a utility module with nothing to hide behind an :api.
+private val API_ALLOWED_PATHS = setOf(COMMON_PATH)
+private val IMPL_ALLOWED_PATHS = setOf(COMMON_PATH)
+private val FEATURE_ALLOWED_PATHS = setOf(COMMON_PATH, DESIGNSYSTEM_PATH, DOMAIN_PATH)
+
 private val ANDROID_PLUGINS = listOf("com.android.application", "com.android.library")
 private const val DAGGER_GROUP = "com.google.dagger"
 private const val FIREBASE_GROUP = "com.google.firebase"
@@ -26,12 +35,12 @@ private const val FIREBASE_GROUP = "com.google.firebase"
 internal fun Project.enforceModuleRules() {
     val modulePath = path
 
-    if (modulePath in JVM_ONLY_PATHS) {
+    if (modulePath.isJvmOnly()) {
         ANDROID_PLUGINS.forEach { pluginId ->
             pluginManager.withPlugin(pluginId) {
                 throw GradleException(
                     "Module rule violated: $modulePath applies $pluginId. " +
-                        "ADR-003 rule 6: :core:domain, :core:model and :core:common must be JVM modules.",
+                        "ADR-003 rule 5: *:api modules, $COMMON_PATH and $DOMAIN_PATH must be JVM modules.",
                 )
             }
         }
@@ -70,8 +79,8 @@ private fun Project.enforceExternalDependencyRules() = afterEvaluate {
 
 private fun externalDependencyViolation(modulePath: String, group: String?, configurationName: String): String? =
     when {
-        modulePath == DOMAIN_PATH && group == DAGGER_GROUP ->
-            "ADR-005 rule 3: $DOMAIN_PATH uses only javax.inject and contains no Hilt modules"
+        (modulePath.isApi() || modulePath == DOMAIN_PATH) && group == DAGGER_GROUP ->
+            "ADR-005 rule 3: *:api modules and $DOMAIN_PATH use only javax.inject and contain no Hilt modules"
 
         group == FIREBASE_GROUP && !configurationName.isCloudConfiguration() ->
             "ADR-008 rule 2: Firebase dependencies are only declared in cloud configurations (cloudImplementation)"
@@ -83,33 +92,49 @@ private fun projectDependencyViolation(modulePath: String, dependencyPath: Strin
     when {
         dependencyPath == modulePath -> null
 
-        modulePath == MODEL_PATH ->
-            "ADR-003 rule 2: $MODEL_PATH must not depend on any other module"
+        dependencyPath.isTesting() && !configurationName.isTestConfiguration() ->
+            "ADR-003 rule 10: testing modules (:core:testing, :core:<area>:testing) may only be used from test " +
+                "configurations (testImplementation, androidTestImplementation)"
 
         modulePath.startsWith(FEATURE_PREFIX) && dependencyPath.startsWith(FEATURE_PREFIX) ->
             "ADR-003 rule 1: feature modules must not depend on other feature modules"
 
-        modulePath.startsWith(CORE_PREFIX) && dependencyPath.startsWith(FEATURE_PREFIX) ->
-            "ADR-003 rule 3: :core modules must not depend on feature modules"
-
         modulePath != APP_PATH && dependencyPath.startsWith(FEATURE_PREFIX) ->
-            "ADR-003 rule 4: only $APP_PATH may depend on feature modules"
+            "ADR-003 rule 2: only $APP_PATH may depend on feature modules"
 
-        modulePath.startsWith(FEATURE_PREFIX) && dependencyPath in DATA_LAYER_PATHS ->
-            "ADR-003 rule 5: feature modules must not depend on data-layer modules; depend on $DOMAIN_PATH instead"
+        modulePath != APP_PATH && dependencyPath.isImpl() ->
+            "ADR-003 rule 3: only $APP_PATH may depend on *:impl modules; depend on the area's :api instead"
 
-        modulePath == DOMAIN_PATH && dependencyPath !in DOMAIN_ALLOWED_PATHS ->
-            "ADR-001 rule 2: $DOMAIN_PATH may only depend on $MODEL_PATH and $COMMON_PATH"
+        modulePath.startsWith(FEATURE_PREFIX) && !dependencyPath.isTesting() &&
+            !dependencyPath.isApiOrIn(FEATURE_ALLOWED_PATHS) ->
+            "ADR-003 rule 4: feature modules may only depend on *:api modules, $DOMAIN_PATH, $COMMON_PATH " +
+                "and $DESIGNSYSTEM_PATH"
 
-        modulePath == DESIGNSYSTEM_PATH && (dependencyPath == DOMAIN_PATH || dependencyPath in DATA_LAYER_PATHS) ->
-            "ADR-003 rule 7: $DESIGNSYSTEM_PATH must not depend on $DOMAIN_PATH or data-layer modules"
+        modulePath.isApi() && !dependencyPath.isApiOrIn(API_ALLOWED_PATHS) ->
+            "ADR-003 rule 6: *:api modules may only depend on other *:api modules and $COMMON_PATH"
 
-        dependencyPath == TESTING_PATH && !configurationName.isTestConfiguration() ->
-            "ADR-003 rule 8: $TESTING_PATH may only be used from test configurations " +
-                "(testImplementation, androidTestImplementation)"
+        modulePath.isImpl() && !dependencyPath.isTesting() && !dependencyPath.isApiOrIn(IMPL_ALLOWED_PATHS) ->
+            "ADR-003 rule 7: *:impl modules may only depend on *:api modules and $COMMON_PATH"
+
+        modulePath == DOMAIN_PATH && !dependencyPath.isApiOrIn(API_ALLOWED_PATHS) ->
+            "ADR-003 rule 8: $DOMAIN_PATH may only depend on *:api modules and $COMMON_PATH"
+
+        modulePath == DESIGNSYSTEM_PATH && dependencyPath !in API_ALLOWED_PATHS ->
+            "ADR-003 rule 9: $DESIGNSYSTEM_PATH may only depend on $COMMON_PATH"
 
         else -> null
     }
+
+private fun String.isApi() = startsWith(CORE_PREFIX) && endsWith(API_SUFFIX)
+
+private fun String.isImpl() = startsWith(CORE_PREFIX) && endsWith(IMPL_SUFFIX)
+
+// :core:testing and every :core:<area>:testing.
+private fun String.isTesting() = startsWith(CORE_PREFIX) && endsWith(TESTING_SUFFIX)
+
+private fun String.isJvmOnly() = isApi() || this in SHARED_JVM_PATHS
+
+private fun String.isApiOrIn(paths: Set<String>) = isApi() || this in paths
 
 // Covers testImplementation, androidTestImplementation and their per-variant forms (testDebugImplementation, …).
 private fun String.isTestConfiguration() = startsWith("test") || startsWith("androidTest")

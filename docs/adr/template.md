@@ -5,6 +5,7 @@
 - **Author:** Name
 - **Reviewers:** Names, or "AI-assisted review"
 - **Supersedes:** ADR-NNN (optional; remove the line if not used)
+- **Revised YYYY-MM-DD:** What changed and why (added by each in-place revision before 1.0; see ADR-000)
 
 ## Context
 

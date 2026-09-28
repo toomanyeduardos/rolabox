@@ -26,12 +26,11 @@ android {
 }
 
 dependencies {
-    implementation(project(":core:auth"))
-    implementation(project(":core:data"))
-    implementation(project(":core:domain"))
+    implementation(project(":core:auth:impl"))
     implementation(project(":core:designsystem"))
-    implementation(project(":core:model"))
-    implementation(project(":core:sync"))
+    implementation(project(":core:storage:impl"))
+    implementation(project(":core:sync:impl"))
+    implementation(project(":core:userdata:impl"))
     implementation(project(":feature:settings"))
     cloudImplementation(project(":feature:account"))
     implementation(libs.androidx.activity.compose)
@@ -39,8 +38,12 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     testImplementation(project(":core:testing"))
+    testImplementation(project(":core:userdata:testing"))
     testImplementation(libs.junit)
     androidTestImplementation(project(":core:testing"))
+    androidTestImplementation(project(":core:auth:testing"))
+    androidTestImplementation(project(":core:sync:testing"))
+    androidTestImplementation(project(":core:userdata:testing"))
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }

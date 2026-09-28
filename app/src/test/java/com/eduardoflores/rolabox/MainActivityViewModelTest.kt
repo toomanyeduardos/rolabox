@@ -1,10 +1,10 @@
 package com.eduardoflores.rolabox
 
-import com.eduardoflores.rolabox.core.domain.error.DatabaseError
-import com.eduardoflores.rolabox.core.model.DarkThemeConfig
-import com.eduardoflores.rolabox.core.model.UserData
-import com.eduardoflores.rolabox.core.testing.FakeUserDataRepository
+import com.eduardoflores.rolabox.core.storage.api.StorageError
 import com.eduardoflores.rolabox.core.testing.MainDispatcherRule
+import com.eduardoflores.rolabox.core.userdata.api.DarkThemeConfig
+import com.eduardoflores.rolabox.core.userdata.api.UserData
+import com.eduardoflores.rolabox.core.userdata.testing.FakeUserDataRepository
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
@@ -36,7 +36,7 @@ class MainActivityViewModelTest {
         val viewModel = MainActivityViewModel(userDataRepository)
         backgroundScope.launch(mainDispatcherRule.testDispatcher) { viewModel.uiState.collect() }
 
-        userDataRepository.setReadError(DatabaseError.Corrupted)
+        userDataRepository.setReadError(StorageError.Corrupted)
 
         assertEquals(MainActivityUiState.PreferencesUnavailable, viewModel.uiState.value)
     }

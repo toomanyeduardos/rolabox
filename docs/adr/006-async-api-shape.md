@@ -4,6 +4,8 @@
 - **Date:** 2026-09-24
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review
+- **Revised 2026-09-26:** Renamed `DatabaseError` to `StorageError` in the examples, following
+  [ADR-007](007-error-handling.md). The decision is unchanged.
 
 ## Context
 
@@ -26,7 +28,7 @@ How failures appear in these signatures is decided separately in
 displays and should update when the data changes:
 
 ```kotlin
-fun observeFavorites(): Flow<Either<DatabaseError, List<Track>>>
+fun observeFavorites(): Flow<Either<StorageError, List<Track>>>
 ```
 
 A stream with no parameters may be a property instead (`val userData: Flow<…>`). Functions that
@@ -36,8 +38,8 @@ return a `Flow` are named `observe…`.
 moment, and every write:
 
 ```kotlin
-suspend fun getTrack(id: TrackId): Either<DatabaseError, Track>
-suspend fun setFavorite(id: TrackId): Either<DatabaseError, Unit>
+suspend fun getTrack(id: TrackId): Either<StorageError, Track>
+suspend fun setFavorite(id: TrackId): Either<StorageError, Unit>
 ```
 
 A `Flow`-returning function is never `suspend`. Creating a cold `Flow` does no work, so the modifier

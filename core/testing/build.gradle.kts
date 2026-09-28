@@ -1,6 +1,5 @@
 plugins {
     id("rolabox.android.library")
-    id("rolabox.hilt")
 }
 
 android {
@@ -8,14 +7,8 @@ android {
 }
 
 dependencies {
-    api(project(":core:model"))
     api(libs.hilt.android.testing)
     api(libs.kotlinx.coroutines.test)
     api(libs.androidx.test.runner)
     api(libs.junit)
-    api(project(":core:auth"))
-    api(project(":core:common"))
-    api(project(":core:data"))
-    api(project(":core:domain"))
-    api(project(":core:sync"))
 }

@@ -1,16 +1,16 @@
 package com.eduardoflores.rolabox
 
 import arrow.core.right
+import com.eduardoflores.rolabox.core.auth.api.AuthRepository
+import com.eduardoflores.rolabox.core.auth.api.AuthUser
+import com.eduardoflores.rolabox.core.auth.testing.FakeAuthRepository
 import com.eduardoflores.rolabox.core.common.Dispatcher
 import com.eduardoflores.rolabox.core.common.RolaboxDispatchers.IO
-import com.eduardoflores.rolabox.core.domain.repository.AuthRepository
-import com.eduardoflores.rolabox.core.domain.repository.UserDataRepository
-import com.eduardoflores.rolabox.core.model.AuthUser
-import com.eduardoflores.rolabox.core.model.DarkThemeConfig
-import com.eduardoflores.rolabox.core.sync.SyncManager
-import com.eduardoflores.rolabox.core.testing.FakeAuthRepository
-import com.eduardoflores.rolabox.core.testing.FakeSyncManager
-import com.eduardoflores.rolabox.core.testing.FakeUserDataRepository
+import com.eduardoflores.rolabox.core.sync.api.SyncManager
+import com.eduardoflores.rolabox.core.sync.testing.FakeSyncManager
+import com.eduardoflores.rolabox.core.userdata.api.DarkThemeConfig
+import com.eduardoflores.rolabox.core.userdata.api.UserDataRepository
+import com.eduardoflores.rolabox.core.userdata.testing.FakeUserDataRepository
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import javax.inject.Inject
@@ -66,7 +66,7 @@ class FakeBindingsTest {
         fakeAuthRepository.setUser(AuthUser(id = "1", displayName = "Ada"))
         userDataRepository.setDarkThemeConfig(DarkThemeConfig.DARK)
 
-        assertEquals(AuthUser(id = "1", displayName = "Ada").right(), authRepository.observeCurrentUser().first())
+        assertEquals(AuthUser(id = "1", displayName = "Ada"), authRepository.observeCurrentUser().first())
         assertEquals(
             DarkThemeConfig.DARK.right(),
             fakeUserDataRepository.observeUserData().first().map { it.darkThemeConfig },
