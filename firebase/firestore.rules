@@ -1,0 +1,37 @@
+rules_version = '2';
+
+// Security rules for Rolabox's Firestore database (ADR-010).
+//
+// The Firebase config is public (it's inside every cloud APK), so these rules are the only thing
+// protecting user data. Anything not matched below is denied, including subcollections under
+// users/{uid} until they get their own match block.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    // Placeholder schema until sync defines real data (ADR-010):
+    //   createdAt   timestamp, required; the server time on create, and never changed after that
+    //   displayName string of 1 to 100 characters, optional
+    function isValidUser(data) {
+      return data.keys().hasOnly(['createdAt', 'displayName'])
+        && data.createdAt is timestamp
+        && (!('displayName' in data)
+          || (data.displayName is string
+            && data.displayName.size() >= 1
+            && data.displayName.size() <= 100));
+    }
+
+    match /users/{uid} {
+      allow read, delete: if isOwner(uid);
+      allow create: if isOwner(uid)
+        && isValidUser(request.resource.data)
+        && request.resource.data.createdAt == request.time;
+      allow update: if isOwner(uid)
+        && isValidUser(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt;
+    }
+  }
+}

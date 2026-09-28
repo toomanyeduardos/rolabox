@@ -12,3 +12,8 @@ build/
 .externalNativeBuild
 .cxx
 local.properties
+
+# Firebase (ADR-010): dependencies, emulator logs, and the local project alias
+firebase/node_modules/
+firebase/.firebaserc
+firebase/*-debug.log

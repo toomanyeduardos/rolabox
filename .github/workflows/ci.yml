@@ -140,3 +140,34 @@ jobs:
             **/build/test-results/
           if-no-files-found: ignore
           retention-days: 14
+
+  # Firestore security rules against the emulator (ADR-010). The demo- project ID needs no Firebase
+  # project or credentials, so PRs from forks run it too.
+  firestore-rules:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: firebase
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # The emulator needs a JDK 21+.
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 25
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: firebase/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Rules tests
+        run: npm test
