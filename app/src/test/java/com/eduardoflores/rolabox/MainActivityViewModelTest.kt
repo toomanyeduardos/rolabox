@@ -2,6 +2,7 @@ package com.eduardoflores.rolabox
 
 import com.eduardoflores.rolabox.core.storage.api.StorageError
 import com.eduardoflores.rolabox.core.testing.MainDispatcherRule
+import com.eduardoflores.rolabox.core.userdata.api.AccentColor
 import com.eduardoflores.rolabox.core.userdata.api.DarkThemeConfig
 import com.eduardoflores.rolabox.core.userdata.api.UserData
 import com.eduardoflores.rolabox.core.userdata.testing.FakeUserDataRepository
@@ -24,9 +25,12 @@ class MainActivityViewModelTest {
         backgroundScope.launch(mainDispatcherRule.testDispatcher) { viewModel.uiState.collect() }
 
         userDataRepository.setDarkThemeConfig(DarkThemeConfig.DARK)
+        userDataRepository.setAccentColor(AccentColor.PINK)
 
         assertEquals(
-            MainActivityUiState.Success(UserData(darkThemeConfig = DarkThemeConfig.DARK)),
+            MainActivityUiState.Success(
+                UserData(darkThemeConfig = DarkThemeConfig.DARK, accentColor = AccentColor.PINK),
+            ),
             viewModel.uiState.value,
         )
     }

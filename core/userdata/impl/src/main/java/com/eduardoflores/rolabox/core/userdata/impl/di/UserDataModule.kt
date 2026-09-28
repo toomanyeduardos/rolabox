@@ -1,5 +1,6 @@
 package com.eduardoflores.rolabox.core.userdata.impl.di
 
+import com.eduardoflores.rolabox.core.userdata.api.SyncedPreferencesRepository
 import com.eduardoflores.rolabox.core.userdata.api.UserDataRepository
 import com.eduardoflores.rolabox.core.userdata.impl.DefaultUserDataRepository
 import dagger.Binds
@@ -12,4 +13,9 @@ import dagger.hilt.components.SingletonComponent
 abstract class UserDataModule {
     @Binds
     internal abstract fun bindsUserDataRepository(repository: DefaultUserDataRepository): UserDataRepository
+
+    @Binds
+    internal abstract fun bindsSyncedPreferencesRepository(
+        repository: DefaultUserDataRepository,
+    ): SyncedPreferencesRepository
 }

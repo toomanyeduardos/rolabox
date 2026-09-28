@@ -1,17 +1,17 @@
 package com.eduardoflores.rolabox
 
 import android.app.Application
-import com.eduardoflores.rolabox.core.sync.api.SyncManager
+import com.eduardoflores.rolabox.core.sync.api.SyncRepository
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
 @HiltAndroidApp
 class RolaboxApplication : Application() {
     @Inject
-    lateinit var syncManager: SyncManager
+    lateinit var syncRepository: SyncRepository
 
     override fun onCreate() {
         super.onCreate()
-        syncManager.requestSync()
+        syncRepository.start()
     }
 }

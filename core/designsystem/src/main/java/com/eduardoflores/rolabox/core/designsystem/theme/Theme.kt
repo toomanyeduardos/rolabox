@@ -7,11 +7,12 @@ import androidx.compose.runtime.Composable
 @Composable
 fun RolaboxTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    accent: RolaboxAccent = RolaboxAccent.Blue,
     skin: RolaboxSkin = RolaboxSkin.Default,
     content: @Composable () -> Unit,
 ) {
     MaterialTheme(
-        colorScheme = skin.colorScheme(darkTheme),
+        colorScheme = accent.applyTo(skin.colorScheme(darkTheme), darkTheme),
         typography = skin.typography,
         shapes = skin.shapes,
         content = content,

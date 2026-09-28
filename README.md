@@ -11,7 +11,7 @@ The app has two flavors ([ADR-008](docs/adr/008-offline-and-cloud-flavors.md)):
 | Flavor | What it is | Firebase config needed |
 | --- | --- | --- |
 | `offline` (default) | The full player with no backend: no Firebase, no Play services, and no account features | No |
-| `cloud` | Adds Firebase: sign-in and account features, and later sync | Yes, your own `google-services.json` |
+| `cloud` | Adds Firebase: sign-in, account features, and syncing preferences across devices | Yes, your own `google-services.json` |
 
 A fresh clone builds the offline flavor with no setup:
 
@@ -85,6 +85,7 @@ The reasoning behind the architecture is recorded as [Architecture Decision Reco
 - [ADR-008](docs/adr/008-offline-and-cloud-flavors.md): Offline and cloud build flavors, with Firebase only in cloud
 - [ADR-009](docs/adr/009-ui-bound-sdks.md): SDK steps that need an Activity live in the UI, and only their results cross the `:api`
 - [ADR-010](docs/adr/010-firestore-security-rules.md): Firestore for synced data, with per-user security rules tested against the emulator
+- [ADR-011](docs/adr/011-preferences-sync.md): Sync preferences through Firestore, field by field, with last-write-wins
 
 ## CI
 
@@ -136,10 +137,10 @@ implementation and its Hilt bindings) and a `:testing` module (fakes).
 | `:core:storage:api` | Local storage API: `PreferencesStore` (key-value settings), `StorageError` |
 | `:core:storage:impl` | `PreferencesStore` backed by DataStore |
 | `:core:storage:testing` | `FakePreferencesStore` |
-| `:core:sync:api` | Sync API: `SyncManager` |
-| `:core:sync:impl` | Sync: no-op in both flavors until there is data to sync |
-| `:core:sync:testing` | `FakeSyncManager` |
-| `:core:userdata:api` | User preferences API: `UserDataRepository`, `UserData` |
+| `:core:sync:api` | Sync API: `SyncRepository`, `SyncedValue`, `LastWriteWins` |
+| `:core:sync:impl` | Sync: preferences through Firestore and WorkManager in `cloud`, no-op in `offline` |
+| `:core:sync:testing` | `FakeSyncRepository` |
+| `:core:userdata:api` | User preferences API: `UserDataRepository`, `UserData`, `SyncedPreferencesRepository` |
 | `:core:userdata:impl` | User preferences, stored through `PreferencesStore` |
 | `:core:userdata:testing` | `FakeUserDataRepository` |
 | `:core:common` | Utility: coroutine dispatchers, helpers that turn exceptions into typed errors |
@@ -201,12 +202,19 @@ graph TD
     core_storage_impl --> core_common
     core_storage_impl --> core_storage_api
     core_storage_testing --> core_storage_api
+    core_sync_impl --> core_auth_api
+    core_sync_impl --> core_common
+    core_sync_impl --> core_storage_api
     core_sync_impl --> core_sync_api
+    core_sync_impl --> core_userdata_api
     core_sync_testing --> core_sync_api
     core_userdata_api --> core_storage_api
+    core_userdata_api --> core_sync_api
     core_userdata_impl --> core_storage_api
+    core_userdata_impl --> core_sync_api
     core_userdata_impl --> core_userdata_api
     core_userdata_testing --> core_storage_api
+    core_userdata_testing --> core_sync_api
     core_userdata_testing --> core_userdata_api
     feature_account --> core_designsystem
     feature_settings --> core_designsystem

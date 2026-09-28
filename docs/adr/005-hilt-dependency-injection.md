@@ -9,6 +9,9 @@
   `UserDataModule`). `@TestInstallIn` modules moved from `:core:testing` to `:app`'s androidTest
   sources (rule 4), because replacing a production Hilt module means referencing its `:impl` module,
   and only `:app` may depend on those. Fakes moved to each area's `:testing` module.
+- **Revised 2026-09-28:** The sync worker gets its dependencies from a Hilt entry point instead of
+  `@HiltWorker`, so WorkManager stays out of the offline app ([ADR-011](011-preferences-sync.md))
+  (Consequences). The decision is unchanged.
 
 ## Context
 
@@ -60,7 +63,9 @@ the `rolabox.hilt` convention plugin ([ADR-004](004-convention-plugins.md)).
 ## Consequences
 
 - A missing or duplicated binding fails the build, not the running app.
-- Jetpack integrations come ready to use: `@HiltViewModel` now, and `@HiltWorker` for sync work later.
+- Jetpack integrations come ready to use: `@HiltViewModel` now. Sync's WorkManager worker uses a Hilt
+  entry point instead of `@HiltWorker`, to keep WorkManager out of the offline app
+  ([ADR-011](011-preferences-sync.md)).
 - Replacing whole modules in tests is built in, and `:app`'s instrumented tests already use it.
 - Hilt is familiar to most Android developers, which lowers the cost of reading the codebase.
 - Code generation adds build time (reduced by using KSP instead of kapt), and errors can be verbose.

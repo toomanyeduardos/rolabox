@@ -41,7 +41,7 @@ class MainActivity : ComponentActivity() {
                 onDispose {}
             }
 
-            RolaboxTheme(darkTheme = darkTheme) {
+            RolaboxTheme(darkTheme = darkTheme, accent = uiState.accent) {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     topBar = { RolaboxTopBar(title = stringResource(R.string.app_name)) },

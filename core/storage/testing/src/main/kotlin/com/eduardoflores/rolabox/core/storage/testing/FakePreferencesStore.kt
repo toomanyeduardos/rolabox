@@ -31,8 +31,22 @@ class FakePreferencesStore @Inject constructor() : PreferencesStore {
                 it.isRight()
             }
 
+    override fun observeStrings(keys: Set<String>): Flow<Either<StorageError, Map<String, String?>>> =
+        combine(values, readError) { stored, error -> error?.left() ?: keys.associateWith { stored[it] }.right() }
+            .distinctUntilChanged()
+            .transformWhile {
+                emit(it)
+                it.isRight()
+            }
+
     override suspend fun setString(key: String, value: String): Either<StorageError, Unit> =
         writeError?.left() ?: values.update { it + (key to value) }.right()
+
+    override suspend fun updateStrings(
+        keys: Set<String>,
+        transform: (Map<String, String?>) -> Map<String, String>,
+    ): Either<StorageError, Unit> =
+        writeError?.left() ?: values.update { stored -> stored + transform(keys.associateWith { stored[it] }) }.right()
 
     /** Makes every observed flow emit [error] and end. */
     fun setReadError(error: StorageError) {

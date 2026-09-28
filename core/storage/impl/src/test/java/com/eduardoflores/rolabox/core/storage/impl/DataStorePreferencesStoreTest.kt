@@ -32,6 +32,48 @@ class DataStorePreferencesStoreTest {
     }
 
     @Test
+    fun observeStrings_emitsEveryRequestedKey() = runTest {
+        val store = DataStorePreferencesStore(InMemoryDataStore())
+        store.setString(KEY, "value")
+
+        assertEquals(
+            mapOf(KEY to "value", OTHER_KEY to null).right(),
+            store.observeStrings(setOf(KEY, OTHER_KEY)).first(),
+        )
+    }
+
+    @Test
+    fun observeStrings_corruptedFile_emitsCorruptedAndEnds() = runTest {
+        val store = DataStorePreferencesStore(FailingDataStore(CorruptionException("bad file")))
+
+        assertEquals(listOf(StorageError.Corrupted.left()), store.observeStrings(setOf(KEY)).toList())
+    }
+
+    @Test
+    fun updateStrings_passesCurrentValuesAndWritesTheResult() = runTest {
+        val store = DataStorePreferencesStore(InMemoryDataStore())
+        store.setString(KEY, "old")
+        var seen: Map<String, String?> = emptyMap()
+
+        val result = store.updateStrings(setOf(KEY, OTHER_KEY)) { current ->
+            seen = current
+            mapOf(KEY to "new", OTHER_KEY to "other")
+        }
+
+        assertEquals(Unit.right(), result)
+        assertEquals(mapOf(KEY to "old", OTHER_KEY to null), seen)
+        assertEquals("new".right(), store.observeString(KEY).first())
+        assertEquals("other".right(), store.observeString(OTHER_KEY).first())
+    }
+
+    @Test
+    fun updateStrings_ioFailure_isUnavailable() = runTest {
+        val store = DataStorePreferencesStore(FailingDataStore(IOException("disk")))
+
+        assertEquals(StorageError.Unavailable.left(), store.updateStrings(setOf(KEY)) { mapOf(KEY to "value") })
+    }
+
+    @Test
     fun observeString_corruptedFile_emitsCorruptedAndEnds() = runTest {
         val store = DataStorePreferencesStore(FailingDataStore(CorruptionException("bad file")))
 
@@ -52,6 +94,7 @@ class DataStorePreferencesStoreTest {
 
     private companion object {
         const val KEY = "key"
+        const val OTHER_KEY = "other_key"
     }
 }
 

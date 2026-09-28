@@ -7,9 +7,10 @@ import com.eduardoflores.rolabox.core.common.Dispatcher
 import com.eduardoflores.rolabox.core.common.RolaboxDispatchers.Default
 import com.eduardoflores.rolabox.core.common.RolaboxDispatchers.IO
 import com.eduardoflores.rolabox.core.common.di.DispatchersModule
-import com.eduardoflores.rolabox.core.sync.api.SyncManager
+import com.eduardoflores.rolabox.core.sync.api.SyncRepository
 import com.eduardoflores.rolabox.core.sync.impl.di.SyncModule
-import com.eduardoflores.rolabox.core.sync.testing.FakeSyncManager
+import com.eduardoflores.rolabox.core.sync.testing.FakeSyncRepository
+import com.eduardoflores.rolabox.core.userdata.api.SyncedPreferencesRepository
 import com.eduardoflores.rolabox.core.userdata.api.UserDataRepository
 import com.eduardoflores.rolabox.core.userdata.impl.di.UserDataModule
 import com.eduardoflores.rolabox.core.userdata.testing.FakeUserDataRepository
@@ -49,6 +50,9 @@ object TestDispatchersModule {
 abstract class TestUserDataModule {
     @Binds
     abstract fun bindsUserDataRepository(fake: FakeUserDataRepository): UserDataRepository
+
+    @Binds
+    abstract fun bindsSyncedPreferencesRepository(fake: FakeUserDataRepository): SyncedPreferencesRepository
 }
 
 @Module
@@ -62,5 +66,5 @@ abstract class TestAuthModule {
 @TestInstallIn(components = [SingletonComponent::class], replaces = [SyncModule::class])
 abstract class TestSyncModule {
     @Binds
-    abstract fun bindsSyncManager(fake: FakeSyncManager): SyncManager
+    abstract fun bindsSyncRepository(fake: FakeSyncRepository): SyncRepository
 }

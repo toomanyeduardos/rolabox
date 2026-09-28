@@ -1,5 +1,7 @@
 package com.eduardoflores.rolabox
 
+import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxAccent
+import com.eduardoflores.rolabox.core.userdata.api.AccentColor
 import com.eduardoflores.rolabox.core.userdata.api.DarkThemeConfig
 import com.eduardoflores.rolabox.core.userdata.api.UserData
 import org.junit.Assert.assertEquals
@@ -36,5 +38,26 @@ class MainActivityUiStateTest {
         assertEquals(true, success(DarkThemeConfig.DARK).shouldUseDarkTheme(isSystemDarkTheme = false))
     }
 
-    private fun success(config: DarkThemeConfig) = MainActivityUiState.Success(UserData(darkThemeConfig = config))
+    @Test
+    fun loadingAndUnavailable_useDefaultAccent() {
+        assertEquals(RolaboxAccent.Blue, MainActivityUiState.Loading.accent)
+        assertEquals(RolaboxAccent.Blue, MainActivityUiState.PreferencesUnavailable.accent)
+    }
+
+    @Test
+    fun accentColor_mapsToTheMatchingAccent() {
+        val expected = mapOf(
+            AccentColor.BLUE to RolaboxAccent.Blue,
+            AccentColor.GREEN to RolaboxAccent.Green,
+            AccentColor.PURPLE to RolaboxAccent.Purple,
+            AccentColor.PINK to RolaboxAccent.Pink,
+        )
+
+        AccentColor.entries.forEach { color -> assertEquals(expected[color], success(accentColor = color).accent) }
+    }
+
+    private fun success(
+        config: DarkThemeConfig = DarkThemeConfig.FOLLOW_SYSTEM,
+        accentColor: AccentColor = AccentColor.BLUE,
+    ) = MainActivityUiState.Success(UserData(darkThemeConfig = config, accentColor = accentColor))
 }
