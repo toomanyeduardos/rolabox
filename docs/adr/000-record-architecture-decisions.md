@@ -4,6 +4,9 @@
 - **Date:** 2026-09-24
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review
+- **Revised 2026-09-26:** Before 1.0, accepted ADRs may be revised in place with a dated Revised
+  line (rules 1 and 2, "Changing a decision"). The module structure was still changing, and a chain
+  of superseding ADRs would bury the current rules. The old rule applies again from 1.0.
 
 ## Context
 
@@ -44,9 +47,12 @@ because the decisions depend on each other.
 | Superseded by ADR-NNN | Replaced, entirely or in the part named (e.g. "Rule 3 superseded by ADR-012"). |
 | Deprecated | No longer relevant, with nothing replacing it. |
 
-**Changing a decision.** An accepted ADR is not rewritten. Fixing typos and links, and updating the
-status line, are the only edits allowed. To change a decision, write a new ADR that states what it
-supersedes, and update the old ADR's status line in the same PR.
+**Changing a decision.** Before the 1.0 release, the architecture is still settling, so an accepted
+ADR may be revised in place. Each revision adds a dated **Revised** line to the ADR's header saying
+what changed and why, and the revision is proposed in a PR like a new ADR. From 1.0 on, an accepted
+ADR is not rewritten: fixing typos and links, and updating the status line, are the only edits
+allowed. To change a decision after 1.0, write a new ADR that states what it supersedes, and update
+the old ADR's status line in the same PR.
 
 **Target state.** An ADR may describe a state the code doesn't match yet. When it does, it says so
 and tags the affected rules `[planned]` with the ticket that will close the gap.
@@ -73,7 +79,10 @@ and tags the affected rules `[planned]` with the ticket that will close the gap.
 
 ## Rules
 
-1. `[convention]` A change that contradicts an accepted ADR must come with a new ADR that supersedes it.
-2. `[convention]` Accepted ADRs are only edited to fix typos and links, or to update their status.
+1. `[convention]` A change that contradicts an accepted ADR must come with a new ADR that supersedes
+   it or, before 1.0, a revision of that ADR (rule 2).
+2. `[convention]` Before 1.0, an accepted ADR may be revised in place, and each revision adds a
+   dated **Revised** line saying what changed and why. From 1.0 on, accepted ADRs are only edited to fix
+   typos and links, or to update their status.
 3. `[convention]` Every ADR is listed in [`docs/adr/README.md`](README.md) with its current status.
 4. `[convention]` Each new ADR (after the founding set) is proposed in its own pull request.

@@ -4,6 +4,11 @@
 - **Date:** 2026-09-24
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review
+- **Revised 2026-09-26:** Updated module and class names for the per-area layout in
+  [ADR-003](003-module-boundaries.md): `:core:auth` is now `:core:auth:impl`, its Hilt module is
+  `core.auth.impl.di.AuthModule`, `AuthRepository` is in `:core:auth:api`, `:core:sync` is split
+  into `:core:sync:api` and `:core:sync:impl`, and the `@TestInstallIn` modules are in `:app`'s
+  androidTest sources. The decision is unchanged.
 
 ## Context
 
@@ -19,9 +24,9 @@ starting with Firebase Auth for accounts. Firebase has two requirements that con
 
 CI has no Firebase config either, and shouldn't need a secret just to build a pull request.
 
-`:core:auth` and `:core:sync` already hide their implementations behind interfaces
-(`AuthRepository` in `:core:domain`, following [ADR-001](001-layered-architecture.md), and
-`SyncManager` in `:core:sync`), with no-op implementations bound through Hilt
+`:core:auth:impl` and `:core:sync:impl` already hide their implementations behind interfaces
+(`AuthRepository` in `:core:auth:api`, following [ADR-001](001-layered-architecture.md), and
+`SyncManager` in `:core:sync:api`), with no-op implementations bound through Hilt
 ([ADR-005](005-hilt-dependency-injection.md)). What's missing is a way to choose between a build
 with Firebase and one without it.
 
@@ -40,14 +45,14 @@ We will add one product flavor dimension, `backend`, with two flavors:
   names are then the same in every module (`testOfflineDebugUnitTest`, `lintOfflineDebug`), and no
   module has to declare `missingDimensionStrategy`. JVM modules have no variants and aren't
   affected.
-- **Code that differs lives in flavor source sets.** A data-layer module puts its
+- **Code that differs lives in flavor source sets.** An area's `:impl` module puts its
   backend-specific implementation and Hilt module in `src/offline` and `src/cloud`, and keeps what
   both flavors share in `src/main`. Both flavors declare the Hilt module under the same fully
-  qualified name (for example `core.auth.di.AuthModule`), so one `@TestInstallIn(replaces = …)` in
-  `:core:testing` replaces it in either flavor.
-- **Offline binds no-op implementations.** `:core:auth` binds `SignedOutAuthRepository` in offline
-  and `FirebaseAuthRepository` in cloud. `:core:sync` binds `NoOpSyncManager` in both flavors until
-  there is data to sync. The cloud binding is where the real implementation will go.
+  qualified name (for example `core.auth.impl.di.AuthModule`), so one
+  `@TestInstallIn(replaces = …)` in `:app`'s androidTest sources replaces it in either flavor.
+- **Offline binds no-op implementations.** `:core:auth:impl` binds `SignedOutAuthRepository` in
+  offline and `FirebaseAuthRepository` in cloud. `:core:sync:impl` binds `NoOpSyncManager` in both
+  flavors until there is data to sync. The cloud binding is where the real implementation will go.
 - **Firebase is declared only in cloud configurations** (`cloudImplementation`, with the Firebase
   BoM), by the modules that use it.
 - **The google-services plugin is applied through `rolabox.android.application.firebase`.** A
@@ -77,11 +82,11 @@ We will add one product flavor dimension, `backend`, with two flavors:
   Firebase and Play services still ship in every APK. Whether an app has accounts would then be
   a runtime state to test, not a build-time fact. The google-services plugin still has to be
   worked around when the file is missing.
-- **Flavors only on the modules that differ (`:app`, `:core:auth`, `:core:sync`).** Fewer variants
-  to build. But `:core:testing` and every other consumer of those modules would need
+- **Flavors only on the modules that differ (`:app`, `:core:auth:impl`, `:core:sync:impl`).**
+  Fewer variants to build. But every consumer of those modules would need
   `missingDimensionStrategy`, and task names would differ between modules (`testDebugUnitTest` in
   some, `testOfflineDebugUnitTest` in others), so a single CI command could silently skip modules.
-- **Separate Firebase modules (`:core:auth-firebase`) added with `cloudImplementation`.** Keeps
+- **Separate Firebase modules (`:core:auth:firebase`) added with `cloudImplementation`.** Keeps
   flavors out of libraries. But the no-op bindings would need their own offline-only module to
   avoid duplicate bindings, which doubles the module count for each backend-specific module.
   Flavor source sets hold the same split inside the module that owns the responsibility

@@ -1,7 +1,7 @@
 package com.eduardoflores.rolabox
 
-import com.eduardoflores.rolabox.core.model.DarkThemeConfig
-import com.eduardoflores.rolabox.core.model.UserData
+import com.eduardoflores.rolabox.core.userdata.api.DarkThemeConfig
+import com.eduardoflores.rolabox.core.userdata.api.UserData
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

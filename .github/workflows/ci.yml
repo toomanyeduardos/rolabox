@@ -54,10 +54,9 @@ jobs:
             exit 1
           fi
 
-      # Pure Kotlin modules have no variants, so they run `test` instead.
-      # Add new rolabox.jvm.library modules here.
+      # Every module's unitTest task: offline debug tests for Android modules, `test` for JVM ones.
       - name: Unit tests
-        run: ./gradlew testOfflineDebugUnitTest :core:model:test :core:common:test :core:domain:test
+        run: ./gradlew unitTest
 
       - name: Android lint
         run: ./gradlew lintOfflineDebug

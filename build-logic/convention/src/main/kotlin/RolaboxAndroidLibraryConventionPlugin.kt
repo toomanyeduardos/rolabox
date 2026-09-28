@@ -1,8 +1,10 @@
 import com.android.build.api.dsl.LibraryExtension
+import com.eduardoflores.rolabox.buildlogic.DEFAULT_ANDROID_UNIT_TEST_TASK
 import com.eduardoflores.rolabox.buildlogic.ProjectConfig
 import com.eduardoflores.rolabox.buildlogic.applyStaticAnalysis
 import com.eduardoflores.rolabox.buildlogic.configureBackendFlavors
 import com.eduardoflores.rolabox.buildlogic.enforceModuleRules
+import com.eduardoflores.rolabox.buildlogic.registerUnitTestTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
@@ -13,6 +15,7 @@ class RolaboxAndroidLibraryConventionPlugin : Plugin<Project> {
             pluginManager.apply("com.android.library")
             enforceModuleRules()
             applyStaticAnalysis()
+            registerUnitTestTask(DEFAULT_ANDROID_UNIT_TEST_TASK)
 
             extensions.configure<LibraryExtension> {
                 compileSdk = ProjectConfig.COMPILE_SDK

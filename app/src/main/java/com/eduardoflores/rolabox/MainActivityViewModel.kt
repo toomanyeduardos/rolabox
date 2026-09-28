@@ -2,9 +2,9 @@ package com.eduardoflores.rolabox
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.eduardoflores.rolabox.core.domain.repository.UserDataRepository
-import com.eduardoflores.rolabox.core.model.DarkThemeConfig
-import com.eduardoflores.rolabox.core.model.UserData
+import com.eduardoflores.rolabox.core.userdata.api.DarkThemeConfig
+import com.eduardoflores.rolabox.core.userdata.api.UserData
+import com.eduardoflores.rolabox.core.userdata.api.UserDataRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted

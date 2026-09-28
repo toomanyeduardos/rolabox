@@ -17,3 +17,4 @@ New ADR: copy [`template.md`](template.md), take the next number, and add it to 
 | [006](006-async-api-shape.md) | Async API shape: `Flow` for observed state, `suspend` for single operations | Accepted |
 | [007](007-error-handling.md) | Typed errors with Arrow `Either` for every fallible operation | Accepted |
 | [008](008-offline-and-cloud-flavors.md) | Offline and cloud build flavors, with Firebase only in cloud | Accepted |
+| [009](009-ui-bound-sdks.md) | SDK steps that need an Activity live in the UI, and only their results cross the `:api` | Accepted |

@@ -4,6 +4,12 @@
 - **Date:** 2026-09-24
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review
+- **Revised 2026-09-26:** Updated module names for the per-area layout in
+  [ADR-003](003-module-boundaries.md): `:core:auth` → `:core:auth:api`, `:core:sync` →
+  `:core:sync:api`, and `:core:datastore` → `:core:storage` (preferences go through its
+  `PreferencesStore`). Where the Room database lives is left to its own ADR, so this one no longer
+  names a module for it. Conformance now reflects the cloud flavor's Firebase `AuthRepository`. The
+  decision is unchanged.
 
 ## Context
 
@@ -24,9 +30,9 @@ Two technical facts shape the decision:
 
 ## Decision
 
-**The local database is the single source of truth.** A Room database (a future
-`:core:database` module) holds the music library and all user data. The UI only observes data
-from it through `Flow`s exposed by repositories, and never waits on the network to render.
+**The local database is the single source of truth.** A Room database (in a future module, whose
+layout gets its own ADR) holds the music library and all user data. The UI only observes data from
+it through `Flow`s exposed by repositories, and never waits on the network to render.
 
 ```
 MediaStore ──scan──▶ Room ◀──sync (background)── remote backend (optional)
@@ -41,8 +47,9 @@ MediaStore ──scan──▶ Room ◀──sync (background)── remote back
 - **The library comes from the device.** Tracks are indexed from MediaStore into Room.
   Room stores metadata and the file's content URI, never the audio itself. Files are read from disk
   only when played.
-- **Preferences are the exception.** User settings stay in DataStore (`:core:datastore`), which is
-  their source of truth. They are key–value settings, not relational data.
+- **Preferences are the exception.** User settings stay in DataStore (behind `PreferencesStore` in
+  `:core:storage`), which is their source of truth. They are key–value settings, not relational
+  data.
 - **Writes go to the local database first.** Favoriting a song, editing a playlist, or finishing a
   play updates Room immediately. Syncing happens afterwards in the background.
 - **Sync writes into Room; it never sits on the read path.** The remote backend is reached only by
@@ -62,8 +69,8 @@ MediaStore ──scan──▶ Room ◀──sync (background)── remote back
   Aggregates such as "most played this month" are computed from those events. When devices sync,
   their event logs are merged by union, so no plays are lost. A synced counter would lose plays when
   two devices are offline at the same time.
-- **Signing in is optional.** `:core:auth` and `:core:sync` sit behind interfaces. When the user is
-  signed out, sync does nothing and every feature still works.
+- **Signing in is optional.** Auth (`:core:auth:api`) and sync (`:core:sync:api`) sit behind
+  interfaces. When the user is signed out, sync does nothing and every feature still works.
 
 Deferred to later ADRs: which remote backend to use, the sync schedule and mechanism, and the
 detailed conflict rules for each type of data.
@@ -113,5 +120,7 @@ detailed conflict rules for each type of data.
 9. `[convention]` Every feature works while the user is signed out.
 
 **Conformance.** Room, the library scan and a real sync implementation don't exist yet.
-`SyncManager` has only a no-op implementation, and `AuthRepository` only a signed-out one. This ADR
-sets the constraints those implementations must meet.
+`SyncManager` has only a no-op implementation. `AuthRepository` is always signed out in the offline
+flavor, and in the cloud flavor it observes the Firebase user, but signing in isn't built yet
+([ADR-008](008-offline-and-cloud-flavors.md)). This ADR sets the constraints those implementations
+must meet.
