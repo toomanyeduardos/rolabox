@@ -23,6 +23,8 @@
   with an optional account, and the flavors didn't match that. The default build never showed the
   sign-in flow, and every backend-specific module had two source sets and two CI jobs to keep in
   step. The two-flavor design is kept under Alternatives considered.
+- **Revised 2026-09-29:** Conformance no longer says the Sign in screen is a placeholder, since email
+  and password sign-in is built. The decision is unchanged.
 - **Revised 2026-09-28:** The flavors are gone (`m1/flavor-removal`), so rules 1, 2, 4, 5, 6, 8 and
   10 now hold, and their tags say how each is checked. Rule 7 waits for the sign-in UI, which
   doesn't exist yet, so it points at that ticket now. Migration and Conformance describe what was
@@ -273,5 +275,4 @@ picks the config (rule 4), and fails the build on a `google-services.json` under
 is covered by `SyncTriggersTest` and `SyncRunnerTest` in `:core:sync:impl`, and rule 8 by
 `SyncRunnerTest.offlineMode_neverCreatesFirestore`. They check the sync path, which is the only code
 that calls Firebase today. A new Firebase call elsewhere isn't covered by any test. Rule 7 isn't
-built: the Sign in screen is still a placeholder, and nothing in the app sets the offline-mode
-choice yet.
+built: nothing in the app sets the offline-mode choice yet.

@@ -14,6 +14,12 @@ interface AuthRepository {
     suspend fun signIn(credential: SignInCredential): Either<AuthError, AuthUser>
 
     /**
+     * Signs in with an email and password. With email enumeration protection on, a wrong password
+     * and an unknown email are the same [AuthError.InvalidCredential].
+     */
+    suspend fun signInWithEmail(email: String, password: String): Either<AuthError, AuthUser>
+
+    /**
      * Creates an account with an email and password, saves [name] as its display name, and signs in.
      * If the account is created but saving the name fails, the sign-up still succeeds with a user
      * that has no name: the account exists, so failing would strand the user (the email is taken).

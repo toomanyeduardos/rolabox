@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 
+data class SignInWithEmailRequest(val email: String, val password: String)
+
 data class SignUpRequest(val name: String, val email: String, val password: String)
 
 @Singleton
@@ -26,6 +28,9 @@ class FakeAuthRepository @Inject constructor() : AuthRepository {
     /** When set, [signIn] fails with this error and the state doesn't change. */
     var signInError: AuthError? = null
 
+    /** When set, [signInWithEmail] fails with this error and the state doesn't change. */
+    var signInWithEmailError: AuthError? = null
+
     /** When set, [signUp] fails with this error and the state doesn't change. */
     var signUpError: AuthError? = null
 
@@ -34,6 +39,10 @@ class FakeAuthRepository @Inject constructor() : AuthRepository {
 
     /** The credential passed to the last [signIn] call. */
     var lastSignInCredential: SignInCredential? = null
+        private set
+
+    /** The email and password passed to the last [signInWithEmail] call. */
+    var lastSignInWithEmail: SignInWithEmailRequest? = null
         private set
 
     /** The name, email and password passed to the last [signUp] call. */
@@ -45,6 +54,11 @@ class FakeAuthRepository @Inject constructor() : AuthRepository {
     override suspend fun signIn(credential: SignInCredential): Either<AuthError, AuthUser> {
         lastSignInCredential = credential
         return signInError?.left() ?: signInUser.also { state.value = AuthState.SignedIn(it) }.right()
+    }
+
+    override suspend fun signInWithEmail(email: String, password: String): Either<AuthError, AuthUser> {
+        lastSignInWithEmail = SignInWithEmailRequest(email, password)
+        return signInWithEmailError?.left() ?: signInUser.also { state.value = AuthState.SignedIn(it) }.right()
     }
 
     /** Signs in as a user with the given [name]. */

@@ -16,6 +16,8 @@
 - **Revised 2026-09-28:** Conformance now reflects that there is one app with no flavors
   ([ADR-008](008-one-app-with-offline-mode.md)): sync runs while signed in and not in offline mode,
   and `AuthRepository` always observes the Firebase user. The decision is unchanged.
+- **Revised 2026-09-29:** Conformance now reflects that signing in with an email and password
+  is built. The decision is unchanged.
 
 ## Context
 
@@ -128,5 +130,6 @@ detailed conflict rules for each type of data.
 **Conformance.** Room and the library scan don't exist yet. `SyncRepository` syncs preferences from
 DataStore while the user is signed in and hasn't chosen offline mode
 ([ADR-011](011-preferences-sync.md)). Nothing in Room syncs yet. `AuthRepository` observes the
-Firebase user, but signing in isn't built yet ([ADR-008](008-one-app-with-offline-mode.md)). This
+Firebase user, and users can sign in with an email and password
+([ADR-008](008-one-app-with-offline-mode.md)). This
 ADR sets the constraints those implementations must meet.

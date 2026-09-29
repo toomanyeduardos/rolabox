@@ -200,6 +200,7 @@ private fun FormError.messageRes(): Int = when (this) {
 @Composable
 private fun passwordErrorText(error: PasswordError): String = when (error) {
     PasswordError.TooShort -> stringResource(R.string.account_error_password_short, PasswordPolicy.MIN_LENGTH)
+    PasswordError.MissingCharacters -> stringResource(R.string.account_error_password_characters)
     PasswordError.Rejected -> stringResource(R.string.account_error_password_weak)
 }
 

@@ -26,7 +26,7 @@ class CreateAccountViewModelTest {
     private fun fill(
         name: String = "Eduardo",
         email: String = "toomanyeduardos@gmail.com",
-        password: String = "kdjfhqPwzm4x",
+        password: String = "kdjfhqPwzm4x!",
     ) {
         viewModel.onNameChange(name)
         viewModel.onEmailChange(email)
@@ -75,6 +75,16 @@ class CreateAccountViewModelTest {
     }
 
     @Test
+    fun submit_withoutEveryCharacterKindIsBlocked() {
+        fill(password = "kdjfhqPwzm4x")
+
+        viewModel.onSubmit()
+
+        assertEquals(PasswordError.MissingCharacters, state.passwordError)
+        assertNull(authRepository.lastSignUp)
+    }
+
+    @Test
     fun submit_withMalformedEmailIsBlocked() {
         fill(email = "toomanyeduardos@gmail")
 
@@ -101,7 +111,7 @@ class CreateAccountViewModelTest {
 
     @Test
     fun submit_signsUpWithTrimmedNameAndEmailAndTheUntouchedPassword() = runTest {
-        fill(name = "  Eduardo Flores ", email = " toomanyeduardos@gmail.com ", password = " kdjfhqPwzm4x ")
+        fill(name = "  Eduardo Flores ", email = " toomanyeduardos@gmail.com ", password = " kdjfhqPwzm4x! ")
 
         viewModel.onSubmit()
 
@@ -109,7 +119,7 @@ class CreateAccountViewModelTest {
             SignUpRequest(
                 "Eduardo Flores",
                 "toomanyeduardos@gmail.com",
-                " kdjfhqPwzm4x ",
+                " kdjfhqPwzm4x! ",
             ),
             authRepository.lastSignUp,
         )
@@ -203,7 +213,12 @@ class CreateAccountViewModelTest {
 
     @Test
     fun otherErrors_areAGenericFormError() {
-        listOf(AuthError.InvalidCredential, AuthError.AccountDisabled).forEach { error ->
+        listOf(
+            AuthError.InvalidCredential,
+            AuthError.AccountDisabled,
+            AuthError.TooManyRequests,
+            AuthError.Unknown,
+        ).forEach { error ->
             authRepository.signUpError = error
             fill()
 
