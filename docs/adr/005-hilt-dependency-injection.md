@@ -64,8 +64,7 @@ the `rolabox.hilt` convention plugin ([ADR-004](004-convention-plugins.md)).
 
 - A missing or duplicated binding fails the build, not the running app.
 - Jetpack integrations come ready to use: `@HiltViewModel` now. Sync's WorkManager worker uses a Hilt
-  entry point instead of `@HiltWorker`, to keep WorkManager out of the offline app
-  ([ADR-011](011-preferences-sync.md)).
+  entry point instead of `@HiltWorker` ([ADR-011](011-preferences-sync.md) says why).
 - Replacing whole modules in tests is built in, and `:app`'s instrumented tests already use it.
 - Hilt is familiar to most Android developers, which lowers the cost of reading the codebase.
 - Code generation adds build time (reduced by using KSP instead of kapt), and errors can be verbose.

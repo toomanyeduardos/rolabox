@@ -69,7 +69,7 @@ graph in the `@HiltAndroidApp` module, so `:app` must see every implementation a
 | `:app` | Composition root: `Application`, navigation between features, the Hilt graph, and the `@TestInstallIn` modules that swap production bindings in tests | Anything, but testing modules only from test configurations |
 | `:feature:*` | One user-facing area: screens and ViewModels | `:core:<area>:api`, `:core:domain`, `:core:common`, `:core:designsystem` |
 | `:core:<area>:api` | Interfaces, models, error types, and pure-logic use cases for this area (pure JVM) | Other `:core:<area>:api`, `:core:common` |
-| `:core:<area>:impl` | Implementations of the `:api` and their Hilt modules, with backend-specific code in flavor source sets ([ADR-008](008-offline-and-cloud-flavors.md)) | `:core:<area>:api` (its own and others), `:core:common` |
+| `:core:<area>:impl` | Implementations of the `:api` and their Hilt modules | `:core:<area>:api` (its own and others), `:core:common` |
 | `:core:<area>:testing` | Fakes of the area's `:api` (pure JVM) | Its own `:api` |
 | `:core:domain` | Pure-logic use cases that combine more than one area (pure JVM) | `:core:<area>:api`, `:core:common` (plus testing modules from test configurations) |
 | `:core:common` | Utility: dispatchers, exception-to-error helpers (pure JVM) | Nothing |
@@ -141,7 +141,7 @@ Guidelines that go with the table:
   spread across shared modules, so it can't be moved or reviewed on its own.
 - **An area module without an API split (`:core:auth` holding interface and implementation).**
   Half the modules, but features would compile against the implementation and its dependencies
-  (Firebase in cloud), which is what [ADR-001](001-layered-architecture.md) exists to prevent.
+  (Firebase), which is what [ADR-001](001-layered-architecture.md) exists to prevent.
 - **Shared data-layer modules that `:impl` modules call directly (`:core:datastore`).** No interface
   to write, but every `:impl` would know which storage library backs it, storage exceptions would be
   converted in every area, and the rule "`:impl` depends only on `:api`" would need exceptions.

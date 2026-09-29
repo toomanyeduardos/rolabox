@@ -16,7 +16,7 @@ New ADR: copy [`template.md`](template.md), take the next number, and add it to 
 | [005](005-hilt-dependency-injection.md) | Use Hilt for dependency injection | Accepted |
 | [006](006-async-api-shape.md) | Async API shape: `Flow` for observed state, `suspend` for single operations | Accepted |
 | [007](007-error-handling.md) | Typed errors with Arrow `Either` for every fallible operation | Accepted |
-| [008](008-offline-and-cloud-flavors.md) | Offline and cloud build flavors, with Firebase only in cloud | Accepted |
+| [008](008-one-app-with-offline-mode.md) | One app with Firebase built in, and offline mode as a user choice | Accepted |
 | [009](009-ui-bound-sdks.md) | SDK steps that need an Activity live in the UI, and only their results cross the `:api` | Accepted |
 | [010](010-firestore-security-rules.md) | Firestore for synced data, with per-user security rules tested against the emulator | Accepted |
 | [011](011-preferences-sync.md) | Sync preferences through Firestore, field by field, with last-write-wins | Accepted |

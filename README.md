@@ -6,7 +6,7 @@ Yet another offline music player.
 
 ## Building
 
-The app has two flavors ([ADR-008](docs/adr/008-offline-and-cloud-flavors.md)):
+The app has two flavors ([ADR-008](docs/adr/008-one-app-with-offline-mode.md)):
 
 | Flavor | What it is | Firebase config needed |
 | --- | --- | --- |
@@ -27,7 +27,7 @@ Install it on a connected device or emulator with `./gradlew installOfflineDebug
 `google-services.json` isn't checked in, but not because it's secret. It ships inside every cloud
 APK, so anyone can read the project ID and API key, and the repo assumes they have. It's left out
 so that clones and forks don't build against the maintainer's Firebase project and quota without
-noticing ([ADR-008](docs/adr/008-offline-and-cloud-flavors.md)). What actually protects the data is
+noticing ([ADR-008](docs/adr/008-one-app-with-offline-mode.md)). What actually protects the data is
 the [Firestore security rules](#firestore-security-rules). To build `cloud`, use your own Firebase
 project:
 
@@ -82,7 +82,7 @@ The reasoning behind the architecture is recorded as [Architecture Decision Reco
 - [ADR-005](docs/adr/005-hilt-dependency-injection.md): Use Hilt for dependency injection
 - [ADR-006](docs/adr/006-async-api-shape.md): Async API shape: `Flow` for observed state, `suspend` for single operations
 - [ADR-007](docs/adr/007-error-handling.md): Typed errors with Arrow `Either` for every fallible operation
-- [ADR-008](docs/adr/008-offline-and-cloud-flavors.md): Offline and cloud build flavors, with Firebase only in cloud
+- [ADR-008](docs/adr/008-one-app-with-offline-mode.md): One app with Firebase built in, and offline mode as a user choice
 - [ADR-009](docs/adr/009-ui-bound-sdks.md): SDK steps that need an Activity live in the UI, and only their results cross the `:api`
 - [ADR-010](docs/adr/010-firestore-security-rules.md): Firestore for synced data, with per-user security rules tested against the emulator
 - [ADR-011](docs/adr/011-preferences-sync.md): Sync preferences through Firestore, field by field, with last-write-wins
