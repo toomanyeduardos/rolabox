@@ -3,7 +3,6 @@ package com.eduardoflores.rolabox.core.auth.ui
 import com.eduardoflores.rolabox.core.auth.api.AuthError
 import com.eduardoflores.rolabox.core.auth.api.SignInCredential
 import com.eduardoflores.rolabox.core.auth.testing.FakeAuthRepository
-import com.eduardoflores.rolabox.core.domain.LeaveOfflineModeUseCase
 import com.eduardoflores.rolabox.core.storage.api.StorageError
 import com.eduardoflores.rolabox.core.userdata.testing.FakeUserDataRepository
 import kotlinx.coroutines.flow.first
@@ -15,7 +14,7 @@ import org.junit.Test
 class SignInFlowTest {
     private val authRepository = FakeAuthRepository()
     private val userDataRepository = FakeUserDataRepository()
-    private val flow = SignInFlow(authRepository, LeaveOfflineModeUseCase(userDataRepository))
+    private val flow = SignInFlow(authRepository, userDataRepository)
     private val credential = SignInCredential.GoogleIdToken("id-token")
 
     @Test

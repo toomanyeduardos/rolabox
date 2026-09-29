@@ -11,7 +11,6 @@ import com.eduardoflores.rolabox.core.auth.testing.SignInWithEmailRequest
 import com.eduardoflores.rolabox.core.auth.ui.SignInConfig
 import com.eduardoflores.rolabox.core.auth.ui.SignInProvider
 import com.eduardoflores.rolabox.core.auth.ui.SignInStepResult
-import com.eduardoflores.rolabox.core.domain.LeaveOfflineModeUseCase
 import com.eduardoflores.rolabox.core.storage.api.StorageError
 import com.eduardoflores.rolabox.core.testing.MainDispatcherRule
 import com.eduardoflores.rolabox.core.userdata.testing.FakeUserDataRepository
@@ -31,9 +30,8 @@ class SignInViewModelTest {
 
     private val authRepository = FakeAuthRepository()
     private val userDataRepository = FakeUserDataRepository()
-    private val leaveOfflineMode = LeaveOfflineModeUseCase(userDataRepository)
     private val viewModel =
-        SignInViewModel(authRepository, userDataRepository, leaveOfflineMode, SIGN_IN_CONFIG)
+        SignInViewModel(authRepository, userDataRepository, SIGN_IN_CONFIG)
     private val state get() = viewModel.uiState.value
 
     private fun fill(email: String = "toomanyeduardos@gmail.com", password: String = "secret") {
@@ -129,7 +127,6 @@ class SignInViewModelTest {
             SignInViewModel(
                 slowRepository,
                 userDataRepository,
-                leaveOfflineMode,
                 SIGN_IN_CONFIG,
             )
         slowViewModel.onEmailChange("toomanyeduardos@gmail.com")

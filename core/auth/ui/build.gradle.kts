@@ -8,7 +8,6 @@ android {
 
 dependencies {
     implementation(project(":core:auth:api"))
-    implementation(project(":core:domain"))
     implementation(project(":core:userdata:api"))
 
     // Google sign-in through Credential Manager (ADR-009).
@@ -17,6 +16,7 @@ dependencies {
     implementation(libs.google.id)
 
     testImplementation(project(":core:auth:testing"))
+    testImplementation(project(":core:storage:api"))
     testImplementation(project(":core:userdata:testing"))
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

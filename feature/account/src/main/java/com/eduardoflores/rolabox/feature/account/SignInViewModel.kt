@@ -10,7 +10,6 @@ import com.eduardoflores.rolabox.core.auth.ui.SignInFlow
 import com.eduardoflores.rolabox.core.auth.ui.SignInOutcome
 import com.eduardoflores.rolabox.core.auth.ui.SignInProvider
 import com.eduardoflores.rolabox.core.auth.ui.SignInStepResult
-import com.eduardoflores.rolabox.core.domain.LeaveOfflineModeUseCase
 import com.eduardoflores.rolabox.core.userdata.api.UserDataRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -50,10 +49,9 @@ internal data class SignInUiState(
 internal class SignInViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val userDataRepository: UserDataRepository,
-    leaveOfflineMode: LeaveOfflineModeUseCase,
     val signInConfig: SignInConfig,
 ) : ViewModel() {
-    private val signInFlow = SignInFlow(authRepository, leaveOfflineMode)
+    private val signInFlow = SignInFlow(authRepository, userDataRepository)
     private val _uiState = MutableStateFlow(SignInUiState())
     val uiState: StateFlow<SignInUiState> = _uiState.asStateFlow()
 

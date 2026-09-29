@@ -15,6 +15,9 @@
   The step's results are provider-neutral (Decision, and rules 1 and 3). Rule 4 is now a plain
   configuration type owned by the `:ui`, and rule 5 is followed, so it is no longer `[planned]`.
   The decision to keep the SDK step out of the `:api` and the `:impl` is unchanged.
+- **Revised 2026-09-29:** Added rule 6, for the non-UI calls of the same SDK, tagged `[planned]`:
+  `:core:auth:impl` doesn't clear Credential Manager's saved state on sign-out yet. The Decision
+  already said it should, but no rule said the code doesn't match. The decision is unchanged.
 
 ## Context
 
@@ -65,11 +68,11 @@ Credential Manager bottom sheet ──▶  SignInCredential   ──▶   Fireba
   ViewModel injects and passes on.
 - **UI steps that reach the network run only when the user starts them, and never in offline
   mode.** Google sign-in through Credential Manager is the first network call of a sign-in, so
-  offline mode is turned off before it, by a use case that the feature calls
-  ([ADR-008](008-one-app-with-offline-mode.md), rule 7).
+  offline mode is turned off before it ([ADR-008](008-one-app-with-offline-mode.md), rule 7).
   SDKs that bring Play services are ordinary dependencies, since there's only one app.
 - **Non-UI calls of the same SDK stay in the `:impl`.** Clearing Credential Manager's saved state on
-  sign-out needs only the application context, so `:core:auth:impl` does it.
+  sign-out needs only the application context, so `:core:auth:impl` does it (rule 6, not built
+  yet).
 
 ## Alternatives considered
 
@@ -107,4 +110,7 @@ Credential Manager bottom sheet ──▶  SignInCredential   ──▶   Fireba
 4. `[convention]` Configuration the UI step needs from `:app` (such as the Web client ID) is provided
    by `:app` through Hilt, in a plain type owned by the `:ui`.
 5. `[convention]` A UI step that reaches the network runs only when the user starts it, and turns
-   offline mode off first (ADR-008, rule 7), through `LeaveOfflineModeUseCase`.
+   offline mode off first (ADR-008, rule 7).
+6. `[planned]` (Credential Manager sign-out ticket, TBD) Calls of the same SDK that don't need an
+   `Activity` are made in the area's `:impl`. `:core:auth:impl` clears Credential Manager's saved
+   state on sign-out.

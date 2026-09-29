@@ -9,7 +9,6 @@ import com.eduardoflores.rolabox.core.auth.testing.SignUpRequest
 import com.eduardoflores.rolabox.core.auth.ui.SignInConfig
 import com.eduardoflores.rolabox.core.auth.ui.SignInProvider
 import com.eduardoflores.rolabox.core.auth.ui.SignInStepResult
-import com.eduardoflores.rolabox.core.domain.LeaveOfflineModeUseCase
 import com.eduardoflores.rolabox.core.storage.api.StorageError
 import com.eduardoflores.rolabox.core.testing.MainDispatcherRule
 import com.eduardoflores.rolabox.core.userdata.testing.FakeUserDataRepository
@@ -28,9 +27,8 @@ class CreateAccountViewModelTest {
 
     private val authRepository = FakeAuthRepository()
     private val userDataRepository = FakeUserDataRepository()
-    private val leaveOfflineMode = LeaveOfflineModeUseCase(userDataRepository)
     private val viewModel =
-        CreateAccountViewModel(authRepository, leaveOfflineMode, SignInConfig(googleWebClientId = "web-client-id"))
+        CreateAccountViewModel(authRepository, userDataRepository, SignInConfig(googleWebClientId = "web-client-id"))
     private val state get() = viewModel.uiState.value
 
     private fun fill(

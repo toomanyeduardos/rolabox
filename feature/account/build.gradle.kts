@@ -14,7 +14,6 @@ android {
 dependencies {
     implementation(project(":core:auth:api"))
     implementation(project(":core:auth:ui"))
-    implementation(project(":core:domain"))
     implementation(project(":core:userdata:api"))
 
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
@@ -26,7 +25,6 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
 
-    androidTestImplementation(project(":core:auth:api"))
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.test.runner)
 }

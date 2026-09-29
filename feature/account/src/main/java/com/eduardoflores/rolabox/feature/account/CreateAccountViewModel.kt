@@ -12,7 +12,7 @@ import com.eduardoflores.rolabox.core.auth.ui.SignInFlow
 import com.eduardoflores.rolabox.core.auth.ui.SignInOutcome
 import com.eduardoflores.rolabox.core.auth.ui.SignInProvider
 import com.eduardoflores.rolabox.core.auth.ui.SignInStepResult
-import com.eduardoflores.rolabox.core.domain.LeaveOfflineModeUseCase
+import com.eduardoflores.rolabox.core.userdata.api.UserDataRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,10 +43,10 @@ internal data class CreateAccountUiState(
 @HiltViewModel
 internal class CreateAccountViewModel @Inject constructor(
     private val authRepository: AuthRepository,
-    leaveOfflineMode: LeaveOfflineModeUseCase,
+    userDataRepository: UserDataRepository,
     val signInConfig: SignInConfig,
 ) : ViewModel() {
-    private val signInFlow = SignInFlow(authRepository, leaveOfflineMode)
+    private val signInFlow = SignInFlow(authRepository, userDataRepository)
     private val _uiState = MutableStateFlow(CreateAccountUiState())
     val uiState: StateFlow<CreateAccountUiState> = _uiState.asStateFlow()
 
