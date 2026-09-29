@@ -131,7 +131,7 @@ such as an SDK step that shows system UI, also has a `:ui` module
 | `:core:auth:api` | Authentication API: `AuthRepository`, `AuthUser` |
 | `:core:auth:impl` | Authentication with Firebase |
 | `:core:auth:testing` | `FakeAuthRepository` |
-| `:core:auth:ui` | Sign-in UI shared by features: the provider steps (Google), their buttons and `SignInFlow` |
+| `:core:auth:ui` | Sign-in UI shared by features: the provider steps (Google) and their buttons |
 | `:core:storage:api` | Local storage API: `PreferencesStore` (key-value settings), `StorageError` |
 | `:core:storage:impl` | `PreferencesStore` backed by DataStore |
 | `:core:storage:testing` | `FakePreferencesStore` |
@@ -194,6 +194,7 @@ graph TD
     app --> core_auth_ui
     app --> core_designsystem
     app --> core_domain
+    app --> core_storage_api
     app --> core_storage_impl
     app --> core_sync_api
     app --> core_sync_impl
@@ -206,9 +207,8 @@ graph TD
     core_auth_testing --> core_auth_api
     core_auth_ui --> core_auth_api
     core_auth_ui --> core_designsystem
-    core_auth_ui --> core_domain
-    core_auth_ui --> core_userdata_api
     core_domain --> core_auth_api
+    core_domain --> core_storage_api
     core_domain --> core_userdata_api
     core_storage_impl --> core_common
     core_storage_impl --> core_storage_api
@@ -231,6 +231,7 @@ graph TD
     feature_account --> core_auth_ui
     feature_account --> core_designsystem
     feature_account --> core_domain
+    feature_account --> core_storage_api
     feature_account --> core_userdata_api
     feature_settings --> core_designsystem
 ```

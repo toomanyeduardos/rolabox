@@ -3,16 +3,14 @@ package com.eduardoflores.rolabox.feature.account
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.eduardoflores.rolabox.core.auth.api.AuthError
-import com.eduardoflores.rolabox.core.auth.api.AuthRepository
 import com.eduardoflores.rolabox.core.auth.api.PasswordPolicy
 import com.eduardoflores.rolabox.core.auth.api.PasswordStrength
 import com.eduardoflores.rolabox.core.auth.ui.SignInConfig
-import com.eduardoflores.rolabox.core.auth.ui.SignInError
-import com.eduardoflores.rolabox.core.auth.ui.SignInFlow
-import com.eduardoflores.rolabox.core.auth.ui.SignInOutcome
 import com.eduardoflores.rolabox.core.auth.ui.SignInProvider
 import com.eduardoflores.rolabox.core.auth.ui.SignInStepResult
-import com.eduardoflores.rolabox.core.userdata.api.UserDataRepository
+import com.eduardoflores.rolabox.core.domain.SignInError
+import com.eduardoflores.rolabox.core.domain.SignInUseCase
+import com.eduardoflores.rolabox.core.domain.SignUpUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,17 +34,16 @@ internal data class CreateAccountUiState(
     val isLoading: Boolean = false,
     /** The account was created and the user is signed in. The screen reports it once and leaves. */
     val isSignedUp: Boolean = false,
-    /** Offline mode is off and this provider's account picker is due. The route shows it and reports the result. */
+    /** This provider's account picker is due. The route shows it and reports the result. */
     val requestedProvider: SignInProvider? = null,
 )
 
 @HiltViewModel
 internal class CreateAccountViewModel @Inject constructor(
-    private val authRepository: AuthRepository,
-    userDataRepository: UserDataRepository,
+    private val signUp: SignUpUseCase,
+    private val signIn: SignInUseCase,
     val signInConfig: SignInConfig,
 ) : ViewModel() {
-    private val signInFlow = SignInFlow(authRepository, userDataRepository)
     private val _uiState = MutableStateFlow(CreateAccountUiState())
     val uiState: StateFlow<CreateAccountUiState> = _uiState.asStateFlow()
 
@@ -69,11 +66,7 @@ internal class CreateAccountViewModel @Inject constructor(
         val current = _uiState.value
         if (current.isLoading || current.isSignedUp) return
 
-        _uiState.update { it.copy(isLoading = true, formError = null) }
-        viewModelScope.launch {
-            val error = signInFlow.prepare()
-            _uiState.update { if (error == null) it.copy(requestedProvider = provider) else it.withSignInError(error) }
-        }
+        _uiState.update { it.copy(isLoading = true, formError = null, requestedProvider = provider) }
     }
 
     /** The account picker is done. A [SignInStepResult.Credential] is exchanged for a session. */
@@ -81,11 +74,18 @@ internal class CreateAccountViewModel @Inject constructor(
         if (_uiState.value.requestedProvider == null) return
 
         _uiState.update { it.copy(requestedProvider = null) }
-        viewModelScope.launch {
-            when (val outcome = signInFlow.complete(result)) {
-                SignInOutcome.SignedIn -> _uiState.update { it.copy(isLoading = false, isSignedUp = true) }
-                SignInOutcome.Cancelled -> _uiState.update { it.copy(isLoading = false) }
-                is SignInOutcome.Failed -> _uiState.update { it.withSignInError(outcome.error) }
+        when (result) {
+            SignInStepResult.Cancelled -> _uiState.update { it.copy(isLoading = false) }
+
+            SignInStepResult.NoAccount -> _uiState.update { it.withFormError(FormError.NoAccount) }
+
+            SignInStepResult.Failed -> _uiState.update { it.withFormError(FormError.SignInFailed) }
+
+            is SignInStepResult.Credential -> viewModelScope.launch {
+                signIn(result.credential).fold(
+                    ifLeft = { error -> _uiState.update { it.withProviderError(error) } },
+                    ifRight = { _ -> _uiState.update { it.copy(isLoading = false, isSignedUp = true) } },
+                )
             }
         }
     }
@@ -110,7 +110,7 @@ internal class CreateAccountViewModel @Inject constructor(
 
         _uiState.update { it.copy(isLoading = true, formError = null) }
         viewModelScope.launch {
-            authRepository.signUp(name, email, current.password).fold(
+            signUp(name, email, current.password).fold(
                 ifLeft = { error -> _uiState.update { it.withSignUpError(error) } },
                 ifRight = { _ -> _uiState.update { it.copy(isLoading = false, isSignedUp = true) } },
             )
@@ -118,7 +118,17 @@ internal class CreateAccountViewModel @Inject constructor(
     }
 }
 
-private fun CreateAccountUiState.withSignUpError(error: AuthError): CreateAccountUiState = when (error) {
+private fun CreateAccountUiState.withFormError(error: FormError): CreateAccountUiState =
+    copy(isLoading = false, formError = error)
+
+private fun CreateAccountUiState.withSignUpError(error: SignInError): CreateAccountUiState = when (error) {
+    is SignInError.Auth -> withAuthError(error.cause)
+
+    // Offline mode couldn't be turned off, so no account was created. There's nothing the user can fix.
+    is SignInError.Storage -> withFormError(FormError.Generic)
+}
+
+private fun CreateAccountUiState.withAuthError(error: AuthError): CreateAccountUiState = when (error) {
     AuthError.EmailAlreadyInUse -> copy(isLoading = false, emailError = EmailError.AlreadyInUse)
 
     AuthError.InvalidEmail -> copy(isLoading = false, emailError = EmailError.Invalid)
@@ -134,16 +144,21 @@ private fun CreateAccountUiState.withSignUpError(error: AuthError): CreateAccoun
     -> copy(isLoading = false, formError = FormError.Generic)
 }
 
-private fun CreateAccountUiState.withSignInError(error: SignInError): CreateAccountUiState = copy(
-    isLoading = false,
-    formError = when (error) {
-        SignInError.Network -> FormError.Network
+private fun CreateAccountUiState.withProviderError(error: SignInError): CreateAccountUiState = withFormError(
+    when (error) {
+        is SignInError.Storage -> FormError.SignInFailed
 
-        SignInError.NoAccount -> FormError.NoAccount
+        is SignInError.Auth -> when (error.cause) {
+            AuthError.Network -> FormError.Network
 
-        SignInError.TooManyRequests,
-        SignInError.AccountDisabled,
-        SignInError.Unknown,
-        -> FormError.SignInFailed
+            AuthError.TooManyRequests,
+            AuthError.AccountDisabled,
+            AuthError.InvalidCredential,
+            AuthError.EmailAlreadyInUse,
+            AuthError.InvalidEmail,
+            AuthError.WeakPassword,
+            AuthError.Unknown,
+            -> FormError.SignInFailed
+        }
     },
 )

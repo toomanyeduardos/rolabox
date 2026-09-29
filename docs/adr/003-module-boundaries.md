@@ -30,6 +30,14 @@
   rule 4, the guidelines and rules 16 and 17 were updated. Before this, a UI step used by two
   screens had to live in one feature, and a second feature couldn't reuse it, because features may
   not depend on each other.
+- **Revised 2026-09-29:** Project modules are declared with `implementation`, and never with `api`
+  (rule 15, "Use `implementation`" guideline). A module declares every project module whose types
+  its code uses, including types it only meets in the signatures of what it calls, such as a
+  `StorageError` inside a `UserDataRepository` result. Before, `api` was used when a module's public
+  signatures exposed another module's types, so `:core:userdata:api` handed `:core:storage:api` to
+  every consumer. Rolabox ships no libraries, so `api` only hid which areas a module really uses.
+  A consumer that can't be written without `api` is a sign its design needs another look. External
+  libraries still use `api` where an `:api` exposes them (Arrow, coroutines), for now.
 
 ## Context
 
@@ -127,13 +135,18 @@ Guidelines that go with the table:
   features is wired in `:app`. If two features need the same code, it moves to a `:core` module.
 - **Features declare the `:api` modules they use.** The `rolabox.android.feature` convention plugin
   adds only `:core:designsystem`, so a feature's build file lists the areas it depends on.
-- **Use `implementation` by default.** `api` is used only when a module's public signatures expose
-  another module's types (for example, `:core:userdata:api` returns `StorageError` from
-  `:core:storage:api`). It's never a way to hand consumers dependencies they'd otherwise declare.
-- **Every module declares what it uses directly,** even when another dependency's `api` already puts
-  it on the classpath. `:app` declares `:core:userdata:api` for its ViewModel, not only
+- **Project modules use `implementation`, never `api`.** Rolabox ships no libraries, so there's no
+  consumer that `api` needs to protect. Even when a module's public signatures expose another
+  module's types (`:core:userdata:api` returns `StorageError` from `:core:storage:api`), each
+  consumer declares that module itself. If a consumer can't be built that way, the design is
+  looked at again instead of reaching for `api`. External libraries that an `:api` exposes (Arrow,
+  coroutines) still use `api` for now.
+- **Every module declares what it uses,** including types it only meets in the signatures of what
+  it calls. A feature that reads `observeOfflineModeChosen()` declares `:core:storage:api` for its
+  `StorageError`. `:app` declares `:core:userdata:api` for its ViewModel, not only
   `:core:userdata:impl`. So a build file lists every area the module's code touches, which is the
-  point of this layout. Hilt doesn't need an `:impl` to re-export its `:api`: it collects bindings
+  point of this layout. Without `api`, the compiler catches most gaps. Hilt doesn't need an
+  `:impl` to re-export its `:api`: it collects bindings
   from `:app`'s whole classpath.
 - **Split modules when there's a reason.** A new area gets its `:api`, `:impl` and `:testing`
   modules when it has an interface of its own, and a `:ui` module when it has UI-bound code that
@@ -221,9 +234,9 @@ Guidelines that go with the table:
     `:api` and the `:api` modules whose types it uses (never an `:impl`). `@TestInstallIn` modules
     live in `:app`'s test sources.
 14. `[convention]` Packages mirror module paths, and no package is split across modules.
-15. `[convention]` Dependencies use `implementation` unless the module's public signatures expose
-    the other module's types. A module declares every project module whose types it uses directly,
-    even when it would get them through another dependency's `api`.
+15. `[convention]` Project modules are declared with `implementation`, never `api`. A module
+    declares every project module whose types its code uses, including types it only meets in the
+    signatures of what it calls.
 16. `[enforced]` `:core:<area>:ui` modules depend only on `:api` modules, `:core:domain`,
     `:core:common` and `:core:designsystem` (plus testing modules from test configurations).
 17. `[enforced]` Only `:feature:*` modules and `:app` depend on `:ui` modules.

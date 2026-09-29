@@ -10,8 +10,8 @@ import com.eduardoflores.rolabox.core.auth.api.SignInCredential
 import com.eduardoflores.rolabox.core.auth.ui.google.GoogleSignInStep
 
 /**
- * What the UI step of a sign-in provider produced (ADR-009). Only [Credential] goes on to the
- * repository. The rest are outcomes of the step itself, which are not `AuthError`s.
+ * What the UI step of a sign-in provider produced (ADR-009). Only [Credential] goes on, to the
+ * sign-in use case. The rest are outcomes of the step itself, which are not `AuthError`s.
  */
 sealed interface SignInStepResult {
     data class Credential(val credential: SignInCredential) : SignInStepResult

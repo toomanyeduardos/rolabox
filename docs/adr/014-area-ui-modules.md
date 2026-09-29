@@ -34,8 +34,12 @@ feature can use:
 - the area's UI-bound SDK steps ([ADR-009](009-ui-bound-sdks.md));
 - the area's shared composables: branded buttons, and dialogs and bottom sheets that don't belong to
   one screen;
-- plain state holders (`remember…` functions) and plain classes that connect a step to the area's
-  `:api` (and to `:core:domain`, when a rule spans areas).
+- plain state holders (`remember…` functions) and effects that run a step and report its result.
+
+**What makes something a use case, and not a `:ui` class.** Logic that more than one ViewModel
+needs and that combines repositories, or holds a business rule, is a use case
+([ADR-001](001-layered-architecture.md)): in the area's `:api`, or in `:core:domain` when it spans
+areas. The `:ui` produces the step's result, and the ViewModel passes it to that use case.
 
 **What makes something a feature, and not a `:ui`.** A **ViewModel** or a **navigation destination**
 (a `NavKey` and its entry, [ADR-012](012-navigation.md)) makes it a feature. `:ui` modules have
@@ -53,15 +57,17 @@ tests use the fakes of the `:api` modules it uses.
 code that uses it doesn't name a provider:
 
 ```
-:feature:account                        :core:auth:ui                              :core:auth:api
-ViewModel ── SignInFlow, SignInError ──▶ SignInStep ──▶ SignInStepResult.Credential ──▶ SignInCredential
-Screen ───── SignInButton(provider) ──▶ per provider, internal:
-                                          google/GoogleSignInStep, google/GoogleButton
+:feature:account                         :core:auth:ui                        :core:domain
+Screen ─── SignInButton(provider) ─────▶ per provider, internal:
+Route ──── SignInStepEffect(provider) ─▶   google/GoogleSignInStep,
+                                           google/GoogleButton
+ViewModel ◀──────────── SignInStepResult ──┘
+ViewModel ── SignInStepResult.Credential's SignInCredential ────────────────▶ SignInUseCase
 ```
 
-- The types the feature sees are neutral: `SignInProvider`, `SignInStepResult`, `SignInFlow`,
-  `SignInError`, `SignInButton`. `SignInStepResult.Credential` carries the `:api`'s
-  `SignInCredential`, so the flow calls `AuthRepository.signIn(credential)` for every provider.
+- The types the feature sees are neutral: `SignInProvider`, `SignInStepResult`,
+  `SignInStepEffect`, `SignInButton`. `SignInStepResult.Credential` carries the `:api`'s
+  `SignInCredential`, which the ViewModel passes to the sign-in use case for every provider.
 - What is specific to one provider (its SDK, its branding, its configuration) lives in its own
   subpackage and is `internal`, so no other module can depend on it.
 - **Adding a provider** touches these places, and the compiler points at each of them:
@@ -69,8 +75,8 @@ Screen ───── SignInButton(provider) ──▶ per provider, internal:
   2. a branch of `toFirebaseCredential()` in `:core:auth:impl`;
   3. a value of `SignInProvider`, and its step and button, in `:core:auth:ui`;
   4. its configuration, in `SignInConfig`, provided by `:app`.
-  The feature's ViewModels, screens and the flow don't change (only a screen that shows the new
-  button does).
+  The feature's ViewModels and the use case don't change (only a screen that shows the new button
+  does).
 - **Configuration** that only `:app` knows (Google's Web client ID) is a plain `SignInConfig` type
   owned by `:core:auth:ui`, provided by `:app` through Hilt ([ADR-009](009-ui-bound-sdks.md), rule 4).
 
@@ -111,7 +117,8 @@ Screen ───── SignInButton(provider) ──▶ per provider, internal:
    `:core:common` and `:core:designsystem` (plus testing modules from test configurations).
 2. `[enforced]` Only `:feature:*` modules and `:app` depend on `:ui` modules.
 3. `[convention]` A `:ui` module has no ViewModel, no navigation destination and no Hilt module.
-   Code that has a ViewModel or a destination is a feature.
+   Code that has a ViewModel or a destination is a feature. Logic that meets ADR-001's use case
+   criteria is a use case, not a `:ui` class.
 4. `[convention]` A `:ui` module exposes neutral types, and keeps what is specific to one provider
    in its own subpackage as `internal`. Adding a provider follows the checklist in Decision.
 5. `[convention]` Configuration that `:app` provides for a `:ui` is a plain type owned by that

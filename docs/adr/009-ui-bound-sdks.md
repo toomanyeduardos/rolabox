@@ -18,6 +18,13 @@
 - **Revised 2026-09-29:** Added rule 6, for the non-UI calls of the same SDK, tagged `[planned]`:
   `:core:auth:impl` doesn't clear Credential Manager's saved state on sign-out yet. The Decision
   already said it should, but no rule said the code doesn't match. The decision is unchanged.
+- **Revised 2026-09-29:** A UI step the user starts may now run while offline mode is chosen. The
+  data step turns offline mode off before its Firebase request, and back on if the sign-in fails
+  ([ADR-008](008-one-app-with-offline-mode.md), rule 7) (Decision, rule 5). The data step may go
+  through a use case instead of the repository directly, when one exists for the operation
+  (Decision). Why: turning offline mode off before the picker left a user who cancelled it signed
+  out and no longer offline. A step that the user starts isn't a Firebase request, so ADR-008's
+  guarantee holds.
 
 ## Context
 
@@ -47,8 +54,9 @@ We will **split each such flow into a UI step and a data step**, one per layer
    where an `Activity` is available. It turns the SDK's result into a plain value that the area's
    `:api` defines, such as a token.
 2. **The data step goes through the `:api`.** The ViewModel passes that value to the area's
-   repository, and the `:impl` does the rest (for sign-in, the Firebase exchange). SDK types never
-   appear in `:api` signatures.
+   repository, or to the use case for that operation when one exists
+   ([ADR-001](001-layered-architecture.md)), and the `:impl` does the rest (for sign-in, the
+   Firebase exchange). SDK types never appear in `:api` signatures.
 
 For Google sign-in:
 
@@ -66,10 +74,11 @@ Credential Manager bottom sheet ──▶  SignInCredential   ──▶   Fireba
   Manager needs the Web client ID, which is generated from `google-services.json` as a resource in
   `:app`. `:app` provides it in a plain configuration type owned by the `:ui`, which the feature's
   ViewModel injects and passes on.
-- **UI steps that reach the network run only when the user starts them, and never in offline
-  mode.** Google sign-in through Credential Manager is the first network call of a sign-in, so
-  offline mode is turned off before it ([ADR-008](008-one-app-with-offline-mode.md), rule 7).
-  SDKs that bring Play services are ordinary dependencies, since there's only one app.
+- **UI steps that reach the network run only when the user starts them.** They may run while
+  offline mode is chosen, since they aren't Firebase requests. The data step that follows turns
+  offline mode off before its Firebase request, and back on if it fails
+  ([ADR-008](008-one-app-with-offline-mode.md), rule 7), so cancelling the step leaves offline mode
+  as it was. SDKs that bring Play services are ordinary dependencies, since there's only one app.
 - **Non-UI calls of the same SDK stay in the `:impl`.** Clearing Credential Manager's saved state on
   sign-out needs only the application context, so `:core:auth:impl` does it (rule 6, not built
   yet).
@@ -109,8 +118,8 @@ Credential Manager bottom sheet ──▶  SignInCredential   ──▶   Fireba
    shown by the feature, and aren't cases of the area's error type.
 4. `[convention]` Configuration the UI step needs from `:app` (such as the Web client ID) is provided
    by `:app` through Hilt, in a plain type owned by the `:ui`.
-5. `[convention]` A UI step that reaches the network runs only when the user starts it, and turns
-   offline mode off first (ADR-008, rule 7).
+5. `[convention]` A UI step that reaches the network runs only when the user starts it. It doesn't
+   change offline mode: the data step does, as ADR-008 rule 7 says.
 6. `[planned]` (Credential Manager sign-out ticket, TBD) Calls of the same SDK that don't need an
    `Activity` are made in the area's `:impl`. `:core:auth:impl` clears Credential Manager's saved
    state on sign-out.

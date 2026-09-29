@@ -3,7 +3,7 @@ plugins {
 }
 
 dependencies {
-    api(project(":core:auth:api"))
+    implementation(project(":core:auth:api"))
     implementation(libs.javax.inject)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

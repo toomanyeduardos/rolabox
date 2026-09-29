@@ -3,13 +3,11 @@ package com.eduardoflores.rolabox.feature.account
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.eduardoflores.rolabox.core.auth.api.AuthError
-import com.eduardoflores.rolabox.core.auth.api.AuthRepository
 import com.eduardoflores.rolabox.core.auth.ui.SignInConfig
-import com.eduardoflores.rolabox.core.auth.ui.SignInError
-import com.eduardoflores.rolabox.core.auth.ui.SignInFlow
-import com.eduardoflores.rolabox.core.auth.ui.SignInOutcome
 import com.eduardoflores.rolabox.core.auth.ui.SignInProvider
 import com.eduardoflores.rolabox.core.auth.ui.SignInStepResult
+import com.eduardoflores.rolabox.core.domain.SignInError
+import com.eduardoflores.rolabox.core.domain.SignInUseCase
 import com.eduardoflores.rolabox.core.userdata.api.UserDataRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -41,17 +39,16 @@ internal data class SignInUiState(
     val isLoading: Boolean = false,
     /** The user signed in, or chose to go on without an account. The screen reports it once and leaves. */
     val isFinished: Boolean = false,
-    /** Offline mode is off and this provider's account picker is due. The route shows it and reports the result. */
+    /** This provider's account picker is due. The route shows it and reports the result. */
     val requestedProvider: SignInProvider? = null,
 )
 
 @HiltViewModel
 internal class SignInViewModel @Inject constructor(
-    private val authRepository: AuthRepository,
+    private val signIn: SignInUseCase,
     private val userDataRepository: UserDataRepository,
     val signInConfig: SignInConfig,
 ) : ViewModel() {
-    private val signInFlow = SignInFlow(authRepository, userDataRepository)
     private val _uiState = MutableStateFlow(SignInUiState())
     val uiState: StateFlow<SignInUiState> = _uiState.asStateFlow()
 
@@ -81,8 +78,8 @@ internal class SignInViewModel @Inject constructor(
 
         _uiState.update { it.copy(isLoading = true, emailError = null, passwordError = null, formError = null) }
         viewModelScope.launch {
-            authRepository.signInWithEmail(email, current.password).fold(
-                ifLeft = { error -> _uiState.update { it.withError(error) } },
+            signIn(email, current.password).fold(
+                ifLeft = { error -> _uiState.update { it.withEmailSignInError(error) } },
                 ifRight = { _ -> _uiState.update { it.copy(isLoading = false, isFinished = true) } },
             )
         }
@@ -93,10 +90,14 @@ internal class SignInViewModel @Inject constructor(
         val current = _uiState.value
         if (current.isLoading || current.isFinished) return
 
-        _uiState.update { it.copy(isLoading = true, emailError = null, passwordError = null, formError = null) }
-        viewModelScope.launch {
-            val error = signInFlow.prepare()
-            _uiState.update { if (error == null) it.copy(requestedProvider = provider) else it.withSignInError(error) }
+        _uiState.update {
+            it.copy(
+                isLoading = true,
+                emailError = null,
+                passwordError = null,
+                formError = null,
+                requestedProvider = provider,
+            )
         }
     }
 
@@ -105,11 +106,18 @@ internal class SignInViewModel @Inject constructor(
         if (_uiState.value.requestedProvider == null) return
 
         _uiState.update { it.copy(requestedProvider = null) }
-        viewModelScope.launch {
-            when (val outcome = signInFlow.complete(result)) {
-                SignInOutcome.SignedIn -> _uiState.update { it.copy(isLoading = false, isFinished = true) }
-                SignInOutcome.Cancelled -> _uiState.update { it.copy(isLoading = false) }
-                is SignInOutcome.Failed -> _uiState.update { it.withSignInError(outcome.error) }
+        when (result) {
+            SignInStepResult.Cancelled -> _uiState.update { it.copy(isLoading = false) }
+
+            SignInStepResult.NoAccount -> _uiState.update { it.withFormError(SignInFormError.NoAccount) }
+
+            SignInStepResult.Failed -> _uiState.update { it.withFormError(SignInFormError.Unknown) }
+
+            is SignInStepResult.Credential -> viewModelScope.launch {
+                signIn(result.credential).fold(
+                    ifLeft = { error -> _uiState.update { it.withProviderError(error) } },
+                    ifRight = { _ -> _uiState.update { it.copy(isLoading = false, isFinished = true) } },
+                )
             }
         }
     }
@@ -132,7 +140,17 @@ internal class SignInViewModel @Inject constructor(
 private fun SignInPasswordError?.unlessBadLogin(): SignInPasswordError? =
     if (this == SignInPasswordError.BadLogin) null else this
 
-private fun SignInUiState.withError(error: AuthError): SignInUiState = when (error) {
+private fun SignInUiState.withFormError(error: SignInFormError): SignInUiState =
+    copy(isLoading = false, formError = error)
+
+private fun SignInUiState.withEmailSignInError(error: SignInError): SignInUiState = when (error) {
+    is SignInError.Auth -> withAuthError(error.cause)
+
+    // Offline mode couldn't be turned off, so the sign-in didn't start. There's nothing the user can fix.
+    is SignInError.Storage -> withFormError(SignInFormError.Unknown)
+}
+
+private fun SignInUiState.withAuthError(error: AuthError): SignInUiState = when (error) {
     // The email format is checked before the call, so the backend calling it invalid is an
     // edge case. It still gets the generic answer, not a hint about the account.
     AuthError.InvalidCredential,
@@ -152,13 +170,24 @@ private fun SignInUiState.withError(error: AuthError): SignInUiState = when (err
     -> copy(isLoading = false, formError = SignInFormError.Unknown)
 }
 
-private fun SignInUiState.withSignInError(error: SignInError): SignInUiState = copy(
-    isLoading = false,
-    formError = when (error) {
-        SignInError.Network -> SignInFormError.Network
-        SignInError.TooManyRequests -> SignInFormError.TooManyRequests
-        SignInError.AccountDisabled -> SignInFormError.AccountDisabled
-        SignInError.NoAccount -> SignInFormError.NoAccount
-        SignInError.Unknown -> SignInFormError.Unknown
+// A provider's credential isn't an email or password, so an invalid or expired one asks to start over.
+private fun SignInUiState.withProviderError(error: SignInError): SignInUiState = withFormError(
+    when (error) {
+        is SignInError.Storage -> SignInFormError.Unknown
+
+        is SignInError.Auth -> when (error.cause) {
+            AuthError.Network -> SignInFormError.Network
+
+            AuthError.TooManyRequests -> SignInFormError.TooManyRequests
+
+            AuthError.AccountDisabled -> SignInFormError.AccountDisabled
+
+            AuthError.InvalidCredential,
+            AuthError.EmailAlreadyInUse,
+            AuthError.InvalidEmail,
+            AuthError.WeakPassword,
+            AuthError.Unknown,
+            -> SignInFormError.Unknown
+        }
     },
 )

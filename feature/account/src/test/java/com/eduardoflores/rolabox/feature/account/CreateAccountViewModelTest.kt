@@ -9,6 +9,8 @@ import com.eduardoflores.rolabox.core.auth.testing.SignUpRequest
 import com.eduardoflores.rolabox.core.auth.ui.SignInConfig
 import com.eduardoflores.rolabox.core.auth.ui.SignInProvider
 import com.eduardoflores.rolabox.core.auth.ui.SignInStepResult
+import com.eduardoflores.rolabox.core.domain.SignInUseCase
+import com.eduardoflores.rolabox.core.domain.SignUpUseCase
 import com.eduardoflores.rolabox.core.storage.api.StorageError
 import com.eduardoflores.rolabox.core.testing.MainDispatcherRule
 import com.eduardoflores.rolabox.core.userdata.testing.FakeUserDataRepository
@@ -28,7 +30,11 @@ class CreateAccountViewModelTest {
     private val authRepository = FakeAuthRepository()
     private val userDataRepository = FakeUserDataRepository()
     private val viewModel =
-        CreateAccountViewModel(authRepository, userDataRepository, SignInConfig(googleWebClientId = "web-client-id"))
+        CreateAccountViewModel(
+            SignUpUseCase(authRepository, userDataRepository),
+            SignInUseCase(authRepository, userDataRepository),
+            SignInConfig(googleWebClientId = "web-client-id"),
+        )
     private val state get() = viewModel.uiState.value
 
     private fun fill(
@@ -220,6 +226,30 @@ class CreateAccountViewModelTest {
     }
 
     @Test
+    fun submit_fromOfflineMode_leavesOfflineMode() = runTest {
+        userDataRepository.setOfflineModeChosen(true)
+        fill()
+
+        viewModel.onSubmit()
+
+        assertTrue(state.isSignedUp)
+        assertEquals(false, userDataRepository.observeOfflineModeChosen().first().getOrNull())
+    }
+
+    @Test
+    fun submit_whenOfflineModeCantBeTurnedOff_isAGenericFormErrorAndNoAccountIsCreated() = runTest {
+        userDataRepository.setOfflineModeChosen(true)
+        userDataRepository.writeError = StorageError.Unavailable
+        fill()
+
+        viewModel.onSubmit()
+
+        assertEquals(FormError.Generic, state.formError)
+        assertNull(authRepository.lastSignUp)
+        assertFalse(state.isLoading)
+    }
+
+    @Test
     fun otherErrors_areAGenericFormError() {
         listOf(
             AuthError.InvalidCredential,
@@ -294,13 +324,23 @@ class CreateAccountViewModelTest {
     }
 
     @Test
-    fun google_whenOfflineModeCantBeTurnedOff_showsAnErrorAndSkipsThePicker() {
+    fun google_cancelFromOfflineMode_keepsOfflineMode() = runTest {
+        userDataRepository.setOfflineModeChosen(true)
+
+        google(SignInStepResult.Cancelled)
+
+        assertEquals(true, userDataRepository.observeOfflineModeChosen().first().getOrNull())
+    }
+
+    @Test
+    fun google_whenOfflineModeCantBeTurnedOff_isAFailureWithoutCallingTheBackend() = runTest {
+        userDataRepository.setOfflineModeChosen(true)
         userDataRepository.writeError = StorageError.Unavailable
 
-        viewModel.onProviderClick(SignInProvider.Google)
+        google(SignInStepResult.Credential(SignInCredential.GoogleIdToken("id-token")))
 
-        assertNull(state.requestedProvider)
         assertEquals(FormError.SignInFailed, state.formError)
+        assertNull(authRepository.lastSignInCredential)
         assertFalse(state.isLoading)
     }
 

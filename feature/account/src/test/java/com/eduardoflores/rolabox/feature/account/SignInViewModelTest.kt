@@ -11,6 +11,7 @@ import com.eduardoflores.rolabox.core.auth.testing.SignInWithEmailRequest
 import com.eduardoflores.rolabox.core.auth.ui.SignInConfig
 import com.eduardoflores.rolabox.core.auth.ui.SignInProvider
 import com.eduardoflores.rolabox.core.auth.ui.SignInStepResult
+import com.eduardoflores.rolabox.core.domain.SignInUseCase
 import com.eduardoflores.rolabox.core.storage.api.StorageError
 import com.eduardoflores.rolabox.core.testing.MainDispatcherRule
 import com.eduardoflores.rolabox.core.userdata.testing.FakeUserDataRepository
@@ -31,7 +32,7 @@ class SignInViewModelTest {
     private val authRepository = FakeAuthRepository()
     private val userDataRepository = FakeUserDataRepository()
     private val viewModel =
-        SignInViewModel(authRepository, userDataRepository, SIGN_IN_CONFIG)
+        SignInViewModel(SignInUseCase(authRepository, userDataRepository), userDataRepository, SIGN_IN_CONFIG)
     private val state get() = viewModel.uiState.value
 
     private fun fill(email: String = "toomanyeduardos@gmail.com", password: String = "secret") {
@@ -125,7 +126,7 @@ class SignInViewModelTest {
         }
         val slowViewModel =
             SignInViewModel(
-                slowRepository,
+                SignInUseCase(slowRepository, userDataRepository),
                 userDataRepository,
                 SIGN_IN_CONFIG,
             )
@@ -141,6 +142,30 @@ class SignInViewModelTest {
         assertEquals(1, calls)
         assertFalse(slowViewModel.uiState.value.isLoading)
         assertTrue(slowViewModel.uiState.value.isFinished)
+    }
+
+    @Test
+    fun submit_fromOfflineMode_leavesOfflineMode() = runTest {
+        userDataRepository.setOfflineModeChosen(true)
+        fill()
+
+        viewModel.onSubmit()
+
+        assertTrue(state.isFinished)
+        assertEquals(false, userDataRepository.observeOfflineModeChosen().first().getOrNull())
+    }
+
+    @Test
+    fun submit_whenOfflineModeCantBeTurnedOff_isAFormErrorAndDoesNotCallTheBackend() = runTest {
+        userDataRepository.setOfflineModeChosen(true)
+        userDataRepository.writeError = StorageError.Unavailable
+        fill()
+
+        viewModel.onSubmit()
+
+        assertEquals(SignInFormError.Unknown, state.formError)
+        assertNull(authRepository.lastSignInWithEmail)
+        assertFalse(state.isFinished)
     }
 
     @Test
@@ -264,14 +289,33 @@ class SignInViewModelTest {
     }
 
     @Test
-    fun google_asksForThePickerAndTurnsOfflineModeOffFirst() = runTest {
+    fun google_asksForThePickerWithoutLeavingOfflineModeYet() = runTest {
         userDataRepository.setOfflineModeChosen(true)
 
         viewModel.onProviderClick(SignInProvider.Google)
 
         assertEquals(SignInProvider.Google, state.requestedProvider)
         assertTrue(state.isLoading)
+        assertEquals(true, userDataRepository.observeOfflineModeChosen().first().getOrNull())
+    }
+
+    @Test
+    fun google_successFromOfflineMode_leavesOfflineMode() = runTest {
+        userDataRepository.setOfflineModeChosen(true)
+
+        google(SignInStepResult.Credential(SignInCredential.GoogleIdToken("id-token")))
+
+        assertTrue(state.isFinished)
         assertEquals(false, userDataRepository.observeOfflineModeChosen().first().getOrNull())
+    }
+
+    @Test
+    fun google_cancelFromOfflineMode_keepsOfflineMode() = runTest {
+        userDataRepository.setOfflineModeChosen(true)
+
+        google(SignInStepResult.Cancelled)
+
+        assertEquals(true, userDataRepository.observeOfflineModeChosen().first().getOrNull())
     }
 
     @Test
@@ -335,13 +379,14 @@ class SignInViewModelTest {
     }
 
     @Test
-    fun google_whenOfflineModeCantBeTurnedOff_showsAnErrorAndSkipsThePicker() {
+    fun google_whenOfflineModeCantBeTurnedOff_isAnUnknownFormErrorWithoutCallingTheBackend() = runTest {
+        userDataRepository.setOfflineModeChosen(true)
         userDataRepository.writeError = StorageError.Unavailable
 
-        viewModel.onProviderClick(SignInProvider.Google)
+        google(SignInStepResult.Credential(SignInCredential.GoogleIdToken("id-token")))
 
-        assertNull(state.requestedProvider)
         assertEquals(SignInFormError.Unknown, state.formError)
+        assertNull(authRepository.lastSignInCredential)
         assertFalse(state.isLoading)
     }
 

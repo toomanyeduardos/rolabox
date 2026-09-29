@@ -35,6 +35,7 @@ dependencies {
     implementation(project(":core:userdata:impl"))
     implementation(project(":core:auth:api"))
     implementation(project(":core:auth:ui"))
+    implementation(project(":core:storage:api"))
     implementation(project(":core:sync:api"))
     implementation(project(":core:userdata:api"))
     implementation(project(":feature:account"))

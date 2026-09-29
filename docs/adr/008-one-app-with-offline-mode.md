@@ -33,6 +33,14 @@
   offline mode off before the Credential Manager step ([ADR-009](009-ui-bound-sdks.md), rule 5),
   and `SignInFlowTest` covers it. Migration step 8 and
   Conformance now say so. The decision is unchanged.
+- **Revised 2026-09-29:** A sign-in now turns offline mode off right before its first Firebase
+  request, not before the provider's account picker, and turns it back on if the sign-in fails
+  (Decision, rule 7, Migration step 8, Conformance). The picker runs while offline mode may still be
+  chosen: it's a Play services call the user started, not a Firebase request, so rule 6 still holds.
+  Why: signing in from offline mode is part of v1. With the old order, a user who cancelled the
+  picker was left signed out with offline mode off, so the app opened on Sign in the next time.
+  Every sign-in (Google, email and password, and creating an account) goes through the same rule,
+  where before only Google sign-in turned offline mode off.
 
 ## Context
 
@@ -135,10 +143,11 @@ code guarantees this in four places:
   and offline mode isn't chosen. It checks both, not just one. The sync triggers request no work
   in offline mode. Sync already does nothing while signed out ([ADR-011](011-preferences-sync.md)).
 - **Offline mode and a signed-in user never coexist.** Offline mode can only be chosen while signed
-  out, from the Sign in screen. A sign-in the user starts turns offline mode off before its first
-  network call, which is the Credential Manager step ([ADR-009](009-ui-bound-sdks.md)). If sign-in
-  is cancelled or fails, the user is on the Sign in screen and can choose offline mode again. So
-  Firebase Auth never holds a user in offline mode, and never refreshes a token.
+  out, from the Sign in screen. A sign-in the user starts turns offline mode off right before its
+  first Firebase request, and turns it back on if that sign-in fails, so a user who was offline
+  stays offline. A provider's account picker that comes first, such as Credential Manager's
+  ([ADR-009](009-ui-bound-sdks.md)), runs while offline mode may still be chosen, and cancelling it
+  changes nothing. So Firebase Auth never holds a user in offline mode, and never refreshes a token.
 - **Connections are created lazily.** Initializing the SDK isn't a request. `FirebaseInitProvider`
   creates `FirebaseApp` from the config at process start, and that only reads resources. Creating
   `FirebaseAuth` and reading its cached user, which the start destination and the sync triggers do,
@@ -152,7 +161,8 @@ code guarantees this in four places:
 
 Messages between the app and Google Play services on the device, such as checking that Play services
 is available, aren't network requests and aren't covered. Credential Manager's Google sign-in does
-reach the network, so it follows the sign-in rule above.
+reach the network, but it isn't a Firebase request, and it only runs when the user starts it. The
+Firebase sign-in that follows it is what follows the sign-in rule above.
 
 **One CI build.** CI builds, tests and lints the one app with the placeholder, with no secrets, so
 pull requests from forks run everything. Hilt checks the full graph, Firebase bindings included,
@@ -241,8 +251,8 @@ record:
 8. Make offline mode make no Firebase requests, with tests: `SyncRunner` checks offline mode as well
    as auth (test: offline mode, no `Syncer` runs), the triggers request nothing in offline mode
    (test), `FirebaseFirestore` is injected lazily (test: offline mode, never created), and starting
-   a sign-in turns offline mode off before the Credential Manager step (test). The last part was
-   built with the Google sign-in UI (rule 7).
+   a sign-in turns offline mode off before its first Firebase request, and back on if it fails
+   (test). The last part was built with the Google sign-in UI (rule 7).
 9. Update README ("Building the cloud flavor" becomes "Building with Firebase") and the
    conformance notes of ADR-002 and this ADR.
 
@@ -262,8 +272,8 @@ record:
 6. `[convention]` While offline mode is chosen, or while the user is signed out, the app makes no
    Firebase requests. `SyncRunner` runs `Syncer`s only for a signed-in user who hasn't chosen
    offline mode, and the sync triggers request nothing in offline mode. Tests cover both.
-7. `[convention]` Offline mode can only be chosen while signed out, and a sign-in the user starts
-   turns it off before its first network call.
+7. `[convention]` Offline mode can only be chosen while signed out. Every sign-in the user starts
+   turns it off before its first Firebase request, and turns it back on if the sign-in fails.
 8. `[convention]` SDK objects that can open a connection (`FirebaseFirestore`) are injected through
    `Provider` or `Lazy`, and are never created in offline mode. Initializing `FirebaseApp` and
    reading `FirebaseAuth`'s cached user are allowed at any time.
@@ -279,6 +289,5 @@ picks the config (rule 4), and fails the build on a `google-services.json` under
 is covered by `SyncTriggersTest` and `SyncRunnerTest` in `:core:sync:impl`, and rule 8 by
 `SyncRunnerTest.offlineMode_neverCreatesFirestore`. They check the sync path, which is the only code
 that calls Firebase today. A new Firebase call elsewhere isn't covered by any test. Rule 7 is
-covered by `SignInFlowTest` in `:core:auth:ui` (offline mode is turned off before the Credential
-Manager step). Offline mode is chosen only from the Sign in screen, which is shown only while
-signed out.
+covered by `SignInUseCaseTest` and `SignUpUseCaseTest` in `:core:domain`, which every sign-in goes
+through. Offline mode is chosen only from the Sign in screen, which is shown only while signed out.

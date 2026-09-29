@@ -3,6 +3,6 @@ plugins {
 }
 
 dependencies {
-    api(project(":core:sync:api"))
+    implementation(project(":core:sync:api"))
     implementation(libs.javax.inject)
 }
