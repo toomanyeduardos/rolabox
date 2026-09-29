@@ -21,6 +21,16 @@ class PasswordPolicyTest {
     }
 
     @Test
+    fun hasRequiredCharacters_needsLowerUpperDigitAndSpecial() {
+        assertTrue(PasswordPolicy.hasRequiredCharacters("aB3\$"))
+        assertFalse(PasswordPolicy.hasRequiredCharacters("AB3\$"))
+        assertFalse(PasswordPolicy.hasRequiredCharacters("ab3\$"))
+        assertFalse(PasswordPolicy.hasRequiredCharacters("aB\$x"))
+        assertFalse(PasswordPolicy.hasRequiredCharacters("aB3x"))
+        assertFalse(PasswordPolicy.hasRequiredCharacters(""))
+    }
+
+    @Test
     fun strength_emptyIsEmpty() {
         assertEquals(PasswordStrength.Empty, strength(""))
     }

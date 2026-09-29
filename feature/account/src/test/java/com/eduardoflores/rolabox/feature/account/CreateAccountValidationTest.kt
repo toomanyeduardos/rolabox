@@ -56,8 +56,21 @@ class CreateAccountValidationTest {
     }
 
     @Test
-    fun password_atLeastMinimumIsValidEvenIfWeak() {
-        assertNull(validatePassword("12345678"))
+    fun password_longEnoughButMissingACharacterKindIsRejected() {
+        listOf(
+            "12345678!A", // no lowercase
+            "kdjfhqpw4!", // no uppercase
+            "kdjfhqPw!!", // no digit
+            "kdjfhqPw42", // no special character
+            "12345678",
+        ).forEach {
+            assertEquals("$it should be rejected", PasswordError.MissingCharacters, validatePassword(it))
+        }
+    }
+
+    @Test
+    fun password_withEveryCharacterKindIsValidEvenIfPredictable() {
+        assertNull(validatePassword("Password1!"))
         assertNull(validatePassword("kdjfhqPwzm4x!"))
     }
 }

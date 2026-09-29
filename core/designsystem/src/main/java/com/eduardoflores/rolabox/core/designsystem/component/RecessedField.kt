@@ -61,7 +61,8 @@ private const val INNER_SHADOW_ALPHA = 0.14f
  * An input cut into the metal. Pass [error] to show the red ring and message. [footer] goes under
  * the error, for a strength meter or actions that answer the error. Pass [contentType] so
  * autofill and password managers know what the field is for. A [password] field gets a SHOW/HIDE
- * toggle.
+ * toggle. A disabled
+ * field ignores input, for a form that's being submitted.
  */
 @Composable
 fun RecessedField(
@@ -69,6 +70,7 @@ fun RecessedField(
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     password: Boolean = false,
     contentType: ContentType? = null,
     keyboardType: KeyboardType = KeyboardType.Text,
@@ -85,6 +87,7 @@ fun RecessedField(
         BasicTextField(
             value = value,
             onValueChange = onValueChange,
+            enabled = enabled,
             singleLine = true,
             textStyle = TextStyle(
                 color = colors.ink,

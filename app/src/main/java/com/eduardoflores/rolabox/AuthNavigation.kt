@@ -14,5 +14,6 @@ internal fun EntryProviderScope<NavKey>.authEntries(navigator: AppNavigator) {
         onGoogleClick = {},
         onBack = navigator::pop,
         onSignedUp = navigator::leaveAuth,
+        onSignedIn = navigator::leaveAuth,
     )
 }

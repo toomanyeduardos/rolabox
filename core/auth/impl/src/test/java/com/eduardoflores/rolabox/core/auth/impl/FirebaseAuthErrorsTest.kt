@@ -2,6 +2,8 @@ package com.eduardoflores.rolabox.core.auth.impl
 
 import com.eduardoflores.rolabox.core.auth.api.AuthError
 import com.google.firebase.FirebaseNetworkException
+import com.google.firebase.FirebaseTooManyRequestsException
+import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
@@ -50,6 +52,16 @@ class FirebaseAuthErrorsTest {
     @Test
     fun network_isNetwork() {
         assertEquals(AuthError.Network, FirebaseNetworkException("offline").asAuthError())
+    }
+
+    @Test
+    fun tooManyRequests_isTooManyRequests() {
+        assertEquals(AuthError.TooManyRequests, FirebaseTooManyRequestsException("slow down").asAuthError())
+    }
+
+    @Test
+    fun unnamedFirebaseAuthError_isUnknown() {
+        assertEquals(AuthError.Unknown, FirebaseAuthException("ERROR_OPERATION_NOT_ALLOWED", "off").asAuthError())
     }
 
     @Test

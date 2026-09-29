@@ -15,6 +15,9 @@ internal enum class EmailError {
 internal enum class PasswordError {
     TooShort,
 
+    /** Long enough, but missing a lowercase letter, an uppercase letter, a digit or a special character. */
+    MissingCharacters,
+
     /** Reported by the backend's password policy, which can be stricter than ours. */
     Rejected,
 }
@@ -31,5 +34,8 @@ internal fun validateEmail(email: String): EmailError? = when {
     else -> null
 }
 
-internal fun validatePassword(password: String): PasswordError? =
-    if (PasswordPolicy.isLongEnough(password)) null else PasswordError.TooShort
+internal fun validatePassword(password: String): PasswordError? = when {
+    !PasswordPolicy.isLongEnough(password) -> PasswordError.TooShort
+    !PasswordPolicy.hasRequiredCharacters(password) -> PasswordError.MissingCharacters
+    else -> null
+}

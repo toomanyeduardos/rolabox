@@ -40,6 +40,12 @@ internal class FirebaseAuthRepository @Inject constructor(private val firebaseAu
             checkNotNull(result.user) { "Firebase signed in without a user" }.toAuthUser()
         }
 
+    override suspend fun signInWithEmail(email: String, password: String): Either<AuthError, AuthUser> =
+        catchNamed(Throwable::asAuthError) {
+            val result = firebaseAuth.signInWithEmailAndPassword(email, password).await()
+            checkNotNull(result.user) { "Firebase signed in without a user" }.toAuthUser()
+        }
+
     override suspend fun signUp(name: String, email: String, password: String): Either<AuthError, AuthUser> =
         catchNamed(Throwable::asAuthError) {
             val user = checkNotNull(firebaseAuth.createUserWithEmailAndPassword(email, password).await().user) {

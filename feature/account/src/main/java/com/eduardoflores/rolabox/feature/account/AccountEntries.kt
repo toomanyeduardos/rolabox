@@ -4,7 +4,7 @@ import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 
-/** Where the account flow starts. A placeholder until the Sign in screen exists. */
+/** Where the account flow starts. */
 @Serializable
 data object SignInKey : NavKey
 
@@ -21,9 +21,10 @@ fun EntryProviderScope<NavKey>.accountEntries(
     onGoogleClick: () -> Unit,
     onBack: () -> Unit,
     onSignedUp: () -> Unit,
+    onSignedIn: () -> Unit,
 ) {
     entry<SignInKey> {
-        SignInPlaceholderScreen(onCreateAccountClick = onCreateAccountClick)
+        SignInRoute(onCreateAccountClick = onCreateAccountClick, onSignedIn = onSignedIn)
     }
     entry<CreateAccountKey> {
         CreateAccountRoute(

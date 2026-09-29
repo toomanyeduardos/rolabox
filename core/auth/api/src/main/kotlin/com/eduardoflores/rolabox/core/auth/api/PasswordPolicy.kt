@@ -13,8 +13,10 @@ enum class PasswordStrength {
 }
 
 /**
- * The rules for a new password. Only the length is enforced: a weak password that is long enough
- * is allowed, and the strength meter tells the user about it.
+ * The rules for a new password: at least [MIN_LENGTH] characters, with a lowercase letter, an
+ * uppercase letter, a digit and a special character. They mirror the password policy enforced in
+ * Firebase, which has the last word. Passing them doesn't make a password strong: the strength meter
+ * still tells the user about a predictable one.
  */
 object PasswordPolicy {
     const val MIN_LENGTH = 8
@@ -34,6 +36,11 @@ object PasswordPolicy {
     )
 
     fun isLongEnough(password: String): Boolean = password.length >= MIN_LENGTH
+
+    fun hasRequiredCharacters(password: String): Boolean = password.any(Char::isLowerCase) &&
+        password.any(Char::isUpperCase) &&
+        password.any(Char::isDigit) &&
+        password.any { !it.isLetterOrDigit() }
 
     fun strengthOf(password: String): PasswordStrength = when {
         password.isEmpty() -> PasswordStrength.Empty

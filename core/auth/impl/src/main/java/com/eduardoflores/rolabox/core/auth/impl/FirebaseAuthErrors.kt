@@ -2,6 +2,8 @@ package com.eduardoflores.rolabox.core.auth.impl
 
 import com.eduardoflores.rolabox.core.auth.api.AuthError
 import com.google.firebase.FirebaseNetworkException
+import com.google.firebase.FirebaseTooManyRequestsException
+import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
@@ -27,6 +29,12 @@ internal fun Throwable.asAuthError(): AuthError? = when (this) {
     is FirebaseAuthUserCollisionException -> AuthError.EmailAlreadyInUse
 
     is FirebaseNetworkException -> AuthError.Network
+
+    is FirebaseTooManyRequestsException -> AuthError.TooManyRequests
+
+    // Last, since the ones above are kinds of FirebaseAuthException. It's Firebase's own answer with a
+    // code we haven't named, so it's an error and not a bug.
+    is FirebaseAuthException -> AuthError.Unknown
 
     else -> null
 }

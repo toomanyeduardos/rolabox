@@ -26,10 +26,27 @@
     <string name="account_email_in_use_sign_in">Sign in</string>
     <string name="account_email_in_use_google">Use Google</string>
     <string name="account_error_password_short">Use at least %1$d characters.</string>
+    <string name="account_error_password_characters">Use an uppercase letter, a lowercase letter, a number and a special character.</string>
     <string name="account_error_password_weak">That password is too easy to guess. Try a longer or more varied one.</string>
     <string name="account_error_network">Can\'t reach Rolabox. Check your connection and try again.</string>
     <string name="account_error_generic">Couldn\'t create your account. Try again.</string>
 
-    <string name="account_sign_in_placeholder_title">Sign in</string>
-    <string name="account_sign_in_placeholder_body">Signing in with an existing account is coming soon.</string>
+    <string name="account_lcd_sign_in">Sign in</string>
+    <string name="account_lcd_bad_login">ERR BAD LOGIN</string>
+    <string name="account_lcd_err_no_network">ERR NO NETWORK</string>
+    <string name="account_lcd_err_try_later">ERR TRY LATER</string>
+    <string name="account_lcd_err_disabled">ERR DISABLED</string>
+    <string name="account_lcd_err_unknown">ERR UNKNOWN</string>
+
+    <string name="account_sign_in_title">Sign in</string>
+    <string name="account_sign_in_subtitle">Welcome back. Pick up where you left off.</string>
+    <string name="account_sign_in_cta">Sign in</string>
+    <string name="account_sign_in_footer_prompt">New here?</string>
+    <string name="account_sign_in_footer_action">Create account</string>
+
+    <string name="account_error_password_required">Enter your password.</string>
+    <string name="account_sign_in_error_bad_login">Email or password is incorrect. Try again or reset it.</string>
+    <string name="account_sign_in_error_network">Can\'t access the internet</string>
+    <string name="account_sign_in_error_try_later">Something went wrong. Please try again at a later time</string>
+    <string name="account_sign_in_error_disabled">This account is disabled</string>
 </resources>
