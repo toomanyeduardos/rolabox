@@ -1,0 +1,35 @@
+<resources>
+    <string name="account_field_name">Name</string>
+    <string name="account_field_email">Email</string>
+    <string name="account_field_password">Password</string>
+
+    <string name="account_lcd_new_account">New account</string>
+    <string name="account_lcd_step">1 / 1</string>
+    <string name="account_lcd_no_network">No network</string>
+
+    <string name="account_create_title">Create account</string>
+    <string name="account_create_subtitle">An account backs up playlists and progress.</string>
+    <string name="account_create_cta">Create account</string>
+    <string name="account_google">Continue with Google</string>
+    <string name="account_create_footer_prompt">Have an account?</string>
+    <string name="account_create_footer_action">Sign in</string>
+
+    <string name="account_strength_weak">Weak</string>
+    <string name="account_strength_fair">Fair</string>
+    <string name="account_strength_strong">Strong</string>
+    <string name="account_strength_very_strong">Very strong</string>
+
+    <string name="account_error_name_required">Enter your name.</string>
+    <string name="account_error_email_required">Enter your email address.</string>
+    <string name="account_error_email_invalid">Enter a valid email address.</string>
+    <string name="account_error_email_in_use">An account with this email already exists. Sign in, or continue with Google if you used it.</string>
+    <string name="account_email_in_use_sign_in">Sign in</string>
+    <string name="account_email_in_use_google">Use Google</string>
+    <string name="account_error_password_short">Use at least %1$d characters.</string>
+    <string name="account_error_password_weak">That password is too easy to guess. Try a longer or more varied one.</string>
+    <string name="account_error_network">Can\'t reach Rolabox. Check your connection and try again.</string>
+    <string name="account_error_generic">Couldn\'t create your account. Try again.</string>
+
+    <string name="account_sign_in_placeholder_title">Sign in</string>
+    <string name="account_sign_in_placeholder_body">Signing in with an existing account is coming soon.</string>
+</resources>
