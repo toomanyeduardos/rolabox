@@ -4,6 +4,11 @@
 - **Date:** 2026-09-28
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review
+- **Revised 2026-09-28:** SDKs that bring Play services no longer have to stay out of an offline
+  app, because [ADR-008](008-one-app-with-offline-mode.md) now builds one app with Firebase and Play
+  services always in it. Instead, a UI step that reaches the network, such as Google sign-in, runs
+  only when the user starts it, and turns offline mode off first (Decision, rule 5). The
+  `cloudImplementation` requirement is gone.
 
 ## Context
 
@@ -38,7 +43,7 @@ We will **split each such flow into a UI step and a data step**, one per layer
 For Google sign-in:
 
 ```
-:feature:account                      :core:auth:api            :core:auth:impl (cloud)
+:feature:account                      :core:auth:api            :core:auth:impl
 Credential Manager bottom sheet ──▶  SignInCredential   ──▶   FirebaseAuth.signInWithCredential
   (GoogleIdTokenCredential)            .GoogleIdToken(token)
 ```
@@ -50,9 +55,10 @@ Credential Manager bottom sheet ──▶  SignInCredential   ──▶   Fireba
 - **Configuration only `:app` knows is provided by `:app` through Hilt.** For example, Credential
   Manager needs the Web client ID, which is generated from `google-services.json` as a resource in
   `:app`. `:app` provides it as a qualified `String`.
-- **SDKs that bring Play services stay out of the offline app.** A module that uses one is only
-  reachable through a `cloudImplementation` dependency of `:app` ([ADR-008](008-offline-and-cloud-flavors.md),
-  rules 3 and 6). `:feature:account` already is.
+- **UI steps that reach the network run only when the user starts them, and never in offline
+  mode.** Google sign-in through Credential Manager is the first network call of a sign-in, so the
+  feature turns offline mode off before it ([ADR-008](008-one-app-with-offline-mode.md), rule 7).
+  SDKs that bring Play services are ordinary dependencies, since there's only one app.
 - **Non-UI calls of the same SDK stay in the `:impl`.** Clearing Credential Manager's saved state on
   sign-out needs only the application context, so `:core:auth:impl` does it.
 
@@ -68,8 +74,7 @@ Credential Manager bottom sheet ──▶  SignInCredential   ──▶   Fireba
   it instead of the SDK, so a second screen that signs in doesn't repeat the code. It's a new module
   type that ADR-003 doesn't have. We'll reconsider when a second feature needs the same flow.
 - **Doing the whole flow in the feature, Firebase included.** The shortest path, but the feature would
-  depend on Firebase, which is what [ADR-001](001-layered-architecture.md) and ADR-008 exist to
-  prevent.
+  depend on Firebase, which is what [ADR-001](001-layered-architecture.md) exists to prevent.
 
 ## Consequences
 
@@ -92,5 +97,5 @@ Credential Manager bottom sheet ──▶  SignInCredential   ──▶   Fireba
    and aren't cases of the area's error type.
 4. `[convention]` Configuration the UI step needs from `:app` (such as the Web client ID) is provided
    by `:app` through Hilt.
-5. `[convention]` A module that uses an SDK bringing Play services is reachable only through a
-   `cloudImplementation` dependency of `:app`. ADR-008 rule 3 checks the result in CI.
+5. `[planned]` (ticket `m1/flavor-removal`) A UI step that reaches the network runs only when the
+   user starts it, and turns offline mode off first (ADR-008, rule 7).

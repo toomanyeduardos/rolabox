@@ -125,5 +125,5 @@ detailed conflict rules for each type of data.
 **Conformance.** Room and the library scan don't exist yet. In the cloud flavor, `SyncRepository`
 syncs preferences from DataStore ([ADR-011](011-preferences-sync.md)). Nothing in Room syncs yet. `AuthRepository` is always signed out in the offline
 flavor, and in the cloud flavor it observes the Firebase user, but signing in isn't built yet
-([ADR-008](008-offline-and-cloud-flavors.md)). This ADR sets the constraints those implementations
+([ADR-008](008-one-app-with-offline-mode.md)). This ADR sets the constraints those implementations
 must meet.

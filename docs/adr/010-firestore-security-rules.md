@@ -12,14 +12,14 @@
 ## Context
 
 [ADR-002](002-offline-first-data-flow.md) allows an optional remote backend for user data, and
-[ADR-008](008-offline-and-cloud-flavors.md) made that backend Firebase but left open which Firebase
+[ADR-008](008-one-app-with-offline-mode.md) made that backend Firebase but left open which Firebase
 product stores synced data. That choice is needed now, together with how the stored data is
 protected.
 
 Rolabox is public, and the Firebase config can't be kept from anyone:
 
-- The cloud APK contains the project ID and API key, and anyone can pull them out of it. Keeping
-  `google-services.json` out of the repo (ADR-008, rule 7) stops forks from building against the
+- The APK contains the project ID and API key, and anyone can pull them out of it. Keeping the real
+  `google-services.json` out of the repo (ADR-008, rule 5) stops forks from building against the
   maintainer's project, but it doesn't hide the config.
 - A mobile client talks to Firebase directly, with no server in between. Anyone with the config can
   call the same APIs the app does, with any payload, while signed in as themselves.
@@ -66,7 +66,7 @@ kept in the repo and tested against the emulator in CI.
   passed on the command line, and `.firebaserc` is git-ignored for the same reason as
   `google-services.json`.
 - **Firestore is not the source of truth on the device.** Local storage (Room, or DataStore for
-  preferences) stays the single source of truth (ADR-002). The cloud `SyncRepository` is the only code that reads and writes Firestore, and the UI
+  preferences) stays the single source of truth (ADR-002). The sync code in `:core:sync:impl` is the only code that reads and writes Firestore, and the UI
   never observes Firestore directly.
 
 ## Alternatives considered
@@ -119,9 +119,9 @@ kept in the repo and tested against the emulator in CI.
    new ADR.
 5. `[convention]` Rules are changed only in `firebase/firestore.rules`, and deployed from there with
    the Firebase CLI, never edited in the console.
-6. `[convention]` `.firebaserc` is never committed, just like `google-services.json` (ADR-008,
-   rule 7).
-7. `[convention]` Only the cloud `SyncRepository` reads or writes Firestore. Local storage (Room, or
+6. `[convention]` `.firebaserc` is never committed, just like a real `google-services.json` (ADR-008,
+   rule 5).
+7. `[convention]` Only `:core:sync:impl` reads or writes Firestore. Local storage (Room, or
    DataStore for preferences) stays the single source of truth on the device (ADR-002).
 
 **Conformance.** Rules 1 and 2 are checked by `firebase/test/firestore.rules.test.mjs`, which the

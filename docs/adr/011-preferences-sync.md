@@ -4,6 +4,12 @@
 - **Date:** 2026-09-28
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review
+- **Revised 2026-09-28:** [ADR-008](008-one-app-with-offline-mode.md) replaced the offline and cloud
+  flavors with one app, where offline is a choice the user makes. Sync now runs for a signed-in user
+  who hasn't chosen offline mode, instead of "in the cloud flavor", and `SyncRunner` checks both
+  (Decision, new rule 8). The reason given for the Hilt entry point, keeping WorkManager out of the
+  offline app, no longer applies. The entry point stays, since it works, and moving to `@HiltWorker`
+  would be a separate change (Decision, Alternatives considered).
 
 ## Context
 
@@ -30,7 +36,8 @@ The constraints:
 ## Decision
 
 We will sync each preference **field by field, with last-write-wins on a timestamp** that the
-changing device records. Sync runs in the cloud flavor, as WorkManager work.
+changing device records. Sync runs as WorkManager work, for a signed-in user who hasn't chosen
+offline mode.
 
 **Every synced field carries when it last changed.** `SyncedValue<T>(value, updatedAt)` in
 `:core:sync:api` pairs a value with a `SyncTimestamp`: epoch milliseconds from the clock of the
@@ -92,14 +99,15 @@ separate queue of operations to persist or replay, and the pending work survives
 killed.
 
 **The worker gets its dependencies from a Hilt entry point.** WorkManager creates workers itself.
-`@HiltWorker` would need `:app` to provide WorkManager's configuration, in `src/main`, which would
-put WorkManager in the offline app too. The worker is created by WorkManager like an Activity is by
-Android, so it's an Android entry point in the sense of [ADR-005](005-hilt-dependency-injection.md)
-rule 1.
+The worker is created by WorkManager like an Activity is by Android, so it's an Android entry point
+in the sense of [ADR-005](005-hilt-dependency-injection.md) rule 1. It was chosen over `@HiltWorker`
+to keep WorkManager out of the offline flavor, which no longer exists
+([ADR-008](008-one-app-with-offline-mode.md)). Moving to `@HiltWorker` is now possible, and is left
+to a separate change.
 
-**Only the cloud flavor syncs.** WorkManager, `lifecycle-process` and Firestore are
-`cloudImplementation` dependencies of `:core:sync:impl`. The offline flavor binds
-`NoOpSyncRepository` ([ADR-008](008-offline-and-cloud-flavors.md)).
+**Sync never runs in offline mode.** `SyncRunner` runs the `Syncer`s only when the user is signed
+in and hasn't chosen offline mode, and the triggers request no work in offline mode. So offline
+mode makes no Firebase requests ([ADR-008](008-one-app-with-offline-mode.md), rule 6).
 
 **Signing out keeps local preferences.** They're the device's settings. Signing in again, as the
 same user or another one, merges them with that user's cloud copy.
@@ -121,8 +129,8 @@ same user or another one, merges them with that user's cloud copy.
   item. Per-item last-write-wins with tombstones gives the same result for favorites and
   subscriptions, and is easier to validate in security rules.
 - **Firestore's offline persistence as the local store.** Firestore caches documents and queues
-  writes on its own. But then Firestore would be the source of truth, and the offline flavor, which
-  has no Firestore, would need a second implementation. That contradicts ADR-002 and ADR-010.
+  writes on its own. But then Firestore would be the source of truth, which contradicts ADR-002 and
+  ADR-010.
 - **Queue the operations (an outbox table) and replay them.** Records exactly what the user did. But
   replay order, deduplication and retries are more code, and for last-write-wins data the current
   value and its timestamp already carry everything a merge needs.
@@ -131,8 +139,9 @@ same user or another one, merges them with that user's cloud copy.
   rarely change. Syncing when the app comes to the foreground is enough for now.
 - **`@HiltWorker` with a WorkManager configuration in `:app`.** The standard Hilt integration, and
   what ADR-005 expected for sync. It needs `Configuration.Provider` on the `Application` and the
-  default initializer removed from the manifest, which puts WorkManager in the offline app. The
-  entry point keeps it in the cloud flavor, at the cost of one lookup in `doWork`.
+  default initializer removed from the manifest, which put WorkManager in the offline app while
+  that flavor existed. The entry point kept it in the cloud flavor, at the cost of one lookup in
+  `doWork`. That reason is gone since ADR-008's 2026-09-28 revision.
 - **Name the API `SyncManager`, as before.** It had one method, `requestSync()`. We renamed it to
   `SyncRepository` so that sync is named like every other area's API, and it now also starts the
   triggers.
@@ -175,13 +184,18 @@ same user or another one, merges them with that user's cloud copy.
    that moment, in the same atomic update as the write.
 4. `[convention]` Remote writes happen in a Firestore transaction that merges with the current
    remote data, and write only what changed.
-5. `[convention]` Each kind of synced data is a `Syncer` bound into the set in the cloud
+5. `[convention]` Each kind of synced data is a `Syncer` bound into the set in
    `SyncModule`. Sync runs only through WorkManager work, requested by `SyncRepository`.
 6. `[enforced]` Rules reject a synced field with an unknown value, a timestamp more than a day ahead
    of the server, a timestamp older than the stored one, or a removed field. The rules tests check
    this.
 7. `[convention]` Synced enum values are stored by name, and a name is never renamed or reused.
+8. `[planned]` (ticket `m1/flavor-removal`) `SyncRunner` runs `Syncer`s only for a signed-in user
+   who hasn't chosen offline mode, and the triggers request no work in offline mode (ADR-008,
+   rule 6).
 
 **Conformance.** Preferences (theme and accent color) sync. Collections have the merge function and
 its tests, but no data uses it until favorite artists arrive with the library area. Rule 6 is
-checked by `firebase/test/firestore.rules.test.mjs` in CI.
+checked by `firebase/test/firestore.rules.test.mjs` in CI. Rule 8: `SyncRunner` already does nothing
+while signed out, but doesn't read the offline-mode choice yet, and sync still runs only in the
+cloud flavor until ADR-008's migration.
