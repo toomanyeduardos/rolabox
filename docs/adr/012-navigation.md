@@ -4,6 +4,12 @@
 - **Date:** 2026-09-28
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review
+- **Revised 2026-09-28:** [ADR-008](008-one-app-with-offline-mode.md) replaced the offline and cloud
+  flavors with one app, so every build has the same destinations. Entries no longer depend on the
+  flavor: all of them are in `src/main`, and whether the user starts on Sign in is decided at
+  runtime by the start destination (Context, Decision, rule 8).
+- **Revised 2026-09-28:** The flavors are gone (`m1/flavor-removal`), so rule 8 holds, and it's a
+  convention now. The decision is unchanged.
 
 ## Context
 
@@ -21,9 +27,9 @@ Rolabox needs one navigation model for the whole app:
 
 [ADR-003](003-module-boundaries.md) already settles part of this: features never depend on each
 other, and navigation between features is wired in `:app`. It doesn't say which navigation library
-to use, who owns the back stacks, or how one feature opens another's screen. The offline flavor
-([ADR-008](008-offline-and-cloud-flavors.md)) has no account features, so its destinations differ
-from the cloud one.
+to use, who owns the back stacks, or how one feature opens another's screen. There is one app
+([ADR-008](008-one-app-with-offline-mode.md)), so every build has the account screens, and a user
+in offline mode simply never opens them.
 
 Navigation 3 is stable and is Google's recommended navigation library for Compose apps. It works
 differently from Navigation Compose: a back stack is a plain list of keys held in Compose state,
@@ -66,9 +72,9 @@ navigation state.
 - **State follows the entry.** `NavDisplay`'s entry decorators keep saveable UI state and
   ViewModels per entry, and clear them when the entry is popped. ViewModels are created in the
   entries, so each screen gets its own, and two artist screens on the same stack don't share one.
-- **Flavors choose the entries.** Entries that exist in only one flavor, such as the account
-  screens in `cloud`, are added from a function in that flavor's source set, and the other flavor's
-  version adds none (ADR-008). Entries that both flavors have stay in `src/main`.
+- **Every build has the same entries.** All entries, the account screens included, are added from
+  `src/main` (ADR-008). Which one the app opens on is decided at runtime by the start destination,
+  not by the build.
 
 ## Alternatives considered
 
@@ -132,5 +138,5 @@ navigation state.
    its own back stack, so its screens can't be reached with back.
 7. `[convention]` Side-by-side layouts come from scene strategies in `:app`. Features describe their
    entries through metadata, and don't change how screens are arranged based on window size.
-8. `[convention]` Entries that exist in only one flavor are added from that flavor's source set
-   (ADR-008).
+8. `[convention]` Every entry is added from `src/main`, and no entry depends on the build
+   configuration (ADR-008).

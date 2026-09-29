@@ -89,6 +89,5 @@ private fun CreateAccountUiState.withSignUpError(error: AuthError): CreateAccoun
 
     AuthError.InvalidCredential,
     AuthError.AccountDisabled,
-    AuthError.Unavailable,
     -> copy(isLoading = false, formError = FormError.Generic)
 }

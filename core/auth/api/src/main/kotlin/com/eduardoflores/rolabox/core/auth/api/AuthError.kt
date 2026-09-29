@@ -22,7 +22,4 @@ sealed interface AuthError {
 
     /** Sign-up: the backend's password policy rejected the password. */
     data object WeakPassword : AuthError
-
-    /** This build has no backend to sign in to (the offline flavor, ADR-008). */
-    data object Unavailable : AuthError
 }

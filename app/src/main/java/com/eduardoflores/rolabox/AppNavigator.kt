@@ -10,6 +10,7 @@ import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import com.eduardoflores.rolabox.core.domain.StartDestination
+import com.eduardoflores.rolabox.feature.account.SignInKey
 import kotlinx.serialization.Serializable
 
 /** The signed-in app's first screen. It's a section of its own once there are more (ADR-012). */
@@ -71,7 +72,7 @@ internal fun rememberAppNavigator(startDestination: StartDestination): AppNaviga
     }
     // Both stacks are always created, so that a flow can be entered later. The auth stack is emptied
     // when it's left, and doesn't come back.
-    val authBackStack = rememberNavBackStack(authStartKey())
+    val authBackStack = rememberNavBackStack(SignInKey)
     val mainBackStack = rememberNavBackStack(HomeKey)
     return AppNavigator(flowState, authBackStack, mainBackStack)
 }

@@ -4,10 +4,8 @@ import org.gradle.api.Project
 
 private const val UNIT_TEST_TASK = "unitTest"
 
-/** The default flavor's debug unit tests, the variant a fresh clone builds (ADR-008). */
-internal val DEFAULT_ANDROID_UNIT_TEST_TASK = "test" +
-    BackendFlavor.entries.single { it.isDefault }.flavorName.replaceFirstChar(Char::uppercaseChar) +
-    "DebugUnitTest"
+/** The debug unit tests. There are no product flavors (ADR-008), so this is the same in every module. */
+internal const val DEFAULT_ANDROID_UNIT_TEST_TASK = "testDebugUnitTest"
 
 /**
  * Every module gets a `unitTest` task, so `./gradlew unitTest` runs the whole codebase's unit tests

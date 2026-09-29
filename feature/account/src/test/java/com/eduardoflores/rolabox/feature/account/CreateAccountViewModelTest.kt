@@ -203,7 +203,7 @@ class CreateAccountViewModelTest {
 
     @Test
     fun otherErrors_areAGenericFormError() {
-        listOf(AuthError.InvalidCredential, AuthError.AccountDisabled, AuthError.Unavailable).forEach { error ->
+        listOf(AuthError.InvalidCredential, AuthError.AccountDisabled).forEach { error ->
             authRepository.signUpError = error
             fill()
 

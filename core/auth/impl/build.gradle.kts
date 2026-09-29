@@ -5,15 +5,20 @@ plugins {
 
 android {
     namespace = "com.eduardoflores.rolabox.core.auth.impl"
+
+    testOptions {
+        // Firebase's exception classes call Android helpers that the unit-test android.jar doesn't implement.
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 dependencies {
     implementation(project(":core:auth:api"))
     implementation(project(":core:common"))
-    cloudImplementation(platform(libs.firebase.bom))
-    cloudImplementation(libs.firebase.auth)
-    // Awaits Firebase's Tasks. It depends on Play services, so it stays in cloud (ADR-008 rule 3).
-    cloudImplementation(libs.kotlinx.coroutines.play.services)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+    // Awaits Firebase's Tasks.
+    implementation(libs.kotlinx.coroutines.play.services)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
 }

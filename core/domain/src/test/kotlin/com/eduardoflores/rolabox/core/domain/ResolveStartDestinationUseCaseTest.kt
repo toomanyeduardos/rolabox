@@ -13,8 +13,7 @@ class ResolveStartDestinationUseCaseTest {
     private val authRepository = FakeAuthRepository()
     private val userDataRepository = FakeUserDataRepository()
 
-    private fun resolve(accountsAvailable: Boolean = true) =
-        ResolveStartDestinationUseCase(authRepository, userDataRepository, accountsAvailable)
+    private fun resolve() = ResolveStartDestinationUseCase(authRepository, userDataRepository)
 
     @Test
     fun signedIn_isHome() = runTest {
@@ -49,10 +48,5 @@ class ResolveStartDestinationUseCaseTest {
         userDataRepository.setReadError(StorageError.Corrupted)
 
         assertEquals(StartDestination.Home, resolve()())
-    }
-
-    @Test
-    fun accountsNotAvailable_isHomeEvenWhenSignedOut() = runTest {
-        assertEquals(StartDestination.Home, resolve(accountsAvailable = false)())
     }
 }

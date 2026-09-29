@@ -3,7 +3,7 @@ package com.eduardoflores.rolabox.core.sync.impl
 import arrow.core.Either
 import com.eduardoflores.rolabox.core.userdata.api.SyncedPreferences
 
-/** The user's synced preferences in the cloud. The cloud flavor backs it with Firestore. */
+/** The user's synced preferences in the cloud, backed by Firestore. */
 internal interface RemotePreferences {
     /**
      * Reads the remote preferences of the user [userId], and writes back what [merge] returns
