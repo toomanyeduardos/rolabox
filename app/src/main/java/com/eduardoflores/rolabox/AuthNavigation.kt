@@ -8,6 +8,8 @@ import com.eduardoflores.rolabox.feature.account.accountEntries
 internal fun EntryProviderScope<NavKey>.authEntries(navigator: AppNavigator) {
     accountEntries(
         onCreateAccountClick = { navigator.push(CreateAccountKey) },
+        // Reset password comes with its own ticket, which will push its key with the email.
+        onForgotPasswordClick = {},
         // Sign in is below Create account in the stack, so going back is going to it.
         onSignInClick = navigator::pop,
         // Google sign-in comes with its own ticket (ADR-009).

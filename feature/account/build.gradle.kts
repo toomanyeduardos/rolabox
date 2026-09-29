@@ -13,12 +13,17 @@ android {
 
 dependencies {
     implementation(project(":core:auth:api"))
+    implementation(project(":core:userdata:api"))
+
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
+
     testImplementation(project(":core:auth:testing"))
     testImplementation(project(":core:testing"))
+    testImplementation(project(":core:userdata:testing"))
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+
     androidTestImplementation(project(":core:auth:api"))
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.test.runner)

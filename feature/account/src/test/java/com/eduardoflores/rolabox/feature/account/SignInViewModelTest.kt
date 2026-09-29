@@ -7,7 +7,9 @@ import com.eduardoflores.rolabox.core.auth.api.AuthState
 import com.eduardoflores.rolabox.core.auth.api.AuthUser
 import com.eduardoflores.rolabox.core.auth.testing.FakeAuthRepository
 import com.eduardoflores.rolabox.core.auth.testing.SignInWithEmailRequest
+import com.eduardoflores.rolabox.core.storage.api.StorageError
 import com.eduardoflores.rolabox.core.testing.MainDispatcherRule
+import com.eduardoflores.rolabox.core.userdata.testing.FakeUserDataRepository
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -23,7 +25,8 @@ class SignInViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val authRepository = FakeAuthRepository()
-    private val viewModel = SignInViewModel(authRepository)
+    private val userDataRepository = FakeUserDataRepository()
+    private val viewModel = SignInViewModel(authRepository, userDataRepository)
     private val state get() = viewModel.uiState.value
 
     private fun fill(email: String = "toomanyeduardos@gmail.com", password: String = "secret") {
@@ -88,7 +91,7 @@ class SignInViewModelTest {
             SignInWithEmailRequest("toomanyeduardos@gmail.com", " secret "),
             authRepository.lastSignInWithEmail,
         )
-        assertTrue(state.isSignedIn)
+        assertTrue(state.isFinished)
         assertFalse(state.isLoading)
         assertTrue(authRepository.observeAuthState().first() is AuthState.SignedIn)
     }
@@ -115,7 +118,7 @@ class SignInViewModelTest {
                 return authRepository.signInWithEmail(email, password)
             }
         }
-        val slowViewModel = SignInViewModel(slowRepository)
+        val slowViewModel = SignInViewModel(slowRepository, userDataRepository)
         slowViewModel.onEmailChange("toomanyeduardos@gmail.com")
         slowViewModel.onPasswordChange("secret")
 
@@ -127,7 +130,7 @@ class SignInViewModelTest {
 
         assertEquals(1, calls)
         assertFalse(slowViewModel.uiState.value.isLoading)
-        assertTrue(slowViewModel.uiState.value.isSignedIn)
+        assertTrue(slowViewModel.uiState.value.isFinished)
     }
 
     @Test
@@ -141,7 +144,7 @@ class SignInViewModelTest {
         assertNull(state.emailError)
         assertNull(state.formError)
         assertFalse(state.isLoading)
-        assertFalse(state.isSignedIn)
+        assertFalse(state.isFinished)
     }
 
     @Test
@@ -223,6 +226,25 @@ class SignInViewModelTest {
         viewModel.onSubmit()
 
         assertNull(state.formError)
-        assertTrue(state.isSignedIn)
+        assertTrue(state.isFinished)
+    }
+
+    @Test
+    fun offline_savesTheChoiceAndFinishes() = runTest {
+        viewModel.onOfflineClick()
+
+        assertTrue(userDataRepository.observeOfflineModeChosen().first().getOrNull() == true)
+        assertTrue(state.isFinished)
+        assertFalse(state.isLoading)
+    }
+
+    @Test
+    fun offline_whenSavingFailsStaysOnTheScreenWithAnError() {
+        userDataRepository.writeError = StorageError.Unavailable
+
+        viewModel.onOfflineClick()
+
+        assertFalse(state.isFinished)
+        assertEquals(SignInFormError.Unknown, state.formError)
     }
 }

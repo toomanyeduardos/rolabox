@@ -2,11 +2,13 @@ package com.eduardoflores.rolabox.feature.account
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.platform.testTag
@@ -26,20 +28,25 @@ import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxTheme
 @Composable
 internal fun SignInRoute(
     onCreateAccountClick: () -> Unit,
+    onForgotPasswordClick: (email: String) -> Unit,
+    onGoogleClick: () -> Unit,
     onSignedIn: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SignInViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val currentOnSignedIn by rememberUpdatedState(onSignedIn)
-    LaunchedEffect(state.isSignedIn) {
-        if (state.isSignedIn) currentOnSignedIn()
+    LaunchedEffect(state.isFinished) {
+        if (state.isFinished) currentOnSignedIn()
     }
     SignInScreen(
         state = state,
         onEmailChange = viewModel::onEmailChange,
         onPasswordChange = viewModel::onPasswordChange,
         onSignInClick = viewModel::onSubmit,
+        onForgotPasswordClick = { onForgotPasswordClick(state.email.trim()) },
+        onGoogleClick = onGoogleClick,
+        onOfflineClick = viewModel::onOfflineClick,
         onCreateAccountClick = onCreateAccountClick,
         modifier = modifier,
     )
@@ -51,18 +58,26 @@ internal fun SignInScreen(
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onSignInClick: () -> Unit,
+    onForgotPasswordClick: () -> Unit,
+    onGoogleClick: () -> Unit,
+    onOfflineClick: () -> Unit,
     onCreateAccountClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val lcdError = state.lcdErrorRes()
-    val enabled = !state.isLoading
     AuthScaffold(
         modifier = modifier,
         lcdLeft = stringResource(lcdError ?: R.string.account_lcd_sign_in),
+        lcdRight = stringResource(R.string.account_lcd_offline_ok),
         lcdError = lcdError != null,
         title = stringResource(R.string.account_sign_in_title),
         subtitle = stringResource(R.string.account_sign_in_subtitle),
         footer = {
+            TextAction(
+                text = stringResource(R.string.account_sign_in_offline),
+                onClick = onOfflineClick,
+                modifier = Modifier.testTag(SignInTags.OFFLINE),
+            )
             FooterLink(
                 prompt = stringResource(R.string.account_sign_in_footer_prompt),
                 action = stringResource(R.string.account_sign_in_footer_action),
@@ -70,6 +85,37 @@ internal fun SignInScreen(
             )
         },
     ) {
+        SignInFields(
+            state = state,
+            onEmailChange = onEmailChange,
+            onPasswordChange = onPasswordChange,
+            onSubmit = onSignInClick,
+            onForgotPasswordClick = onForgotPasswordClick,
+        )
+        Column(Modifier.padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            state.formError?.let { FieldError(stringResource(it.messageRes())) }
+            PrimaryButton(
+                text = stringResource(R.string.account_sign_in_cta),
+                onClick = onSignInClick,
+                loading = state.isLoading,
+                modifier = Modifier.testTag(SignInTags.SUBMIT),
+            )
+            OrDivider(Modifier.fillMaxWidth())
+            GoogleButton(onClick = onGoogleClick, modifier = Modifier.testTag(SignInTags.GOOGLE))
+        }
+    }
+}
+
+@Composable
+private fun SignInFields(
+    state: SignInUiState,
+    onEmailChange: (String) -> Unit,
+    onPasswordChange: (String) -> Unit,
+    onSubmit: () -> Unit,
+    onForgotPasswordClick: () -> Unit,
+) {
+    val enabled = !state.isLoading
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
             RecessedField(
                 label = stringResource(R.string.account_field_email),
@@ -90,19 +136,15 @@ internal fun SignInScreen(
                 password = true,
                 contentType = ContentType.Password,
                 imeAction = ImeAction.Done,
-                onImeAction = onSignInClick,
+                onImeAction = onSubmit,
                 error = state.passwordError?.let { stringResource(it.messageRes()) },
             )
         }
-        Column(Modifier.padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            state.formError?.let { FieldError(stringResource(it.messageRes())) }
-            PrimaryButton(
-                text = stringResource(R.string.account_sign_in_cta),
-                onClick = onSignInClick,
-                loading = state.isLoading,
-                modifier = Modifier.testTag(SignInTags.SUBMIT),
-            )
-        }
+        TextAction(
+            text = stringResource(R.string.account_sign_in_forgot),
+            onClick = onForgotPasswordClick,
+            modifier = Modifier.align(Alignment.End).testTag(SignInTags.FORGOT_PASSWORD),
+        )
     }
 }
 
@@ -144,6 +186,9 @@ private fun SignInScreenPreview() {
             onEmailChange = {},
             onPasswordChange = {},
             onSignInClick = {},
+            onForgotPasswordClick = {},
+            onGoogleClick = {},
+            onOfflineClick = {},
             onCreateAccountClick = {},
         )
     }
@@ -162,6 +207,9 @@ private fun SignInScreenBadLoginPreview() {
             onEmailChange = {},
             onPasswordChange = {},
             onSignInClick = {},
+            onForgotPasswordClick = {},
+            onGoogleClick = {},
+            onOfflineClick = {},
             onCreateAccountClick = {},
         )
     }
