@@ -1,0 +1,12 @@
+<resources>
+    <string name="ds_back">Back</string>
+    <string name="ds_show_password">SHOW</string>
+    <string name="ds_hide_password">HIDE</string>
+    <string name="ds_show_password_description">Show password</string>
+    <string name="ds_hide_password_description">Hide password</string>
+    <string name="ds_or">or</string>
+    <string name="ds_lcd_error">ERR</string>
+    <!-- The wordmark is "r", the vinyl, then "labox". -->
+    <string name="ds_wordmark_start">r</string>
+    <string name="ds_wordmark_end">labox</string>
+</resources>

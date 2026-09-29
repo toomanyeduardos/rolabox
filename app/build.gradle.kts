@@ -3,6 +3,7 @@ plugins {
     id("rolabox.android.application.firebase")
     id("rolabox.android.compose")
     id("rolabox.hilt")
+    id("rolabox.navigation")
 }
 
 android {
@@ -41,7 +42,9 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.navigation3.ui)
     testImplementation(project(":core:auth:testing"))
     testImplementation(project(":core:storage:api"))
     testImplementation(project(":core:testing"))

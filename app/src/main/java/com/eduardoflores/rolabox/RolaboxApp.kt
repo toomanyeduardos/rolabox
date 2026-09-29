@@ -6,14 +6,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import com.eduardoflores.rolabox.core.designsystem.component.RolaboxTopBar
-import com.eduardoflores.rolabox.core.domain.StartDestination
-import com.eduardoflores.rolabox.feature.account.AuthenticationScreen
 import com.eduardoflores.rolabox.splash.RolaboxSplash
 import com.eduardoflores.rolabox.splash.SplashHandoff
 import com.eduardoflores.rolabox.splash.rememberAnimationsEnabled
@@ -40,10 +34,7 @@ internal fun RolaboxApp(
 
     Box(modifier = modifier.fillMaxSize()) {
         if (startup is StartupUiState.Ready) {
-            when (startup.destination) {
-                StartDestination.Home -> HomeScreen()
-                StartDestination.SignIn -> AuthenticationScreen(modifier = Modifier.fillMaxSize())
-            }
+            RolaboxNavigation(startDestination = startup.destination, modifier = Modifier.fillMaxSize())
         }
         AnimatedVisibility(
             visible = startup is StartupUiState.Resolving || (awaitingSystemSplash && splashHandoff == null),
@@ -54,15 +45,5 @@ internal fun RolaboxApp(
                 animate = animationsEnabled,
             )
         }
-    }
-}
-
-@Composable
-private fun HomeScreen(modifier: Modifier = Modifier) {
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        topBar = { RolaboxTopBar(title = stringResource(R.string.app_name)) },
-    ) { innerPadding ->
-        HomeContent(modifier = Modifier.padding(innerPadding))
     }
 }

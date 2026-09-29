@@ -12,6 +12,7 @@ import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.auth.UserProfileChangeRequest
 import javax.inject.Inject
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -32,6 +33,23 @@ internal class FirebaseAuthRepository @Inject constructor(private val firebaseAu
             val result = firebaseAuth.signInWithCredential(credential.toFirebaseCredential()).await()
             checkNotNull(result.user) { "Firebase signed in without a user" }.toAuthUser()
         }
+
+    override suspend fun signUp(name: String, email: String, password: String): Either<AuthError, AuthUser> =
+        catchNamed(Throwable::asAuthError) {
+            val user = checkNotNull(firebaseAuth.createUserWithEmailAndPassword(email, password).await().user) {
+                "Firebase created an account without a user"
+            }
+            saveDisplayName(user, name)
+            user.toAuthUser()
+        }
+
+    // The account exists by now, so a failure here (say, the connection dropping) doesn't fail the
+    // sign-up: the user would be told the email is taken when they retry. They're signed in without a
+    // name instead. Anything Firebase throws that isn't named as an error still crashes.
+    private suspend fun saveDisplayName(user: FirebaseUser, name: String) {
+        val request = UserProfileChangeRequest.Builder().setDisplayName(name).build()
+        catchNamed(Throwable::asAuthError) { user.updateProfile(request).await() }
+    }
 
     // Firebase signs out synchronously from its local state and doesn't fail. Clearing Credential
     // Manager's saved state joins it when the sign-in UI exists (ADR-009), and that can fail.

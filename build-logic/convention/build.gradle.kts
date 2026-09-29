@@ -8,6 +8,7 @@ dependencies {
     implementation(libs.android.gradlePlugin)
     implementation(libs.kotlin.gradlePlugin)
     implementation(libs.kotlin.composeCompiler.gradlePlugin)
+    implementation(libs.kotlin.serialization.gradlePlugin)
     implementation(libs.hilt.gradlePlugin)
     implementation(libs.ksp.gradlePlugin)
     implementation(libs.ktlint.gradlePlugin)
@@ -36,6 +37,10 @@ gradlePlugin {
         register("androidFeature") {
             id = "rolabox.android.feature"
             implementationClass = "RolaboxAndroidFeatureConventionPlugin"
+        }
+        register("navigation") {
+            id = "rolabox.navigation"
+            implementationClass = "RolaboxNavigationConventionPlugin"
         }
         register("hilt") {
             id = "rolabox.hilt"
