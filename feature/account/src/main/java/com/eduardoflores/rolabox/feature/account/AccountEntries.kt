@@ -15,6 +15,7 @@ data object CreateAccountKey : NavKey
  * The entries of the account flow (ADR-012). The screens report their exits as lambdas, and `:app`
  * decides where each one goes.
  */
+@Suppress("LongParameterList")
 fun EntryProviderScope<NavKey>.accountEntries(
     onCreateAccountClick: () -> Unit,
     onSignInClick: () -> Unit,
