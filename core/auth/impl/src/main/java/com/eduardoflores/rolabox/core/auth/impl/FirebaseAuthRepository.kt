@@ -1,5 +1,6 @@
 package com.eduardoflores.rolabox.core.auth.impl
 
+import android.util.Log
 import arrow.core.Either
 import arrow.core.right
 import com.eduardoflores.rolabox.core.auth.api.AuthError
@@ -20,10 +21,15 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.tasks.await
 
+private const val TAG = "FirebaseAuthRepository"
+
 internal class FirebaseAuthRepository @Inject constructor(private val firebaseAuth: FirebaseAuth) : AuthRepository {
     // The auth state is read from Firebase's local cache, so observing it can't fail.
     override fun observeAuthState(): Flow<AuthState> = callbackFlow {
-        val listener = FirebaseAuth.AuthStateListener { auth -> trySend(auth.currentUser.toAuthState()) }
+        val listener = FirebaseAuth.AuthStateListener { auth ->
+            Log.d(TAG, "auth state: uid=${auth.currentUser?.uid}, displayName='${auth.currentUser?.displayName}'")
+            trySend(auth.currentUser.toAuthState())
+        }
         firebaseAuth.addAuthStateListener(listener)
         awaitClose { firebaseAuth.removeAuthStateListener(listener) }
     }.distinctUntilChanged()
@@ -40,6 +46,7 @@ internal class FirebaseAuthRepository @Inject constructor(private val firebaseAu
                 "Firebase created an account without a user"
             }
             saveDisplayName(user, name)
+            Log.d(TAG, "sign-up: displayName='${user.displayName}' (typed='$name')")
             user.toAuthUser()
         }
 
@@ -48,7 +55,8 @@ internal class FirebaseAuthRepository @Inject constructor(private val firebaseAu
     // name instead. Anything Firebase throws that isn't named as an error still crashes.
     private suspend fun saveDisplayName(user: FirebaseUser, name: String) {
         val request = UserProfileChangeRequest.Builder().setDisplayName(name).build()
-        catchNamed(Throwable::asAuthError) { user.updateProfile(request).await() }
+        val result = catchNamed(Throwable::asAuthError) { user.updateProfile(request).await() }
+        Log.d(TAG, "sign-up: updateProfile result=$result")
     }
 
     // Firebase signs out synchronously from its local state and doesn't fail. Clearing Credential
