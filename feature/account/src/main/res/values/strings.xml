@@ -32,6 +32,7 @@
     <string name="account_error_generic">Couldn\'t create your account. Try again.</string>
 
     <string name="account_lcd_sign_in">Sign in</string>
+    <string name="account_lcd_offline_ok">Offline OK</string>
     <string name="account_lcd_bad_login">ERR BAD LOGIN</string>
     <string name="account_lcd_err_no_network">ERR NO NETWORK</string>
     <string name="account_lcd_err_try_later">ERR TRY LATER</string>
@@ -41,6 +42,8 @@
     <string name="account_sign_in_title">Sign in</string>
     <string name="account_sign_in_subtitle">Welcome back. Pick up where you left off.</string>
     <string name="account_sign_in_cta">Sign in</string>
+    <string name="account_sign_in_forgot">Forgot password?</string>
+    <string name="account_sign_in_offline">Use offline without an account</string>
     <string name="account_sign_in_footer_prompt">New here?</string>
     <string name="account_sign_in_footer_action">Create account</string>
 

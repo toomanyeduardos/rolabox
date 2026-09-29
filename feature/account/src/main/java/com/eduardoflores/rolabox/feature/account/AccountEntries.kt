@@ -18,6 +18,7 @@ data object CreateAccountKey : NavKey
 @Suppress("LongParameterList")
 fun EntryProviderScope<NavKey>.accountEntries(
     onCreateAccountClick: () -> Unit,
+    onForgotPasswordClick: (email: String) -> Unit,
     onSignInClick: () -> Unit,
     onGoogleClick: () -> Unit,
     onBack: () -> Unit,
@@ -25,7 +26,12 @@ fun EntryProviderScope<NavKey>.accountEntries(
     onSignedIn: () -> Unit,
 ) {
     entry<SignInKey> {
-        SignInRoute(onCreateAccountClick = onCreateAccountClick, onSignedIn = onSignedIn)
+        SignInRoute(
+            onCreateAccountClick = onCreateAccountClick,
+            onForgotPasswordClick = onForgotPasswordClick,
+            onGoogleClick = onGoogleClick,
+            onSignedIn = onSignedIn,
+        )
     }
     entry<CreateAccountKey> {
         CreateAccountRoute(

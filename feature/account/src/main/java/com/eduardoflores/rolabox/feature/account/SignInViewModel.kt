@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.eduardoflores.rolabox.core.auth.api.AuthError
 import com.eduardoflores.rolabox.core.auth.api.AuthRepository
+import com.eduardoflores.rolabox.core.userdata.api.UserDataRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,12 +33,15 @@ internal data class SignInUiState(
     val passwordError: SignInPasswordError? = null,
     val formError: SignInFormError? = null,
     val isLoading: Boolean = false,
-    /** The user is signed in. The screen reports it once and leaves. */
-    val isSignedIn: Boolean = false,
+    /** The user signed in, or chose to go on without an account. The screen reports it once and leaves. */
+    val isFinished: Boolean = false,
 )
 
 @HiltViewModel
-internal class SignInViewModel @Inject constructor(private val authRepository: AuthRepository) : ViewModel() {
+internal class SignInViewModel @Inject constructor(
+    private val authRepository: AuthRepository,
+    private val userDataRepository: UserDataRepository,
+) : ViewModel() {
     private val _uiState = MutableStateFlow(SignInUiState())
     val uiState: StateFlow<SignInUiState> = _uiState.asStateFlow()
 
@@ -53,7 +57,7 @@ internal class SignInViewModel @Inject constructor(private val authRepository: A
 
     fun onSubmit() {
         val current = _uiState.value
-        if (current.isLoading || current.isSignedIn) return
+        if (current.isLoading || current.isFinished) return
 
         // The password is left as typed, since spaces can be part of it. The email is trimmed, since
         // keyboards and autofill often add a trailing space.
@@ -69,7 +73,21 @@ internal class SignInViewModel @Inject constructor(private val authRepository: A
         viewModelScope.launch {
             authRepository.signInWithEmail(email, current.password).fold(
                 ifLeft = { error -> _uiState.update { it.withError(error) } },
-                ifRight = { _ -> _uiState.update { it.copy(isLoading = false, isSignedIn = true) } },
+                ifRight = { _ -> _uiState.update { it.copy(isLoading = false, isFinished = true) } },
+            )
+        }
+    }
+
+    /** Goes on without an account (ADR-008). The choice is kept on this device, so it's asked once. */
+    fun onOfflineClick() {
+        val current = _uiState.value
+        if (current.isLoading || current.isFinished) return
+
+        _uiState.update { it.copy(isLoading = true, emailError = null, passwordError = null, formError = null) }
+        viewModelScope.launch {
+            userDataRepository.setOfflineModeChosen(true).fold(
+                ifLeft = { _ -> _uiState.update { it.copy(isLoading = false, formError = SignInFormError.Unknown) } },
+                ifRight = { _ -> _uiState.update { it.copy(isLoading = false, isFinished = true) } },
             )
         }
     }
