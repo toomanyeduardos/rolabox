@@ -12,6 +12,8 @@ import androidx.compose.ui.graphics.Color
  */
 @Immutable
 data class MetalColors(
+    /** Whether this is the dark palette, for parts that pick between a light and a dark asset. */
+    val isDark: Boolean,
     val bodyTop: Color,
     val bodyBottom: Color,
     val ink: Color,
@@ -35,6 +37,7 @@ data class MetalColors(
 
 /** Light: anodized aluminum. */
 val LightMetalColors = MetalColors(
+    isDark = false,
     bodyTop = Color(0xFFE7E8EA),
     bodyBottom = Color(0xFFD3D5D8),
     ink = Color(0xFF1C1D1F),
@@ -53,6 +56,7 @@ val LightMetalColors = MetalColors(
 
 /** Dark: gunmetal aluminum. */
 val DarkMetalColors = MetalColors(
+    isDark = true,
     bodyTop = Color(0xFF36383C),
     bodyBottom = Color(0xFF222326),
     ink = Color(0xFFECEEF0),

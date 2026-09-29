@@ -3,8 +3,10 @@ package com.eduardoflores.rolabox.core.sync.impl
 import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
+import com.eduardoflores.rolabox.core.auth.api.AuthError
 import com.eduardoflores.rolabox.core.auth.api.AuthState
 import com.eduardoflores.rolabox.core.auth.api.AuthUser
+import com.eduardoflores.rolabox.core.auth.testing.FakeAuthRepository
 import com.eduardoflores.rolabox.core.storage.api.StorageError
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.flow.Flow
@@ -182,6 +184,43 @@ class SyncTriggersTest {
         runCurrent()
 
         assertEquals(1, requests.size)
+    }
+
+    @Test
+    fun signingUp_requestsTheFirstSync() = runTest {
+        val authRepository = FakeAuthRepository()
+        val requests = collectRequests(authRepository)
+        runCurrent()
+        assertEquals(0, requests.size)
+
+        authRepository.signUp("Alex", "alex@mail.com", "password12")
+        runCurrent()
+
+        assertEquals(1, requests.size)
+    }
+
+    @Test
+    fun failedSignUp_requestsNothing() = runTest {
+        val authRepository = FakeAuthRepository().apply { signUpError = AuthError.EmailAlreadyInUse }
+        val requests = collectRequests(authRepository)
+
+        authRepository.signUp("Alex", "alex@mail.com", "password12")
+        runCurrent()
+
+        assertEquals(0, requests.size)
+    }
+
+    private fun TestScope.collectRequests(authRepository: FakeAuthRepository): List<Unit> {
+        val requests = mutableListOf<Unit>()
+        backgroundScope.launch(StandardTestDispatcher(testScheduler)) {
+            syncRequests(
+                syncUser(authRepository.observeAuthState(), offlineModeChosen),
+                localChanges,
+                foreground,
+                DEBOUNCE,
+            ).toList(requests)
+        }
+        return requests
     }
 
     private fun TestScope.collectRequests(localChanges: Flow<Unit> = this@SyncTriggersTest.localChanges): List<Unit> {

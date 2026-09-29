@@ -66,7 +66,6 @@ internal fun CreateAccountScreen(
     onBack: () -> Unit,
     onSignInClick: () -> Unit,
     modifier: Modifier = Modifier,
-    googleIcon: @Composable () -> Unit = {},
 ) {
     val hasNetworkError = state.formError == FormError.Network
     AuthScaffold(
@@ -104,7 +103,6 @@ internal fun CreateAccountScreen(
             GoogleButton(
                 onClick = onGoogleClick,
                 modifier = Modifier.testTag(CreateAccountTags.GOOGLE),
-                icon = googleIcon,
             )
         }
     }
