@@ -10,7 +10,6 @@
     <string name="account_create_title">Create account</string>
     <string name="account_create_subtitle">An account backs up playlists and progress.</string>
     <string name="account_create_cta">Create account</string>
-    <string name="account_google">Continue with Google</string>
     <string name="account_create_footer_prompt">Have an account?</string>
     <string name="account_create_footer_action">Sign in</string>
 
@@ -29,6 +28,8 @@
     <string name="account_error_password_characters">Use an uppercase letter, a lowercase letter, a number and a special character.</string>
     <string name="account_error_password_weak">That password is too easy to guess. Try a longer or more varied one.</string>
     <string name="account_error_network">Can\'t reach Rolabox. Check your connection and try again.</string>
+    <string name="account_error_no_sign_in_account">No account found on this device. Add one and try again.</string>
+    <string name="account_error_sign_in_failed">Couldn\'t sign in. Try again.</string>
     <string name="account_error_generic">Couldn\'t create your account. Try again.</string>
 
     <string name="account_lcd_sign_in">Sign in</string>
@@ -38,6 +39,7 @@
     <string name="account_lcd_err_try_later">ERR TRY LATER</string>
     <string name="account_lcd_err_disabled">ERR DISABLED</string>
     <string name="account_lcd_err_unknown">ERR UNKNOWN</string>
+    <string name="account_lcd_err_no_account">ERR NO ACCOUNT</string>
 
     <string name="account_sign_in_title">Sign in</string>
     <string name="account_sign_in_subtitle">Welcome back. Pick up where you left off.</string>

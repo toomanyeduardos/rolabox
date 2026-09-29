@@ -79,6 +79,9 @@ The reasoning behind the architecture is recorded as [Architecture Decision Reco
 - [ADR-009](docs/adr/009-ui-bound-sdks.md): SDK steps that need an Activity live in the UI, and only their results cross the `:api`
 - [ADR-010](docs/adr/010-firestore-security-rules.md): Firestore for synced data, with per-user security rules tested against the emulator
 - [ADR-011](docs/adr/011-preferences-sync.md): Sync preferences through Firestore, field by field, with last-write-wins
+- [ADR-012](docs/adr/012-navigation.md): Navigation with Jetpack Navigation 3, with the back stacks owned by `:app`
+- [ADR-013](docs/adr/013-account-linking.md): One account per email, with Google and password sign-in linked automatically
+- [ADR-014](docs/adr/014-area-ui-modules.md): Area UI modules for SDK steps and shared UI, `:core:<area>:ui`
 
 ## CI
 
@@ -118,7 +121,9 @@ Bypass it for a single commit with `git commit --no-verify`.
 
 `:core` modules are organized by area ([ADR-003](docs/adr/003-module-boundaries.md)). Each area has
 an `:api` module (pure Kotlin interfaces, models and error types), an `:impl` module (the Android
-implementation and its Hilt bindings) and a `:testing` module (fakes).
+implementation and its Hilt bindings) and a `:testing` module (fakes). An area with UI-bound code,
+such as an SDK step that shows system UI, also has a `:ui` module
+([ADR-014](docs/adr/014-area-ui-modules.md)).
 
 | Module | Purpose |
 | --- | --- |
@@ -126,6 +131,7 @@ implementation and its Hilt bindings) and a `:testing` module (fakes).
 | `:core:auth:api` | Authentication API: `AuthRepository`, `AuthUser` |
 | `:core:auth:impl` | Authentication with Firebase |
 | `:core:auth:testing` | `FakeAuthRepository` |
+| `:core:auth:ui` | Sign-in UI shared by features: the provider steps (Google) and their buttons |
 | `:core:storage:api` | Local storage API: `PreferencesStore` (key-value settings), `StorageError` |
 | `:core:storage:impl` | `PreferencesStore` backed by DataStore |
 | `:core:storage:testing` | `FakePreferencesStore` |
@@ -148,7 +154,8 @@ The full set of rules, and the reasoning behind them, is in [ADR-003](docs/adr/0
 
 - Feature modules never depend on other feature modules, and only `:app` depends on feature modules.
 - Only `:app` depends on `:impl` modules, and an `:impl` depends only on `:api` modules and `:core:common`.
-- Feature modules depend only on `:api` modules, `:core:domain`, `:core:common` and `:core:designsystem`.
+- Feature modules depend only on `:api` and `:ui` modules, `:core:domain`, `:core:common` and `:core:designsystem`.
+- `:ui` modules depend only on `:api` modules, `:core:domain`, `:core:common` and `:core:designsystem`, and only features and `:app` depend on them. They have no ViewModels or navigation destinations.
 - `:api` modules, `:core:common` and `:core:domain` are JVM modules. `:api` modules depend only on `:core:common` and other `:api` modules, with no Hilt. `:core:domain` depends only on `:api` modules and `:core:common`.
 - `:core:designsystem` depends only on `:core:common`.
 - Testing modules (`:core:testing` and every `:core:<area>:testing`) are only used from test configurations.
@@ -166,6 +173,7 @@ graph TD
     core_auth_api[":core:auth:api"]
     core_auth_impl[":core:auth:impl"]
     core_auth_testing[":core:auth:testing"]
+    core_auth_ui[":core:auth:ui"]
     core_common[":core:common"]
     core_designsystem[":core:designsystem"]
     core_domain[":core:domain"]
@@ -183,8 +191,10 @@ graph TD
     feature_settings[":feature:settings"]
     app --> core_auth_api
     app --> core_auth_impl
+    app --> core_auth_ui
     app --> core_designsystem
     app --> core_domain
+    app --> core_storage_api
     app --> core_storage_impl
     app --> core_sync_api
     app --> core_sync_impl
@@ -195,7 +205,10 @@ graph TD
     core_auth_impl --> core_auth_api
     core_auth_impl --> core_common
     core_auth_testing --> core_auth_api
+    core_auth_ui --> core_auth_api
+    core_auth_ui --> core_designsystem
     core_domain --> core_auth_api
+    core_domain --> core_storage_api
     core_domain --> core_userdata_api
     core_storage_impl --> core_common
     core_storage_impl --> core_storage_api
@@ -214,7 +227,12 @@ graph TD
     core_userdata_testing --> core_storage_api
     core_userdata_testing --> core_sync_api
     core_userdata_testing --> core_userdata_api
+    feature_account --> core_auth_api
+    feature_account --> core_auth_ui
     feature_account --> core_designsystem
+    feature_account --> core_domain
+    feature_account --> core_storage_api
+    feature_account --> core_userdata_api
     feature_settings --> core_designsystem
 ```
 <!-- module-graph:end -->

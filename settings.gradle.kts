@@ -34,6 +34,7 @@ include(":core:testing")
 include(":core:auth:api")
 include(":core:auth:impl")
 include(":core:auth:testing")
+include(":core:auth:ui")
 
 include(":core:storage:api")
 include(":core:storage:impl")

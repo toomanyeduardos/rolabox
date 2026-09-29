@@ -18,6 +18,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.eduardoflores.rolabox.core.auth.ui.SignInButton
+import com.eduardoflores.rolabox.core.auth.ui.SignInProvider
+import com.eduardoflores.rolabox.core.auth.ui.SignInStepEffect
 import com.eduardoflores.rolabox.core.designsystem.component.FieldError
 import com.eduardoflores.rolabox.core.designsystem.component.PreviewLightDark
 import com.eduardoflores.rolabox.core.designsystem.component.PrimaryButton
@@ -29,7 +32,6 @@ import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxTheme
 internal fun SignInRoute(
     onCreateAccountClick: () -> Unit,
     onForgotPasswordClick: (email: String) -> Unit,
-    onGoogleClick: () -> Unit,
     onSignedIn: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SignInViewModel = hiltViewModel(),
@@ -39,13 +41,18 @@ internal fun SignInRoute(
     LaunchedEffect(state.isFinished) {
         if (state.isFinished) currentOnSignedIn()
     }
+    SignInStepEffect(
+        requested = state.requestedProvider,
+        config = viewModel.signInConfig,
+        onResult = viewModel::onSignInResult,
+    )
     SignInScreen(
         state = state,
         onEmailChange = viewModel::onEmailChange,
         onPasswordChange = viewModel::onPasswordChange,
         onSignInClick = viewModel::onSubmit,
         onForgotPasswordClick = { onForgotPasswordClick(state.email.trim()) },
-        onGoogleClick = onGoogleClick,
+        onProviderClick = viewModel::onProviderClick,
         onOfflineClick = viewModel::onOfflineClick,
         onCreateAccountClick = onCreateAccountClick,
         modifier = modifier,
@@ -59,7 +66,7 @@ internal fun SignInScreen(
     onPasswordChange: (String) -> Unit,
     onSignInClick: () -> Unit,
     onForgotPasswordClick: () -> Unit,
-    onGoogleClick: () -> Unit,
+    onProviderClick: (SignInProvider) -> Unit,
     onOfflineClick: () -> Unit,
     onCreateAccountClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -101,7 +108,12 @@ internal fun SignInScreen(
                 modifier = Modifier.testTag(SignInTags.SUBMIT),
             )
             OrDivider(Modifier.fillMaxWidth())
-            GoogleButton(onClick = onGoogleClick, modifier = Modifier.testTag(SignInTags.GOOGLE))
+            SignInButton(
+                provider = SignInProvider.Google,
+                onClick = { onProviderClick(SignInProvider.Google) },
+                modifier = Modifier.testTag(SignInTags.GOOGLE),
+                enabled = !state.isLoading,
+            )
         }
     }
 }
@@ -158,6 +170,7 @@ private fun SignInFormError.lcdRes(): Int = when (this) {
     SignInFormError.Network -> R.string.account_lcd_err_no_network
     SignInFormError.TooManyRequests -> R.string.account_lcd_err_try_later
     SignInFormError.AccountDisabled -> R.string.account_lcd_err_disabled
+    SignInFormError.NoAccount -> R.string.account_lcd_err_no_account
     SignInFormError.Unknown -> R.string.account_lcd_err_unknown
 }
 
@@ -165,6 +178,7 @@ private fun SignInFormError.messageRes(): Int = when (this) {
     SignInFormError.Network -> R.string.account_sign_in_error_network
     SignInFormError.TooManyRequests, SignInFormError.Unknown -> R.string.account_sign_in_error_try_later
     SignInFormError.AccountDisabled -> R.string.account_sign_in_error_disabled
+    SignInFormError.NoAccount -> R.string.account_error_no_sign_in_account
 }
 
 private fun SignInPasswordError.messageRes(): Int = when (this) {
@@ -187,7 +201,7 @@ private fun SignInScreenPreview() {
             onPasswordChange = {},
             onSignInClick = {},
             onForgotPasswordClick = {},
-            onGoogleClick = {},
+            onProviderClick = {},
             onOfflineClick = {},
             onCreateAccountClick = {},
         )
@@ -208,7 +222,7 @@ private fun SignInScreenBadLoginPreview() {
             onPasswordChange = {},
             onSignInClick = {},
             onForgotPasswordClick = {},
-            onGoogleClick = {},
+            onProviderClick = {},
             onOfflineClick = {},
             onCreateAccountClick = {},
         )

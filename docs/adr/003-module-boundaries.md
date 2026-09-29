@@ -24,6 +24,20 @@
   live" rule that fakes live in each area's `:testing` module means their tests need those fakes.
   Rule 8 as written made that impossible. The goal is unchanged: no implementation ends up on a
   classpath, since `:testing` modules depend only on `:api` modules.
+- **Revised 2026-09-29:** An area that has UI-bound code may have an optional fourth module,
+  `:core:<area>:ui` ([ADR-014](014-area-ui-modules.md)). It holds the area's SDK steps and shared
+  composables, is an Android library, and may be used by features and `:app`. The module table,
+  rule 4, the guidelines and rules 16 and 17 were updated. Before this, a UI step used by two
+  screens had to live in one feature, and a second feature couldn't reuse it, because features may
+  not depend on each other.
+- **Revised 2026-09-29:** Project modules are declared with `implementation`, and never with `api`
+  (rule 15, "Use `implementation`" guideline). A module declares every project module whose types
+  its code uses, including types it only meets in the signatures of what it calls, such as a
+  `StorageError` inside a `UserDataRepository` result. Before, `api` was used when a module's public
+  signatures exposed another module's types, so `:core:userdata:api` handed `:core:storage:api` to
+  every consumer. Rolabox ships no libraries, so `api` only hid which areas a module really uses.
+  A consumer that can't be written without `api` is a sign its design needs another look. External
+  libraries still use `api` where an `:api` exposes them (Arrow, coroutines), for now.
 
 ## Context
 
@@ -51,6 +65,9 @@ implementation:
 - **`:core:<area>:impl`** implements the `:api`, and binds it with Hilt. It depends only on `:api`
   modules: its own, and those of the areas it uses.
 - **`:core:<area>:testing`** holds fakes of the `:api`.
+- **`:core:<area>:ui`** is optional, for areas with UI-bound code. It holds the area's SDK steps and
+  shared composables, and depends only on `:api` modules and the shared modules
+  ([ADR-014](014-area-ui-modules.md)).
 
 Dependencies point from `:impl` to `:api`, never the other way. So an area `:bbb` that needs data
 from `:aaa` depends on `:aaa:api` only, and never sees how `:aaa` is implemented:
@@ -67,10 +84,11 @@ graph in the `@HiltAndroidApp` module, so `:app` must see every implementation a
 | Module type | Role | May depend on |
 | --- | --- | --- |
 | `:app` | Composition root: `Application`, navigation between features, the Hilt graph, and the `@TestInstallIn` modules that swap production bindings in tests | Anything, but testing modules only from test configurations |
-| `:feature:*` | One user-facing area: screens and ViewModels | `:core:<area>:api`, `:core:domain`, `:core:common`, `:core:designsystem` |
+| `:feature:*` | One user-facing area: screens and ViewModels | `:core:<area>:api`, `:core:<area>:ui`, `:core:domain`, `:core:common`, `:core:designsystem` |
 | `:core:<area>:api` | Interfaces, models, error types, and pure-logic use cases for this area (pure JVM) | Other `:core:<area>:api`, `:core:common` |
 | `:core:<area>:impl` | Implementations of the `:api` and their Hilt modules | `:core:<area>:api` (its own and others), `:core:common` |
 | `:core:<area>:testing` | Fakes of the area's `:api` (pure JVM) | Its own `:api` |
+| `:core:<area>:ui` | Optional. The area's SDK steps, shared composables and state holders, with no ViewModels or destinations (Android, Compose) | `:core:<area>:api` (its own and others), `:core:domain`, `:core:common`, `:core:designsystem` |
 | `:core:domain` | Pure-logic use cases that combine more than one area (pure JVM) | `:core:<area>:api`, `:core:common` (plus testing modules from test configurations) |
 | `:core:common` | Utility: dispatchers, exception-to-error helpers (pure JVM) | Nothing |
 | `:core:designsystem` | Utility: theme and shared composables | `:core:common` |
@@ -117,16 +135,22 @@ Guidelines that go with the table:
   features is wired in `:app`. If two features need the same code, it moves to a `:core` module.
 - **Features declare the `:api` modules they use.** The `rolabox.android.feature` convention plugin
   adds only `:core:designsystem`, so a feature's build file lists the areas it depends on.
-- **Use `implementation` by default.** `api` is used only when a module's public signatures expose
-  another module's types (for example, `:core:userdata:api` returns `StorageError` from
-  `:core:storage:api`). It's never a way to hand consumers dependencies they'd otherwise declare.
-- **Every module declares what it uses directly,** even when another dependency's `api` already puts
-  it on the classpath. `:app` declares `:core:userdata:api` for its ViewModel, not only
+- **Project modules use `implementation`, never `api`.** Rolabox ships no libraries, so there's no
+  consumer that `api` needs to protect. Even when a module's public signatures expose another
+  module's types (`:core:userdata:api` returns `StorageError` from `:core:storage:api`), each
+  consumer declares that module itself. If a consumer can't be built that way, the design is
+  looked at again instead of reaching for `api`. External libraries that an `:api` exposes (Arrow,
+  coroutines) still use `api` for now.
+- **Every module declares what it uses,** including types it only meets in the signatures of what
+  it calls. A feature that reads `observeOfflineModeChosen()` declares `:core:storage:api` for its
+  `StorageError`. `:app` declares `:core:userdata:api` for its ViewModel, not only
   `:core:userdata:impl`. So a build file lists every area the module's code touches, which is the
-  point of this layout. Hilt doesn't need an `:impl` to re-export its `:api`: it collects bindings
+  point of this layout. Without `api`, the compiler catches most gaps. Hilt doesn't need an
+  `:impl` to re-export its `:api`: it collects bindings
   from `:app`'s whole classpath.
 - **Split modules when there's a reason.** A new area gets its `:api`, `:impl` and `:testing`
-  modules when it has an interface of its own. A new feature module is created per user-facing
+  modules when it has an interface of its own, and a `:ui` module when it has UI-bound code that
+  more than one feature can use. An area has no empty `:ui`. A new feature module is created per user-facing
   area, not per screen.
 
 ## Alternatives considered
@@ -190,8 +214,8 @@ Guidelines that go with the table:
 1. `[enforced]` Feature modules never depend on other feature modules.
 2. `[enforced]` Only `:app` depends on `:feature:*` modules.
 3. `[enforced]` Only `:app` depends on `:impl` modules.
-4. `[enforced]` Feature modules depend only on `:api` modules, `:core:domain`, `:core:common` and
-   `:core:designsystem` (plus testing modules from test configurations).
+4. `[enforced]` Feature modules depend only on `:api` and `:ui` modules, `:core:domain`,
+   `:core:common` and `:core:designsystem` (plus testing modules from test configurations).
 5. `[enforced]` `:api` modules, `:core:common` and `:core:domain` are JVM modules with no Android
    dependencies.
 6. `[enforced]` `:api` modules depend only on `:core:common` and other `:api` modules.
@@ -210,9 +234,12 @@ Guidelines that go with the table:
     `:api` and the `:api` modules whose types it uses (never an `:impl`). `@TestInstallIn` modules
     live in `:app`'s test sources.
 14. `[convention]` Packages mirror module paths, and no package is split across modules.
-15. `[convention]` Dependencies use `implementation` unless the module's public signatures expose
-    the other module's types. A module declares every project module whose types it uses directly,
-    even when it would get them through another dependency's `api`.
+15. `[convention]` Project modules are declared with `implementation`, never `api`. A module
+    declares every project module whose types its code uses, including types it only meets in the
+    signatures of what it calls.
+16. `[enforced]` `:core:<area>:ui` modules depend only on `:api` modules, `:core:domain`,
+    `:core:common` and `:core:designsystem` (plus testing modules from test configurations).
+17. `[enforced]` Only `:feature:*` modules and `:app` depend on `:ui` modules.
 
-**Conformance.** Rules 1 to 10 are checked by `ModuleRules.kt` when the build is configured. Rule 11
-could be checked with a Konsist test later.
+**Conformance.** Rules 1 to 10, 16 and 17 are checked by `ModuleRules.kt` when the build is
+configured. Rule 11 could be checked with a Konsist test later.

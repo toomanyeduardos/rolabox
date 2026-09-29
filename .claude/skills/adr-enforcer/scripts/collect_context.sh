@@ -136,13 +136,14 @@ echo "$ADR_FILES" | while IFS= read -r f; do
   body="$(git show "$TARGET:$f")"
   title="$(printf '%s\n' "$body" | grep -m1 -E '^#[[:space:]]' | sed -E 's/^#+[[:space:]]*//' || true)"
   # Front matter "status: X" (MADR), else first non-empty line under a "Status" heading (Nygard),
-  # else an inline "Status: X" line.
+  # else an inline "Status: X" line, also as a list item and with the colon inside the bold
+  # ("- **Status:** Accepted").
   status="$(printf '%s\n' "$body" | awk 'NR==1&&/^---$/{fm=1;next} fm&&/^---$/{exit} fm&&tolower($0)~/^status:/{sub(/^[^:]*:[[:space:]]*/,"");print;exit}')"
   if [ -z "$status" ]; then
     status="$(printf '%s\n' "$body" | awk 'tolower($0)~/^#+[[:space:]]*status[[:space:]]*$/{g=1;next} g&&/^#/{exit} g&&NF{print;exit}')"
   fi
   if [ -z "$status" ]; then
-    status="$(printf '%s\n' "$body" | grep -m1 -iE '^\*{0,2}status\*{0,2}[[:space:]]*:' | sed -E 's/^[^:]*:[[:space:]]*//' || true)"
+    status="$(printf '%s\n' "$body" | grep -m1 -iE '^([-*+][[:space:]]+)?\*{0,2}status(:\*{0,2}|\*{0,2}[[:space:]]*:)' | sed -E 's/^[^:]*:[[:space:]]*//' || true)"
   fi
   status="$(printf '%s' "$status" | tr -d '*_`"' | awk '{print tolower($1)}')"
   [ -n "$status" ] || status="unknown"

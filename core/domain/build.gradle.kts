@@ -4,6 +4,7 @@ plugins {
 
 dependencies {
     implementation(project(":core:auth:api"))
+    implementation(project(":core:storage:api"))
     implementation(project(":core:userdata:api"))
     implementation(libs.javax.inject)
     testImplementation(project(":core:auth:testing"))
