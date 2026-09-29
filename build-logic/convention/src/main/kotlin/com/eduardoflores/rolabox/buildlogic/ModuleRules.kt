@@ -1,5 +1,6 @@
 package com.eduardoflores.rolabox.buildlogic
 
+import com.android.build.api.dsl.CommonExtension
 import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ExternalModuleDependency
@@ -28,9 +29,8 @@ private val FEATURE_ALLOWED_PATHS = setOf(COMMON_PATH, DESIGNSYSTEM_PATH, DOMAIN
 
 private val ANDROID_PLUGINS = listOf("com.android.application", "com.android.library")
 private const val DAGGER_GROUP = "com.google.dagger"
-private const val FIREBASE_GROUP = "com.google.firebase"
 
-/** Checks the `[enforced]` rules of ADR-001, ADR-003, ADR-005 and ADR-008 while the build is configured. */
+/** Checks the `[enforced]` dependency rules of ADR-001, ADR-003 and ADR-005 while the build is configured. */
 internal fun Project.enforceModuleRules() {
     val modulePath = path
 
@@ -65,7 +65,7 @@ internal fun Project.enforceModuleRules() {
 private fun Project.enforceExternalDependencyRules() = afterEvaluate {
     configurations.forEach { configuration ->
         configuration.dependencies.withType(ExternalModuleDependency::class.java).forEach { dependency ->
-            val violation = externalDependencyViolation(path, dependency.group, configuration.name)
+            val violation = externalDependencyViolation(path, dependency.group)
             if (violation != null) {
                 throw GradleException(
                     "Module rule violated: $path -> ${dependency.group}:${dependency.name} (${configuration.name}). " +
@@ -76,16 +76,26 @@ private fun Project.enforceExternalDependencyRules() = afterEvaluate {
     }
 }
 
-private fun externalDependencyViolation(modulePath: String, group: String?, configurationName: String): String? =
+private fun externalDependencyViolation(modulePath: String, group: String?): String? =
     when {
         (modulePath.isApi() || modulePath == DOMAIN_PATH) && group == DAGGER_GROUP ->
             "ADR-005 rule 3: *:api modules and $DOMAIN_PATH use only javax.inject and contain no Hilt modules"
 
-        group == FIREBASE_GROUP && !configurationName.isCloudConfiguration() ->
-            "ADR-008 rule 2: Firebase dependencies are only declared in cloud configurations (cloudImplementation)"
-
         else -> null
     }
+
+/**
+ * ADR-008 rule 1: Rolabox is one app, so no module declares product flavors. Called from the
+ * Android convention plugins once the module's `android {}` block is final.
+ */
+internal fun CommonExtension.enforceNoProductFlavors(modulePath: String) {
+    if (flavorDimensions.isNotEmpty() || productFlavors.isNotEmpty()) {
+        throw GradleException(
+            "Module rule violated: $modulePath declares product flavors ${productFlavors.names}. " +
+                "ADR-008 rule 1: there are no product flavors; offline is a choice the user makes in the app.",
+        )
+    }
+}
 
 private fun projectDependencyViolation(modulePath: String, dependencyPath: String, configurationName: String): String? =
     when {

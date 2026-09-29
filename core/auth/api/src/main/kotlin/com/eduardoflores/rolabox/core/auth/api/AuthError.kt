@@ -13,7 +13,4 @@ sealed interface AuthError {
 
     /** The account exists but has been disabled. Retrying won't help. */
     data object AccountDisabled : AuthError
-
-    /** This build has no backend to sign in to (the offline flavor, ADR-008). */
-    data object Unavailable : AuthError
 }

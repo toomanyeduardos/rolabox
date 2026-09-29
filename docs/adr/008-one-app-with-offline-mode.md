@@ -23,6 +23,10 @@
   with an optional account, and the flavors didn't match that. The default build never showed the
   sign-in flow, and every backend-specific module had two source sets and two CI jobs to keep in
   step. The two-flavor design is kept under Alternatives considered.
+- **Revised 2026-09-28:** The flavors are gone (`m1/flavor-removal`), so rules 1, 2, 4, 5, 6, 8 and
+  10 now hold, and their tags say how each is checked. Rule 7 waits for the sign-in UI, which
+  doesn't exist yet, so it points at that ticket now. Migration and Conformance describe what was
+  done. The decision is unchanged.
 
 ## Context
 
@@ -205,8 +209,8 @@ on every run.
 - Which Firebase product stores synced data, and how `SyncRepository` syncs it, are decided in
   [ADR-010](010-firestore-security-rules.md) and [ADR-011](011-preferences-sync.md).
 
-**Migration (ticket `m1/flavor-removal`).** The code still has the two flavors. The ticket that
-removes them:
+**Migration (done in `m1/flavor-removal`).** The steps that removed the flavors, kept for the
+record:
 
 1. Remove `configureBackendFlavors()` and `Flavors.kt` from the convention plugins, the flavor
    handling in `RolaboxModuleGraphConventionPlugin` and `ModuleGraphTask`, and the
@@ -231,44 +235,43 @@ removes them:
 8. Make offline mode make no Firebase requests, with tests: `SyncRunner` checks offline mode as well
    as auth (test: offline mode, no `Syncer` runs), the triggers request nothing in offline mode
    (test), `FirebaseFirestore` is injected lazily (test: offline mode, never created), and starting
-   a sign-in turns offline mode off before the Credential Manager step (test).
+   a sign-in turns offline mode off before the Credential Manager step (test). The last part waits
+   for the sign-in UI (rule 7).
 9. Update README ("Building the cloud flavor" becomes "Building with Firebase") and the
    conformance notes of ADR-002 and this ADR.
 
 ## Rules
 
-1. `[planned]` (ticket `m1/flavor-removal`) There are no product flavors. The convention plugins
-   configure none, and the build fails if a module declares a flavor dimension.
-2. `[planned]` (ticket `m1/flavor-removal`) Firebase, Play services and the account features are
-   ordinary `implementation` dependencies. Code isn't split by backend: there are no `src/offline`
-   or `src/cloud` source sets.
+1. `[enforced]` There are no product flavors. The convention plugins configure none, and the build
+   fails if a module declares a flavor dimension.
+2. `[convention]` Firebase, Play services and the account features are ordinary `implementation`
+   dependencies. Code isn't split by backend: there are no `src/offline` or `src/cloud` source sets.
 3. `[convention]` The google-services plugin is applied only through
    `rolabox.android.application.firebase`.
-4. `[planned]` (ticket `m1/flavor-removal`) The committed placeholder is
-   `app/google-services.placeholder.json`, and its project ID is `demo-rolabox`, never a real
-   project. The build uses `app/google-services.json` when it exists, and the placeholder otherwise.
-5. `[planned]` (ticket `m1/flavor-removal`) `google-services.json` is never committed. `.gitignore`
-   covers it at any path, and CI fails if a tracked file has that name. Until then, it's a
-   `[convention]`.
-6. `[planned]` (ticket `m1/flavor-removal`) While offline mode is chosen, or while the user is
-   signed out, the app makes no Firebase requests. `SyncRunner` runs `Syncer`s only for a signed-in
-   user who hasn't chosen offline mode, and the sync triggers request nothing in offline mode. Tests
-   cover both.
-7. `[planned]` (ticket `m1/flavor-removal`) Offline mode can only be chosen while signed out, and a
+4. `[convention]` The committed placeholder is `app/google-services.placeholder.json`, and its
+   project ID is `demo-rolabox`, never a real project. The build uses `app/google-services.json`
+   when it exists, and the placeholder otherwise.
+5. `[enforced]` `google-services.json` is never committed. `.gitignore` covers it at any path, and
+   CI fails if a tracked file has that name.
+6. `[convention]` While offline mode is chosen, or while the user is signed out, the app makes no
+   Firebase requests. `SyncRunner` runs `Syncer`s only for a signed-in user who hasn't chosen
+   offline mode, and the sync triggers request nothing in offline mode. Tests cover both.
+7. `[planned]` (sign-in UI ticket, TBD) Offline mode can only be chosen while signed out, and a
    sign-in the user starts turns it off before its first network call.
-8. `[planned]` (ticket `m1/flavor-removal`) SDK objects that can open a connection
-   (`FirebaseFirestore`) are injected through `Provider` or `Lazy`, and are never created in offline
-   mode. Initializing `FirebaseApp` and reading `FirebaseAuth`'s cached user are allowed at any time.
+8. `[convention]` SDK objects that can open a connection (`FirebaseFirestore`) are injected through
+   `Provider` or `Lazy`, and are never created in offline mode. Initializing `FirebaseApp` and
+   reading `FirebaseAuth`'s cached user are allowed at any time.
 9. `[convention]` Only Firebase products that make requests when our code calls them are used. A
    product that sends data by itself needs an ADR saying how it stays silent in offline mode.
-10. `[planned]` (ticket `m1/flavor-removal`) The start destination is Home when signed in or when
-    offline mode is chosen, and Sign in otherwise. No build setting changes it.
+10. `[convention]` The start destination is Home when signed in or when offline mode is chosen, and
+    Sign in otherwise. No build setting changes it.
 
-**Conformance.** None of the `[planned]` rules hold yet: the code still has the `offline` and
-`cloud` flavors of this ADR's first version. Until the migration ticket lands, the build and CI
-enforce that version's rules: every Android module has the `backend` dimension, Firebase is only in
-cloud configurations (`ModuleRules.kt`), and the offline app's runtime classpath has no Firebase or
-Play services (the "Offline app has no Firebase" step in [CI](../../.github/workflows/ci.yml)).
-Build messages and comments that cite "ADR-008 rule 2" or "rule 3" refer to that version, and are
-removed with it. In the cloud flavor today, `SyncRunner` already does nothing while signed out, but
-it doesn't read the offline-mode choice, and nothing in the app sets that choice yet.
+**Conformance.** Rule 1 is checked by the Android convention plugins when the build is configured
+(`enforceNoProductFlavors` in `ModuleRules.kt`). Rule 5 is checked by the "No Firebase config
+committed" step in [CI](../../.github/workflows/ci.yml). `rolabox.android.application.firebase`
+picks the config (rule 4), and fails the build on a `google-services.json` under `app/src/`. Rule 6
+is covered by `SyncTriggersTest` and `SyncRunnerTest` in `:core:sync:impl`, and rule 8 by
+`SyncRunnerTest.offlineMode_neverCreatesFirestore`. They check the sync path, which is the only code
+that calls Firebase today. A new Firebase call elsewhere isn't covered by any test. Rule 7 isn't
+built: the Sign in screen is still a placeholder, and nothing in the app sets the offline-mode
+choice yet.

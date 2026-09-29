@@ -1,4 +1,3 @@
-import com.eduardoflores.rolabox.buildlogic.BackendFlavor
 import com.eduardoflores.rolabox.buildlogic.ModuleGraphTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -22,9 +21,8 @@ class RolaboxModuleGraphConventionPlugin : Plugin<Project> {
                 module.configurations
                     .filter { it.name in GRAPH_CONFIGURATIONS }
                     .flatMap { configuration ->
-                        val flavor = BackendFlavor.entries.firstOrNull { configuration.name.startsWith(it.flavorName) }
                         configuration.dependencies.withType(ProjectDependency::class.java).map { dependency ->
-                            "${module.path} -> ${dependency.path}" + flavor?.let { " [${it.flavorName}]" }.orEmpty()
+                            "${module.path} -> ${dependency.path}"
                         }
                     }
             }.distinct().sorted()
@@ -37,10 +35,6 @@ class RolaboxModuleGraphConventionPlugin : Plugin<Project> {
     }
 
     private companion object {
-        val UNFLAVORED_CONFIGURATIONS = listOf("api", "implementation")
-        val GRAPH_CONFIGURATIONS = UNFLAVORED_CONFIGURATIONS.toSet() +
-            BackendFlavor.entries.flatMap { flavor ->
-                UNFLAVORED_CONFIGURATIONS.map { flavor.flavorName + it.replaceFirstChar(Char::uppercaseChar) }
-            }
+        val GRAPH_CONFIGURATIONS = setOf("api", "implementation")
     }
 }

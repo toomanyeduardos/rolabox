@@ -97,5 +97,5 @@ Credential Manager bottom sheet ──▶  SignInCredential   ──▶   Fireba
    and aren't cases of the area's error type.
 4. `[convention]` Configuration the UI step needs from `:app` (such as the Web client ID) is provided
    by `:app` through Hilt.
-5. `[planned]` (ticket `m1/flavor-removal`) A UI step that reaches the network runs only when the
-   user starts it, and turns offline mode off first (ADR-008, rule 7).
+5. `[planned]` (sign-in UI ticket, TBD) A UI step that reaches the network runs only when the user
+   starts it, and turns offline mode off first (ADR-008, rule 7).

@@ -19,9 +19,7 @@ class StartupViewModelTest {
     private val authRepository = FakeAuthRepository()
     private val userDataRepository = FakeUserDataRepository()
 
-    private fun viewModel(accountsAvailable: Boolean = true) = StartupViewModel(
-        ResolveStartDestinationUseCase(authRepository, userDataRepository, accountsAvailable),
-    )
+    private fun viewModel() = StartupViewModel(ResolveStartDestinationUseCase(authRepository, userDataRepository))
 
     @Test
     fun signedIn_isReadyForHome() = runTest {
@@ -40,13 +38,5 @@ class StartupViewModelTest {
     @Test
     fun signedOutWithoutOfflineMode_isReadyForSignIn() = runTest {
         assertEquals(StartupUiState.Ready(StartDestination.SignIn), viewModel().uiState.value)
-    }
-
-    @Test
-    fun withoutAccounts_isReadyForHome() = runTest {
-        assertEquals(
-            StartupUiState.Ready(StartDestination.Home),
-            viewModel(accountsAvailable = false).uiState.value,
-        )
     }
 }

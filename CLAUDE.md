@@ -24,7 +24,7 @@ developer to review and commit.
 
 ```bash
 ./gradlew check                  # build, tests and all static analysis
-./gradlew unitTest               # unit tests of every module (offline debug + JVM modules)
+./gradlew unitTest               # unit tests of every module (debug + JVM modules)
 ./gradlew ktlintCheck detekt     # lint only
 ./gradlew ktlintFormat           # auto-fix formatting
 ./gradlew moduleGraph            # regenerate the module dependency graph

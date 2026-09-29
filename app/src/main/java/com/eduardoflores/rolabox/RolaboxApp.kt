@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.eduardoflores.rolabox.core.designsystem.component.RolaboxTopBar
 import com.eduardoflores.rolabox.core.domain.StartDestination
+import com.eduardoflores.rolabox.feature.account.AuthenticationScreen
 import com.eduardoflores.rolabox.splash.RolaboxSplash
 import com.eduardoflores.rolabox.splash.SplashHandoff
 import com.eduardoflores.rolabox.splash.rememberAnimationsEnabled
@@ -41,7 +42,7 @@ internal fun RolaboxApp(
         if (startup is StartupUiState.Ready) {
             when (startup.destination) {
                 StartDestination.Home -> HomeScreen()
-                StartDestination.SignIn -> SignInContent(modifier = Modifier.fillMaxSize())
+                StartDestination.SignIn -> AuthenticationScreen(modifier = Modifier.fillMaxSize())
             }
         }
         AnimatedVisibility(

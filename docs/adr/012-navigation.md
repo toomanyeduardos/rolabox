@@ -8,6 +8,8 @@
   flavors with one app, so every build has the same destinations. Entries no longer depend on the
   flavor: all of them are in `src/main`, and whether the user starts on Sign in is decided at
   runtime by the start destination (Context, Decision, rule 8).
+- **Revised 2026-09-28:** The flavors are gone (`m1/flavor-removal`), so rule 8 holds, and it's a
+  convention now. The decision is unchanged.
 
 ## Context
 
@@ -136,5 +138,5 @@ navigation state.
    its own back stack, so its screens can't be reached with back.
 7. `[convention]` Side-by-side layouts come from scene strategies in `:app`. Features describe their
    entries through metadata, and don't change how screens are arranged based on window size.
-8. `[planned]` (ticket `m1/flavor-removal`) Every entry is added from `src/main`, and no entry
-   depends on the build configuration (ADR-008).
+8. `[convention]` Every entry is added from `src/main`, and no entry depends on the build
+   configuration (ADR-008).

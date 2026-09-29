@@ -32,8 +32,17 @@ jobs:
           # Only builds on main write the cache; PRs read it.
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
-      # The default flavor, built exactly as a fresh clone would be: there is no google-services.json
-      # here, so :app has no cloud variants (ADR-008). The cloud job below covers the other flavor.
+      # Built exactly as a fresh clone would be: there is no google-services.json here, so the app
+      # uses the committed placeholder (ADR-008). Nothing talks to Firebase, so no secrets are needed
+      # and PRs from forks run everything.
+
+      # ADR-008 rule 5: a real Firebase config is never committed, even with `git add -f`.
+      - name: No Firebase config committed
+        run: |
+          if git ls-files | grep -E '(^|/)google-services\.json$'; then
+            echo "::error::google-services.json is tracked. Remove it with git rm --cached; it's git-ignored."
+            exit 1
+          fi
 
       - name: ktlint
         run: ./gradlew ktlintCheck
@@ -42,99 +51,21 @@ jobs:
       - name: detekt
         run: ./gradlew detekt detektMain detektTest
 
-      - name: Assemble offline debug
-        run: ./gradlew assembleOfflineDebug
+      - name: Assemble debug
+        run: ./gradlew assembleDebug
 
-      # ADR-008 rule 3: nothing from Firebase or Play services reaches the offline app.
-      - name: Offline app has no Firebase
-        run: |
-          if ./gradlew -q :app:dependencies --configuration offlineReleaseRuntimeClasspath \
-              | grep -E "com\.google\.(firebase|android\.gms)"; then
-            echo "::error::Firebase or Play services found on the offline runtime classpath"
-            exit 1
-          fi
-
-      # Every module's unitTest task: offline debug tests for Android modules, `test` for JVM ones.
+      # Every module's unitTest task: debug tests for Android modules, `test` for JVM ones.
       - name: Unit tests
         run: ./gradlew unitTest
 
       - name: Android lint
-        run: ./gradlew lintOfflineDebug
+        run: ./gradlew lintDebug
 
       - name: Upload reports
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
           name: reports
-          path: |
-            **/build/reports/
-            **/build/test-results/
-          if-no-files-found: ignore
-          retention-days: 14
-
-  # The cloud flavor, against a placeholder Firebase config written below. It checks that the cloud
-  # app compiles, that its Hilt graph is complete, and that its tests and lint pass. Nothing talks to
-  # Firebase, so no secrets are needed and PRs from forks run it too. ktlint and library detekt
-  # already cover cloud source sets in the build job.
-  cloud:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: actions/setup-java@v6
-        with:
-          distribution: temurin
-          java-version: 25
-
-      - uses: gradle/actions/setup-gradle@v6
-        with:
-          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
-
-      # Placeholder, never committed (ADR-008 rule 7). Only the package name has to match.
-      - name: Write placeholder google-services.json
-        run: |
-          cat > app/google-services.json <<'EOF'
-          {
-            "project_info": {
-              "project_number": "000000000000",
-              "project_id": "rolabox-ci",
-              "storage_bucket": "rolabox-ci.appspot.com"
-            },
-            "client": [
-              {
-                "client_info": {
-                  "mobilesdk_app_id": "1:000000000000:android:0000000000000000",
-                  "android_client_info": { "package_name": "com.eduardoflores.rolabox" }
-                },
-                "oauth_client": [],
-                "api_key": [{ "current_key": "placeholder" }],
-                "services": { "appinvite_service": { "other_platform_oauth_client": [] } }
-              }
-            ],
-            "configuration_version": "1"
-          }
-          EOF
-
-      # :app's cloud source set only has variants when google-services.json exists.
-      - name: detekt (app)
-        run: ./gradlew :app:detektMain :app:detektTest
-
-      - name: Assemble cloud debug
-        run: ./gradlew assembleCloudDebug
-
-      - name: Unit tests
-        run: ./gradlew testCloudDebugUnitTest
-
-      - name: Android lint
-        run: ./gradlew lintCloudDebug
-
-      - name: Upload reports
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: reports-cloud
           path: |
             **/build/reports/
             **/build/test-results/
