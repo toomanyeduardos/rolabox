@@ -13,6 +13,9 @@
 - **Revised 2026-09-28:** Conformance now reflects that preferences sync in the cloud flavor, and
   that `SyncManager` was renamed `SyncRepository` ([ADR-011](011-preferences-sync.md)). The decision
   is unchanged.
+- **Revised 2026-09-28:** Conformance now reflects that there is one app with no flavors
+  ([ADR-008](008-one-app-with-offline-mode.md)): sync runs while signed in and not in offline mode,
+  and `AuthRepository` always observes the Firebase user. The decision is unchanged.
 
 ## Context
 
@@ -122,8 +125,8 @@ detailed conflict rules for each type of data.
 8. `[convention]` Play history is stored as append-only events, and aggregates are derived from them.
 9. `[convention]` Every feature works while the user is signed out.
 
-**Conformance.** Room and the library scan don't exist yet. In the cloud flavor, `SyncRepository`
-syncs preferences from DataStore ([ADR-011](011-preferences-sync.md)). Nothing in Room syncs yet. `AuthRepository` is always signed out in the offline
-flavor, and in the cloud flavor it observes the Firebase user, but signing in isn't built yet
-([ADR-008](008-one-app-with-offline-mode.md)). This ADR sets the constraints those implementations
-must meet.
+**Conformance.** Room and the library scan don't exist yet. `SyncRepository` syncs preferences from
+DataStore while the user is signed in and hasn't chosen offline mode
+([ADR-011](011-preferences-sync.md)). Nothing in Room syncs yet. `AuthRepository` observes the
+Firebase user, but signing in isn't built yet ([ADR-008](008-one-app-with-offline-mode.md)). This
+ADR sets the constraints those implementations must meet.

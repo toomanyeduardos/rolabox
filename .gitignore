@@ -13,6 +13,10 @@ build/
 .cxx
 local.properties
 
+# A real Firebase config, at any path, is never committed. app/google-services.placeholder.json is
+# (ADR-008). CI fails if a tracked file has this name.
+google-services.json
+
 # Firebase (ADR-010): dependencies, emulator logs, and the local project alias
 firebase/node_modules/
 firebase/.firebaserc

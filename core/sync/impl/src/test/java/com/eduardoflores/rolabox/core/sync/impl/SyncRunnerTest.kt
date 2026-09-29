@@ -7,20 +7,25 @@ import com.eduardoflores.rolabox.core.auth.api.AuthState
 import com.eduardoflores.rolabox.core.auth.api.AuthUser
 import com.eduardoflores.rolabox.core.auth.testing.FakeAuthRepository
 import com.eduardoflores.rolabox.core.storage.api.StorageError
+import com.eduardoflores.rolabox.core.userdata.testing.FakeUserDataRepository
+import com.google.firebase.firestore.FirebaseFirestore
+import dagger.Lazy
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Test
 
 class SyncRunnerTest {
     private val authRepository = FakeAuthRepository()
+    private val userDataRepository = FakeUserDataRepository()
 
     @Test
     fun signedOut_syncsNothing() = runTest {
         val syncer = RecordingSyncer()
 
-        assertEquals(SyncOutcome.Done, SyncRunner(authRepository, setOf(syncer)).sync())
+        assertEquals(SyncOutcome.Done, runner(syncer).sync())
         assertEquals(emptyList<String>(), syncer.userIds)
     }
 
@@ -30,7 +35,7 @@ class SyncRunnerTest {
         val first = RecordingSyncer()
         val second = RecordingSyncer()
 
-        assertEquals(SyncOutcome.Done, SyncRunner(authRepository, setOf(first, second)).sync())
+        assertEquals(SyncOutcome.Done, runner(first, second).sync())
         assertEquals(listOf(USER), first.userIds)
         assertEquals(listOf(USER), second.userIds)
     }
@@ -41,7 +46,7 @@ class SyncRunnerTest {
         val failing = RecordingSyncer(SyncError.Remote(RemoteError.Rejected).left())
         val other = RecordingSyncer()
 
-        assertEquals(SyncOutcome.Failed, SyncRunner(authRepository, setOf(failing, other)).sync())
+        assertEquals(SyncOutcome.Failed, runner(failing, other).sync())
         assertEquals(listOf(USER), other.userIds)
     }
 
@@ -67,8 +72,47 @@ class SyncRunnerTest {
         assertEquals(SyncOutcome.Failed, runWith(SyncError.Local(StorageError.Corrupted)))
     }
 
-    private suspend fun runWith(error: SyncError) =
-        SyncRunner(authRepository, setOf(RecordingSyncer(error.left()))).sync()
+    @Test
+    fun offlineMode_syncsNothing() = runTest {
+        signIn()
+        userDataRepository.setOfflineModeChosen(true)
+        val syncer = RecordingSyncer()
+
+        assertEquals(SyncOutcome.Done, runner(syncer).sync())
+        assertEquals(emptyList<String>(), syncer.userIds)
+    }
+
+    @Test
+    fun offlineModeChoiceCantBeRead_syncsNothing() = runTest {
+        signIn()
+        userDataRepository.setReadError(StorageError.Corrupted)
+        val syncer = RecordingSyncer()
+
+        assertEquals(SyncOutcome.Done, runner(syncer).sync())
+        assertEquals(emptyList<String>(), syncer.userIds)
+    }
+
+    // ADR-008 rules 6 and 8: the real preferences syncer, with the Firestore remote, never gets as
+    // far as creating Firestore in offline mode.
+    @Test
+    fun offlineMode_neverCreatesFirestore() = runTest {
+        signIn()
+        userDataRepository.setOfflineModeChosen(true)
+        var created = false
+        val firestore = Lazy<FirebaseFirestore> {
+            created = true
+            error("Firestore was created in offline mode")
+        }
+        val syncer = PreferencesSyncer(userDataRepository, FirestoreRemotePreferences(firestore))
+
+        runner(syncer).sync()
+
+        assertFalse(created)
+    }
+
+    private fun runner(vararg syncers: Syncer) = SyncRunner(authRepository, userDataRepository, syncers.toSet())
+
+    private suspend fun runWith(error: SyncError) = runner(RecordingSyncer(error.left())).sync()
 
     private fun signIn() {
         authRepository.setAuthState(AuthState.SignedIn(AuthUser(id = USER, displayName = null, photoUrl = null)))

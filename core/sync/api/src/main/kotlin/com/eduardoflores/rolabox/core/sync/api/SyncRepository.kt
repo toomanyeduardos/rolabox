@@ -2,8 +2,8 @@ package com.eduardoflores.rolabox.core.sync.api
 
 /**
  * Keeps the user's synced data in step with the cloud (ADR-011). Local storage stays the source of
- * truth: sync runs in the background, and nothing waits on it. While the user is signed out, and in
- * the offline flavor, it does nothing.
+ * truth: sync runs in the background, and nothing waits on it. While the user is signed out, or has
+ * chosen offline mode, it does nothing, and makes no Firebase requests (ADR-008).
  */
 interface SyncRepository {
     /**
