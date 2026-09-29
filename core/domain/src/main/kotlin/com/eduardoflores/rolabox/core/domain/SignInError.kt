@@ -6,6 +6,8 @@ import com.eduardoflores.rolabox.core.storage.api.StorageError
 /**
  * Why signing in, or creating an account, failed. It spans the auth and user data areas, so it's
  * owned by the use cases that combine them, and wraps each area's error (ADR-007).
+ *
+ * TODO - Revisit where this lives. We may need an api module for models.
  */
 sealed interface SignInError {
     /** The sign-in itself failed. */
