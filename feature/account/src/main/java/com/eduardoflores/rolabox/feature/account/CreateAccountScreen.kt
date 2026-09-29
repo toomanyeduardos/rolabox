@@ -20,6 +20,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.eduardoflores.rolabox.core.auth.api.PasswordPolicy
 import com.eduardoflores.rolabox.core.auth.api.PasswordStrength
+import com.eduardoflores.rolabox.core.auth.ui.SignInButton
+import com.eduardoflores.rolabox.core.auth.ui.SignInProvider
+import com.eduardoflores.rolabox.core.auth.ui.SignInStepEffect
 import com.eduardoflores.rolabox.core.designsystem.component.FieldError
 import com.eduardoflores.rolabox.core.designsystem.component.PreviewLightDark
 import com.eduardoflores.rolabox.core.designsystem.component.PrimaryButton
@@ -32,7 +35,6 @@ import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxTheme
 internal fun CreateAccountRoute(
     onBack: () -> Unit,
     onSignInClick: () -> Unit,
-    onGoogleClick: () -> Unit,
     onSignedUp: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: CreateAccountViewModel = hiltViewModel(),
@@ -42,13 +44,18 @@ internal fun CreateAccountRoute(
     LaunchedEffect(state.isSignedUp) {
         if (state.isSignedUp) currentOnSignedUp()
     }
+    SignInStepEffect(
+        requested = state.requestedProvider,
+        config = viewModel.signInConfig,
+        onResult = viewModel::onSignInResult,
+    )
     CreateAccountScreen(
         state = state,
         onNameChange = viewModel::onNameChange,
         onEmailChange = viewModel::onEmailChange,
         onPasswordChange = viewModel::onPasswordChange,
         onCreateClick = viewModel::onSubmit,
-        onGoogleClick = onGoogleClick,
+        onProviderClick = viewModel::onProviderClick,
         onBack = onBack,
         onSignInClick = onSignInClick,
         modifier = modifier,
@@ -62,19 +69,17 @@ internal fun CreateAccountScreen(
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onCreateClick: () -> Unit,
-    onGoogleClick: () -> Unit,
+    onProviderClick: (SignInProvider) -> Unit,
     onBack: () -> Unit,
     onSignInClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val hasNetworkError = state.formError == FormError.Network
+    val lcdError = state.formError?.lcdRes()
     AuthScaffold(
         modifier = modifier,
-        lcdLeft = stringResource(
-            if (hasNetworkError) R.string.account_lcd_no_network else R.string.account_lcd_new_account,
-        ),
-        lcdRight = if (hasNetworkError) "" else stringResource(R.string.account_lcd_step),
-        lcdError = hasNetworkError,
+        lcdLeft = stringResource(lcdError ?: R.string.account_lcd_new_account),
+        lcdRight = if (lcdError != null) "" else stringResource(R.string.account_lcd_step),
+        lcdError = lcdError != null,
         onBack = onBack,
         title = stringResource(R.string.account_create_title),
         subtitle = stringResource(R.string.account_create_subtitle),
@@ -88,7 +93,7 @@ internal fun CreateAccountScreen(
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
             NameField(state, onNameChange)
-            EmailField(state, onEmailChange, onSignInClick, onGoogleClick)
+            EmailField(state, onEmailChange, onSignInClick, onProviderClick)
             PasswordField(state, onPasswordChange, onCreateClick)
         }
         Column(Modifier.padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -100,9 +105,11 @@ internal fun CreateAccountScreen(
                 modifier = Modifier.testTag(CreateAccountTags.SUBMIT),
             )
             OrDivider()
-            GoogleButton(
-                onClick = onGoogleClick,
+            SignInButton(
+                provider = SignInProvider.Google,
+                onClick = { onProviderClick(SignInProvider.Google) },
                 modifier = Modifier.testTag(CreateAccountTags.GOOGLE),
+                enabled = !state.isLoading,
             )
         }
     }
@@ -126,7 +133,7 @@ private fun EmailField(
     state: CreateAccountUiState,
     onEmailChange: (String) -> Unit,
     onSignInClick: () -> Unit,
-    onGoogleClick: () -> Unit,
+    onProviderClick: (SignInProvider) -> Unit,
 ) {
     RecessedField(
         label = stringResource(R.string.account_field_email),
@@ -148,7 +155,7 @@ private fun EmailField(
                     )
                     TextAction(
                         text = stringResource(R.string.account_email_in_use_google),
-                        onClick = onGoogleClick,
+                        onClick = { onProviderClick(SignInProvider.Google) },
                         modifier = Modifier.testTag(CreateAccountTags.EMAIL_IN_USE_GOOGLE),
                     )
                 }
@@ -192,8 +199,18 @@ private fun EmailError.messageRes(): Int = when (this) {
     EmailError.AlreadyInUse -> R.string.account_error_email_in_use
 }
 
+// Only the errors that the LCD can say in a few words. A failed sign-up says it in the message alone.
+private fun FormError.lcdRes(): Int? = when (this) {
+    FormError.Network -> R.string.account_lcd_no_network
+    FormError.NoAccount -> R.string.account_lcd_err_no_account
+    FormError.SignInFailed -> R.string.account_lcd_err_unknown
+    FormError.Generic -> null
+}
+
 private fun FormError.messageRes(): Int = when (this) {
     FormError.Network -> R.string.account_error_network
+    FormError.NoAccount -> R.string.account_error_no_sign_in_account
+    FormError.SignInFailed -> R.string.account_error_sign_in_failed
     FormError.Generic -> R.string.account_error_generic
 }
 
@@ -219,7 +236,7 @@ private fun CreateAccountScreenPreview() {
             onEmailChange = {},
             onPasswordChange = {},
             onCreateClick = {},
-            onGoogleClick = {},
+            onProviderClick = {},
             onBack = {},
             onSignInClick = {},
         )

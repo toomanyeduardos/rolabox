@@ -4,6 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.eduardoflores.rolabox.core.auth.api.AuthError
 import com.eduardoflores.rolabox.core.auth.api.AuthRepository
+import com.eduardoflores.rolabox.core.auth.ui.SignInConfig
+import com.eduardoflores.rolabox.core.auth.ui.SignInError
+import com.eduardoflores.rolabox.core.auth.ui.SignInFlow
+import com.eduardoflores.rolabox.core.auth.ui.SignInOutcome
+import com.eduardoflores.rolabox.core.auth.ui.SignInProvider
+import com.eduardoflores.rolabox.core.auth.ui.SignInStepResult
+import com.eduardoflores.rolabox.core.domain.LeaveOfflineModeUseCase
 import com.eduardoflores.rolabox.core.userdata.api.UserDataRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -24,7 +31,7 @@ internal enum class SignInPasswordError {
 }
 
 /** An error that isn't about one field. */
-internal enum class SignInFormError { Network, TooManyRequests, AccountDisabled, Unknown }
+internal enum class SignInFormError { Network, TooManyRequests, AccountDisabled, NoAccount, Unknown }
 
 internal data class SignInUiState(
     val email: String = "",
@@ -35,13 +42,18 @@ internal data class SignInUiState(
     val isLoading: Boolean = false,
     /** The user signed in, or chose to go on without an account. The screen reports it once and leaves. */
     val isFinished: Boolean = false,
+    /** Offline mode is off and this provider's account picker is due. The route shows it and reports the result. */
+    val requestedProvider: SignInProvider? = null,
 )
 
 @HiltViewModel
 internal class SignInViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val userDataRepository: UserDataRepository,
+    leaveOfflineMode: LeaveOfflineModeUseCase,
+    val signInConfig: SignInConfig,
 ) : ViewModel() {
+    private val signInFlow = SignInFlow(authRepository, leaveOfflineMode)
     private val _uiState = MutableStateFlow(SignInUiState())
     val uiState: StateFlow<SignInUiState> = _uiState.asStateFlow()
 
@@ -75,6 +87,32 @@ internal class SignInViewModel @Inject constructor(
                 ifLeft = { error -> _uiState.update { it.withError(error) } },
                 ifRight = { _ -> _uiState.update { it.copy(isLoading = false, isFinished = true) } },
             )
+        }
+    }
+
+    /** Starts signing in with [provider]. The route shows its picker when [SignInUiState.requestedProvider] is set. */
+    fun onProviderClick(provider: SignInProvider) {
+        val current = _uiState.value
+        if (current.isLoading || current.isFinished) return
+
+        _uiState.update { it.copy(isLoading = true, emailError = null, passwordError = null, formError = null) }
+        viewModelScope.launch {
+            val error = signInFlow.prepare()
+            _uiState.update { if (error == null) it.copy(requestedProvider = provider) else it.withSignInError(error) }
+        }
+    }
+
+    /** The account picker is done. A [SignInStepResult.Credential] is exchanged for a session. */
+    fun onSignInResult(result: SignInStepResult) {
+        if (_uiState.value.requestedProvider == null) return
+
+        _uiState.update { it.copy(requestedProvider = null) }
+        viewModelScope.launch {
+            when (val outcome = signInFlow.complete(result)) {
+                SignInOutcome.SignedIn -> _uiState.update { it.copy(isLoading = false, isFinished = true) }
+                SignInOutcome.Cancelled -> _uiState.update { it.copy(isLoading = false) }
+                is SignInOutcome.Failed -> _uiState.update { it.withSignInError(outcome.error) }
+            }
         }
     }
 
@@ -115,3 +153,14 @@ private fun SignInUiState.withError(error: AuthError): SignInUiState = when (err
     AuthError.WeakPassword,
     -> copy(isLoading = false, formError = SignInFormError.Unknown)
 }
+
+private fun SignInUiState.withSignInError(error: SignInError): SignInUiState = copy(
+    isLoading = false,
+    formError = when (error) {
+        SignInError.Network -> SignInFormError.Network
+        SignInError.TooManyRequests -> SignInFormError.TooManyRequests
+        SignInError.AccountDisabled -> SignInFormError.AccountDisabled
+        SignInError.NoAccount -> SignInFormError.NoAccount
+        SignInError.Unknown -> SignInFormError.Unknown
+    },
+)

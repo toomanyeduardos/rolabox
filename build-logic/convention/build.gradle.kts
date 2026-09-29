@@ -38,6 +38,10 @@ gradlePlugin {
             id = "rolabox.android.feature"
             implementationClass = "RolaboxAndroidFeatureConventionPlugin"
         }
+        register("androidUi") {
+            id = "rolabox.android.ui"
+            implementationClass = "RolaboxAndroidUiConventionPlugin"
+        }
         register("navigation") {
             id = "rolabox.navigation"
             implementationClass = "RolaboxNavigationConventionPlugin"

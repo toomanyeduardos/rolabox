@@ -4,6 +4,8 @@
 - **Date:** 2026-09-24
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review
+- **Revised 2026-09-29:** Added the composite plugin `rolabox.android.ui` for the `:ui` module type of
+  [ADR-014](014-area-ui-modules.md). The decision is unchanged.
 
 ## Context
 
@@ -28,6 +30,8 @@ included build (`build-logic/convention`), written as Kotlin classes and registe
 - **Additive plugins** add one capability: `rolabox.android.compose`, `rolabox.hilt`.
 - **Composite plugins** describe a module type: `rolabox.android.feature` applies a library,
   Compose and Hilt, plus the dependencies every feature needs.
+  `rolabox.android.ui` applies a library and Compose, without Hilt, for an area's `:ui` module
+  ([ADR-014](014-area-ui-modules.md)).
 - Shared constants (SDK levels, Java version) live in `ProjectConfig`, and dependency versions live
   only in the version catalog (`gradle/libs.versions.toml`).
 

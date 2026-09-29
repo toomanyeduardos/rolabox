@@ -12,8 +12,6 @@ internal fun EntryProviderScope<NavKey>.authEntries(navigator: AppNavigator) {
         onForgotPasswordClick = {},
         // Sign in is below Create account in the stack, so going back is going to it.
         onSignInClick = navigator::pop,
-        // Google sign-in comes with its own ticket (ADR-009).
-        onGoogleClick = {},
         onBack = navigator::pop,
         onSignedUp = navigator::leaveAuth,
         onSignedIn = navigator::leaveAuth,

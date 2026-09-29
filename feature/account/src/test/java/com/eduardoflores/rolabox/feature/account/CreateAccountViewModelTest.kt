@@ -3,9 +3,16 @@ package com.eduardoflores.rolabox.feature.account
 import com.eduardoflores.rolabox.core.auth.api.AuthError
 import com.eduardoflores.rolabox.core.auth.api.AuthState
 import com.eduardoflores.rolabox.core.auth.api.PasswordStrength
+import com.eduardoflores.rolabox.core.auth.api.SignInCredential
 import com.eduardoflores.rolabox.core.auth.testing.FakeAuthRepository
 import com.eduardoflores.rolabox.core.auth.testing.SignUpRequest
+import com.eduardoflores.rolabox.core.auth.ui.SignInConfig
+import com.eduardoflores.rolabox.core.auth.ui.SignInProvider
+import com.eduardoflores.rolabox.core.auth.ui.SignInStepResult
+import com.eduardoflores.rolabox.core.domain.LeaveOfflineModeUseCase
+import com.eduardoflores.rolabox.core.storage.api.StorageError
 import com.eduardoflores.rolabox.core.testing.MainDispatcherRule
+import com.eduardoflores.rolabox.core.userdata.testing.FakeUserDataRepository
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -20,7 +27,10 @@ class CreateAccountViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val authRepository = FakeAuthRepository()
-    private val viewModel = CreateAccountViewModel(authRepository)
+    private val userDataRepository = FakeUserDataRepository()
+    private val leaveOfflineMode = LeaveOfflineModeUseCase(userDataRepository)
+    private val viewModel =
+        CreateAccountViewModel(authRepository, leaveOfflineMode, SignInConfig(googleWebClientId = "web-client-id"))
     private val state get() = viewModel.uiState.value
 
     private fun fill(
@@ -227,5 +237,91 @@ class CreateAccountViewModelTest {
             assertEquals(FormError.Generic, state.formError)
             assertFalse(state.isLoading)
         }
+    }
+
+    private fun google(result: SignInStepResult) {
+        viewModel.onProviderClick(SignInProvider.Google)
+        viewModel.onSignInResult(result)
+    }
+
+    @Test
+    fun google_success_exchangesTheTokenAndSignsUp() {
+        google(SignInStepResult.Credential(SignInCredential.GoogleIdToken("id-token")))
+
+        assertEquals(SignInCredential.GoogleIdToken("id-token"), authRepository.lastSignInCredential)
+        assertTrue(state.isSignedUp)
+        assertFalse(state.isLoading)
+        assertNull(state.requestedProvider)
+        assertNull(state.formError)
+    }
+
+    @Test
+    fun google_cancel_returnsSilently() {
+        google(SignInStepResult.Cancelled)
+
+        assertNull(state.formError)
+        assertNull(authRepository.lastSignInCredential)
+        assertFalse(state.isLoading)
+        assertFalse(state.isSignedUp)
+        assertNull(state.requestedProvider)
+    }
+
+    @Test
+    fun google_noAccountOnTheDevice_isAFormError() {
+        google(SignInStepResult.NoAccount)
+
+        assertEquals(FormError.NoAccount, state.formError)
+        assertFalse(state.isLoading)
+        assertFalse(state.isSignedUp)
+    }
+
+    @Test
+    fun google_failures_areFormErrors() {
+        mapOf(
+            AuthError.Network to FormError.Network,
+            AuthError.TooManyRequests to FormError.SignInFailed,
+            AuthError.AccountDisabled to FormError.SignInFailed,
+            AuthError.Unknown to FormError.SignInFailed,
+        ).forEach { (error, formError) ->
+            authRepository.signInError = error
+
+            google(SignInStepResult.Credential(SignInCredential.GoogleIdToken("id-token")))
+
+            assertEquals("$error", formError, state.formError)
+            assertFalse("$error", state.isLoading)
+            assertFalse("$error", state.isSignedUp)
+        }
+        google(SignInStepResult.Failed)
+        assertEquals(FormError.SignInFailed, state.formError)
+    }
+
+    @Test
+    fun google_whenOfflineModeCantBeTurnedOff_showsAnErrorAndSkipsThePicker() {
+        userDataRepository.writeError = StorageError.Unavailable
+
+        viewModel.onProviderClick(SignInProvider.Google)
+
+        assertNull(state.requestedProvider)
+        assertEquals(FormError.SignInFailed, state.formError)
+        assertFalse(state.isLoading)
+    }
+
+    @Test
+    fun google_keepsWhatWasTypedInTheForm() {
+        fill()
+
+        google(SignInStepResult.NoAccount)
+
+        assertEquals("Eduardo", state.name)
+        assertEquals("toomanyeduardos@gmail.com", state.email)
+    }
+
+    @Test
+    fun google_isIgnoredWhileLoading() {
+        viewModel.onProviderClick(SignInProvider.Google)
+        viewModel.onProviderClick(SignInProvider.Google)
+
+        assertEquals(SignInProvider.Google, state.requestedProvider)
+        assertTrue(state.isLoading)
     }
 }

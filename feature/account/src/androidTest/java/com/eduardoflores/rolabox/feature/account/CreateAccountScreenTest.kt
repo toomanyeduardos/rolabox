@@ -51,7 +51,7 @@ class CreateAccountScreenTest {
                     onEmailChange = { email = it },
                     onPasswordChange = { password = it },
                     onCreateClick = { createClicks++ },
-                    onGoogleClick = { googleClicks++ },
+                    onProviderClick = { googleClicks++ },
                     onBack = { backClicks++ },
                     onSignInClick = { signInClicks++ },
                 )
@@ -121,7 +121,7 @@ class CreateAccountScreenTest {
                         current = current.copy(password = it)
                     },
                     onCreateClick = {},
-                    onGoogleClick = {},
+                    onProviderClick = {},
                     onBack = {},
                     onSignInClick = {},
                 )
@@ -177,7 +177,7 @@ class CreateAccountScreenTest {
                     onEmailChange = {},
                     onPasswordChange = {},
                     onCreateClick = {},
-                    onGoogleClick = {},
+                    onProviderClick = {},
                     onBack = {},
                     onSignInClick = {},
                 )
@@ -248,6 +248,45 @@ class CreateAccountScreenTest {
         composeRule.onNodeWithText(string(R.string.account_lcd_no_network).uppercase()).assertIsDisplayed()
         composeRule.onNodeWithText("ERR").assertIsDisplayed()
         composeRule.onNodeWithText(string(R.string.account_error_network)).assertIsDisplayed()
+    }
+
+    @Test
+    fun googleErrors_areShownOnTheLcdAndAsAMessage() {
+        show(CreateAccountUiState(formError = FormError.NoAccount))
+
+        composeRule.onNodeWithText(string(R.string.account_lcd_err_no_account)).assertIsDisplayed()
+        composeRule.onNodeWithText(string(R.string.account_error_no_sign_in_account)).assertIsDisplayed()
+    }
+
+    @Test
+    fun googleFailure_isShownOnTheLcdAndAsAMessage() {
+        show(CreateAccountUiState(formError = FormError.SignInFailed))
+
+        composeRule.onNodeWithText(string(R.string.account_lcd_err_unknown)).assertIsDisplayed()
+        composeRule.onNodeWithText(string(R.string.account_error_sign_in_failed)).assertIsDisplayed()
+    }
+
+    @Test
+    fun loading_disablesTheGoogleButton() {
+        var clicks = 0
+        composeRule.setContent {
+            RolaboxTheme {
+                CreateAccountScreen(
+                    state = CreateAccountUiState(isLoading = true),
+                    onNameChange = {},
+                    onEmailChange = {},
+                    onPasswordChange = {},
+                    onCreateClick = {},
+                    onProviderClick = { clicks++ },
+                    onBack = {},
+                    onSignInClick = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag(CreateAccountTags.GOOGLE).performClick()
+
+        assertEquals(0, clicks)
     }
 
     @Test

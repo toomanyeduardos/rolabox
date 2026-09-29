@@ -21,3 +21,5 @@ New ADR: copy [`template.md`](template.md), take the next number, and add it to 
 | [010](010-firestore-security-rules.md) | Firestore for synced data, with per-user security rules tested against the emulator | Accepted |
 | [011](011-preferences-sync.md) | Sync preferences through Firestore, field by field, with last-write-wins | Accepted |
 | [012](012-navigation.md) | Navigation with Jetpack Navigation 3, with the back stacks owned by `:app` | Accepted |
+| [013](013-account-linking.md) | One account per email, with Google and password sign-in linked automatically | Accepted |
+| [014](014-area-ui-modules.md) | Area UI modules for SDK steps and shared UI, `:core:<area>:ui` | Accepted |

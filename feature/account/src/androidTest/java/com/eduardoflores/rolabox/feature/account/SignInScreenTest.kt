@@ -45,7 +45,7 @@ class SignInScreenTest {
                     onPasswordChange = { password = it },
                     onSignInClick = { signInClicks++ },
                     onForgotPasswordClick = { forgotClicks++ },
-                    onGoogleClick = { googleClicks++ },
+                    onProviderClick = { googleClicks++ },
                     onOfflineClick = { offlineClicks++ },
                     onCreateAccountClick = { createAccountClicks++ },
                 )
@@ -112,7 +112,7 @@ class SignInScreenTest {
                     },
                     onSignInClick = {},
                     onForgotPasswordClick = {},
-                    onGoogleClick = {},
+                    onProviderClick = {},
                     onOfflineClick = {},
                     onCreateAccountClick = {},
                 )
@@ -175,6 +175,8 @@ class SignInScreenTest {
                 (R.string.account_lcd_err_try_later to R.string.account_sign_in_error_try_later),
             SignInFormError.AccountDisabled to
                 (R.string.account_lcd_err_disabled to R.string.account_sign_in_error_disabled),
+            SignInFormError.NoAccount to
+                (R.string.account_lcd_err_no_account to R.string.account_error_no_sign_in_account),
             SignInFormError.Unknown to (R.string.account_lcd_err_unknown to R.string.account_sign_in_error_try_later),
         )
         var current by mutableStateOf(SignInUiState())
@@ -186,7 +188,7 @@ class SignInScreenTest {
                     onPasswordChange = {},
                     onSignInClick = {},
                     onForgotPasswordClick = {},
-                    onGoogleClick = {},
+                    onProviderClick = {},
                     onOfflineClick = {},
                     onCreateAccountClick = {},
                 )
@@ -225,5 +227,14 @@ class SignInScreenTest {
         assertEquals(1, googleClicks)
         assertEquals(1, offlineClicks)
         assertEquals(1, createAccountClicks)
+    }
+
+    @Test
+    fun loading_disablesTheGoogleButton() {
+        show(SignInUiState(isLoading = true))
+
+        composeRule.onNodeWithTag(SignInTags.GOOGLE).performClick()
+
+        assertEquals(0, googleClicks)
     }
 }

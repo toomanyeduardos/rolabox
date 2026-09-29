@@ -13,6 +13,8 @@ android {
 
 dependencies {
     implementation(project(":core:auth:api"))
+    implementation(project(":core:auth:ui"))
+    implementation(project(":core:domain"))
     implementation(project(":core:userdata:api"))
 
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)

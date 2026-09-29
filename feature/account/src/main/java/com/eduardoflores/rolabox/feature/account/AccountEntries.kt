@@ -20,7 +20,6 @@ fun EntryProviderScope<NavKey>.accountEntries(
     onCreateAccountClick: () -> Unit,
     onForgotPasswordClick: (email: String) -> Unit,
     onSignInClick: () -> Unit,
-    onGoogleClick: () -> Unit,
     onBack: () -> Unit,
     onSignedUp: () -> Unit,
     onSignedIn: () -> Unit,
@@ -29,7 +28,6 @@ fun EntryProviderScope<NavKey>.accountEntries(
         SignInRoute(
             onCreateAccountClick = onCreateAccountClick,
             onForgotPasswordClick = onForgotPasswordClick,
-            onGoogleClick = onGoogleClick,
             onSignedIn = onSignedIn,
         )
     }
@@ -37,7 +35,6 @@ fun EntryProviderScope<NavKey>.accountEntries(
         CreateAccountRoute(
             onBack = onBack,
             onSignInClick = onSignInClick,
-            onGoogleClick = onGoogleClick,
             onSignedUp = onSignedUp,
         )
     }
