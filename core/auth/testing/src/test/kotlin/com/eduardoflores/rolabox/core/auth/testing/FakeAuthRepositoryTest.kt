@@ -31,6 +31,23 @@ class FakeAuthRepositoryTest {
     }
 
     @Test
+    fun signUp_success_signsInWithTheName() = runTest {
+        val user = repository.signUp("Alex", "alex@mail.com", "password12").getOrNull()
+
+        assertEquals("Alex", user?.displayName)
+        assertEquals(AuthState.SignedIn(user!!), repository.observeAuthState().first())
+        assertEquals(SignUpRequest("Alex", "alex@mail.com", "password12"), repository.lastSignUp)
+    }
+
+    @Test
+    fun signUp_error_leavesStateUnchanged() = runTest {
+        repository.signUpError = AuthError.EmailAlreadyInUse
+
+        assertEquals(AuthError.EmailAlreadyInUse.left(), repository.signUp("Alex", "alex@mail.com", "password12"))
+        assertEquals(AuthState.SignedOut, repository.observeAuthState().first())
+    }
+
+    @Test
     fun signOut_signsOut() = runTest {
         repository.signIn(credential)
 

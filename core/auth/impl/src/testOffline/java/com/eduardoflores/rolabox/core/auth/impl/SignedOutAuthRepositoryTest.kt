@@ -27,6 +27,11 @@ class SignedOutAuthRepositoryTest {
     }
 
     @Test
+    fun signUp_isUnavailable() = runTest {
+        assertEquals(AuthError.Unavailable.left(), repository.signUp("Alex", "alex@mail.com", "password12"))
+    }
+
+    @Test
     fun signOut_succeeds() = runTest {
         assertEquals(Unit.right(), repository.signOut())
     }

@@ -20,5 +20,8 @@ internal class SignedOutAuthRepository @Inject constructor() : AuthRepository {
     override suspend fun signIn(credential: SignInCredential): Either<AuthError, AuthUser> =
         AuthError.Unavailable.left()
 
+    override suspend fun signUp(name: String, email: String, password: String): Either<AuthError, AuthUser> =
+        AuthError.Unavailable.left()
+
     override suspend fun signOut(): Either<AuthError, Unit> = Unit.right()
 }
