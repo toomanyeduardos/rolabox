@@ -48,10 +48,10 @@ class PasswordPolicyTest {
     @Test
     fun strength_longerOrMoreVariedRaisesIt() {
         assertEquals(PasswordStrength.Fair, strength("kdjfhqpwzmxn"))
-        assertEquals(PasswordStrength.Strong, strength("kdjfhqPwzm4x"))
-        assertEquals(PasswordStrength.VeryStrong, strength("kdjfhqPwzm4x!"))
-        assertEquals(PasswordStrength.Strong, strength("kdjfhqpwzmxnvbcy"))
-        assertEquals(PasswordStrength.VeryStrong, strength("kdjfhqPwzmxn4vbc"))
+        assertEquals(PasswordStrength.Good, strength("kdjfhqPwzm4x"))
+        assertEquals(PasswordStrength.Strong, strength("kdjfhqPwzm4x!"))
+        assertEquals(PasswordStrength.Good, strength("kdjfhqpwzmxnvbcy"))
+        assertEquals(PasswordStrength.Strong, strength("kdjfhqPwzmxn4vbc"))
     }
 
     @Test

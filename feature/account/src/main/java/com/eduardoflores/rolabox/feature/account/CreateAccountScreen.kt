@@ -24,10 +24,13 @@ import com.eduardoflores.rolabox.core.auth.ui.SignInButton
 import com.eduardoflores.rolabox.core.auth.ui.SignInProvider
 import com.eduardoflores.rolabox.core.auth.ui.SignInStepEffect
 import com.eduardoflores.rolabox.core.designsystem.component.FieldError
+import com.eduardoflores.rolabox.core.designsystem.component.FooterLink
+import com.eduardoflores.rolabox.core.designsystem.component.OrDivider
 import com.eduardoflores.rolabox.core.designsystem.component.PreviewLightDark
 import com.eduardoflores.rolabox.core.designsystem.component.PrimaryButton
 import com.eduardoflores.rolabox.core.designsystem.component.RecessedField
 import com.eduardoflores.rolabox.core.designsystem.component.StrengthMeter
+import com.eduardoflores.rolabox.core.designsystem.component.TextAction
 import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxTheme
 
 /** Connects [CreateAccountScreen] to its ViewModel. The exits are reported to `:app` (ADR-012). */
@@ -179,18 +182,11 @@ private fun PasswordField(state: CreateAccountUiState, onPasswordChange: (String
         onImeAction = onCreateClick,
         error = state.passwordError?.let { passwordErrorText(it) },
         footer = if (state.strength != PasswordStrength.Empty) {
-            { StrengthMeter(level = state.strength.level, label = stringResource(state.strength.labelRes())) }
+            { StrengthMeter(level = state.strength.level) }
         } else {
             null
         },
     )
-}
-
-private fun PasswordStrength.labelRes(): Int = when (this) {
-    PasswordStrength.Empty, PasswordStrength.Weak -> R.string.account_strength_weak
-    PasswordStrength.Fair -> R.string.account_strength_fair
-    PasswordStrength.Strong -> R.string.account_strength_strong
-    PasswordStrength.VeryStrong -> R.string.account_strength_very_strong
 }
 
 private fun EmailError.messageRes(): Int = when (this) {

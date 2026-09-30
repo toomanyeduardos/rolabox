@@ -1,9 +1,12 @@
 package com.eduardoflores.rolabox.core.designsystem.theme
 
+import androidx.annotation.ColorRes
+import androidx.annotation.DrawableRes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import com.eduardoflores.rolabox.core.designsystem.R
 
 /**
  * The brushed-aluminum look of the account screens: metal body, recessed fields, raised keys and
@@ -14,8 +17,10 @@ import androidx.compose.ui.graphics.Color
 data class MetalColors(
     /** Whether this is the dark palette, for parts that pick between a light and a dark asset. */
     val isDark: Boolean,
-    val bodyTop: Color,
-    val bodyBottom: Color,
+    /** The tiled brushed-aluminum texture that paints the body. */
+    @DrawableRes val texture: Int,
+    /** The body's flat color, which the texture is matched to. It's a resource so the splash screen can use it too. */
+    @ColorRes val body: Int,
     val ink: Color,
     val muted: Color,
     val rule: Color,
@@ -28,9 +33,13 @@ data class MetalColors(
     val bezel: Color,
     val lcd: Color,
     val lcdInk: Color,
+    /** The accent for text links. It's darker (light) or lighter (dark) than [accent], so it reads on the metal. */
+    val accentText: Color,
     val accent: Color = Color(0xFFE4572E),
     val accentTop: Color = Color(0xFFEE6A43),
     val accentBottom: Color = Color(0xFFD94B23),
+    /** The glossy selected row of a device display, top to bottom. */
+    val selection: List<Color> = listOf(Color(0xFF5AA6EE), Color(0xFF2F86DB), Color(0xFF1F6FC4), Color(0xFF1A62B0)),
     /** The strength meter's color for levels 1 to 4. */
     val strength: List<Color> = listOf(Color(0xFFC8322B), Color(0xFFE0A21B), Color(0xFF6FBF5A), Color(0xFF2E9E57)),
 )
@@ -38,12 +47,12 @@ data class MetalColors(
 /** Light: anodized aluminum. */
 val LightMetalColors = MetalColors(
     isDark = false,
-    bodyTop = Color(0xFFE7E8EA),
-    bodyBottom = Color(0xFFD3D5D8),
+    texture = R.drawable.aluminum_silver,
+    body = R.color.ds_metal_body,
     ink = Color(0xFF1C1D1F),
-    muted = Color(0xFF5B5E63),
-    rule = Color(0x24000000),
-    error = Color(0xFFC8322B),
+    muted = Color(0xFF43464B),
+    rule = Color(0x29000000),
+    error = Color(0xFFA8261F),
     well = Color(0xFFEEEFF0),
     wellBorder = Color(0x1A000000),
     keyTop = Color(0xFFF6F6F7),
@@ -52,17 +61,18 @@ val LightMetalColors = MetalColors(
     bezel = Color(0xFF3A3D3A),
     lcd = Color(0xFFC7CFBF),
     lcdInk = Color(0xFF27301F),
+    accentText = Color(0xFFA83A18),
 )
 
 /** Dark: gunmetal aluminum. */
 val DarkMetalColors = MetalColors(
     isDark = true,
-    bodyTop = Color(0xFF36383C),
-    bodyBottom = Color(0xFF222326),
-    ink = Color(0xFFECEEF0),
-    muted = Color(0xFFA0A4AB),
-    rule = Color(0x24FFFFFF),
-    error = Color(0xFFFF6B5E),
+    texture = R.drawable.aluminum_graphite,
+    body = R.color.ds_metal_body,
+    ink = Color(0xFFF1F1F2),
+    muted = Color(0xFFC6C9CE),
+    rule = Color(0x2EFFFFFF),
+    error = Color(0xFFFF8A7F),
     well = Color(0xFF18191B),
     wellBorder = Color(0x80000000),
     keyTop = Color(0xFF4A4C51),
@@ -71,6 +81,7 @@ val DarkMetalColors = MetalColors(
     bezel = Color(0xFF0C0D0C),
     lcd = Color(0xFF1D2A22),
     lcdInk = Color(0xFF9FE3B6),
+    accentText = Color(0xFFFF9A6E),
 )
 
 // Read through RolaboxMetal.colors, and provided only by RolaboxTheme.

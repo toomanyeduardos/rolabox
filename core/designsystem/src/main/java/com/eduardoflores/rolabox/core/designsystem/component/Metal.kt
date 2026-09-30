@@ -5,8 +5,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -20,10 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -44,27 +42,13 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.eduardoflores.rolabox.core.designsystem.R
 import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxMetal
+import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxTheme
 
-private const val HAIRLINE_SPACING_PX = 3f
-private const val HAIRLINE_LIGHT_ALPHA = 0.16f
-private const val HAIRLINE_DARK_ALPHA = 0.028f
 private const val LCD_SECONDARY_ALPHA = 0.7f
 
 private val PillShape = RoundedCornerShape(26.dp)
-
-/** Brushed-aluminum body: a vertical gradient with 1px vertical hairlines every 3px. */
-fun Modifier.brushedMetal(top: Color, bottom: Color): Modifier = this
-    .background(Brush.verticalGradient(listOf(top, bottom)))
-    .drawBehind {
-        val light = Color.White.copy(alpha = HAIRLINE_LIGHT_ALPHA)
-        val dark = Color.Black.copy(alpha = HAIRLINE_DARK_ALPHA)
-        var x = 0f
-        while (x < size.width) {
-            drawRect(light, Offset(x, 0f), Size(1f, size.height))
-            drawRect(dark, Offset(x + 1f, 0f), Size(1f, size.height))
-            x += HAIRLINE_SPACING_PX
-        }
-    }
+private val BackKeyTarget = 48.dp
+private val BackKeyInset = 9.dp // Half the gap around the 30dp key, so the key lines up with the content edge.
 
 /** Orange primary action. Only one per screen. Ignores taps while [loading]. */
 @Composable
@@ -88,34 +72,15 @@ fun PrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifi
     }
 }
 
-/** Raised metal key, used for secondary actions such as Continue with Google. */
-@Composable
-fun MetalKeyButton(onClick: () -> Unit, modifier: Modifier = Modifier, content: @Composable RowScope.() -> Unit) {
-    val colors = RolaboxMetal.colors
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(52.dp)
-            .shadow(2.dp, PillShape)
-            .clip(PillShape)
-            .background(Brush.verticalGradient(listOf(colors.keyTop, colors.keyBottom)))
-            .border(1.dp, colors.keyBorder, PillShape)
-            .clickable(role = Role.Button, onClick = onClick),
-        horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
-        verticalAlignment = Alignment.CenterVertically,
-        content = content,
-    )
-}
-
-/** A 30dp metal key inside a 44dp touch target. */
+/** A 30dp metal key inside a 48dp touch target. */
 @Composable
 fun BackKey(onClick: () -> Unit, contentDescription: String, modifier: Modifier = Modifier) {
     val colors = RolaboxMetal.colors
     val shape = RoundedCornerShape(9.dp)
     Box(
         modifier = modifier
-            .size(44.dp)
-            .offset(x = (-8).dp)
+            .size(BackKeyTarget)
+            .offset(x = -BackKeyInset)
             .clickable(role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
@@ -138,9 +103,9 @@ fun BackKey(onClick: () -> Unit, contentDescription: String, modifier: Modifier 
     }
 }
 
-/** A small monochrome display that reports the screen's state. */
+/** A small monochrome display that reports the screen's state: a [left] label and a [right] status. */
 @Composable
-fun LcdStrip(left: String, modifier: Modifier = Modifier, right: String = "", error: Boolean = false) {
+fun LcdStatusBar(left: String, modifier: Modifier = Modifier, right: String = "", error: Boolean = false) {
     val colors = RolaboxMetal.colors
     val mono = TextStyle(
         fontFamily = FontFamily.Monospace,
@@ -210,6 +175,17 @@ fun Wordmark(modifier: Modifier = Modifier, isPlaying: Boolean = false, fontSize
 
 private const val VINYL_TO_TEXT_RATIO = 0.72f
 
+/** The top of a screen: an optional back key, then the [Wordmark]. */
+@Composable
+fun WordmarkHeader(modifier: Modifier = Modifier, onBack: (() -> Unit)? = null) {
+    Row(modifier.height(BackKeyTarget), verticalAlignment = Alignment.CenterVertically) {
+        if (onBack != null) {
+            BackKey(onClick = onBack, contentDescription = stringResource(R.string.ds_back))
+        }
+        Wordmark()
+    }
+}
+
 // A chevron pointing left. It's a small drawing, so it's built here instead of adding the icons library.
 private val BackChevron = ImageVector.Builder(
     name = "BackChevron",
@@ -228,3 +204,42 @@ private val BackChevron = ImageVector.Builder(
     lineTo(8.5f, 12f)
     lineTo(14.5f, 18f)
 }.build()
+
+@Composable
+private fun PreviewSurface(content: @Composable ColumnScope.() -> Unit) {
+    RolaboxTheme {
+        Column(
+            Modifier.brushedMetal().padding(22.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            content = content,
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun LcdStatusBarPreview() {
+    PreviewSurface {
+        LcdStatusBar(left = "Sign in", right = "Offline OK")
+        LcdStatusBar(left = "Sign in")
+        LcdStatusBar(left = "Wrong password", error = true)
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun WordmarkHeaderPreview() {
+    PreviewSurface {
+        WordmarkHeader()
+        WordmarkHeader(onBack = {})
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun PrimaryButtonPreview() {
+    PreviewSurface {
+        PrimaryButton(text = "Sign in", onClick = {})
+        PrimaryButton(text = "Sign in", onClick = {}, loading = true)
+    }
+}

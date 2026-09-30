@@ -5,8 +5,8 @@ enum class PasswordStrength {
     Empty,
     Weak,
     Fair,
+    Good,
     Strong,
-    VeryStrong,
     ;
 
     val level: Int get() = ordinal
@@ -50,8 +50,8 @@ object PasswordPolicy {
         else -> when (points(password)) {
             0 -> PasswordStrength.Weak
             1 -> PasswordStrength.Fair
-            2 -> PasswordStrength.Strong
-            else -> PasswordStrength.VeryStrong
+            2 -> PasswordStrength.Good
+            else -> PasswordStrength.Strong
         }
     }
 
