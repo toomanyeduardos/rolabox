@@ -141,9 +141,10 @@ Kotlin 2.4.20, which are newer than the ones it was built against. We will **mov
   device.
 - Upgrading Paparazzi, Compose, the Compose BOM or a font can change pixels, and the goldens need
   recording again in a pull request of their own, so the diff is only the upgrade's.
-- Goldens are recorded on macOS and verified on Linux in CI. Earlier experience says they match, but
-  rendering differences between operating systems are possible. If a CI run shows them, the
-  `maxPercentDifference` threshold is the escape hatch, and recording on the CI platform the fallback.
+- Goldens are recorded on macOS and verified on Linux in CI, and they matched on the first CI run.
+  Rendering differences between operating systems are still possible after a toolchain upgrade. If
+  one shows up, the `maxPercentDifference` threshold is the escape hatch, and recording on the CI
+  platform the fallback.
 - Previews now have a second job. A preview that needs a ViewModel, or that changes from run to run
   (a clock, an animation, a random value), makes its snapshot fail or flake, and has to be fixed in
   the preview.
