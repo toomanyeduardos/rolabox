@@ -5,6 +5,7 @@ import com.eduardoflores.rolabox.buildlogic.ProjectConfig
 import com.eduardoflores.rolabox.buildlogic.applyStaticAnalysis
 import com.eduardoflores.rolabox.buildlogic.enforceModuleRules
 import com.eduardoflores.rolabox.buildlogic.enforceNoProductFlavors
+import com.eduardoflores.rolabox.buildlogic.registerDesignSystemResourceCheck
 import com.eduardoflores.rolabox.buildlogic.registerUnitTestTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -17,6 +18,7 @@ class RolaboxAndroidLibraryConventionPlugin : Plugin<Project> {
             enforceModuleRules()
             applyStaticAnalysis()
             registerUnitTestTask(DEFAULT_ANDROID_UNIT_TEST_TASK)
+            registerDesignSystemResourceCheck()
 
             extensions.configure<LibraryExtension> {
                 compileSdk = ProjectConfig.COMPILE_SDK

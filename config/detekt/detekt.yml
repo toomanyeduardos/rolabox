@@ -30,6 +30,34 @@ style:
   AbstractClassCanBeInterface:
     # Dagger/Hilt modules with @Binds are abstract classes by convention.
     ignoreAnnotated: ['Module']
+  ForbiddenImport:
+    # ADR-015 rule 3: text sizes and weights come from the design system's text styles.
+    active: true
+    excludes: ['**/core/designsystem/**']
+    forbiddenImports:
+      - value: 'androidx.compose.ui.unit.sp'
+        reason: 'ADR-015 rule 3: text sizes are defined only in :core:designsystem. Use a RolaboxType.styles role.'
+      - value: 'androidx.compose.ui.unit.em'
+        reason: 'ADR-015 rule 3: letter spacing is defined only in :core:designsystem. Use a RolaboxType.styles role.'
+      - value: 'androidx.compose.ui.text.font.FontWeight'
+        reason: 'ADR-015 rule 3: font weights are defined only in :core:designsystem. Use a RolaboxType.styles role.'
+  ForbiddenMethodCall:
+    # ADR-015 rules 2 and 3: colors, fonts, text styles and shapes are defined only in the design system.
+    active: true
+    excludes: ['**/core/designsystem/**']
+    methods:
+      - value: 'androidx.compose.ui.graphics.Color'
+        reason: 'ADR-015 rule 2: colors are defined only in :core:designsystem. Read a role from the theme.'
+      - value: 'androidx.compose.ui.text.font.FontFamily'
+        reason: 'ADR-015 rule 2: fonts are defined only in :core:designsystem.'
+      - value: 'androidx.compose.ui.text.font.Font'
+        reason: 'ADR-015 rule 2: fonts are defined only in :core:designsystem.'
+      - value: 'androidx.compose.ui.text.TextStyle.<init>'
+        reason: 'ADR-015 rule 3: text styles are defined only in :core:designsystem. Use a RolaboxType.styles role.'
+      - value: 'androidx.compose.foundation.shape.RoundedCornerShape'
+        reason: 'ADR-015 rule 3: shapes are defined only in :core:designsystem. Use MaterialTheme.shapes.'
+      - value: 'androidx.compose.foundation.shape.CutCornerShape'
+        reason: 'ADR-015 rule 3: shapes are defined only in :core:designsystem. Use MaterialTheme.shapes.'
   MagicNumber:
     # Color literals and dimensions in the design system are the definitions themselves.
     ignorePropertyDeclaration: true

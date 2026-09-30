@@ -34,12 +34,25 @@ import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxType
 
 // Google's Sign in with Google button specs (developers.google.com/identity/branding-guidelines). The
 // button doesn't use the app's theme: it takes Google's Light or Dark theme, whichever matches the app.
+// These are Google's brand, not Rolabox's, so they stay here instead of in the design system (ADR-015 rule 6).
 private const val DISABLED_ALPHA = 0.38f
+
+@Suppress("ForbiddenMethodCall") // ADR-015 rule 6: Google's brand colors.
 private val GoogleLightFill = Color(0xFFFFFFFF)
+
+@Suppress("ForbiddenMethodCall") // ADR-015 rule 6: Google's brand colors.
 private val GoogleLightStroke = Color(0xFF747775)
+
+@Suppress("ForbiddenMethodCall") // ADR-015 rule 6: Google's brand colors.
 private val GoogleLightText = Color(0xFF1F1F1F)
+
+@Suppress("ForbiddenMethodCall") // ADR-015 rule 6: Google's brand colors.
 private val GoogleDarkFill = Color(0xFF131314)
+
+@Suppress("ForbiddenMethodCall") // ADR-015 rule 6: Google's brand colors.
 private val GoogleDarkStroke = Color(0xFF8E918F)
+
+@Suppress("ForbiddenMethodCall") // ADR-015 rule 6: Google's brand colors.
 private val GoogleDarkText = Color(0xFFE3E3E3)
 
 /**
@@ -53,6 +66,8 @@ internal fun GoogleButton(onClick: () -> Unit, modifier: Modifier = Modifier, en
     val fill = if (dark) GoogleDarkFill else GoogleLightFill
     val stroke = if (dark) GoogleDarkStroke else GoogleLightStroke
     val text = if (dark) GoogleDarkText else GoogleLightText
+
+    @Suppress("ForbiddenMethodCall") // ADR-015 rule 6: Google's spec makes the button a pill.
     val shape = RoundedCornerShape(percent = 50)
     Row(
         modifier = modifier

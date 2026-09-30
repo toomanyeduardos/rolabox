@@ -23,3 +23,4 @@ New ADR: copy [`template.md`](template.md), take the next number, and add it to 
 | [012](012-navigation.md) | Navigation with Jetpack Navigation 3, with the back stacks owned by `:app` | Accepted |
 | [013](013-account-linking.md) | One account per email, with Google and password sign-in linked automatically | Accepted |
 | [014](014-area-ui-modules.md) | Area UI modules for SDK steps and shared UI, `:core:<area>:ui` | Accepted |
+| [015](015-design-system-owns-visual-language.md) | The design system is the only home of Rolabox's visual language | Accepted |
