@@ -1,6 +1,7 @@
 plugins {
     id("rolabox.android.feature")
     id("rolabox.navigation")
+    id("rolabox.android.paparazzi")
 }
 
 android {

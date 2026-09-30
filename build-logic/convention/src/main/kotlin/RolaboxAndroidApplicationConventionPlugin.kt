@@ -6,6 +6,7 @@ import com.eduardoflores.rolabox.buildlogic.applyStaticAnalysis
 import com.eduardoflores.rolabox.buildlogic.enforceModuleRules
 import com.eduardoflores.rolabox.buildlogic.enforceNoProductFlavors
 import com.eduardoflores.rolabox.buildlogic.registerDesignSystemResourceCheck
+import com.eduardoflores.rolabox.buildlogic.registerScreenshotPluginCheck
 import com.eduardoflores.rolabox.buildlogic.registerUnitTestTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -19,6 +20,7 @@ class RolaboxAndroidApplicationConventionPlugin : Plugin<Project> {
             applyStaticAnalysis()
             registerUnitTestTask(DEFAULT_ANDROID_UNIT_TEST_TASK)
             registerDesignSystemResourceCheck()
+            registerScreenshotPluginCheck()
 
             extensions.configure<ApplicationExtension> {
                 compileSdk = ProjectConfig.COMPILE_SDK

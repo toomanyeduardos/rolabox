@@ -14,6 +14,7 @@ dependencies {
     implementation(libs.ktlint.gradlePlugin)
     implementation(libs.detekt.gradlePlugin)
     implementation(libs.googleServices.gradlePlugin)
+    implementation(libs.paparazzi.gradlePlugin)
 }
 
 gradlePlugin {
@@ -61,6 +62,10 @@ gradlePlugin {
         register("detekt") {
             id = "rolabox.detekt"
             implementationClass = "RolaboxDetektConventionPlugin"
+        }
+        register("androidPaparazzi") {
+            id = "rolabox.android.paparazzi"
+            implementationClass = "RolaboxAndroidPaparazziConventionPlugin"
         }
         register("jvmLibrary") {
             id = "rolabox.jvm.library"

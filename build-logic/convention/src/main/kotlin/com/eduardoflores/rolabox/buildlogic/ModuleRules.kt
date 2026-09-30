@@ -32,8 +32,10 @@ private val UI_ALLOWED_PATHS = setOf(COMMON_PATH, DESIGNSYSTEM_PATH, DOMAIN_PATH
 
 private val ANDROID_PLUGINS = listOf("com.android.application", "com.android.library")
 private const val DAGGER_GROUP = "com.google.dagger"
+private const val PAPARAZZI_GROUP = "app.cash.paparazzi"
+private const val PAPARAZZI_PLUGIN = "app.cash.paparazzi"
 
-/** Checks the `[enforced]` dependency rules of ADR-001, ADR-003 and ADR-005 while the build is configured. */
+/** Checks the `[enforced]` dependency rules of ADR-001, ADR-003, ADR-005 and ADR-016 while the build is configured. */
 internal fun Project.enforceModuleRules() {
     val modulePath = path
 
@@ -68,7 +70,7 @@ internal fun Project.enforceModuleRules() {
 private fun Project.enforceExternalDependencyRules() = afterEvaluate {
     configurations.forEach { configuration ->
         configuration.dependencies.withType(ExternalModuleDependency::class.java).forEach { dependency ->
-            val violation = externalDependencyViolation(path, dependency.group)
+            val violation = externalDependencyViolation(path, dependency.group, pluginManager.hasPlugin(PAPARAZZI_PLUGIN))
             if (violation != null) {
                 throw GradleException(
                     "Module rule violated: $path -> ${dependency.group}:${dependency.name} (${configuration.name}). " +
@@ -79,10 +81,13 @@ private fun Project.enforceExternalDependencyRules() = afterEvaluate {
     }
 }
 
-private fun externalDependencyViolation(modulePath: String, group: String?): String? =
+private fun externalDependencyViolation(modulePath: String, group: String?, appliesPaparazzi: Boolean): String? =
     when {
         (modulePath.isApi() || modulePath == DOMAIN_PATH) && group == DAGGER_GROUP ->
             "ADR-005 rule 3: *:api modules and $DOMAIN_PATH use only javax.inject and contain no Hilt modules"
+
+        group == PAPARAZZI_GROUP && !appliesPaparazzi ->
+            "ADR-016 rule 1: Paparazzi comes only from the rolabox.android.paparazzi plugin, which the module doesn't apply"
 
         else -> null
     }

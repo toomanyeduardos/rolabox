@@ -82,15 +82,35 @@ The reasoning behind the architecture is recorded as [Architecture Decision Reco
 - [ADR-012](docs/adr/012-navigation.md): Navigation with Jetpack Navigation 3, with the back stacks owned by `:app`
 - [ADR-013](docs/adr/013-account-linking.md): One account per email, with Google and password sign-in linked automatically
 - [ADR-014](docs/adr/014-area-ui-modules.md): Area UI modules for SDK steps and shared UI, `:core:<area>:ui`
+- [ADR-015](docs/adr/015-design-system-owns-visual-language.md): The design system is the only home of Rolabox's visual language
+- [ADR-016](docs/adr/016-screenshot-testing.md): Screenshot tests with Paparazzi, run on the JVM with goldens in Git LFS
 
 ## CI
 
-[GitHub Actions](.github/workflows/ci.yml) runs two jobs in parallel on every pull request and every push to `main`:
+[GitHub Actions](.github/workflows/ci.yml) runs three jobs in parallel on every pull request and every push to `main`:
 
-- **`build`** (built the way a fresh clone is, with the placeholder Firebase config): a check that no `google-services.json` is committed, ktlint, detekt, `assembleDebug`, unit tests and Android Lint. It needs no secrets, because nothing talks to Firebase.
+- **`build`** (built the way a fresh clone is, with the placeholder Firebase config): a check that no `google-services.json` is committed, ktlint, detekt, `assembleDebug`, unit tests (without the screenshot tests) and Android Lint. It needs no secrets, because nothing talks to Firebase.
+- **`screenshots`**: verifies every screenshot golden (`verifyPaparazziDebug`). When it fails, the actual and diff images are uploaded as the `screenshot-diffs` artifact. It needs no secrets either.
 - **`firestore-rules`**: runs the Firestore security rules tests against the emulator (`npm test` in `firebase/`). It also needs no secrets.
 
 Test and lint reports are uploaded as the `reports` artifact on each run.
+
+## Screenshot tests
+
+UI is covered by screenshot tests made with [Paparazzi](https://github.com/cashapp/paparazzi) ([ADR-016](docs/adr/016-screenshot-testing.md)). They run on the JVM, with no emulator, as part of the module's unit tests. Every `@Preview` composable (including `@PreviewLightDark`) is rendered as a Pixel 6 in portrait, in light, in dark, and in light at 1.5x font scale, and compared with a golden image in the module's `src/test/snapshots/`.
+
+| Command | What it does |
+| --- | --- |
+| `./gradlew verifyPaparazziDebug` | Compares every screenshot with its golden, and fails on a difference or a missing golden. Also runs in `./gradlew check` |
+| `./gradlew recordPaparazziDebug` | Records the goldens again. Run it after a change that alters how UI looks, and review the images |
+| `./gradlew cleanRecordPaparazziDebug` | Like `recordPaparazziDebug`, and also deletes the goldens of previews that no longer exist |
+
+Prefix a task with a module path to run it for one module, for example `./gradlew :feature:account:verifyPaparazziDebug`. The aggregate `recordPaparazzi` and `verifyPaparazzi` tasks also exist, and cover every variant.
+
+- **Goldens are in [Git LFS](https://git-lfs.com/).** Install it once per machine with `brew install git-lfs && git lfs install`, before cloning or committing goldens. Without it a clone has text pointer files instead of images.
+- **A failing verify** writes the actual image and a `delta-` diff to `<module>/build/paparazzi/failures/`, and an HTML report to `<module>/build/reports/paparazzi/`. On CI they are the `screenshot-diffs` artifact.
+- **A module with `@Preview` composables applies `rolabox.android.paparazzi`** and has a `PreviewSnapshotTest` (see [`feature/account`](feature/account/src/test/kotlin/com/eduardoflores/rolabox/feature/account/PreviewSnapshotTest.kt)). The build fails if it doesn't. The shared harness is in the design system's test fixtures.
+- **Commit the goldens with the change** that caused them, in the same pull request. CI only verifies.
 
 ## Static analysis
 
@@ -102,7 +122,7 @@ Every module gets [ktlint](https://pinterest.github.io/ktlint/) (with the [Compo
 | Command | What it does |
 | --- | --- |
 | `./gradlew check` | Everything: ktlint, detekt (including type-resolved rules), Android Lint and unit tests |
-| `./gradlew unitTest` | Unit tests of every module: the debug variant of Android modules, and the pure Kotlin modules |
+| `./gradlew unitTest` | Unit tests of every module (including screenshot tests): the debug variant of Android modules, and the pure Kotlin modules. Add `-Prolabox.skipScreenshotTests` to leave the screenshot tests out |
 | `./gradlew test` | Unit tests of every variant of every module (debug and release) |
 | `./gradlew ktlintCheck detekt` | Static analysis only (fast) |
 | `./gradlew ktlintFormat` | Auto-fix ktlint violations |
