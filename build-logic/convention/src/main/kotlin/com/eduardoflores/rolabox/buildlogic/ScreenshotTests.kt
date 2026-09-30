@@ -21,7 +21,7 @@ private const val TASK_NAME = "checkScreenshotTests"
 // Set by CI's `build` job, which leaves the screenshot tests to their own job (ADR-016).
 private const val SKIP_PROPERTY = "rolabox.skipScreenshotTests"
 
-// Every screenshot test class is named *SnapshotTest (ADR-016 rule 6), which is how it is skipped.
+// Every screenshot test class is named *SnapshotTest (ADR-016 rule 4), which is how it is skipped.
 private const val SNAPSHOT_TEST_PATTERN = "*SnapshotTest"
 
 // A preview annotation at the start of a line: @Preview, @PreviewLightDark, @PreviewFontScale, …
