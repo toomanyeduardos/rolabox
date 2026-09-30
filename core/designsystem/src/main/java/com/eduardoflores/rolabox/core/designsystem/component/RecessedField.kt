@@ -6,7 +6,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -17,6 +19,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -53,16 +56,17 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.eduardoflores.rolabox.core.designsystem.R
 import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxMetal
+import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxTheme
 
 private val WellShape = RoundedCornerShape(12.dp)
 private const val INNER_SHADOW_ALPHA = 0.14f
 
 /**
  * An input cut into the metal. Pass [error] to show the red ring and message. [footer] goes under
- * the error, for a strength meter or actions that answer the error. Pass [contentType] so
- * autofill and password managers know what the field is for. A [password] field gets a SHOW/HIDE
- * toggle. A disabled
- * field ignores input, for a form that's being submitted.
+ * the error, for a strength meter or actions that answer the error. [labelAction] goes opposite the
+ * label, for something like "Forgot password?". Pass [contentType] so autofill and password managers
+ * know what the field is for. A [password] field gets a SHOW/HIDE toggle. A disabled field ignores
+ * input, for a form that's being submitted.
  */
 @Composable
 fun RecessedField(
@@ -78,6 +82,7 @@ fun RecessedField(
     imeAction: ImeAction = ImeAction.Next,
     onImeAction: () -> Unit = {},
     error: String? = null,
+    labelAction: @Composable (() -> Unit)? = null,
     footer: @Composable (() -> Unit)? = null,
 ) {
     val colors = RolaboxMetal.colors
@@ -113,13 +118,20 @@ fun RecessedField(
             // screen reader reads it with the text.
             decorationBox = { inner ->
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(
-                        text = label,
-                        color = colors.muted,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        letterSpacing = 0.02.em,
-                    )
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = label,
+                            color = colors.muted,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            letterSpacing = 0.02.em,
+                        )
+                        labelAction?.invoke()
+                    }
                     FieldWell(hasError = error != null) {
                         Box(Modifier.weight(1f)) { inner() }
                         if (password) {
@@ -135,7 +147,7 @@ fun RecessedField(
 }
 
 @Composable
-private fun FieldWell(hasError: Boolean, content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit) {
+private fun FieldWell(hasError: Boolean, content: @Composable RowScope.() -> Unit) {
     val colors = RolaboxMetal.colors
     Row(
         Modifier
@@ -176,8 +188,8 @@ private fun RevealToggle(revealed: Boolean, onClick: () -> Unit) {
         fontWeight = FontWeight.SemiBold,
         letterSpacing = 0.08.em,
         modifier = Modifier
+            .minimumInteractiveComponentSize()
             .clickable(onClick = onClick)
-            .padding(8.dp)
             .semantics {
                 contentDescription = description
                 role = Role.Button
@@ -207,10 +219,11 @@ fun FieldError(message: String, modifier: Modifier = Modifier) {
     }
 }
 
-/** A 4-segment password strength meter. [level] is 0 to 4, and 0 lights no segment. */
+/** A 4-segment password strength meter. [level] is 0 to 4, and 0 lights no segment and shows no label. */
 @Composable
-fun StrengthMeter(level: Int, label: String, modifier: Modifier = Modifier) {
+fun StrengthMeter(level: Int, modifier: Modifier = Modifier) {
     val colors = RolaboxMetal.colors
+    val lit = level.coerceIn(0, SEGMENTS)
     Row(
         modifier,
         verticalAlignment = Alignment.CenterVertically,
@@ -223,20 +236,82 @@ fun StrengthMeter(level: Int, label: String, modifier: Modifier = Modifier) {
                         .weight(1f)
                         .height(4.dp)
                         .clip(RoundedCornerShape(2.dp))
-                        .background(
-                            if (index <
-                                level
-                            ) {
-                                colors.strength[(level - 1).coerceIn(0, SEGMENTS - 1)]
-                            } else {
-                                colors.rule
-                            },
-                        ),
+                        .background(if (index < lit) colors.strength[lit - 1] else colors.rule),
                 )
             }
         }
-        Text(label, color = colors.muted, fontSize = 12.sp)
+        StrengthLabels.getOrNull(lit - 1)?.let { Text(stringResource(it), color = colors.muted, fontSize = 12.sp) }
     }
 }
 
+// The label for each level from 1 to 4.
+private val StrengthLabels = listOf(
+    R.string.ds_strength_weak,
+    R.string.ds_strength_fair,
+    R.string.ds_strength_good,
+    R.string.ds_strength_strong,
+)
+
 private const val SEGMENTS = 4
+
+@Composable
+private fun FieldPreviewSurface(content: @Composable ColumnScope.() -> Unit) {
+    RolaboxTheme {
+        Column(
+            Modifier.brushedMetal().padding(22.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            content = content,
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun RecessedFieldPreview() {
+    FieldPreviewSurface {
+        RecessedField(label = "Email", value = "", onValueChange = {})
+        RecessedField(label = "Email", value = "alex@mail.com", onValueChange = {})
+        RecessedField(label = "Email", value = "alex@mail.com", onValueChange = {}, enabled = false)
+        RecessedField(label = "Email", value = "alex@", onValueChange = {}, error = "Enter a valid email address.")
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun PasswordFieldPreview() {
+    FieldPreviewSurface {
+        RecessedField(
+            label = "Password",
+            value = "hunter2hunter2",
+            onValueChange = {},
+            password = true,
+            labelAction = { TextAction("Forgot password?", onClick = {}, reserveTouchTarget = false) },
+        )
+        RecessedField(
+            label = "Password",
+            value = "hunter2hunter2",
+            onValueChange = {},
+            password = true,
+            error = "That password doesn't match this email.",
+        )
+        RecessedField(
+            label = "Password",
+            value = "kdjfhqPwzm4x",
+            onValueChange = {},
+            password = true,
+            footer = { StrengthMeter(level = 3) },
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun StrengthMeterPreview() {
+    FieldPreviewSurface {
+        StrengthMeter(level = 0)
+        StrengthMeter(level = 1)
+        StrengthMeter(level = 2)
+        StrengthMeter(level = 3)
+        StrengthMeter(level = 4)
+    }
+}

@@ -6,6 +6,10 @@
     <string name="ds_hide_password_description">Hide password</string>
     <string name="ds_or">or</string>
     <string name="ds_lcd_error">ERR</string>
+    <string name="ds_strength_weak">Weak</string>
+    <string name="ds_strength_fair">Fair</string>
+    <string name="ds_strength_good">Good</string>
+    <string name="ds_strength_strong">Strong</string>
     <!-- The wordmark is "r", the vinyl, then "labox". -->
     <string name="ds_wordmark_start">r</string>
     <string name="ds_wordmark_end">labox</string>

@@ -2,29 +2,33 @@ package com.eduardoflores.rolabox.feature.account
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.eduardoflores.rolabox.core.auth.ui.SignInButton
 import com.eduardoflores.rolabox.core.auth.ui.SignInProvider
 import com.eduardoflores.rolabox.core.auth.ui.SignInStepEffect
 import com.eduardoflores.rolabox.core.designsystem.component.FieldError
+import com.eduardoflores.rolabox.core.designsystem.component.FooterLink
+import com.eduardoflores.rolabox.core.designsystem.component.OrDivider
 import com.eduardoflores.rolabox.core.designsystem.component.PreviewLightDark
 import com.eduardoflores.rolabox.core.designsystem.component.PrimaryButton
 import com.eduardoflores.rolabox.core.designsystem.component.RecessedField
+import com.eduardoflores.rolabox.core.designsystem.component.TextAction
+import com.eduardoflores.rolabox.core.designsystem.component.UnderlinedLink
 import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxTheme
 
 /** Connects [SignInScreen] to its ViewModel. The exits are reported to `:app` (ADR-012). */
@@ -80,7 +84,7 @@ internal fun SignInScreen(
         title = stringResource(R.string.account_sign_in_title),
         subtitle = stringResource(R.string.account_sign_in_subtitle),
         footer = {
-            TextAction(
+            UnderlinedLink(
                 text = stringResource(R.string.account_sign_in_offline),
                 onClick = onOfflineClick,
                 modifier = Modifier.testTag(SignInTags.OFFLINE),
@@ -107,7 +111,7 @@ internal fun SignInScreen(
                 loading = state.isLoading,
                 modifier = Modifier.testTag(SignInTags.SUBMIT),
             )
-            OrDivider(Modifier.fillMaxWidth())
+            OrDivider()
             SignInButton(
                 provider = SignInProvider.Google,
                 onClick = { onProviderClick(SignInProvider.Google) },
@@ -127,35 +131,38 @@ private fun SignInFields(
     onForgotPasswordClick: () -> Unit,
 ) {
     val enabled = !state.isLoading
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            RecessedField(
-                label = stringResource(R.string.account_field_email),
-                value = state.email,
-                onValueChange = onEmailChange,
-                modifier = Modifier.testTag(SignInTags.EMAIL),
-                enabled = enabled,
-                contentType = ContentType.EmailAddress,
-                keyboardType = KeyboardType.Email,
-                error = state.emailError?.let { stringResource(it.messageRes()) },
-            )
-            RecessedField(
-                label = stringResource(R.string.account_field_password),
-                value = state.password,
-                onValueChange = onPasswordChange,
-                modifier = Modifier.testTag(SignInTags.PASSWORD),
-                enabled = enabled,
-                password = true,
-                contentType = ContentType.Password,
-                imeAction = ImeAction.Done,
-                onImeAction = onSubmit,
-                error = state.passwordError?.let { stringResource(it.messageRes()) },
-            )
-        }
-        TextAction(
-            text = stringResource(R.string.account_sign_in_forgot),
-            onClick = onForgotPasswordClick,
-            modifier = Modifier.align(Alignment.End).testTag(SignInTags.FORGOT_PASSWORD),
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        RecessedField(
+            label = stringResource(R.string.account_field_email),
+            value = state.email,
+            onValueChange = onEmailChange,
+            modifier = Modifier.testTag(SignInTags.EMAIL),
+            enabled = enabled,
+            contentType = ContentType.EmailAddress,
+            keyboardType = KeyboardType.Email,
+            error = state.emailError?.let { stringResource(it.messageRes()) },
+        )
+        RecessedField(
+            label = stringResource(R.string.account_field_password),
+            value = state.password,
+            onValueChange = onPasswordChange,
+            modifier = Modifier.testTag(SignInTags.PASSWORD),
+            enabled = enabled,
+            password = true,
+            contentType = ContentType.Password,
+            imeAction = ImeAction.Done,
+            onImeAction = onSubmit,
+            error = state.passwordError?.let { stringResource(it.messageRes()) },
+            labelAction = {
+                TextAction(
+                    text = stringResource(R.string.account_sign_in_forgot),
+                    onClick = onForgotPasswordClick,
+                    modifier = Modifier.testTag(SignInTags.FORGOT_PASSWORD),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    reserveTouchTarget = false,
+                )
+            },
         )
     }
 }

@@ -1,0 +1,4 @@
+<resources>
+    <!-- The flat color of the metal body. The splash screen uses it too, so it matches the first screen. -->
+    <color name="ds_metal_body">#FFC4C6C9</color>
+</resources>

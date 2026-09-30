@@ -13,11 +13,6 @@
     <string name="account_create_footer_prompt">Have an account?</string>
     <string name="account_create_footer_action">Sign in</string>
 
-    <string name="account_strength_weak">Weak</string>
-    <string name="account_strength_fair">Fair</string>
-    <string name="account_strength_strong">Strong</string>
-    <string name="account_strength_very_strong">Very strong</string>
-
     <string name="account_error_name_required">Enter your name.</string>
     <string name="account_error_email_required">Enter your email address.</string>
     <string name="account_error_email_invalid">Enter a valid email address.</string>

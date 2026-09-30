@@ -1,15 +1,10 @@
 package com.eduardoflores.rolabox.feature.account
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
@@ -19,16 +14,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
-import com.eduardoflores.rolabox.core.designsystem.R as DesignSystemR
-import com.eduardoflores.rolabox.core.designsystem.component.BackKey
-import com.eduardoflores.rolabox.core.designsystem.component.LcdStrip
-import com.eduardoflores.rolabox.core.designsystem.component.Wordmark
+import com.eduardoflores.rolabox.core.designsystem.component.LcdStatusBar
+import com.eduardoflores.rolabox.core.designsystem.component.WordmarkHeader
 import com.eduardoflores.rolabox.core.designsystem.component.brushedMetal
 import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxMetal
 
@@ -49,22 +40,15 @@ internal fun AuthScaffold(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .brushedMetal(colors.bodyTop, colors.bodyBottom)
+            .brushedMetal()
             .systemBarsPadding()
             .imePadding()
             .verticalScroll(rememberScrollState())
             .padding(start = 22.dp, end = 22.dp, top = 10.dp, bottom = 22.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
-        Row(Modifier.height(44.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (onBack !=
-                null
-            ) {
-                BackKey(onClick = onBack, contentDescription = stringResource(DesignSystemR.string.ds_back))
-            }
-            Wordmark()
-        }
-        LcdStrip(left = lcdLeft, right = lcdRight, error = lcdError)
+        WordmarkHeader(onBack = onBack)
+        LcdStatusBar(left = lcdLeft, right = lcdRight, error = lcdError)
         Column(Modifier.padding(top = 6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
                 text = title,
@@ -81,45 +65,8 @@ internal fun AuthScaffold(
         Column(
             modifier = Modifier.align(Alignment.CenterHorizontally),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            // The links have 48dp touch targets, so they already sit about 12dp apart.
             content = footer,
         )
     }
-}
-
-@Composable
-internal fun OrDivider(modifier: Modifier = Modifier) {
-    val colors = RolaboxMetal.colors
-    Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Box(Modifier.weight(1f).height(1.dp).background(colors.rule))
-        Text(stringResource(DesignSystemR.string.ds_or), color = colors.muted, fontSize = 12.sp)
-        Box(Modifier.weight(1f).height(1.dp).background(colors.rule))
-    }
-}
-
-@Composable
-internal fun FooterLink(prompt: String, action: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val colors = RolaboxMetal.colors
-    Row(
-        modifier.clickable(role = Role.Button, onClick = onClick).padding(8.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        Text(prompt, color = colors.muted, fontSize = 14.sp)
-        Text(action, color = colors.accent, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-    }
-}
-
-/** A small accent-colored action, for the answers under an error. */
-@Composable
-internal fun TextAction(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Text(
-        text = text,
-        color = RolaboxMetal.colors.accent,
-        fontSize = 13.sp,
-        fontWeight = FontWeight.Bold,
-        modifier = modifier.clickable(
-            role = Role.Button,
-            onClick = onClick,
-        ).padding(vertical = 8.dp, horizontal = 4.dp),
-    )
 }

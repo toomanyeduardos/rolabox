@@ -59,7 +59,7 @@ class CreateAccountViewModelTest {
         assertEquals(PasswordStrength.Weak, state.strength)
 
         viewModel.onPasswordChange("kdjfhqPwzm4x")
-        assertEquals(PasswordStrength.Strong, state.strength)
+        assertEquals(PasswordStrength.Good, state.strength)
 
         viewModel.onPasswordChange("")
         assertEquals(PasswordStrength.Empty, state.strength)

@@ -22,6 +22,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.test.platform.app.InstrumentationRegistry
 import com.eduardoflores.rolabox.core.auth.api.PasswordPolicy
+import com.eduardoflores.rolabox.core.designsystem.R as DesignSystemR
 import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -90,7 +91,7 @@ class CreateAccountScreenTest {
     fun empty_hasNoStrengthMeterAndNoErrors() {
         show()
 
-        composeRule.onAllNodesWithText(string(R.string.account_strength_weak)).assertCountEquals(0)
+        composeRule.onAllNodesWithText(string(DesignSystemR.string.ds_strength_weak)).assertCountEquals(0)
         composeRule.onAllNodesWithText(string(R.string.account_error_name_required)).assertCountEquals(0)
     }
 
@@ -184,10 +185,10 @@ class CreateAccountScreenTest {
             }
         }
         val cases = mapOf(
-            "abc" to R.string.account_strength_weak,
-            "kdjfhqpwzmxn" to R.string.account_strength_fair,
-            "kdjfhqPwzm4x" to R.string.account_strength_strong,
-            "kdjfhqPwzm4x!" to R.string.account_strength_very_strong,
+            "abc" to DesignSystemR.string.ds_strength_weak,
+            "kdjfhqpwzmxn" to DesignSystemR.string.ds_strength_fair,
+            "kdjfhqPwzm4x" to DesignSystemR.string.ds_strength_good,
+            "kdjfhqPwzm4x!" to DesignSystemR.string.ds_strength_strong,
         )
 
         cases.forEach { (password, label) ->

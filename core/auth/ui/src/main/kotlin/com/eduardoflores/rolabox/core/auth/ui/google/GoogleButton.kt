@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,7 +28,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.eduardoflores.rolabox.core.auth.ui.R
+import com.eduardoflores.rolabox.core.designsystem.component.PreviewLightDark
+import com.eduardoflores.rolabox.core.designsystem.component.brushedMetal
 import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxMetal
+import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxTheme
 
 // Google's Sign in with Google button specs (developers.google.com/identity/branding-guidelines). The
 // button doesn't use the app's theme: it takes Google's Light or Dark theme, whichever matches the app.
@@ -76,5 +80,19 @@ internal fun GoogleButton(onClick: () -> Unit, modifier: Modifier = Modifier, en
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
         )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun GoogleButtonPreview() {
+    RolaboxTheme {
+        Column(
+            Modifier.brushedMetal().padding(22.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            GoogleButton(onClick = {})
+            GoogleButton(onClick = {}, enabled = false)
+        }
     }
 }
