@@ -28,6 +28,7 @@ class RolaboxTypography internal constructor(
     internal val screenTitle: TextStyle,
     internal val screenSubtitle: TextStyle,
     internal val buttonLabel: TextStyle,
+    internal val keyLabel: TextStyle,
     internal val brandButtonLabel: TextStyle,
     internal val wordmark: TextStyle,
     internal val lcd: TextStyle,
@@ -70,6 +71,8 @@ internal fun rolaboxTypography(
         ),
         screenSubtitle = body.copy(fontSize = 14.5.sp, lineHeight = 21.sp),
         buttonLabel = body.copy(fontWeight = FontWeight.Bold),
+        // Tabular digits, so a countdown on a key doesn't jitter as the digits change.
+        keyLabel = body.copy(fontSize = 15.5.sp, fontWeight = FontWeight.SemiBold, fontFeatureSettings = "tnum"),
         // Google's branding rules set this label: 14/20 Medium in its own font, not the skin's.
         brandButtonLabel = AmbientTextDefaults.copy(
             fontFamily = FontFamily.Default,

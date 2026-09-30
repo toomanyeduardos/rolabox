@@ -49,6 +49,11 @@ internal class AppNavigator(
         if (currentBackStack.size > 1) currentBackStack.removeAt(currentBackStack.lastIndex)
     }
 
+    /** Goes back to the stack's first screen. */
+    fun popToRoot() {
+        while (currentBackStack.size > 1) currentBackStack.removeAt(currentBackStack.lastIndex)
+    }
+
     /** Signed in or signed up: shows the main screens, and forgets the auth ones. */
     fun leaveAuth() {
         flowState.value = NavigationFlow.Main

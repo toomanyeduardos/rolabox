@@ -41,6 +41,12 @@
   picker was left signed out with offline mode off, so the app opened on Sign in the next time.
   Every sign-in (Google, email and password, and creating an account) goes through the same rule,
   where before only Google sign-in turned offline mode off.
+- **Revised 2026-09-30:** Rule 6 has one exception: the password reset email the user asks for from
+  the Reset password screen (Decision, rule 6). It is a single request to Firebase Auth while the user
+  is signed out, sent only when the user taps Send or Resend. Why: a user who has forgotten their
+  password is signed out by definition, so the reset can't wait for a sign-in, and rule 7 doesn't
+  cover it because it doesn't sign anyone in. It reads nothing from the account and opens no
+  session, so it doesn't turn offline mode off. No other signed-out request is added.
 
 ## Context
 
@@ -136,7 +142,9 @@ and `:core:sync:impl` binds `WorkManagerSyncRepository`. `SignedOutAuthRepositor
 
 **Offline mode makes no Firebase requests.** While offline mode is chosen, and while the user is
 signed out, nothing in the app talks to Firebase: nothing is fetched, nothing is saved to the
-cloud, and no calls are made or received. Preferences are still saved locally, to DataStore. The
+cloud, and no calls are made or received. The one exception is the password reset email the user
+asks for from the Reset password screen, which asks Firebase Auth to send a link and reads nothing
+back about the account. Preferences are still saved locally, to DataStore. The
 code guarantees this in four places:
 
 - **Sync checks before it runs.** `SyncRunner` runs its `Syncer`s only when the user is signed in
@@ -270,8 +278,10 @@ record:
 5. `[enforced]` `google-services.json` is never committed. `.gitignore` covers it at any path, and
    CI fails if a tracked file has that name.
 6. `[convention]` While offline mode is chosen, or while the user is signed out, the app makes no
-   Firebase requests. `SyncRunner` runs `Syncer`s only for a signed-in user who hasn't chosen
-   offline mode, and the sync triggers request nothing in offline mode. Tests cover both.
+   Firebase requests, except the password reset email that the user asks for from the Reset
+   password screen (`AuthRepository.sendPasswordResetEmail`). `SyncRunner` runs `Syncer`s only for a
+   signed-in user who hasn't chosen offline mode, and the sync triggers request nothing in offline
+   mode. Tests cover both.
 7. `[convention]` Offline mode can only be chosen while signed out. Every sign-in the user starts
    turns it off before its first Firebase request, and turns it back on if the sign-in fails.
 8. `[convention]` SDK objects that can open a connection (`FirebaseFirestore`) are injected through

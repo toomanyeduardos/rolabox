@@ -34,6 +34,9 @@ class FakeAuthRepository @Inject constructor() : AuthRepository {
     /** When set, [signUp] fails with this error and the state doesn't change. */
     var signUpError: AuthError? = null
 
+    /** When set, [sendPasswordResetEmail] fails with this error. */
+    var sendPasswordResetError: AuthError? = null
+
     /** When set, [signOut] fails with this error and the state doesn't change. */
     var signOutError: AuthError? = null
 
@@ -47,6 +50,12 @@ class FakeAuthRepository @Inject constructor() : AuthRepository {
 
     /** The name, email and password passed to the last [signUp] call. */
     var lastSignUp: SignUpRequest? = null
+        private set
+
+    /** The email passed to the last [sendPasswordResetEmail] call, and how many calls there were. */
+    var lastPasswordResetEmail: String? = null
+        private set
+    var passwordResetEmailCount = 0
         private set
 
     override fun observeAuthState(): Flow<AuthState> = state
@@ -68,6 +77,12 @@ class FakeAuthRepository @Inject constructor() : AuthRepository {
             ?: AuthUser(id = "fake-user", displayName = name, photoUrl = null)
                 .also { state.value = AuthState.SignedIn(it) }
                 .right()
+    }
+
+    override suspend fun sendPasswordResetEmail(email: String): Either<AuthError, Unit> {
+        lastPasswordResetEmail = email
+        passwordResetEmailCount++
+        return sendPasswordResetError?.left() ?: Unit.right()
     }
 
     override suspend fun signOut(): Either<AuthError, Unit> =

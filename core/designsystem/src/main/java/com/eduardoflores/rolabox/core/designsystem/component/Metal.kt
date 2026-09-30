@@ -41,6 +41,7 @@ import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxTheme
 import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxType
 
 private const val LCD_SECONDARY_ALPHA = 0.7f
+private const val FLAT_KEY_ALPHA = 0.05f
 
 private val PillShape = RoundedCornerShape(26.dp)
 private val BackKeyTarget = 48.dp
@@ -65,6 +66,37 @@ fun PrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifi
         } else {
             Text(text, style = RolaboxType.styles.buttonLabel)
         }
+    }
+}
+
+/**
+ * A metal key for an action that sits beside the primary one. Disabled, it goes flat, and [text] can
+ * carry a status such as a countdown, which a screen reader reads as the button's label.
+ */
+@Composable
+fun SecondaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
+    val colors = RolaboxMetal.colors
+    val background = if (enabled) {
+        Modifier
+            .shadow(2.dp, PillShape)
+            .clip(PillShape)
+            .background(Brush.verticalGradient(listOf(colors.keyTop, colors.keyBottom)))
+            .border(1.dp, colors.keyBorder, PillShape)
+    } else {
+        Modifier
+            .clip(PillShape)
+            .background(colors.ink.copy(alpha = FLAT_KEY_ALPHA))
+            .border(1.dp, colors.rule, PillShape)
+    }
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(52.dp)
+            .then(background)
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(text, style = RolaboxType.styles.keyLabel.let { if (enabled) it else it.copy(color = colors.muted) })
     }
 }
 
@@ -226,5 +258,14 @@ private fun PrimaryButtonPreview() {
     PreviewSurface {
         PrimaryButton(text = "Sign in", onClick = {})
         PrimaryButton(text = "Sign in", onClick = {}, loading = true)
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun SecondaryButtonPreview() {
+    PreviewSurface {
+        SecondaryButton(text = "Resend link", onClick = {})
+        SecondaryButton(text = "Resend in 0:42", onClick = {}, enabled = false)
     }
 }
