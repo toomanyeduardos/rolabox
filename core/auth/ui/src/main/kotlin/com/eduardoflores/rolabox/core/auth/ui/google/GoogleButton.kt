@@ -24,14 +24,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.eduardoflores.rolabox.core.auth.ui.R
 import com.eduardoflores.rolabox.core.designsystem.component.PreviewLightDark
 import com.eduardoflores.rolabox.core.designsystem.component.brushedMetal
 import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxMetal
 import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxTheme
+import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxType
 
 // Google's Sign in with Google button specs (developers.google.com/identity/branding-guidelines). The
 // button doesn't use the app's theme: it takes Google's Light or Dark theme, whichever matches the app.
@@ -76,9 +75,9 @@ internal fun GoogleButton(onClick: () -> Unit, modifier: Modifier = Modifier, en
         Spacer(Modifier.width(10.dp))
         Text(
             text = stringResource(R.string.auth_ui_google_continue),
+            style = RolaboxType.styles.brandButtonLabel,
+            // Google's spec sets this color, not the theme.
             color = text,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
         )
     }
 }

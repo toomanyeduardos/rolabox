@@ -38,6 +38,10 @@ data class MetalColors(
     val accent: Color = Color(0xFFE4572E),
     val accentTop: Color = Color(0xFFEE6A43),
     val accentBottom: Color = Color(0xFFD94B23),
+    /** Text and icons on the accent fill. */
+    val onAccent: Color = Color.White,
+    /** Text on the [error] fill, such as the "!" badge. */
+    val onError: Color = Color.White,
     /** The glossy selected row of a device display, top to bottom. */
     val selection: List<Color> = listOf(Color(0xFF5AA6EE), Color(0xFF2F86DB), Color(0xFF1F6FC4), Color(0xFF1A62B0)),
     /** The strength meter's color for levels 1 to 4. */

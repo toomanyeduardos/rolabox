@@ -43,20 +43,16 @@ import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.em
-import androidx.compose.ui.unit.sp
 import com.eduardoflores.rolabox.core.designsystem.R
 import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxMetal
 import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxTheme
+import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxType
 
 private val WellShape = RoundedCornerShape(12.dp)
 private const val INNER_SHADOW_ALPHA = 0.14f
@@ -86,6 +82,7 @@ fun RecessedField(
     footer: @Composable (() -> Unit)? = null,
 ) {
     val colors = RolaboxMetal.colors
+    val styles = RolaboxType.styles
     var reveal by rememberSaveable { mutableStateOf(false) }
     val hidden = password && !reveal
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -94,11 +91,7 @@ fun RecessedField(
             onValueChange = onValueChange,
             enabled = enabled,
             singleLine = true,
-            textStyle = TextStyle(
-                color = colors.ink,
-                fontSize = 15.5.sp,
-                letterSpacing = if (hidden) 0.18.em else 0.em,
-            ),
+            textStyle = if (hidden) styles.fieldInputMasked else styles.fieldInput,
             cursorBrush = SolidColor(colors.accent),
             visualTransformation = if (hidden) PasswordVisualTransformation() else VisualTransformation.None,
             keyboardOptions = KeyboardOptions(
@@ -123,13 +116,7 @@ fun RecessedField(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(
-                            text = label,
-                            color = colors.muted,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            letterSpacing = 0.02.em,
-                        )
+                        Text(text = label, style = styles.fieldLabel)
                         labelAction?.invoke()
                     }
                     FieldWell(hasError = error != null) {
@@ -176,17 +163,12 @@ private fun FieldWell(hasError: Boolean, content: @Composable RowScope.() -> Uni
 
 @Composable
 private fun RevealToggle(revealed: Boolean, onClick: () -> Unit) {
-    val colors = RolaboxMetal.colors
     val description = stringResource(
         if (revealed) R.string.ds_hide_password_description else R.string.ds_show_password_description,
     )
     Text(
         text = stringResource(if (revealed) R.string.ds_hide_password else R.string.ds_show_password),
-        color = colors.muted,
-        fontFamily = FontFamily.Monospace,
-        fontSize = 11.sp,
-        fontWeight = FontWeight.SemiBold,
-        letterSpacing = 0.08.em,
+        style = RolaboxType.styles.fieldToggle,
         modifier = Modifier
             .minimumInteractiveComponentSize()
             .clickable(onClick = onClick)
@@ -201,6 +183,7 @@ private fun RevealToggle(revealed: Boolean, onClick: () -> Unit) {
 @Composable
 fun FieldError(message: String, modifier: Modifier = Modifier) {
     val colors = RolaboxMetal.colors
+    val styles = RolaboxType.styles
     Row(
         modifier.semantics { liveRegion = LiveRegionMode.Assertive },
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -213,9 +196,9 @@ fun FieldError(message: String, modifier: Modifier = Modifier) {
                 .background(colors.error),
             contentAlignment = Alignment.Center,
         ) {
-            Text("!", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Text("!", style = styles.errorBadge)
         }
-        Text(message, color = colors.error, fontSize = 13.sp, lineHeight = 18.sp)
+        Text(message, style = styles.fieldError)
     }
 }
 
@@ -240,7 +223,7 @@ fun StrengthMeter(level: Int, modifier: Modifier = Modifier) {
                 )
             }
         }
-        StrengthLabels.getOrNull(lit - 1)?.let { Text(stringResource(it), color = colors.muted, fontSize = 12.sp) }
+        StrengthLabels.getOrNull(lit - 1)?.let { Text(stringResource(it), style = RolaboxType.styles.caption) }
     }
 }
 

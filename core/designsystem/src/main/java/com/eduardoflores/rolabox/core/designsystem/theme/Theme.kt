@@ -4,6 +4,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 
 @Composable
 fun RolaboxTheme(
@@ -12,10 +13,18 @@ fun RolaboxTheme(
     skin: RolaboxSkin = RolaboxSkin.Default,
     content: @Composable () -> Unit,
 ) {
-    CompositionLocalProvider(LocalMetalColors provides if (darkTheme) DarkMetalColors else LightMetalColors) {
+    val metalColors = if (darkTheme) DarkMetalColors else LightMetalColors
+    val colorScheme = accent.applyTo(skin.colorScheme(darkTheme), darkTheme)
+    val textStyles = remember(skin.typography, metalColors, colorScheme.onSurfaceVariant) {
+        RolaboxTextStyles(skin.typography, metalColors, colorScheme.onSurfaceVariant)
+    }
+    CompositionLocalProvider(
+        LocalMetalColors provides metalColors,
+        LocalRolaboxTextStyles provides textStyles,
+    ) {
         MaterialTheme(
-            colorScheme = accent.applyTo(skin.colorScheme(darkTheme), darkTheme),
-            typography = skin.typography,
+            colorScheme = colorScheme,
+            typography = skin.typography.material,
             shapes = skin.shapes,
             content = content,
         )

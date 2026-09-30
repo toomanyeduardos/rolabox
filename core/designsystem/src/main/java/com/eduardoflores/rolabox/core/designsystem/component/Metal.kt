@@ -34,15 +34,11 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.em
-import androidx.compose.ui.unit.sp
 import com.eduardoflores.rolabox.core.designsystem.R
 import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxMetal
 import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxTheme
+import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxType
 
 private const val LCD_SECONDARY_ALPHA = 0.7f
 
@@ -65,9 +61,9 @@ fun PrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifi
         contentAlignment = Alignment.Center,
     ) {
         if (loading) {
-            CircularProgressIndicator(Modifier.size(22.dp), color = Color.White, strokeWidth = 2.5.dp)
+            CircularProgressIndicator(Modifier.size(22.dp), color = colors.onAccent, strokeWidth = 2.5.dp)
         } else {
-            Text(text, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text(text, style = RolaboxType.styles.buttonLabel)
         }
     }
 }
@@ -107,12 +103,8 @@ fun BackKey(onClick: () -> Unit, contentDescription: String, modifier: Modifier 
 @Composable
 fun LcdStatusBar(left: String, modifier: Modifier = Modifier, right: String = "", error: Boolean = false) {
     val colors = RolaboxMetal.colors
-    val mono = TextStyle(
-        fontFamily = FontFamily.Monospace,
-        fontSize = 12.sp,
-        fontWeight = FontWeight.SemiBold,
-        letterSpacing = 0.08.em,
-    )
+    val styles = RolaboxType.styles
+    val secondary = styles.lcd.copy(color = styles.lcd.color.copy(alpha = LCD_SECONDARY_ALPHA))
     Box(
         modifier
             .fillMaxWidth()
@@ -135,18 +127,17 @@ fun LcdStatusBar(left: String, modifier: Modifier = Modifier, right: String = ""
                 if (error) {
                     Text(
                         text = stringResource(R.string.ds_lcd_error),
-                        style = mono,
-                        color = colors.lcd,
+                        style = styles.lcdBadge,
                         modifier = Modifier
                             .clip(RoundedCornerShape(2.dp))
                             .background(colors.lcdInk)
                             .padding(horizontal = 5.dp, vertical = 3.dp),
                     )
                 }
-                Text(left.uppercase(), style = mono, color = colors.lcdInk)
+                Text(left.uppercase(), style = styles.lcd)
             }
             if (right.isNotEmpty()) {
-                Text(right.uppercase(), style = mono, color = colors.lcdInk.copy(alpha = LCD_SECONDARY_ALPHA))
+                Text(right.uppercase(), style = secondary)
             }
         }
     }
@@ -154,20 +145,14 @@ fun LcdStatusBar(left: String, modifier: Modifier = Modifier, right: String = ""
 
 /** "r[vinyl]labox". The vinyl only spins while audio plays. */
 @Composable
-fun Wordmark(modifier: Modifier = Modifier, isPlaying: Boolean = false, fontSize: Int = 21) {
-    val colors = RolaboxMetal.colors
-    val style = TextStyle(
-        color = colors.ink,
-        fontSize = fontSize.sp,
-        fontWeight = FontWeight.Bold,
-        letterSpacing = (-0.04).em,
-    )
+fun Wordmark(modifier: Modifier = Modifier, isPlaying: Boolean = false) {
+    val style = RolaboxType.styles.wordmark
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
         Text(stringResource(R.string.ds_wordmark_start), style = style)
         SpinningVinyl(
             isPlaying = isPlaying,
             modifier = Modifier.padding(start = 3.dp, end = 1.dp, top = 3.dp),
-            size = (fontSize * VINYL_TO_TEXT_RATIO).dp,
+            size = (style.fontSize.value * VINYL_TO_TEXT_RATIO).dp,
         )
         Text(stringResource(R.string.ds_wordmark_end), style = style)
     }

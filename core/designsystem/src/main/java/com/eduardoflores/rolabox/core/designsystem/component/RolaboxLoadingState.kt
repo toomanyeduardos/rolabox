@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -16,6 +15,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxTheme
+import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxType
 
 /** Full-area loading indicator, with an optional message underneath. */
 @Composable
@@ -31,12 +31,7 @@ fun RolaboxLoadingState(modifier: Modifier = Modifier, message: String? = null) 
             modifier = Modifier.semantics { contentDescription = message ?: "Loading" },
         )
         if (message != null) {
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-            )
+            Text(text = message, style = RolaboxType.styles.message, textAlign = TextAlign.Center)
         }
     }
 }
