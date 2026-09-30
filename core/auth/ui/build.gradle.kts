@@ -1,5 +1,6 @@
 plugins {
     id("rolabox.android.ui")
+    id("rolabox.android.paparazzi")
 }
 
 android {

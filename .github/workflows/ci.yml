@@ -54,9 +54,10 @@ jobs:
       - name: Assemble debug
         run: ./gradlew assembleDebug
 
-      # Every module's unitTest task: debug tests for Android modules, `test` for JVM ones.
+      # Every module's unitTest task: debug tests for Android modules, `test` for JVM ones. The
+      # screenshot tests have their own job (ADR-016).
       - name: Unit tests
-        run: ./gradlew unitTest
+        run: ./gradlew unitTest -Prolabox.skipScreenshotTests
 
       - name: Android lint
         run: ./gradlew lintDebug
@@ -69,6 +70,40 @@ jobs:
           path: |
             **/build/reports/
             **/build/test-results/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  # Screenshot tests: every golden in Git LFS is verified, and the actual and diff images of the ones
+  # that differ are uploaded when it fails (ADR-016). Needs no secrets, so PRs from forks run it too.
+  screenshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          lfs: true
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 25
+
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: Verify screenshots
+        run: ./gradlew verifyPaparazziDebug
+
+      - name: Upload screenshot diffs
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: screenshot-diffs
+          path: |
+            **/build/paparazzi/failures/
+            **/build/reports/paparazzi/
           if-no-files-found: ignore
           retention-days: 14
 
