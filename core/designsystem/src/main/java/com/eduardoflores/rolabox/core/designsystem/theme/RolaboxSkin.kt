@@ -2,7 +2,6 @@ package com.eduardoflores.rolabox.core.designsystem.theme
 
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Shapes
-import androidx.compose.material3.Typography
 import androidx.compose.runtime.Immutable
 
 /**
@@ -13,7 +12,7 @@ import androidx.compose.runtime.Immutable
 data class RolaboxSkin(
     val lightColorScheme: ColorScheme,
     val darkColorScheme: ColorScheme,
-    val typography: Typography,
+    val typography: RolaboxTypography,
     val shapes: Shapes,
 ) {
     fun colorScheme(darkTheme: Boolean): ColorScheme = if (darkTheme) darkColorScheme else lightColorScheme

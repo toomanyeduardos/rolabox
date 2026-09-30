@@ -14,14 +14,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.em
-import androidx.compose.ui.unit.sp
 import com.eduardoflores.rolabox.core.designsystem.component.LcdStatusBar
 import com.eduardoflores.rolabox.core.designsystem.component.WordmarkHeader
 import com.eduardoflores.rolabox.core.designsystem.component.brushedMetal
-import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxMetal
+import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxType
 
 /** The frame the account screens share: back key and wordmark, LCD, heading, then the screen's content. */
 @Composable
@@ -36,7 +33,7 @@ internal fun AuthScaffold(
     onBack: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val colors = RolaboxMetal.colors
+    val styles = RolaboxType.styles
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -50,15 +47,8 @@ internal fun AuthScaffold(
         WordmarkHeader(onBack = onBack)
         LcdStatusBar(left = lcdLeft, right = lcdRight, error = lcdError)
         Column(Modifier.padding(top = 6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(
-                text = title,
-                color = colors.ink,
-                fontSize = 30.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = (-0.03).em,
-                lineHeight = 32.sp,
-            )
-            Text(text = subtitle, color = colors.muted, fontSize = 14.5.sp, lineHeight = 21.sp)
+            Text(text = title, style = styles.screenTitle)
+            Text(text = subtitle, style = styles.screenSubtitle)
         }
         content()
         Spacer(Modifier.weight(1f))

@@ -12,10 +12,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.eduardoflores.rolabox.core.designsystem.R
 import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxMetal
 import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxTheme
+import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxType
 
 /** A rule with "or" in the middle, between the primary action and the alternatives. */
 @Composable
@@ -27,7 +27,7 @@ fun OrDivider(modifier: Modifier = Modifier) {
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Box(Modifier.weight(1f).height(1.dp).background(colors.rule))
-        Text(stringResource(R.string.ds_or), color = colors.muted, fontSize = 12.sp)
+        Text(stringResource(R.string.ds_or), style = RolaboxType.styles.caption)
         Box(Modifier.weight(1f).height(1.dp).background(colors.rule))
     }
 }

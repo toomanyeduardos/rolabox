@@ -11,11 +11,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.eduardoflores.rolabox.core.auth.ui.SignInButton
@@ -158,8 +156,7 @@ private fun SignInFields(
                     text = stringResource(R.string.account_sign_in_forgot),
                     onClick = onForgotPasswordClick,
                     modifier = Modifier.testTag(SignInTags.FORGOT_PASSWORD),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    compact = true,
                     reserveTouchTarget = false,
                 )
             },
