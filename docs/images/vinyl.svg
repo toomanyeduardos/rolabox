@@ -1,0 +1,25 @@
+<!-- The README's copy of the design system's record (core/designsystem ds_ic_vinyl.xml), spinning at
+     33⅓ rpm (1.8s per turn) like SpinningVinyl.kt. Only the README uses it. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="24 24 60 60" width="60" height="60">
+  <g>
+    <animateTransform attributeName="transform" type="rotate" from="0 54 54" to="360 54 54" dur="1.8s" repeatCount="indefinite"/>
+    <circle cx="54" cy="54" r="30" fill="#0B0B0B"/>
+    <g fill="none" stroke="#1F1F1F" stroke-width="0.45">
+      <circle cx="54" cy="54" r="12"/>
+      <circle cx="54" cy="54" r="13.6"/>
+      <circle cx="54" cy="54" r="15.2"/>
+      <circle cx="54" cy="54" r="16.8"/>
+      <circle cx="54" cy="54" r="18.4"/>
+      <circle cx="54" cy="54" r="20"/>
+      <circle cx="54" cy="54" r="21.6"/>
+      <circle cx="54" cy="54" r="23.2"/>
+      <circle cx="54" cy="54" r="24.8"/>
+      <circle cx="54" cy="54" r="26.4"/>
+      <circle cx="54" cy="54" r="28"/>
+    </g>
+    <path fill="#FFFFFF" fill-opacity="0.16" d="M59.21,24.46 A30,30 0 0,1 76.98,34.72 L62.43,46.93 A11,11 0 0,0 55.91,43.17 Z"/>
+    <path fill="#FFFFFF" fill-opacity="0.16" d="M48.79,83.54 A30,30 0 0,1 31.02,73.28 L45.57,61.07 A11,11 0 0,0 52.09,64.83 Z"/>
+    <circle cx="54" cy="54" r="10" fill="#E4572E"/>
+    <circle cx="54" cy="47.5" r="1.2" fill="#FFFFFF" fill-opacity="0.85"/>
+  </g>
+</svg>
