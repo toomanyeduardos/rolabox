@@ -54,7 +54,7 @@ fun SpinningVinyl(isPlaying: Boolean, modifier: Modifier = Modifier, size: Dp = 
     }
 
     Image(
-        painter = painterResource(R.drawable.ic_vinyl),
+        painter = painterResource(R.drawable.ds_ic_vinyl),
         contentDescription = null,
         modifier = modifier.size(size).graphicsLayer { rotationZ = rotation.value },
     )

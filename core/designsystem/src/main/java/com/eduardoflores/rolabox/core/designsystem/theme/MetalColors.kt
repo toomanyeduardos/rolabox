@@ -49,9 +49,9 @@ data class MetalColors(
 )
 
 /** Light: anodized aluminum. */
-val LightMetalColors = MetalColors(
+internal val LightMetalColors = MetalColors(
     isDark = false,
-    texture = R.drawable.aluminum_silver,
+    texture = R.drawable.ds_aluminum_silver,
     body = R.color.ds_metal_body,
     ink = Color(0xFF1C1D1F),
     muted = Color(0xFF43464B),
@@ -69,9 +69,9 @@ val LightMetalColors = MetalColors(
 )
 
 /** Dark: gunmetal aluminum. */
-val DarkMetalColors = MetalColors(
+internal val DarkMetalColors = MetalColors(
     isDark = true,
-    texture = R.drawable.aluminum_graphite,
+    texture = R.drawable.ds_aluminum_graphite,
     body = R.color.ds_metal_body,
     ink = Color(0xFFF1F1F2),
     muted = Color(0xFFC6C9CE),
@@ -89,7 +89,7 @@ val DarkMetalColors = MetalColors(
 )
 
 // Read through RolaboxMetal.colors, and provided only by RolaboxTheme.
-val LocalMetalColors = staticCompositionLocalOf { LightMetalColors }
+internal val LocalMetalColors = staticCompositionLocalOf { LightMetalColors }
 
 object RolaboxMetal {
     val colors: MetalColors
