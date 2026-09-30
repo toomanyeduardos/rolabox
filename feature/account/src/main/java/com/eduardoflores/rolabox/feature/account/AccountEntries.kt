@@ -11,6 +11,10 @@ data object SignInKey : NavKey
 @Serializable
 data object CreateAccountKey : NavKey
 
+/** Reset password. [email] is what the user had typed on Sign in, and may be empty. */
+@Serializable
+data class ResetPasswordKey(val email: String = "") : NavKey
+
 /**
  * The entries of the account flow (ADR-012). The screens report their exits as lambdas, and `:app`
  * decides where each one goes.
@@ -21,6 +25,7 @@ fun EntryProviderScope<NavKey>.accountEntries(
     onForgotPasswordClick: (email: String) -> Unit,
     onSignInClick: () -> Unit,
     onBack: () -> Unit,
+    onBackToSignIn: () -> Unit,
     onSignedUp: () -> Unit,
     onSignedIn: () -> Unit,
 ) {
@@ -36,6 +41,13 @@ fun EntryProviderScope<NavKey>.accountEntries(
             onBack = onBack,
             onSignInClick = onSignInClick,
             onSignedUp = onSignedUp,
+        )
+    }
+    entry<ResetPasswordKey> { key ->
+        ResetPasswordRoute(
+            email = key.email,
+            onBackClick = onBack,
+            onSignInClick = onBackToSignIn,
         )
     }
 }

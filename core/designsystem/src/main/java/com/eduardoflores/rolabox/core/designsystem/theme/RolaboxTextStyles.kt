@@ -30,6 +30,7 @@ class RolaboxTextStyles internal constructor(
     val brandButtonLabel = typography.brandButtonLabel.copy(color = colors.ink)
 
     internal val buttonLabel = typography.buttonLabel.copy(color = colors.onAccent)
+    internal val keyLabel = typography.keyLabel.copy(color = colors.ink)
     internal val wordmark = typography.wordmark.copy(color = colors.ink)
     internal val lcd = typography.lcd.copy(color = colors.lcdInk)
 
@@ -57,6 +58,7 @@ class RolaboxTextStyles internal constructor(
             "screenTitle" to screenTitle,
             "screenSubtitle" to screenSubtitle,
             "buttonLabel" to buttonLabel,
+            "keyLabel" to keyLabel,
             "brandButtonLabel" to brandButtonLabel,
             "wordmark" to wordmark,
             "fieldInput" to fieldInput,

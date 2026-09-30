@@ -26,6 +26,13 @@ interface AuthRepository {
      */
     suspend fun signUp(name: String, email: String, password: String): Either<AuthError, AuthUser>
 
+    /**
+     * Sends a link to [email] for setting a new password. It succeeds whether or not an account
+     * exists for [email], so that the answer can't be used to find out who has one. Fails with
+     * [AuthError.InvalidEmail] for a malformed address, [AuthError.Network] and [AuthError.TooManyRequests].
+     */
+    suspend fun sendPasswordResetEmail(email: String): Either<AuthError, Unit>
+
     /** Ends the session. Signing out while signed out succeeds. */
     suspend fun signOut(): Either<AuthError, Unit>
 }

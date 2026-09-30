@@ -78,4 +78,18 @@ class FakeAuthRepositoryTest {
         assertEquals(AuthError.Network.left(), repository.signOut())
         assertEquals(AuthState.SignedIn(repository.signInUser), repository.observeAuthState().first())
     }
+
+    @Test
+    fun sendPasswordResetEmail_success_recordsTheEmail() = runTest {
+        assertEquals(Unit.right(), repository.sendPasswordResetEmail("alex@mail.com"))
+        assertEquals("alex@mail.com", repository.lastPasswordResetEmail)
+        assertEquals(1, repository.passwordResetEmailCount)
+    }
+
+    @Test
+    fun sendPasswordResetEmail_error_isReturned() = runTest {
+        repository.sendPasswordResetError = AuthError.TooManyRequests
+
+        assertEquals(AuthError.TooManyRequests.left(), repository.sendPasswordResetEmail("alex@mail.com"))
+    }
 }

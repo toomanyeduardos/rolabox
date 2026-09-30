@@ -11,6 +11,7 @@ import com.eduardoflores.rolabox.core.auth.api.SignInCredential
 import com.eduardoflores.rolabox.core.common.util.catchNamed
 import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.UserProfileChangeRequest
@@ -64,6 +65,18 @@ internal class FirebaseAuthRepository @Inject constructor(private val firebaseAu
         val result = catchNamed(Throwable::asAuthError) { user.updateProfile(request).await() }
         Log.d(TAG, "sign-up: updateProfile result=$result")
     }
+
+    // With email enumeration protection on, Firebase succeeds for an unknown email. Without it, it fails
+    // with an invalid-user error, which is swallowed here so that both answer the same (ADR-013).
+    override suspend fun sendPasswordResetEmail(email: String): Either<AuthError, Unit> =
+        catchNamed(Throwable::asAuthError) {
+            try {
+                firebaseAuth.sendPasswordResetEmail(email).await()
+            } catch (ignored: FirebaseAuthInvalidUserException) {
+                Log.d(TAG, "password reset: no usable account for the email")
+            }
+            Unit
+        }
 
     // Firebase signs out synchronously from its local state and doesn't fail. Clearing Credential
     // Manager's saved state joins it when the sign-in UI exists (ADR-009), and that can fail.
