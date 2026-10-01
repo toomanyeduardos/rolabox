@@ -32,6 +32,9 @@ internal class WheelTurnTracker {
     private var turned = false
     private val samples = ArrayDeque<Sample>()
 
+    /** Whether the gesture in progress has moved far enough around the ring to no longer be a press. */
+    val hasTurned: Boolean get() = turned
+
     /** The finger touched the wheel at ([x], [y]). */
     fun down(x: Float, y: Float, timeMillis: Long) {
         tracking = true

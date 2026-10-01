@@ -98,5 +98,6 @@ rolabox:
       - 'UnderlinedLink'
       - 'TextAction'
       - 'RolaboxTopBar'
+      - 'Wheel'
       - 'GoogleButton'
       - 'SignInButton'
