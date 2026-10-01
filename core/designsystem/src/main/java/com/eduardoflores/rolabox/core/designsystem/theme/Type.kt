@@ -45,6 +45,7 @@ class RolaboxTypography internal constructor(
     internal val action: TextStyle,
     internal val actionCompact: TextStyle,
     internal val message: TextStyle,
+    internal val wheelLabel: TextStyle,
 )
 
 /**
@@ -115,6 +116,9 @@ internal fun rolaboxTypography(
         action = body.copy(fontSize = 13.sp, fontWeight = FontWeight.Bold),
         actionCompact = body.copy(fontSize = 12.sp, fontWeight = FontWeight.SemiBold),
         message = material.bodyMedium,
+        // The wheel's MENU label. The design draws it in Helvetica Neue; like the other roles it uses the
+        // skin's font, which for the default skin is Hanken Grotesk (see Fonts.kt).
+        wheelLabel = body.copy(fontSize = 14.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.08.em),
     )
 }
 

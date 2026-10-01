@@ -33,6 +33,11 @@ data class MetalColors(
     val bezel: Color,
     val lcd: Color,
     val lcdInk: Color,
+    /** The wheel's ring. */
+    val wheelRing: Color,
+    val wheelRingEdge: Color,
+    /** The wheel's MENU label and its ⏮ ⏭ ⏯ icons. */
+    val wheelGlyph: Color,
     /** The accent for text links. It's darker (light) or lighter (dark) than [accent], so it reads on the metal. */
     val accentText: Color,
     val accent: Color = Color(0xFFE4572E),
@@ -65,6 +70,9 @@ internal val LightMetalColors = MetalColors(
     bezel = Color(0xFF3A3D3A),
     lcd = Color(0xFFC7CFBF),
     lcdInk = Color(0xFF27301F),
+    wheelRing = Color(0xFFF7F8FA),
+    wheelRingEdge = Color(0x12000000),
+    wheelGlyph = Color(0xFFA3AAB3),
     accentText = Color(0xFFA83A18),
 )
 
@@ -85,6 +93,9 @@ internal val DarkMetalColors = MetalColors(
     bezel = Color(0xFF0C0D0C),
     lcd = Color(0xFF1D2A22),
     lcdInk = Color(0xFF9FE3B6),
+    wheelRing = Color(0xFF2F3032),
+    wheelRingEdge = Color(0x2E000000),
+    wheelGlyph = Color(0xFFF1F1F2),
     accentText = Color(0xFFFF9A6E),
 )
 

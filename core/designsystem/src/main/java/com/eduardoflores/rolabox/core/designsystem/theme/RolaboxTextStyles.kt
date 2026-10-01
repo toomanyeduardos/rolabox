@@ -52,6 +52,9 @@ class RolaboxTextStyles internal constructor(
     /** A status line on a Material surface, such as the loading message. */
     internal val message = typography.message.copy(color = onSurfaceVariant)
 
+    /** The wheel's MENU label. It doesn't follow the font scale: the wheel draws it at this size in dp. */
+    internal val wheelLabel = typography.wheelLabel.copy(color = colors.wheelGlyph)
+
     /** Every role with its name, for the type specimen. */
     internal val all: List<Pair<String, TextStyle>>
         get() = listOf(
@@ -76,6 +79,7 @@ class RolaboxTextStyles internal constructor(
             "message" to message,
             "lcd" to lcd,
             "lcdBadge" to lcdBadge,
+            "wheelLabel" to wheelLabel,
         )
 }
 
