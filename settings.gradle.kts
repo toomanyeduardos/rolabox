@@ -24,6 +24,10 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "Rolabox"
+
+// A second time, outside pluginManagement: that one only shares build-logic's plugins, and this one
+// lets `detektPlugins` resolve build-logic's detekt rules (ADR-017).
+includeBuild("build-logic")
 include(":app")
 
 include(":core:common")

@@ -2,7 +2,7 @@ package com.eduardoflores.rolabox.feature.account
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -147,10 +147,10 @@ private fun EmailField(
         keyboardType = KeyboardType.Email,
         error = state.emailError?.let { stringResource(it.messageRes()) },
         // With email enumeration protection on, Firebase can't say which way the existing account
-        // signs in, so the user gets both ways.
+        // signs in, so the user gets both ways. They wrap onto two lines when they don't fit on one.
         footer = if (state.emailError == EmailError.AlreadyInUse) {
             {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     TextAction(
                         text = stringResource(R.string.account_email_in_use_sign_in),
                         onClick = onSignInClick,

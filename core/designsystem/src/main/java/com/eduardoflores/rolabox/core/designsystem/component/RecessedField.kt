@@ -7,10 +7,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -34,6 +36,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
@@ -63,6 +66,9 @@ private const val INNER_SHADOW_ALPHA = 0.14f
  * label, for something like "Forgot password?". Pass [contentType] so autofill and password managers
  * know what the field is for. A [password] field gets a SHOW/HIDE toggle. A disabled field ignores
  * input, for a form that's being submitted.
+ *
+ * The well grows with the text, and [labelAction] goes under the label when the two don't fit side
+ * by side (ADR-017).
  */
 @Composable
 fun RecessedField(
@@ -111,10 +117,10 @@ fun RecessedField(
             // screen reader reads it with the text.
             decorationBox = { inner ->
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Row(
+                    FlowRow(
                         Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = spaceBetween(gap = 12.dp),
+                        itemVerticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(text = label, style = styles.fieldLabel)
                         labelAction?.invoke()
@@ -139,7 +145,7 @@ private fun FieldWell(hasError: Boolean, content: @Composable RowScope.() -> Uni
     Row(
         Modifier
             .fillMaxWidth()
-            .height(50.dp)
+            .heightIn(min = 50.dp)
             .clip(WellShape)
             .background(colors.well)
             // A shadow along the top edge, so the well reads as recessed.
@@ -180,10 +186,13 @@ private fun RevealToggle(revealed: Boolean, onClick: () -> Unit) {
 }
 
 /** A field's error message, announced when it appears. */
+@Suppress("FixedHeightAroundText") // ADR-017 rule 3: the badge's size is multiplied by the font scale.
 @Composable
 fun FieldError(message: String, modifier: Modifier = Modifier) {
     val colors = RolaboxMetal.colors
     val styles = RolaboxType.styles
+    // The badge is a circle, so it can't grow in one direction only: it scales with its "!".
+    val badgeSize = 16.dp * LocalDensity.current.fontScale
     Row(
         modifier.semantics { liveRegion = LiveRegionMode.Assertive },
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -191,7 +200,7 @@ fun FieldError(message: String, modifier: Modifier = Modifier) {
         Box(
             Modifier
                 .padding(top = 1.dp)
-                .size(16.dp)
+                .size(badgeSize)
                 .clip(CircleShape)
                 .background(colors.error),
             contentAlignment = Alignment.Center,

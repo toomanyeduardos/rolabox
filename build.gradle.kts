@@ -38,4 +38,14 @@ val checkTextStyling by tasks.registering {
     }
 }
 
-tasks.named("check") { dependsOn(checkTextStyling) }
+// The unit tests of Rolabox's detekt rules (ADR-017). build-logic is an included build, so its tests
+// only run when a task of this build asks for them.
+val detektRulesTest = gradle.includedBuild("build-logic").task(":detekt-rules:test")
+
+tasks.register("unitTest") {
+    group = "verification"
+    description = "Runs the unit tests of build-logic's detekt rules."
+    dependsOn(detektRulesTest)
+}
+
+tasks.named("check") { dependsOn(checkTextStyling, detektRulesTest) }

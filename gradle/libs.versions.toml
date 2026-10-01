@@ -74,6 +74,8 @@ androidx-credentials-play-services-auth = { group = "androidx.credentials", name
 google-id = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleId" }
 paparazzi = { group = "app.cash.paparazzi", name = "paparazzi", version.ref = "paparazzi" }
 composable-preview-scanner = { group = "io.github.sergio-sastre.ComposablePreviewScanner", name = "android", version.ref = "composablePreviewScanner" }
+detekt-api = { group = "dev.detekt", name = "detekt-api", version.ref = "detekt" }
+detekt-test = { group = "dev.detekt", name = "detekt-test", version.ref = "detekt" }
 compose-rules-ktlint = { group = "io.nlopez.compose.rules", name = "ktlint", version.ref = "composeRules" }
 
 # build-logic classpath dependencies (consumed from build-logic/convention/build.gradle.kts)

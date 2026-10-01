@@ -3,7 +3,7 @@ package com.eduardoflores.rolabox.core.designsystem.component
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
@@ -15,17 +15,20 @@ import androidx.compose.ui.unit.dp
 import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxTheme
 import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxType
 
-/** A "Prompt? Action" line, with the action in the accent color, for the foot of a screen. */
+/**
+ * A "Prompt? Action" line, with the action in the accent color, for the foot of a screen. The action
+ * goes under the prompt when the two don't fit on one line (ADR-017).
+ */
 @Composable
 fun FooterLink(prompt: String, action: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val styles = RolaboxType.styles
-    Row(
+    FlowRow(
         modifier
             .minimumInteractiveComponentSize()
             .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
+        itemVerticalAlignment = Alignment.CenterVertically,
     ) {
         Text(prompt, style = styles.linkPrompt)
         Text(action, style = styles.linkStrong)

@@ -73,9 +73,9 @@ internal fun rolaboxTypography(
         buttonLabel = body.copy(fontWeight = FontWeight.Bold),
         // Tabular digits, so a countdown on a key doesn't jitter as the digits change.
         keyLabel = body.copy(fontSize = 15.5.sp, fontWeight = FontWeight.SemiBold, fontFeatureSettings = "tnum"),
-        // Google's branding rules set this label: 14/20 Medium in its own font, not the skin's.
+        // Google's branding rules set this label: Google Sans Medium 14/20, not the skin's font.
         brandButtonLabel = AmbientTextDefaults.copy(
-            fontFamily = FontFamily.Default,
+            fontFamily = GoogleSans,
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
             lineHeight = 20.sp,
