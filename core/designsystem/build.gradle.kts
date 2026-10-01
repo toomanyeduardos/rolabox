@@ -16,6 +16,8 @@ android {
 dependencies {
     api(libs.androidx.compose.material3)
 
+    testImplementation(libs.junit)
+
     testFixturesApi(libs.paparazzi)
     testFixturesApi(libs.junit)
     testFixturesImplementation(libs.composable.preview.scanner)
