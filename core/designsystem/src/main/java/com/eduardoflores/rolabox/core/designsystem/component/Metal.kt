@@ -7,9 +7,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -29,11 +31,13 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.eduardoflores.rolabox.core.designsystem.R
 import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxMetal
@@ -45,26 +49,32 @@ private const val FLAT_KEY_ALPHA = 0.05f
 
 private val PillShape = RoundedCornerShape(26.dp)
 private val BackKeyTarget = 48.dp
+private val KeyMinHeight = 52.dp
+private val KeyPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp)
 private val BackKeyInset = 9.dp // Half the gap around the 30dp key, so the key lines up with the content edge.
 
-/** Orange primary action. Only one per screen. Ignores taps while [loading]. */
+/**
+ * Orange primary action. Only one per screen. Ignores taps while [loading]. A label that doesn't fit on
+ * one line wraps, and the key grows with it (ADR-017).
+ */
 @Composable
 fun PrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, loading: Boolean = false) {
     val colors = RolaboxMetal.colors
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(52.dp)
+            .heightIn(min = KeyMinHeight)
             .shadow(6.dp, PillShape, ambientColor = colors.accent, spotColor = colors.accent)
             .clip(PillShape)
             .background(Brush.verticalGradient(listOf(colors.accentTop, colors.accentBottom)))
-            .clickable(enabled = !loading, role = Role.Button, onClick = onClick),
+            .clickable(enabled = !loading, role = Role.Button, onClick = onClick)
+            .padding(KeyPadding),
         contentAlignment = Alignment.Center,
     ) {
         if (loading) {
             CircularProgressIndicator(Modifier.size(22.dp), color = colors.onAccent, strokeWidth = 2.5.dp)
         } else {
-            Text(text, style = RolaboxType.styles.buttonLabel)
+            Text(text, style = RolaboxType.styles.buttonLabel, textAlign = TextAlign.Center)
         }
     }
 }
@@ -91,12 +101,17 @@ fun SecondaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modi
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(52.dp)
+            .heightIn(min = KeyMinHeight)
             .then(background)
-            .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+            .padding(KeyPadding),
         contentAlignment = Alignment.Center,
     ) {
-        Text(text, style = RolaboxType.styles.keyLabel.let { if (enabled) it else it.copy(color = colors.muted) })
+        Text(
+            text = text,
+            style = RolaboxType.styles.keyLabel.let { if (enabled) it else it.copy(color = colors.muted) },
+            textAlign = TextAlign.Center,
+        )
     }
 }
 
@@ -131,7 +146,11 @@ fun BackKey(onClick: () -> Unit, contentDescription: String, modifier: Modifier 
     }
 }
 
-/** A small monochrome display that reports the screen's state: a [left] label and a [right] status. */
+/**
+ * A small monochrome display that reports the screen's state: a [left] label and a [right] status.
+ * When the two don't fit side by side, the status goes on a line of its own under the label, and the
+ * display grows (ADR-017).
+ */
 @Composable
 fun LcdStatusBar(left: String, modifier: Modifier = Modifier, right: String = "", error: Boolean = false) {
     val colors = RolaboxMetal.colors
@@ -144,16 +163,17 @@ fun LcdStatusBar(left: String, modifier: Modifier = Modifier, right: String = ""
             .background(colors.bezel)
             .padding(3.dp),
     ) {
-        Row(
+        FlowRow(
             Modifier
                 .fillMaxWidth()
-                .height(46.dp)
+                .heightIn(min = 46.dp)
                 .clip(RoundedCornerShape(7.dp))
                 .background(colors.lcd)
-                .padding(horizontal = 12.dp)
+                .padding(horizontal = 12.dp, vertical = 6.dp)
                 .semantics { liveRegion = LiveRegionMode.Polite },
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = spaceBetween(gap = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
+            itemVerticalAlignment = Alignment.CenterVertically,
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (error) {
@@ -184,7 +204,8 @@ fun Wordmark(modifier: Modifier = Modifier, isPlaying: Boolean = false) {
         SpinningVinyl(
             isPlaying = isPlaying,
             modifier = Modifier.padding(start = 3.dp, end = 1.dp, top = 3.dp),
-            size = (style.fontSize.value * VINYL_TO_TEXT_RATIO).dp,
+            // Sized from the text, in sp, so the record grows with the letters around it.
+            size = (style.fontSize.value * VINYL_TO_TEXT_RATIO * LocalDensity.current.fontScale).dp,
         )
         Text(stringResource(R.string.ds_wordmark_end), style = style)
     }
@@ -195,7 +216,7 @@ private const val VINYL_TO_TEXT_RATIO = 0.72f
 /** The top of a screen: an optional back key, then the [Wordmark]. */
 @Composable
 fun WordmarkHeader(modifier: Modifier = Modifier, onBack: (() -> Unit)? = null) {
-    Row(modifier.height(BackKeyTarget), verticalAlignment = Alignment.CenterVertically) {
+    Row(modifier.heightIn(min = BackKeyTarget), verticalAlignment = Alignment.CenterVertically) {
         if (onBack != null) {
             BackKey(onClick = onBack, contentDescription = stringResource(R.string.ds_back))
         }

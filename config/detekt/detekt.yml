@@ -43,6 +43,7 @@ style:
         reason: 'ADR-015 rule 3: font weights are defined only in :core:designsystem. Use a RolaboxType.styles role.'
   ForbiddenMethodCall:
     # ADR-015 rules 2 and 3: colors, fonts, text styles and shapes are defined only in the design system.
+    # ADR-017 rule 2: no Density is built to override the font scale.
     active: true
     excludes: ['**/core/designsystem/**']
     methods:
@@ -58,6 +59,8 @@ style:
         reason: 'ADR-015 rule 3: shapes are defined only in :core:designsystem. Use MaterialTheme.shapes.'
       - value: 'androidx.compose.foundation.shape.CutCornerShape'
         reason: 'ADR-015 rule 3: shapes are defined only in :core:designsystem. Use MaterialTheme.shapes.'
+      - value: 'androidx.compose.ui.unit.Density'
+        reason: 'ADR-017 rule 2: text follows the system font scale. Do not build a Density to override or cap it.'
   MagicNumber:
     # Color literals and dimensions in the design system are the definitions themselves.
     ignorePropertyDeclaration: true
@@ -67,3 +70,33 @@ style:
     ignoreAnnotated: ['Preview', 'Preview*']
   UnusedImport:
     active: true
+
+# Rolabox's own rules (build-logic/detekt-rules).
+rolabox:
+  FixedHeightAroundText:
+    # ADR-017 rule 3: a container of text grows with it.
+    active: true
+    # Compose's text composables, then the components of the design system and the area UI modules
+    # that show text. A new one is added here (ADR-017 rule 9).
+    textComposables:
+      - 'Text'
+      - 'BasicText'
+      - 'TextField'
+      - 'OutlinedTextField'
+      - 'BasicTextField'
+      - 'PrimaryButton'
+      - 'SecondaryButton'
+      - 'LcdStatusBar'
+      - 'Wordmark'
+      - 'WordmarkHeader'
+      - 'RecessedField'
+      - 'ReadOnlyField'
+      - 'FieldError'
+      - 'StrengthMeter'
+      - 'OrDivider'
+      - 'FooterLink'
+      - 'UnderlinedLink'
+      - 'TextAction'
+      - 'RolaboxTopBar'
+      - 'GoogleButton'
+      - 'SignInButton'

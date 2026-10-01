@@ -7,6 +7,9 @@
 - **Revised 2026-09-26:** Before 1.0, accepted ADRs may be revised in place with a dated Revised
   line (rules 1 and 2, "Changing a decision"). The module structure was still changing, and a chain
   of superseding ADRs would bury the current rules. The old rule applies again from 1.0.
+- **Revised 2026-10-01:** A third party's rules for its own element take precedence over the rules
+  of any ADR (rule 5, "Third-party rules come first"). Google's branding rules for the Sign in with
+  Google button conflicted with ADR-017's large-text rules, and the ADRs didn't say which one wins.
 
 ## Context
 
@@ -54,6 +57,15 @@ ADR is not rewritten: fixing typos and links, and updating the status line, are 
 allowed. To change a decision after 1.0, write a new ADR that states what it supersedes, and update
 the old ADR's status line in the same PR.
 
+**Third-party rules come first.** Some elements aren't Rolabox's to design: a third party publishes
+rules for them that an app must follow to use them, such as Google's branding guidelines for the
+Sign in with Google button. Where those rules and an ADR's rules can't both be followed, the third
+party's rules take precedence, for that element only. The element still follows every ADR as far as
+the third party's rules allow, and each place where it can't carries a comment that names this rule
+and the ADR rule it sets aside, so every exception is visible in review. Where an ADR's rule is
+`[enforced]`, the exception is a `@Suppress` with that comment, not a change to the check. This is
+about rules a third party imposes, not about a library's defaults or conventions.
+
 **Target state.** An ADR may describe a state the code doesn't match yet. When it does, it says so
 and tags the affected rules `[planned]` with the ticket that will close the gap.
 
@@ -86,3 +98,7 @@ and tags the affected rules `[planned]` with the ticket that will close the gap.
    typos and links, or to update their status.
 3. `[convention]` Every ADR is listed in [`docs/adr/README.md`](README.md) with its current status.
 4. `[convention]` Each new ADR (after the founding set) is proposed in its own pull request.
+5. `[convention]` A third party's rules for its own element, such as branding guidelines, take
+   precedence over the rules of any ADR, for that element only. The element follows the ADRs as far
+   as those rules allow, and each exception carries a comment (a `@Suppress` where the rule is
+   enforced) that names this rule and the ADR rule it sets aside.

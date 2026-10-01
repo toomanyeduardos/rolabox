@@ -1,0 +1,5 @@
+# How detekt finds Rolabox's rules. detekt has no list of rule sets to configure: it looks in every jar
+# on its `detektPlugins` classpath for a file with exactly this name (Java's ServiceLoader), and
+# loads the class named on each line. Without this file the rules compile and their tests pass, but
+# detekt never runs them, and the `rolabox:` block in config/detekt/detekt.yml does nothing.
+com.eduardoflores.rolabox.detekt.RolaboxRuleSetProvider
