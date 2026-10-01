@@ -26,3 +26,4 @@ New ADR: copy [`template.md`](template.md), take the next number, and add it to 
 | [015](015-design-system-owns-visual-language.md) | The design system is the only home of Rolabox's visual language | Accepted |
 | [016](016-screenshot-testing.md) | Screenshot tests with Paparazzi, run on the JVM with goldens in Git LFS | Accepted |
 | [017](017-accessibility.md) | Accessibility is an architectural rule, starting with large text | Accepted |
+| [018](018-device-navigation.md) | Device navigation: a linear screen stack driven by the wheel | Accepted |

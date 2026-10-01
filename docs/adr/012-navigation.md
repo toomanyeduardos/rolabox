@@ -10,20 +10,26 @@
   runtime by the start destination (Context, Decision, rule 8).
 - **Revised 2026-09-28:** The flavors are gone (`m1/flavor-removal`), so rule 8 holds, and it's a
   convention now. The decision is unchanged.
+- **Revised 2026-10-01:** The signed-in app is a device with a display and a wheel
+  ([ADR-018](018-device-navigation.md)), not an app with a navigation bar. The top-level sections,
+  their back stacks and the Material navigation bar behavior were removed, and so were the
+  side-by-side layouts for larger screens (Context, Decision, Consequences, rules 3 and 7). The app
+  stack now holds the auth flow, the device and the full screens opened from it. The library, the
+  ownership of navigation state by `:app`, and the rules for keys, entries and exits are unchanged,
+  and ADR-018 applies them to the stack inside the display.
 
 ## Context
 
 Rolabox needs one navigation model for the whole app:
 
-- **Top-level sections**, such as Home, Search, Library and Podcasts, reached from a navigation
-  bar. Each keeps its own history: going from Search to Library and back returns to the artist the
-  user was looking at in Search, not to the Search root.
+- **A device inside the app.** The signed-in app is a music player device, whose display shows a
+  tree of screens that is walked with a wheel ([ADR-018](018-device-navigation.md)). Some screens,
+  such as the account's forms, are ordinary screens shown over it.
 - **Links across features.** A search result opens an artist, an artist opens an album, an album
   opens a song, and a podcast opens an episode. These screens live in different feature modules.
 - **Flows that end somewhere else.** Sign in leads to Create account and to Forgot password, and a
-  successful sign-in or sign-up leaves the auth screens for Home with no way back to them.
-- **Larger screens.** On tablets, foldables and landscape, a list and its detail (an album and its
-  songs, a show and its episodes) should be shown side by side.
+  successful sign-in or sign-up leaves the auth screens for the device with no way back to them.
+- **One layout.** The device looks the same on every screen size, in portrait.
 
 [ADR-003](003-module-boundaries.md) already settles part of this: features never depend on each
 other, and navigation between features is wired in `:app`. It doesn't say which navigation library
@@ -45,14 +51,11 @@ navigation state.
 - **Destinations are `NavKey`s.** Each destination is a `@Serializable` class or object that
   implements `NavKey`. Back stacks are saved across process death, so keys must be serializable and
   carry identifiers (an artist id), never models (an `Artist`).
-- **`:app` owns a navigation state with one back stack per top-level section.** Each back stack
-  starts at its section's root key. `:app` keeps track of the current section, and `NavDisplay`
-  shows the current section's stack. All changes to navigation state (switching sections, pushing,
-  popping, replacing) are made by `:app`, in code that responds to the exits a screen reports.
-- **Top-level sections follow the Material navigation bar behavior.** Switching sections keeps each
-  section's stack as it was. Selecting the current section again returns it to its root. Back at
-  the root of a section other than the start section goes to the start section, and back at the
-  start section's root leaves the app.
+- **`:app` owns the navigation state.** The app stack holds the auth flow, the device, and the
+  full screens opened from the device. The device is one entry, and the stack of screens inside its
+  display is a second back stack that `:app` also owns (ADR-018). All changes to navigation state
+  (pushing, popping, replacing) are made by `:app`, in code that responds to the exits a screen
+  reports. Back at the first screen of the app stack leaves the app.
 - **Keys are declared where the screen lives.** A feature declares the keys of its own screens and
   provides their entries as one function, which `:app` adds to the `entryProvider`. This is
   Navigation 3's modularization pattern. Destinations that no feature owns are declared in `:app`.
@@ -63,12 +66,10 @@ navigation state.
   So Search can open an artist without knowing the artist feature exists, and features stay
   independent (ADR-003).
 - **Leaving a flow replaces its stack.** When sign-in or sign-up succeeds, `:app` replaces the
-  navigation state with the signed-in sections, starting at Home, so back never returns to the auth
-  screens. The auth flow is a single back stack of its own, outside the top-level sections.
-- **Adaptive layouts are scene strategies.** Side-by-side layouts such as list-detail come from a
-  scene strategy in `:app`'s `NavDisplay`. A feature marks which of its entries can be a list or a
-  detail pane through the entry's metadata, and never checks the window size to decide how to lay
-  itself out between screens.
+  navigation state with the device, so back never returns to the auth screens. The auth flow is a
+  single back stack of its own.
+- **There are no adaptive layouts.** The device has one layout (ADR-018), so there are no
+  side-by-side scenes, and a screen never checks the window size to decide how to lay itself out.
 - **State follows the entry.** `NavDisplay`'s entry decorators keep saveable UI state and
   ViewModels per entry, and clear them when the entry is popped. ViewModels are created in the
   entries, so each screen gets its own, and two artist screens on the same stack don't share one.
@@ -102,11 +103,11 @@ navigation state.
 ## Consequences
 
 - Navigation state is ordinary state: `:app` reads it, changes it and tests it directly, including
-  switching sections and back behavior, with no Android framework.
+  leaving a flow and back behavior, with no Android framework.
 - Back handling, transitions, saved state, per-entry ViewModels and adaptive scenes come from the
   library.
-- Multiple back stacks aren't a single built-in API in Navigation 3. The navigation state that
-  holds them is our own code, built from the library's documented recipe, and we maintain it.
+- The navigation state that holds the app stack, the auth flow and the device's screen stack is our
+  own code, and we maintain it.
 - Every link between features goes through `:app`. That's one lambda per exit and one mapping in
   `:app`, which is more code than a feature pushing a key, and it's the price of feature
   independence.
@@ -119,24 +120,24 @@ navigation state.
   its integrations (such as how Hilt scopes ViewModels to entries) will be worked out on first use.
 - The start destination from `StartupViewModel` is applied when the navigation state is created. It
   doesn't drive the screen on later changes: after that, `:app` changes the state.
-- Persistent UI outside the destinations, such as a mini player above the navigation bar, is not
-  part of this decision.
+- Persistent UI outside the destinations, which is the device's body and wheel, is decided in
+  ADR-018.
 
 ## Rules
 
-1. `[convention]` `:app` owns the navigation state and the `NavDisplay`. Only `:app` switches
-   sections, or pushes, pops or replaces entries.
+1. `[convention]` `:app` owns the navigation state and the `NavDisplay`. Only `:app` pushes, pops
+   or replaces entries.
 2. `[convention]` Destinations are `@Serializable` classes or objects that implement `NavKey`, and
    carry identifiers, not models.
-3. `[convention]` Each top-level section has its own back stack, and switching sections keeps each
-   one's entries.
+3. `[convention]` The app stack holds the auth flow, the device and the full screens opened from
+   it. There are no top-level sections. The stack inside the device's display follows ADR-018.
 4. `[convention]` A feature declares only the keys of its own screens, and never refers to another
    feature's keys.
 5. `[convention]` A screen composable receives its exits as lambdas, and exits that open another
    feature's screen pass identifiers. Screens don't touch navigation state.
-6. `[convention]` A flow that ends in another part of the app (such as sign-in to Home) replaces
-   its own back stack, so its screens can't be reached with back.
-7. `[convention]` Side-by-side layouts come from scene strategies in `:app`. Features describe their
-   entries through metadata, and don't change how screens are arranged based on window size.
+6. `[convention]` A flow that ends in another part of the app (such as sign-in to the device)
+   replaces its own back stack, so its screens can't be reached with back.
+7. `[convention]` There are no side-by-side layouts. No screen changes how it is arranged based on
+   window size (ADR-018).
 8. `[convention]` Every entry is added from `src/main`, and no entry depends on the build
    configuration (ADR-008).

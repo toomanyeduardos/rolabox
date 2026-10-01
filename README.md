@@ -174,6 +174,7 @@ and the rules that follow. Most rules are enforced by the build or by tests, not
 | [015](docs/adr/015-design-system-owns-visual-language.md) | The design system is the only home of Rolabox's visual language |
 | [016](docs/adr/016-screenshot-testing.md) | Screenshot tests with Paparazzi, run on the JVM with goldens in Git LFS |
 | [017](docs/adr/017-accessibility.md) | Accessibility is an architectural rule, starting with large text |
+| [018](docs/adr/018-device-navigation.md) | Device navigation: a linear screen stack driven by the wheel |
 
 ### Modules
 
