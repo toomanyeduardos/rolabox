@@ -49,15 +49,18 @@ data class MetalColors(
     val onError: Color = Color.White,
     /** The glossy selected row of a device display, top to bottom. */
     val selection: List<Color> = listOf(Color(0xFF5AA6EE), Color(0xFF2F86DB), Color(0xFF1F6FC4), Color(0xFF1A62B0)),
+    /** Text on the selected row. */
+    val onSelection: Color = Color.White,
     /** The frame around the device's display. It's the same in light and dark. */
     val displayBezel: Color = Color(0xFF1D1D1F),
     /**
      * The device's display stays white on both finishes, so its text reads the same on either. These
-     * four are its screen, its header, its text and its dividers.
+     * five are its screen, its header, its text, its secondary text and its dividers.
      */
     val displayScreen: Color = Color(0xFFFFFFFF),
     val displayHeader: Color = Color(0xFFECECED),
     val displayInk: Color = Color(0xFF0E0E0F),
+    val displayMuted: Color = Color(0xFF5F6368),
     val displayRule: Color = Color(0x1F000000),
     /** The strength meter's color for levels 1 to 4. */
     val strength: List<Color> = listOf(Color(0xFFC8322B), Color(0xFFE0A21B), Color(0xFF6FBF5A), Color(0xFF2E9E57)),

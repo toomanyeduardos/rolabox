@@ -58,6 +58,12 @@ class RolaboxTextStyles internal constructor(
     /** The title in the header of the device's display. It is on the display's white, in both themes. */
     internal val displayTitle = typography.displayTitle.copy(color = colors.displayInk)
 
+    /** A row of a list on the display. The selected row's text is [MetalColors.onSelection]. */
+    internal val displayRow = typography.displayRow.copy(color = colors.displayInk)
+
+    /** The `›` on a row that opens a submenu. */
+    internal val displayChevron = typography.displayChevron.copy(color = colors.displayInk)
+
     /** Every role with its name, for the type specimen. */
     internal val all: List<Pair<String, TextStyle>>
         get() = listOf(
@@ -84,6 +90,8 @@ class RolaboxTextStyles internal constructor(
             "lcdBadge" to lcdBadge,
             "wheelLabel" to wheelLabel,
             "displayTitle" to displayTitle,
+            "displayRow" to displayRow,
+            "displayChevron" to displayChevron,
         )
 }
 
