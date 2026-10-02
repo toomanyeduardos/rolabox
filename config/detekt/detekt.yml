@@ -76,8 +76,8 @@ rolabox:
   FixedHeightAroundText:
     # ADR-017 rule 3: a container of text grows with it.
     active: true
-    # Compose's text composables, then the components of the design system and the area UI modules
-    # that show text. A new one is added here (ADR-017 rule 9).
+    # Compose's text composables, then the components of the design system, the area UI modules and
+    # the device host that show text. A new one is added here (ADR-017 rule 9).
     textComposables:
       - 'Text'
       - 'BasicText'
@@ -102,5 +102,7 @@ rolabox:
       - 'DeviceBody'
       - 'DeviceDisplay'
       - 'DeviceHeader'
+      - 'DeviceScreen'
+      - 'DeviceHost'
       - 'GoogleButton'
       - 'SignInButton'

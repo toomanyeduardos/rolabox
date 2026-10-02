@@ -32,6 +32,7 @@ include(":app")
 
 include(":core:common")
 include(":core:designsystem")
+include(":core:device")
 include(":core:domain")
 include(":core:testing")
 

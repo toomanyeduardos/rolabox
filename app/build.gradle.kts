@@ -30,6 +30,7 @@ android {
 dependencies {
     implementation(project(":core:auth:impl"))
     implementation(project(":core:designsystem"))
+    implementation(project(":core:device"))
     implementation(project(":core:domain"))
     implementation(project(":core:storage:impl"))
     implementation(project(":core:sync:impl"))

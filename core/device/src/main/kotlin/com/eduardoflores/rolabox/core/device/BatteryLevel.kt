@@ -1,4 +1,4 @@
-package com.eduardoflores.rolabox.device
+package com.eduardoflores.rolabox.core.device
 
 import android.annotation.SuppressLint
 import android.content.BroadcastReceiver

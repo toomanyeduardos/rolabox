@@ -1,4 +1,4 @@
-package com.eduardoflores.rolabox.device
+package com.eduardoflores.rolabox.core.device
 
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
