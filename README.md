@@ -175,6 +175,7 @@ and the rules that follow. Most rules are enforced by the build or by tests, not
 | [016](docs/adr/016-screenshot-testing.md) | Screenshot tests with Paparazzi, run on the JVM with goldens in Git LFS |
 | [017](docs/adr/017-accessibility.md) | Accessibility is an architectural rule, starting with large text |
 | [018](docs/adr/018-device-navigation.md) | Device navigation: a linear screen stack driven by the wheel |
+| [019](docs/adr/019-device-host-module.md) | The device is a host module, `:core:device`, that receives its screens from `:app` |
 
 ### Modules
 

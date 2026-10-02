@@ -27,3 +27,4 @@ New ADR: copy [`template.md`](template.md), take the next number, and add it to 
 | [016](016-screenshot-testing.md) | Screenshot tests with Paparazzi, run on the JVM with goldens in Git LFS | Accepted |
 | [017](017-accessibility.md) | Accessibility is an architectural rule, starting with large text | Accepted |
 | [018](018-device-navigation.md) | Device navigation: a linear screen stack driven by the wheel | Accepted |
+| [019](019-device-host-module.md) | The device is a host module, `:core:device`, that receives its screens from `:app` | Accepted |

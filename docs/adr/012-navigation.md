@@ -17,6 +17,11 @@
   stack now holds the auth flow, the device and the full screens opened from it. The library, the
   ownership of navigation state by `:app`, and the rules for keys, entries and exits are unchanged,
   and ADR-018 applies them to the stack inside the display.
+- **Revised 2026-10-01:** The stack inside the device's display is run by the device host,
+  `:core:device` ([ADR-019](019-device-host-module.md)). The host pops it, on MENU and on back, and
+  `:app` still decides every push (Decision, Consequences, rule 1). Before this, only `:app` could
+  change any navigation state, which kept a mechanism that names no feature inside `:app`. Features
+  still don't touch navigation state.
 
 ## Context
 
@@ -53,9 +58,11 @@ navigation state.
   carry identifiers (an artist id), never models (an `Artist`).
 - **`:app` owns the navigation state.** The app stack holds the auth flow, the device, and the
   full screens opened from the device. The device is one entry, and the stack of screens inside its
-  display is a second back stack that `:app` also owns (ADR-018). All changes to navigation state
-  (pushing, popping, replacing) are made by `:app`, in code that responds to the exits a screen
-  reports. Back at the first screen of the app stack leaves the app.
+  display is a second back stack (ADR-018). `:app` decides what is on both: every push and every
+  replacement is made by `:app`, in code that responds to the exits a screen reports. On the app
+  stack `:app` also pops. On the stack inside the display, popping is done by the device host
+  (ADR-019), since MENU and back do the same on every screen. Back at the first screen of the app
+  stack leaves the app.
 - **Keys are declared where the screen lives.** A feature declares the keys of its own screens and
   provides their entries as one function, which `:app` adds to the `entryProvider`. This is
   Navigation 3's modularization pattern. Destinations that no feature owns are declared in `:app`.
@@ -107,7 +114,7 @@ navigation state.
 - Back handling, transitions, saved state, per-entry ViewModels and adaptive scenes come from the
   library.
 - The navigation state that holds the app stack, the auth flow and the device's screen stack is our
-  own code, and we maintain it.
+  own code, and we maintain it. The screen stack's part is in `:core:device` (ADR-019).
 - Every link between features goes through `:app`. That's one lambda per exit and one mapping in
   `:app`, which is more code than a feature pushing a key, and it's the price of feature
   independence.
@@ -125,8 +132,9 @@ navigation state.
 
 ## Rules
 
-1. `[convention]` `:app` owns the navigation state and the `NavDisplay`. Only `:app` pushes, pops
-   or replaces entries.
+1. `[convention]` `:app` owns the app stack and its `NavDisplay`, and decides what is on every
+   stack: only `:app` pushes or replaces entries. Only `:app` pops the app stack. The stack inside
+   the device's display is popped by the device host (ADR-019).
 2. `[convention]` Destinations are `@Serializable` classes or objects that implement `NavKey`, and
    carry identifiers, not models.
 3. `[convention]` The app stack holds the auth flow, the device and the full screens opened from

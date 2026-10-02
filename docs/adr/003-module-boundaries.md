@@ -38,6 +38,11 @@
   every consumer. Rolabox ships no libraries, so `api` only hid which areas a module really uses.
   A consumer that can't be written without `api` is a sign its design needs another look. External
   libraries still use `api` where an `:api` exposes them (Arrow, coroutines), for now.
+- **Revised 2026-10-01:** A new utility module, `:core:device`, holds the device host
+  ([ADR-019](019-device-host-module.md)). It may depend on `:core:designsystem` and `:core:common`,
+  and features and `:app` may depend on it. The module table, the utility modules guideline, rule 4
+  and the new rules 18 and 19 were updated. Before this, the device's screen stack and event
+  routing were in `:app`, where a feature's device screens couldn't reach the contract they need.
 
 ## Context
 
@@ -84,7 +89,7 @@ graph in the `@HiltAndroidApp` module, so `:app` must see every implementation a
 | Module type | Role | May depend on |
 | --- | --- | --- |
 | `:app` | Composition root: `Application`, navigation between features, the Hilt graph, and the `@TestInstallIn` modules that swap production bindings in tests | Anything, but testing modules only from test configurations |
-| `:feature:*` | One user-facing area: screens and ViewModels | `:core:<area>:api`, `:core:<area>:ui`, `:core:domain`, `:core:common`, `:core:designsystem` |
+| `:feature:*` | One user-facing area: screens and ViewModels | `:core:<area>:api`, `:core:<area>:ui`, `:core:domain`, `:core:common`, `:core:designsystem`, `:core:device` |
 | `:core:<area>:api` | Interfaces, models, error types, and pure-logic use cases for this area (pure JVM) | Other `:core:<area>:api`, `:core:common` |
 | `:core:<area>:impl` | Implementations of the `:api` and their Hilt modules | `:core:<area>:api` (its own and others), `:core:common` |
 | `:core:<area>:testing` | Fakes of the area's `:api` (pure JVM) | Its own `:api` |
@@ -92,6 +97,7 @@ graph in the `@HiltAndroidApp` module, so `:app` must see every implementation a
 | `:core:domain` | Pure-logic use cases that combine more than one area (pure JVM) | `:core:<area>:api`, `:core:common` (plus testing modules from test configurations) |
 | `:core:common` | Utility: dispatchers, exception-to-error helpers (pure JVM) | Nothing |
 | `:core:designsystem` | Utility: theme and shared composables | `:core:common` |
+| `:core:device` | Utility: the device host and the contract its screens use, with no ViewModels or destinations (Android, Compose) | `:core:designsystem`, `:core:common` |
 | `:core:testing` | Utility: Hilt test runner, `MainDispatcherRule` | Anything except `:impl` modules |
 
 The current areas are `auth`, `storage`, `sync` and `userdata`.
@@ -123,9 +129,9 @@ The current areas are `auth`, `storage`, `sync` and `userdata`.
   module means referencing it, and only `:app` may see `:impl` modules. `:app` is also the only
   module that assembles a production Hilt graph, so it's the only place where there is something to
   replace.
-- **Utility modules aren't split.** `:core:common`, `:core:designsystem` and `:core:testing` have no
-  implementation to hide, so they have no `:api`/`:impl` pair. They stay generic: anything that
-  belongs to an area goes in that area.
+- **Utility modules aren't split.** `:core:common`, `:core:designsystem`, `:core:device` and
+  `:core:testing` have no implementation to hide, so they have no `:api`/`:impl` pair. They stay
+  generic: anything that belongs to an area goes in that area.
 - **Packages mirror module paths**: `com.eduardoflores.rolabox.core.auth.api`,
   `….core.auth.impl`, `….core.auth.testing`. The same package is never split across modules.
 
@@ -215,7 +221,8 @@ Guidelines that go with the table:
 2. `[enforced]` Only `:app` depends on `:feature:*` modules.
 3. `[enforced]` Only `:app` depends on `:impl` modules.
 4. `[enforced]` Feature modules depend only on `:api` and `:ui` modules, `:core:domain`,
-   `:core:common` and `:core:designsystem` (plus testing modules from test configurations).
+   `:core:common`, `:core:designsystem` and `:core:device` (plus testing modules from test
+   configurations).
 5. `[enforced]` `:api` modules, `:core:common` and `:core:domain` are JVM modules with no Android
    dependencies.
 6. `[enforced]` `:api` modules depend only on `:core:common` and other `:api` modules.
@@ -240,6 +247,9 @@ Guidelines that go with the table:
 16. `[enforced]` `:core:<area>:ui` modules depend only on `:api` modules, `:core:domain`,
     `:core:common` and `:core:designsystem` (plus testing modules from test configurations).
 17. `[enforced]` Only `:feature:*` modules and `:app` depend on `:ui` modules.
+18. `[enforced]` `:core:device` depends only on `:core:designsystem` and `:core:common` (plus
+    testing modules from test configurations).
+19. `[enforced]` Only `:feature:*` modules and `:app` depend on `:core:device`.
 
-**Conformance.** Rules 1 to 10, 16 and 17 are checked by `ModuleRules.kt` when the build is
+**Conformance.** Rules 1 to 10 and 16 to 19 are checked by `ModuleRules.kt` when the build is
 configured. Rule 11 could be checked with a Konsist test later.
