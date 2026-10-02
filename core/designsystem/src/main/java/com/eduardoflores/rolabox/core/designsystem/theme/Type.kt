@@ -47,12 +47,15 @@ class RolaboxTypography internal constructor(
     internal val message: TextStyle,
     internal val wheelLabel: TextStyle,
     internal val displayTitle: TextStyle,
+    internal val displayRow: TextStyle,
+    internal val displayChevron: TextStyle,
 )
 
 /**
  * Starts from the Material 3 scale. A skin with its own fonts swaps [fontFamily] for the text and
  * [monoFamily] for the LCD and the other monospaced roles.
  */
+@Suppress("LongMethod") // One line per role: it is a table of tokens, like RolaboxTypography.
 internal fun rolaboxTypography(
     fontFamily: FontFamily = FontFamily.Default,
     monoFamily: FontFamily = FontFamily.Monospace,
@@ -121,6 +124,8 @@ internal fun rolaboxTypography(
         // skin's font, which for the default skin is Hanken Grotesk (see Fonts.kt).
         wheelLabel = body.copy(fontSize = 14.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.08.em),
         displayTitle = body.copy(fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.01).em),
+        displayRow = body.copy(fontSize = 16.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.01).em),
+        displayChevron = body.copy(fontSize = 18.sp),
     )
 }
 
