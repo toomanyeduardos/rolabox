@@ -4,6 +4,11 @@
 - **Date:** 2026-09-30
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review
+- **Revised 2026-10-01:** The composables of the device host live in `:core:device`
+  ([ADR-019](019-device-host-module.md)), as an exception to "every composable that knows nothing
+  about an area lives in the design system" (Decision, rule 1). The host assembles the device's
+  parts and runs its screen stack, which needs Navigation 3 and isn't visual language. The parts
+  and every token stay in the design system, and rules 2 and 3 still apply to `:core:device`.
 
 ## Context
 
@@ -42,7 +47,10 @@ it without defining their own.
   aren't specific to one area.
 - **Shared composables:** any component that knows nothing about an area (fields, dividers, links,
   top bars, loading states). It goes in the design system **when it is first written**, not when a
-  second feature needs it, as [ADR-014](014-area-ui-modules.md) decided for area UI.
+  second feature needs it, as [ADR-014](014-area-ui-modules.md) decided for area UI. The one
+  exception is the device host: the composables that assemble the device and run its screen stack
+  live in `:core:device` ([ADR-019](019-device-host-module.md)), built from the design system's
+  parts.
 - **Preview tooling,** such as `@PreviewLightDark` and the type specimen.
 - **Strings that mean the same thing in every context,** such as the labels of dialog buttons ("OK",
   "Cancel", "Retry") and accessibility labels of shared components ("Back").
@@ -143,7 +151,7 @@ in the window theme and in `RolaboxSplash`. They don't define colors or fonts of
 
 1. `[convention]` Rolabox's tokens, brand assets, preview tooling and every composable that knows
    nothing about an area live in `:core:designsystem`. A composable goes there when it is first
-   written.
+   written. The device host's composables are the exception, and live in `:core:device` (ADR-019).
 2. `[enforced]` Colors and fonts are defined only in `:core:designsystem`: no `res/font` folder, no
    `<color>` resource, and no `Color(…)`, `FontFamily(…)` or `Font(…)` call anywhere else.
 3. `[enforced]` Text styles and shapes are defined only in `:core:designsystem`: no `TextStyle(…)`,

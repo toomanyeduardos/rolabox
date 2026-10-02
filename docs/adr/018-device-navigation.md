@@ -4,6 +4,12 @@
 - **Date:** 2026-10-01
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review
+- **Revised 2026-10-01:** The screen stack, its `NavDisplay` and the routing of wheel events moved
+  from `:app` to a device host module, `:core:device` ([ADR-019](019-device-host-module.md)). `:app`
+  gives the host its screens, decides every push and handles the playback buttons, and the host
+  pops (Decision, Consequences, rules 1, 3, 5 and 12). Building the screen stack showed that this
+  mechanism names no feature, and that a feature's device screens couldn't reach it inside `:app`.
+  What each control does, and every other rule, is unchanged.
 
 ## Context
 
@@ -43,19 +49,20 @@ rules below apply to code as it is written, and none of them has a build check y
 We will build the signed-in app as **one device destination** in `:app`'s navigation, with a
 **screen stack** inside its display that only the wheel changes.
 
-### Two stacks, both owned by `:app`
+### Two stacks, with `:app` deciding what is on both
 
 - **The app stack** is ADR-012's: the auth flow, the device, and any **full screen** opened from
   the device. The device is a single entry of it.
 - **The screen stack** is what the display shows. It is a second Navigation 3 back stack with its
   own `NavDisplay`, placed inside the display. It starts at the main menu, and it is linear: there
-  are no sections and no tabs.
+  are no sections and no tabs. It is run by the **device host**, `:core:device`
+  ([ADR-019](019-device-host-module.md)), which `:app` gives the screens to.
 
 Everything ADR-012 says about a back stack holds for the screen stack: its keys are serializable
 and carry identifiers, features declare the keys and entries of their own screens, only `:app`
-pushes and pops, and saved state and ViewModels follow the entry. A feature provides its **device
-screens** and its **full screens** as separate sets of entries, and `:app` adds each to the stack it
-belongs to.
+pushes, and saved state and ViewModels follow the entry. The host pops it, on MENU and on back. A
+feature provides its **device screens** and its **full screens** as separate sets of entries, and
+`:app` adds each to the stack it belongs to.
 
 **The highlight is the entry's saved state.** Each list remembers its highlighted row for as long
 as its entry is on the stack, so MENU returns to the row the user left, also after process death.
@@ -77,17 +84,19 @@ The wheel reports events, and knows nothing about what is on the display:
 | Hold ⏮, hold ⏭ | The previous or the next button is being held, until it is released |
 | ⏯ | The play/pause button was pressed |
 
-These say what the user did to the wheel, not what it does. What each event does is decided by
-`:app` and the screen, in the table under "What each control does".
+These say what the user did to the wheel, not what it does. What each event does is decided by the
+host, `:app` and the screen, in the table under "What each control does".
 
 A turn arrives as steps, not as an angle. The wheel turns the angle into steps and applies the
 **acceleration** for long lists, so every screen scrolls the same way and none of them does that
 math.
 
-`:app` receives every event and decides where it goes:
+The device host receives every event and decides where it goes:
 
 - **Turn and center go to the screen on top of the screen stack,** and to no other.
-- **MENU, ⏮, ⏭ and their holds are handled by `:app`,** the same way on every screen.
+- **MENU and its hold are handled by the host,** the same way on every screen.
+- **⏮, ⏭ and their holds are handled by `:app`,** the same way on every screen. The host passes
+  them to handlers that `:app` provides, so it doesn't depend on the playback area.
 - **⏯ goes to the top screen first.** If the highlighted row can be played, the screen plays it.
   On any other row, and on Now Playing, `:app` handles it, the same way everywhere.
 
@@ -162,11 +171,14 @@ use the wheel.
 - **`:core:designsystem`** has the device's body, the display's frame and header, the list rows and
   their highlight, the wheel, and the wheel's event vocabulary. None of them knows about an area
   ([ADR-015](015-design-system-owns-visual-language.md)).
-- **`:app`** has the device destination, the screen stack and its `NavDisplay`, the main menu, the
-  routing of wheel events, and the mapping from exits to keys.
+- **`:core:device`** has the assembled device, the screen stack and its `NavDisplay`, the routing
+  of wheel events, and the contract a device screen uses to receive turn and center
+  ([ADR-019](019-device-host-module.md)).
+- **`:app`** has the device destination, the main menu, the entries it gives to the host, the
+  mapping from exits to keys, and the handlers of the playback buttons.
 - **Features** have their device screens and ViewModels. They use the design system's rows and
-  receive turn and center events. They don't know the wheel's shape, or that other features exist
-  ([ADR-003](003-module-boundaries.md)).
+  receive turn and center events through the host's contract. They don't know the wheel's shape, or
+  that other features exist ([ADR-003](003-module-boundaries.md)).
 
 ### One layout, in portrait
 
@@ -228,12 +240,11 @@ as ADR-017's rule 10 requires.
 
 - The whole browsing experience is one mechanism: a new level of the tree is a key, an entry and an
   exit, with no navigation code of its own.
-- The control table is in one place, and `:app` applies the parts that are the same everywhere, so
-  a new screen can't change what MENU or ⏭ does.
-- The screen stack and the routing of events are ordinary state and code, tested on the JVM like
-  the rest of `:app`'s navigation.
-- `:app` grows: the main menu, the event routing and the playback buttons are there, not in a
-  feature.
+- The control table is in one place, and the host and `:app` apply the parts that are the same
+  everywhere, so a new screen can't change what MENU or ⏭ does.
+- The screen stack and the routing of events are ordinary state and code, tested on the JVM in
+  `:core:device`, without any feature.
+- `:app` grows: the main menu and the playback buttons are there, not in a feature.
 - Two nested `NavDisplay`s, each with its own back handling, are not a common setup, and how they
   share the system's back and predictive back will be worked out on first use.
 - A device screen can't be operated by touch at all. Until the screen reader section exists, the
@@ -252,17 +263,17 @@ as ADR-017's rule 10 requires.
 ## Rules
 
 1. `[convention]` The signed-in app is one device destination on `:app`'s app stack. What the
-   display shows is a second, linear back stack, the screen stack, that `:app` owns and that starts
-   at the main menu.
+   display shows is a second, linear back stack, the screen stack, that starts at the main menu. The
+   device host runs it and pops it, and `:app` decides every push (ADR-019).
 2. `[convention]` Device screens follow ADR-012 for keys, entries, exits and state. A feature
    provides its device screens and its full screens as separate sets of entries.
 3. `[convention]` A device screen has no tap, click, drag or scroll handling. Its only inputs are
-   the wheel events `:app` gives it.
+   the wheel events the device host gives it.
 4. `[convention]` The wheel reports events from a fixed vocabulary and knows nothing about the
    screens. A turn is a number of steps, with acceleration already applied.
-5. `[convention]` Turn and center go to the top screen only. MENU, ⏮, ⏭ and their holds are handled
-   by `:app`, and no screen changes what they do. ⏯ plays the highlighted row when that row can be
-   played, and is handled by `:app` everywhere else.
+5. `[convention]` Turn and center go to the top screen only. MENU and its hold are handled by the
+   device host, and ⏮, ⏭ and their holds by `:app`, and no screen changes what they do. ⏯ plays the
+   highlighted row when that row can be played, and is handled by `:app` everywhere else.
 6. `[convention]` What turn and center do depends on the screen. What ⏮ and ⏭ do depends on
    whether an item is loaded. The table in Decision is the reference for every control.
 7. `[convention]` A list's highlight is saved state of its entry, and is restored when the user
@@ -277,8 +288,8 @@ as ADR-017's rule 10 requires.
     a device screen. No screen mixes the two. Settings and everything under it are full screens,
     opened from the main menu.
 12. `[convention]` The device's body, display, rows and wheel, and the wheel's event vocabulary,
-    live in `:core:designsystem`. The screen stack, the main menu and the routing of events live in
-    `:app`.
+    live in `:core:designsystem`. The screen stack and the routing of events live in `:core:device`
+    (ADR-019). The main menu and the mapping from exits to keys live in `:app`.
 13. `[convention]` The app is locked to portrait, and the device has one layout.
 14. `[convention]` Text on the display follows the system font scale (ADR-017). The wheel's label
     and icons don't, as an exception marked under ADR-017's rule 10.
