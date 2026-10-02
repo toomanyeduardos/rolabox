@@ -55,6 +55,9 @@ class RolaboxTextStyles internal constructor(
     /** The wheel's MENU label. It doesn't follow the font scale: the wheel draws it at this size in dp. */
     internal val wheelLabel = typography.wheelLabel.copy(color = colors.wheelGlyph)
 
+    /** The title in the header of the device's display. It is on the display's white, in both themes. */
+    internal val displayTitle = typography.displayTitle.copy(color = colors.displayInk)
+
     /** Every role with its name, for the type specimen. */
     internal val all: List<Pair<String, TextStyle>>
         get() = listOf(
@@ -80,6 +83,7 @@ class RolaboxTextStyles internal constructor(
             "lcd" to lcd,
             "lcdBadge" to lcdBadge,
             "wheelLabel" to wheelLabel,
+            "displayTitle" to displayTitle,
         )
 }
 

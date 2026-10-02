@@ -10,6 +10,7 @@
     <string name="ds_strength_fair">Fair</string>
     <string name="ds_strength_good">Good</string>
     <string name="ds_strength_strong">Strong</string>
+    <string name="ds_battery_level">Battery %1$d percent</string>
     <!-- The wordmark is "r", the vinyl, then "labox". -->
     <string name="ds_wordmark_start">r</string>
     <string name="ds_wordmark_end">labox</string>
