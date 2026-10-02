@@ -12,6 +12,9 @@ private const val FEATURE_PREFIX = ":feature:"
 private const val COMMON_PATH = ":core:common"
 private const val DESIGNSYSTEM_PATH = ":core:designsystem"
 
+// The device host: a utility module that features build their device screens on (ADR-019).
+private const val DEVICE_PATH = ":core:device"
+
 // Holds the use cases that combine more than one area (ADR-003).
 private const val DOMAIN_PATH = ":core:domain"
 
@@ -27,8 +30,9 @@ private val SHARED_JVM_PATHS = setOf(COMMON_PATH, DOMAIN_PATH)
 // Besides *:api modules. :core:common is a utility module with nothing to hide behind an :api.
 private val API_ALLOWED_PATHS = setOf(COMMON_PATH)
 private val IMPL_ALLOWED_PATHS = setOf(COMMON_PATH)
-private val FEATURE_ALLOWED_PATHS = setOf(COMMON_PATH, DESIGNSYSTEM_PATH, DOMAIN_PATH)
+private val FEATURE_ALLOWED_PATHS = setOf(COMMON_PATH, DESIGNSYSTEM_PATH, DEVICE_PATH, DOMAIN_PATH)
 private val UI_ALLOWED_PATHS = setOf(COMMON_PATH, DESIGNSYSTEM_PATH, DOMAIN_PATH)
+private val DEVICE_ALLOWED_PATHS = setOf(COMMON_PATH, DESIGNSYSTEM_PATH)
 
 private val ANDROID_PLUGINS = listOf("com.android.application", "com.android.library")
 private const val DAGGER_GROUP = "com.google.dagger"
@@ -125,7 +129,7 @@ private fun projectDependencyViolation(modulePath: String, dependencyPath: Strin
         modulePath.startsWith(FEATURE_PREFIX) && !dependencyPath.isTesting() && !dependencyPath.isUi() &&
             !dependencyPath.isApiOrIn(FEATURE_ALLOWED_PATHS) ->
             "ADR-003 rule 4: feature modules may only depend on *:api and *:ui modules, $DOMAIN_PATH, " +
-                "$COMMON_PATH and $DESIGNSYSTEM_PATH"
+                "$COMMON_PATH, $DESIGNSYSTEM_PATH and $DEVICE_PATH"
 
         dependencyPath.isUi() && modulePath != APP_PATH && !modulePath.startsWith(FEATURE_PREFIX) ->
             "ADR-003 rule 17: only feature modules and $APP_PATH may depend on *:ui modules"
@@ -133,6 +137,12 @@ private fun projectDependencyViolation(modulePath: String, dependencyPath: Strin
         modulePath.isUi() && !dependencyPath.isTesting() && !dependencyPath.isApiOrIn(UI_ALLOWED_PATHS) ->
             "ADR-003 rule 16: *:ui modules may only depend on *:api modules, $DOMAIN_PATH, $COMMON_PATH " +
                 "and $DESIGNSYSTEM_PATH"
+
+        dependencyPath == DEVICE_PATH && modulePath != APP_PATH && !modulePath.startsWith(FEATURE_PREFIX) ->
+            "ADR-003 rule 19: only feature modules and $APP_PATH may depend on $DEVICE_PATH"
+
+        modulePath == DEVICE_PATH && !dependencyPath.isTesting() && dependencyPath !in DEVICE_ALLOWED_PATHS ->
+            "ADR-003 rule 18: $DEVICE_PATH may only depend on $DESIGNSYSTEM_PATH and $COMMON_PATH"
 
         modulePath.isApi() && !dependencyPath.isApiOrIn(API_ALLOWED_PATHS) ->
             "ADR-003 rule 6: *:api modules may only depend on other *:api modules and $COMMON_PATH"

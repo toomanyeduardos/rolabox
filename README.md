@@ -204,6 +204,7 @@ such as an SDK step that shows system UI, also has a `:ui` module
 | `:core:domain` | Use cases that combine more than one area, such as `ResolveStartDestinationUseCase` (pure Kotlin) |
 | `:core:common` | Utility: coroutine dispatchers, helpers that turn exceptions into typed errors |
 | `:core:designsystem` | Utility: theme and shared composables |
+| `:core:device` | Utility: the device host (the screen stack inside the display, wheel event routing) and the contract device screens use |
 | `:core:testing` | Utility, test-only: Hilt test runner, `MainDispatcherRule` |
 | `:feature:account` | Sign-in and account UI |
 | `:feature:settings` | Settings UI |
@@ -214,10 +215,11 @@ The full set of rules, and the reasoning behind them, is in [ADR-003](docs/adr/0
 
 - Feature modules never depend on other feature modules, and only `:app` depends on feature modules.
 - Only `:app` depends on `:impl` modules, and an `:impl` depends only on `:api` modules and `:core:common`.
-- Feature modules depend only on `:api` and `:ui` modules, `:core:domain`, `:core:common` and `:core:designsystem`.
+- Feature modules depend only on `:api` and `:ui` modules, `:core:domain`, `:core:common`, `:core:designsystem` and `:core:device`.
 - `:ui` modules depend only on `:api` modules, `:core:domain`, `:core:common` and `:core:designsystem`, and only features and `:app` depend on them. They have no ViewModels or navigation destinations.
 - `:api` modules, `:core:common` and `:core:domain` are JVM modules. `:api` modules depend only on `:core:common` and other `:api` modules, with no Hilt. `:core:domain` depends only on `:api` modules and `:core:common`.
 - `:core:designsystem` depends only on `:core:common`.
+- `:core:device` depends only on `:core:designsystem` and `:core:common`, and only features and `:app` depend on it.
 - Testing modules (`:core:testing` and every `:core:<area>:testing`) are only used from test configurations.
 
 `:api` modules hold only interfaces and models (plus pure-logic use cases), and there is no shared model module: each type lives in the `:api` of the area that owns it.
@@ -239,6 +241,7 @@ graph TD
     core_auth_ui[":core:auth:ui"]
     core_common[":core:common"]
     core_designsystem[":core:designsystem"]
+    core_device[":core:device"]
     core_domain[":core:domain"]
     core_storage_api[":core:storage:api"]
     core_storage_impl[":core:storage:impl"]
@@ -256,6 +259,7 @@ graph TD
     app --> core_auth_impl
     app --> core_auth_ui
     app --> core_designsystem
+    app --> core_device
     app --> core_domain
     app --> core_storage_api
     app --> core_storage_impl
@@ -270,6 +274,7 @@ graph TD
     core_auth_testing --> core_auth_api
     core_auth_ui --> core_auth_api
     core_auth_ui --> core_designsystem
+    core_device --> core_designsystem
     core_domain --> core_auth_api
     core_domain --> core_storage_api
     core_domain --> core_userdata_api

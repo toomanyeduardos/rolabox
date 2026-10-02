@@ -1,4 +1,4 @@
-package com.eduardoflores.rolabox.device
+package com.eduardoflores.rolabox.core.device
 
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
@@ -14,7 +14,8 @@ class WheelEventRouterTest {
 
     private val stack = ScreenStack(NavBackStack(First))
     private val inputs = ScreenInputs()
-    private val router = WheelEventRouter(stack, inputs)
+    private val playbackReceived = mutableListOf<WheelEvent>()
+    private val router = WheelEventRouter(stack, inputs) { playbackReceived += it }
     private val firstReceived = mutableListOf<WheelEvent>()
     private val secondReceived = mutableListOf<WheelEvent>()
 
@@ -23,7 +24,7 @@ class WheelEventRouterTest {
         inputs.register(Second) { secondReceived += it }
     }
 
-    private val ignored = listOf(
+    private val playbackEvents = listOf(
         WheelEvent.Previous,
         WheelEvent.Next,
         WheelEvent.PlayPause,
@@ -93,12 +94,25 @@ class WheelEventRouterTest {
     }
 
     @Test
-    fun playbackButtons_areIgnored() {
+    fun playbackButtons_goToTheirHandler_andNoScreenSeesThem() {
         stack.push(Second)
 
-        ignored.forEach(router::route)
+        playbackEvents.forEach(router::route)
 
+        assertEquals(playbackEvents, playbackReceived)
         assertEquals(listOf<NavKey>(First, Second), stack.keys)
         assertEquals(emptyList<WheelEvent>(), firstReceived + secondReceived)
+    }
+
+    @Test
+    fun turnCenterAndMenu_neverReachThePlaybackHandler() {
+        stack.push(Second)
+
+        router.route(WheelEvent.Turn(1))
+        router.route(WheelEvent.Center)
+        router.route(WheelEvent.Menu)
+        router.route(WheelEvent.HoldMenu)
+
+        assertEquals(emptyList<WheelEvent>(), playbackReceived)
     }
 }

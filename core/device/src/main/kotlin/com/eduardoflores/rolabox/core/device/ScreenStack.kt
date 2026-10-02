@@ -1,14 +1,18 @@
-package com.eduardoflores.rolabox.device
+package com.eduardoflores.rolabox.core.device
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.rememberNavBackStack
 import com.eduardoflores.rolabox.core.designsystem.wheel.WheelEvent
 
 /**
  * The stack of screens inside the device's display (ADR-018): linear, and starting at its first
- * screen. Only `:app` changes it, in response to the wheel and the system's back.
+ * screen. `:app` decides every push, and only the host pops, in response to the wheel and the
+ * system's back (ADR-019).
  */
-internal class ScreenStack(private val backStack: NavBackStack<NavKey>) {
+class ScreenStack internal constructor(private val backStack: NavBackStack<NavKey>) {
     val keys: List<NavKey> get() = backStack
 
     val top: NavKey get() = backStack.last()
@@ -17,15 +21,22 @@ internal class ScreenStack(private val backStack: NavBackStack<NavKey>) {
         backStack.add(key)
     }
 
-    /** Goes back one screen. The first screen stays: the system's back leaves the app from there. */
-    fun pop() {
+    /** Goes back one screen. The first screen stays: the system's back leaves the device from there. */
+    internal fun pop() {
         if (backStack.size > 1) backStack.removeAt(backStack.lastIndex)
     }
 
     /** Goes back to the first screen. */
-    fun popToRoot() {
+    internal fun popToRoot() {
         while (backStack.size > 1) backStack.removeAt(backStack.lastIndex)
     }
+}
+
+/** The screen stack, starting at [startKey], saved across process death with the entry the device is in. */
+@Composable
+fun rememberScreenStack(startKey: NavKey): ScreenStack {
+    val backStack = rememberNavBackStack(startKey)
+    return remember(backStack) { ScreenStack(backStack) }
 }
 
 /**
@@ -51,9 +62,14 @@ internal class ScreenInputs {
 
 /**
  * Decides where each wheel event goes (ADR-018, rule 5). The screens never see MENU or the playback
- * buttons, so none of them can change what those do.
+ * buttons, so none of them can change what those do. The playback buttons go to [onPlaybackEvent],
+ * so the host doesn't depend on the playback area (ADR-019).
  */
-internal class WheelEventRouter(private val stack: ScreenStack, private val inputs: ScreenInputs) {
+internal class WheelEventRouter(
+    private val stack: ScreenStack,
+    private val inputs: ScreenInputs,
+    private val onPlaybackEvent: (WheelEvent) -> Unit,
+) {
     fun route(event: WheelEvent) {
         when (event) {
             is WheelEvent.Turn, WheelEvent.Center -> inputs.dispatch(stack.top, event)
@@ -62,13 +78,12 @@ internal class WheelEventRouter(private val stack: ScreenStack, private val inpu
 
             WheelEvent.HoldMenu -> stack.popToRoot()
 
-            // Received and ignored until playback exists.
             WheelEvent.Previous,
             WheelEvent.Next,
             WheelEvent.PlayPause,
             is WheelEvent.HoldPrevious,
             is WheelEvent.HoldNext,
-            -> Unit
+            -> onPlaybackEvent(event)
         }
     }
 }

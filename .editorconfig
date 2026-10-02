@@ -17,7 +17,8 @@ ij_kotlin_allow_trailing_comma_on_call_site = true
 ktlint_function_naming_ignore_when_annotated_with = Composable
 # Compose rules (io.nlopez.compose.rules): https://mrmans0n.github.io/compose-rules/ktlint/
 # The metal palette has no Material role, so the theme provides it through its own CompositionLocal.
-compose_allowed_composition_locals = LocalMetalColors,LocalRolaboxTextStyles
+# The device host gives each screen its input through one, so a screen doesn't name its key (ADR-019).
+compose_allowed_composition_locals = LocalMetalColors,LocalRolaboxTextStyles,LocalScreenInput
 
 [*.{yml,yaml,json,toml}]
 indent_size = 2

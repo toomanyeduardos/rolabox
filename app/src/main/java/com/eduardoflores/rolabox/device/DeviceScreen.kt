@@ -1,51 +1,33 @@
 package com.eduardoflores.rolabox.device
 
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewLightDark
+import androidx.navigation3.runtime.entryProvider
 import com.eduardoflores.rolabox.R
-import com.eduardoflores.rolabox.core.designsystem.component.DeviceBody
-import com.eduardoflores.rolabox.core.designsystem.component.DeviceDisplay
 import com.eduardoflores.rolabox.core.designsystem.component.DeviceList
 import com.eduardoflores.rolabox.core.designsystem.component.DeviceListRow
-import com.eduardoflores.rolabox.core.designsystem.component.Wheel
 import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxTheme
-import com.eduardoflores.rolabox.core.designsystem.wheel.WheelEvent
+import com.eduardoflores.rolabox.core.device.DeviceHost
+import com.eduardoflores.rolabox.core.device.DeviceScreen
+import com.eduardoflores.rolabox.core.device.rememberScreenStack
 
-/** The signed-in app's destination (ADR-018): the body, the display with its screen stack, and the wheel. */
+/**
+ * The signed-in app's destination (ADR-018): the device host with this app's screens (ADR-019).
+ * `:app` gives the host its first screen and its entries, and pushes in response to their exits.
+ */
 @Composable
 internal fun DeviceRoute(modifier: Modifier = Modifier) {
-    val stack = rememberScreenStack()
-    val inputs = remember { ScreenInputs() }
-    val router = remember(stack, inputs) { WheelEventRouter(stack, inputs) }
-    DeviceScreen(
-        batteryLevel = rememberBatteryLevel(),
-        onWheelEvent = router::route,
+    val stack = rememberScreenStack(FirstPlaceholderKey)
+    DeviceHost(
+        stack = stack,
+        title = stringResource(R.string.app_name),
+        entryProvider = entryProvider { placeholderEntries(onDeeperClick = { stack.push(SecondPlaceholderKey) }) },
+        // Received and ignored until playback exists.
+        onPlaybackEvent = {},
         modifier = modifier,
-    ) {
-        ScreenStackDisplay(stack, inputs, Modifier.fillMaxSize())
-    }
-}
-
-/** Stateless, so it can be previewed and snapshotted: the display shows whatever [content] draws. */
-@Composable
-internal fun DeviceScreen(
-    batteryLevel: Float,
-    onWheelEvent: (WheelEvent) -> Unit,
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit,
-) {
-    DeviceBody(wheel = { Wheel(onEvent = onWheelEvent) }, modifier = modifier) {
-        DeviceDisplay(
-            title = stringResource(R.string.app_name),
-            batteryLevel = batteryLevel,
-            modifier = Modifier.weight(1f),
-            content = content,
-        )
-    }
+    )
 }
 
 @PreviewLightDark
@@ -59,7 +41,7 @@ private fun DeviceScreenPreview() {
         DeviceListRow(stringResource(R.string.device_settings), opensSubmenu = true),
     )
     RolaboxTheme {
-        DeviceScreen(batteryLevel = 0.7f, onWheelEvent = {}) {
+        DeviceScreen(title = stringResource(R.string.app_name), batteryLevel = 0.7f, onWheelEvent = {}) {
             DeviceList(rows = rows, highlightedIndex = 0)
         }
     }
