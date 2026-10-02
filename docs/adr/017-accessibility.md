@@ -4,6 +4,10 @@
 - **Date:** 2026-10-01
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review
+- **Revised 2026-10-02:** Rule 9 now covers the device host, `:core:device`
+  ([ADR-019](019-device-host-module.md)), besides the design system and the area `:ui` modules.
+  ADR-019 added a third kind of module whose composables show text to other modules, and rule 9
+  named only the first two, so rule 3 didn't see a fixed height around the host's composables.
 
 ## Context
 
@@ -190,9 +194,9 @@ The Google sign-in button is, within Google's branding rules.
    1.5x render to a light preview that declares none.
 8. `[convention]` A pull request that adds or changes a 1.5x golden is reviewed against rules 4 to
    6, not only for whether the image changed.
-9. `[convention]` A new composable that shows text, in the design system or in an area `:ui`
-   module, is added to `textComposables` in `config/detekt/detekt.yml`, so rule 3 sees the
-   containers around it.
+9. `[convention]` A new composable that shows text, in the design system, in an area `:ui` module
+   or in `:core:device`, is added to `textComposables` in `config/detekt/detekt.yml`, so rule 3
+   sees the containers around it.
 10. `[convention]` An exception to rule 2 or 3 carries a `@Suppress` with a comment that names the
     rule and says why.
 

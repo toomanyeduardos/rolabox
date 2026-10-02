@@ -1,10 +1,6 @@
 package com.eduardoflores.rolabox.device
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
@@ -13,6 +9,7 @@ import com.eduardoflores.rolabox.core.designsystem.component.DeviceList
 import com.eduardoflores.rolabox.core.designsystem.component.DeviceListRow
 import com.eduardoflores.rolabox.core.designsystem.wheel.WheelEvent
 import com.eduardoflores.rolabox.core.device.HandleWheelEvents
+import com.eduardoflores.rolabox.core.device.rememberListHighlight
 import kotlinx.serialization.Serializable
 
 private const val PLACEHOLDER_ROWS = 8
@@ -41,13 +38,13 @@ internal fun EntryProviderScope<NavKey>.placeholderEntries(onDeeperClick: () -> 
  */
 @Composable
 private fun PlaceholderScreen(label: String, onCenter: () -> Unit) {
-    var highlighted by rememberSaveable { mutableIntStateOf(0) }
+    val highlight = rememberListHighlight()
     HandleWheelEvents { event ->
         when (event) {
-            is WheelEvent.Turn -> highlighted = (highlighted + event.steps).coerceIn(0, PLACEHOLDER_ROWS - 1)
+            is WheelEvent.Turn -> highlight.move(event.steps, PLACEHOLDER_ROWS)
             WheelEvent.Center -> onCenter()
             else -> Unit
         }
     }
-    DeviceList(rows = List(PLACEHOLDER_ROWS) { DeviceListRow("$label ${it + 1}") }, highlightedIndex = highlighted)
+    DeviceList(rows = List(PLACEHOLDER_ROWS) { DeviceListRow("$label ${it + 1}") }, highlightedIndex = highlight.index)
 }
