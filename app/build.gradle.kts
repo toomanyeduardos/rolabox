@@ -3,6 +3,7 @@ plugins {
     id("rolabox.android.application.firebase")
     id("rolabox.android.compose")
     id("rolabox.hilt")
+    id("rolabox.android.paparazzi")
     id("rolabox.navigation")
 }
 

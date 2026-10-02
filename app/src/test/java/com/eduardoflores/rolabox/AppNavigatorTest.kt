@@ -14,13 +14,13 @@ class AppNavigatorTest {
     private fun navigator(flow: NavigationFlow) = AppNavigator(
         flowState = mutableStateOf(flow),
         authBackStack = NavBackStack(First),
-        mainBackStack = NavBackStack(HomeKey),
+        mainBackStack = NavBackStack(DeviceKey),
     )
 
     @Test
     fun startsOnTheGivenFlow() {
         assertEquals(NavigationFlow.Auth, navigator(NavigationFlow.Auth).flow)
-        assertEquals(listOf<NavKey>(HomeKey), navigator(NavigationFlow.Main).currentBackStack.toList())
+        assertEquals(listOf<NavKey>(DeviceKey), navigator(NavigationFlow.Main).currentBackStack.toList())
     }
 
     @Test
@@ -44,14 +44,14 @@ class AppNavigatorTest {
     }
 
     @Test
-    fun leaveAuth_showsHomeAndForgetsTheAuthScreens() {
+    fun leaveAuth_showsTheDeviceAndForgetsTheAuthScreens() {
         val navigator = navigator(NavigationFlow.Auth)
         navigator.push(Second)
 
         navigator.leaveAuth()
 
         assertEquals(NavigationFlow.Main, navigator.flow)
-        assertEquals(listOf<NavKey>(HomeKey), navigator.currentBackStack.toList())
+        assertEquals(listOf<NavKey>(DeviceKey), navigator.currentBackStack.toList())
     }
 
     @Test
@@ -63,6 +63,6 @@ class AppNavigatorTest {
         navigator.pop()
 
         assertEquals(NavigationFlow.Main, navigator.flow)
-        assertEquals(listOf<NavKey>(HomeKey), navigator.currentBackStack.toList())
+        assertEquals(listOf<NavKey>(DeviceKey), navigator.currentBackStack.toList())
     }
 }

@@ -13,9 +13,9 @@ import com.eduardoflores.rolabox.core.domain.StartDestination
 import com.eduardoflores.rolabox.feature.account.SignInKey
 import kotlinx.serialization.Serializable
 
-/** The signed-in app's first screen. It's a section of its own once there are more (ADR-012). */
+/** The signed-in app's first screen: the device (ADR-018). */
 @Serializable
-internal data object HomeKey : NavKey
+internal data object DeviceKey : NavKey
 
 /** The two parts of the app, each with a back stack of its own. */
 internal enum class NavigationFlow { Auth, Main }
@@ -78,6 +78,6 @@ internal fun rememberAppNavigator(startDestination: StartDestination): AppNaviga
     // Both stacks are always created, so that a flow can be entered later. The auth stack is emptied
     // when it's left, and doesn't come back.
     val authBackStack = rememberNavBackStack(SignInKey)
-    val mainBackStack = rememberNavBackStack(HomeKey)
+    val mainBackStack = rememberNavBackStack(DeviceKey)
     return AppNavigator(flowState, authBackStack, mainBackStack)
 }
