@@ -99,5 +99,8 @@ rolabox:
       - 'TextAction'
       - 'RolaboxTopBar'
       - 'Wheel'
+      - 'DeviceBody'
+      - 'DeviceDisplay'
+      - 'DeviceHeader'
       - 'GoogleButton'
       - 'SignInButton'
