@@ -1,5 +1,6 @@
 package com.eduardoflores.rolabox.core.device
 
+import androidx.compose.runtime.saveable.SaverScope
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -43,5 +44,16 @@ class ListHighlightTest {
         highlight.move(steps = 0, rowCount = 3)
 
         assertEquals(2, highlight.index)
+    }
+
+    @Test
+    fun saver_restoresTheRowTheUserLeft() {
+        highlight.move(steps = 3, rowCount = 8)
+        val scope = SaverScope { true }
+
+        val saved = with(ListHighlight.Saver) { scope.save(highlight) }
+        val restored = ListHighlight.Saver.restore(checkNotNull(saved))
+
+        assertEquals(3, restored?.index)
     }
 }
