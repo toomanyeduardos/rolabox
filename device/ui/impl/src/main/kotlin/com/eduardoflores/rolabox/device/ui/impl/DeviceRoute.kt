@@ -7,6 +7,12 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import com.eduardoflores.rolabox.device.host.DeviceHost
 import com.eduardoflores.rolabox.device.host.rememberScreenStack
+import com.eduardoflores.rolabox.device.music.api.AlbumSongsKey
+import com.eduardoflores.rolabox.device.music.api.ArtistAlbumsKey
+import com.eduardoflores.rolabox.device.music.api.ArtistSongsKey
+import com.eduardoflores.rolabox.device.music.api.ArtistsKey
+import com.eduardoflores.rolabox.device.music.api.MusicEntries
+import com.eduardoflores.rolabox.device.music.api.MusicMenuKey
 import com.eduardoflores.rolabox.device.settings.api.SettingsKey
 import com.eduardoflores.rolabox.device.ui.api.MainMenuKey
 
@@ -15,19 +21,32 @@ import com.eduardoflores.rolabox.device.ui.api.MainMenuKey
  * assembles itself here (ADR-020): it gives the host its first screen and its entries, maps their
  * exits to keys, pushes on the screen stack, and handles the playback buttons.
  *
+ * [musicEntries] adds the music screens, whose exits are mapped to keys here and pushed.
  * [onOpenFullScreen] is the generic exit, which leaves the display for a full screen on the app stack.
  */
 @Composable
-internal fun DeviceRoute(onOpenFullScreen: (NavKey) -> Unit, modifier: Modifier = Modifier) {
+internal fun DeviceRoute(
+    musicEntries: MusicEntries,
+    onOpenFullScreen: (NavKey) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val stack = rememberScreenStack(MainMenuKey)
     DeviceHost(
         stack = stack,
         title = stringResource(R.string.device_title),
         entryProvider = entryProvider {
             mainMenuEntry(
-                // Opens the Music menu once it exists (37.09).
-                onMusicClick = {},
+                onMusicClick = { stack.push(MusicMenuKey) },
                 onSettingsClick = { onOpenFullScreen(SettingsKey) },
+            )
+            musicEntries.screenStackEntries(
+                scope = this,
+                onArtistsClick = { stack.push(ArtistsKey) },
+                onArtistClick = { artistId -> stack.push(ArtistAlbumsKey(artistId)) },
+                onAllSongsClick = { artistId -> stack.push(ArtistSongsKey(artistId)) },
+                onAlbumClick = { albumId -> stack.push(AlbumSongsKey(albumId)) },
+                // Received and ignored until playback exists.
+                onSongClick = {},
             )
         },
         // Received and ignored until playback exists.

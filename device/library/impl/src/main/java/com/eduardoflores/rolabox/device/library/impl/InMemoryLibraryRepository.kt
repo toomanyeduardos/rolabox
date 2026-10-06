@@ -39,6 +39,14 @@ internal class InMemoryLibraryRepository @Inject constructor() : LibraryReposito
         },
     )
 
+    override fun observeSongsByArtist(artistId: ArtistId): Flow<Either<LibraryError, List<Song>>> = flowOf(
+        if (artists.any { it.id == artistId }) {
+            songs.filter { it.artistId == artistId }.right()
+        } else {
+            LibraryError.ArtistNotFound(artistId).left()
+        },
+    )
+
     override fun observeSongsByAlbum(albumId: AlbumId): Flow<Either<LibraryError, List<Song>>> = flowOf(
         if (albums.any { it.id == albumId }) {
             library.songs.filter { it.albumId == albumId }.sortedBy { it.trackNumber }.right()

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><meta name="design_doc_mode" content="canvas"><style>body{margin:0;background:#ecebe8;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}a{color:#E4572E}a:hover{color:#b8401f}@keyframes rbspin{to{transform:rotate(360deg)}}</style></helmet>
+<section id="t1" style="padding:40px 44px 48px">
+<div style="display:flex;align-items:baseline;gap:10px;margin:0 0 20px"><span style="font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px">1</span><span style="font-weight:600;font-size:13px;color:#1a1a1a">Device screen: display + wheel</span></div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px;max-width:1560px;margin:0 0 32px;font-size:12.5px;line-height:1.5;color:#4a4a4a;text-wrap:pretty">
+<div><div style="font-weight:700;color:#1a1a1a;margin-bottom:4px">Two parts</div>The display (top) is the only area that changes. The aluminum body and the wheel stay fixed. Menus slide in from the right when you go deeper and slide out when you press MENU.</div>
+<div><div style="font-weight:700;color:#1a1a1a;margin-bottom:4px">Wheel</div>Turn: move the highlight (in menus) or change the volume (on Now Playing). Center: select. MENU: back. ⏮ ⏭: previous/next track. ⏯: play/pause. A haptic tick fires on each highlight change.</div>
+<div><div style="font-weight:700;color:#1a1a1a;margin-bottom:4px">Status</div>The display stays white on both finishes, so text reads the same on either. The vinyl in the display header spins while audio plays. It's hidden before anything is loaded. Playback continues while you browse (see 09).</div>
+<div><div style="font-weight:700;color:#1a1a1a;margin-bottom:4px">Orange</div>The highlighted row is glossy blue, with a lighter top half and a darker bottom half. Orange, the brand color, is only used for unplayed dots, the scrub knob and the vinyl label.</div>
+</div>
+<sc-for list="{{ themes }}" as="th" hint-placeholder-count="2">
+<div style="margin:0 0 40px">
+<div style="font:700 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;color:#6a6a6a;margin:0 0 14px">{{ th.name }}</div>
+<div style="display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start">
+<sc-for list="{{ th.screens }}" as="s" hint-placeholder-count="9">
+<div style="display:flex;flex-direction:column;gap:6px;width:360px">
+<div style="display:flex;align-items:baseline;gap:8px;font-size:12px;color:#1a1a1a"><span style="font:600 10.5px ui-monospace,Menlo,monospace;padding:2px 6px;background:rgba(0,0,0,.08);border-radius:4px">{{ s.num }}</span><span style="font-weight:600">{{ s.label }}</span></div>
+<div style="font-size:11.5px;line-height:1.4;color:rgba(0,0,0,.55);min-height:32px;text-wrap:pretty">{{ s.how }}</div>
+<div data-screen-label="{{ s.num }} {{ s.label }} · {{ th.key }}" style="width:360px;height:760px;border-radius:40px;box-shadow:0 26px 44px -22px rgba(0,0,0,.5),0 2px 4px rgba(0,0,0,.12);box-sizing:border-box">
+<div style="position:relative;width:100%;height:100%;border-radius:40px;overflow:hidden;display:flex;flex-direction:column;box-shadow:inset 0 1px 1px rgba(255,255,255,.45),inset 0 0 0 1px rgba(0,0,0,.14),inset 0 -2px 3px rgba(0,0,0,.08);background:{{ th.t.body }};color:{{ th.t.ink }}">
+<div style="height:34px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:12.5px;font-weight:600"><span>9:41</span><div style="width:10px;height:10px;border-radius:50%;background:#050505"></div><span>100%</span></div>
+<div style="margin:8px 14px 0;padding:4px;border-radius:14px;background:{{ th.t.bezel }};box-shadow:inset 0 1px 3px rgba(0,0,0,.45),0 1px 0 {{ th.t.hi }}">
+<div style="height:318px;border-radius:10px;overflow:hidden;display:flex;flex-direction:column;background:{{ th.t.screen }};color:{{ th.t.sInk }}">
+<div style="height:28px;flex:none;display:grid;grid-template-columns:44px 1fr 44px;align-items:center;padding:0 10px;background:{{ th.t.hdr }};border-bottom:1px solid {{ th.t.sRule }}">
+<div style="display:flex;align-items:center">{{ s.ind }}</div>
+<div style="text-align:center;font-size:13px;font-weight:700;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.title }}</div>
+<div style="display:flex;justify-content:flex-end;align-items:center;gap:1px"><div style="width:18px;height:9px;border-radius:2px;border:1.5px solid {{ th.t.sInk }};padding:1px;box-sizing:border-box"><div style="width:70%;height:100%;border-radius:1px;background:{{ th.t.sInk }}"></div></div><div style="width:2px;height:4px;border-radius:0 1px 1px 0;background:{{ th.t.sInk }}"></div></div>
+</div>
+<sc-if value="{{ s.isList }}" hint-placeholder-val="{{ true }}">
+<div style="position:relative;flex:1">
+<sc-for list="{{ s.rows }}" as="r" hint-placeholder-count="6">
+<div style="height:32px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 {{ s.padR }} 0 12px;font-size:16px;letter-spacing:-.01em;font-weight:{{ r.fw }};background:{{ r.bg }};color:{{ r.fg }}">
+<span style="display:flex;align-items:center;gap:8px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="display:{{ r.dotD }};flex:none;width:7px;height:7px;border-radius:50%;background:{{ r.dotC }}"></span>{{ r.t }}</span>
+<span style="display:{{ r.chevD }};font-size:18px;line-height:1;margin-top:-2px;opacity:.75">›</span>
+</div>
+</sc-for>
+<div style="display:{{ s.sbD }};position:absolute;right:3px;top:4px;bottom:4px;width:4px;border-radius:2px;background:{{ th.t.sRule }}"><div style="position:absolute;left:0;right:0;top:{{ s.thumbTop }};height:{{ s.thumbH }};border-radius:2px;background:{{ th.t.sMuted }}"></div></div>
+</div>
+</sc-if>
+<sc-if value="{{ s.isPlayer }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;padding:10px 12px 12px;gap:12px">
+<div style="display:flex;justify-content:space-between;font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.06em;color:{{ th.t.sMuted }}"><span>{{ s.pos }}</span><span style="color:{{ s.tagC }}">{{ s.tag }}</span></div>
+<div style="display:flex;gap:12px;align-items:center">
+<div style="width:108px;height:108px;flex:none;border-radius:4px;display:flex;align-items:center;justify-content:center;background:{{ th.t.art }};box-shadow:0 0 0 1px {{ th.t.sRule }},0 4px 10px -4px rgba(0,0,0,.35);font:600 9px ui-monospace,Menlo,monospace;letter-spacing:.1em;color:{{ th.t.sMuted }}">COVER ART</div>
+<div style="display:flex;flex-direction:column;gap:4px;min-width:0">
+<div style="font-size:16px;font-weight:700;letter-spacing:-.01em;line-height:1.2">{{ s.song }}</div>
+<div style="font-size:14px;line-height:1.25">{{ s.artist }}</div>
+<div style="font-size:13px;line-height:1.25;color:{{ th.t.sMuted }}">{{ s.album }}</div>
+</div>
+</div>
+<div style="flex:1"></div>
+<div style="display:flex;flex-direction:column;gap:7px">
+<div style="position:relative;height:{{ s.barH }};border-radius:4px;background:{{ th.t.track }}">
+<div style="position:absolute;left:0;top:0;bottom:0;width:{{ s.pct }};border-radius:4px;background:{{ s.fillC }}"></div>
+<div style="display:{{ s.knobD }};position:absolute;left:{{ s.pct }};top:50%;width:12px;height:12px;transform:translate(-50%,-50%) rotate(45deg);border-radius:2px;background:#E4572E;box-shadow:0 1px 3px rgba(0,0,0,.35)"></div>
+</div>
+<div style="display:flex;justify-content:space-between;font:600 11px/1 ui-monospace,Menlo,monospace;color:{{ th.t.sMuted }};font-variant-numeric:tabular-nums"><span>{{ s.lt }}</span><span>{{ s.rt }}</span></div>
+</div>
+</div>
+</sc-if>
+</div>
+</div>
+<div style="flex:1;display:flex;align-items:center;justify-content:center">
+<div style="position:relative;width:268px;height:268px;border-radius:50%;background:{{ th.t.ring }};box-shadow:{{ th.t.ringShadow }}">
+<div style="position:absolute;top:24px;left:0;right:0;text-align:center;font:700 14px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.08em;color:{{ s.w.menu }}">MENU</div>
+<div style="position:absolute;left:26px;top:50%;transform:translateY(-50%);display:flex;align-items:center"><div style="width:2px;height:12px;background:{{ s.w.prev }}"></div><div style="width:0;height:0;border-top:6px solid transparent;border-bottom:6px solid transparent;border-right:8px solid {{ s.w.prev }}"></div><div style="width:0;height:0;border-top:6px solid transparent;border-bottom:6px solid transparent;border-right:8px solid {{ s.w.prev }}"></div></div>
+<div style="position:absolute;right:26px;top:50%;transform:translateY(-50%);display:flex;align-items:center"><div style="width:0;height:0;border-top:6px solid transparent;border-bottom:6px solid transparent;border-left:8px solid {{ s.w.next }}"></div><div style="width:0;height:0;border-top:6px solid transparent;border-bottom:6px solid transparent;border-left:8px solid {{ s.w.next }}"></div><div style="width:2px;height:12px;background:{{ s.w.next }}"></div></div>
+<div style="position:absolute;bottom:24px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:3px"><div style="width:0;height:0;border-top:6px solid transparent;border-bottom:6px solid transparent;border-left:8px solid {{ s.w.play }}"></div><div style="width:2.5px;height:12px;background:{{ s.w.play }}"></div><div style="width:2.5px;height:12px;background:{{ s.w.play }}"></div></div>
+<div style="display:{{ s.w.turnD }};position:absolute;inset:-7px;border-radius:50%;border:2px solid transparent;border-top-color:#E4572E;border-right-color:#E4572E;transform:rotate(20deg)"></div>
+<div style="position:absolute;left:50%;top:50%;width:98px;height:98px;transform:translate(-50%,-50%);border-radius:50%;background:{{ th.t.center }};box-shadow:{{ th.t.centerShadow }}, 0 0 0 {{ s.w.centerRing }}"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-for>
+
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const hair = 'repeating-linear-gradient(90deg,rgba(255,255,255,.16) 0 1px,rgba(0,0,0,.028) 1px 2px,transparent 2px 3px)';
+    const grain = (a) => `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 ${a} 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`;
+    const scr = { screen: '#ffffff', hdr: '#ececed', hdrSolid: '#ececed', sInk: '#0e0e0f', sMuted: '#5f6368', sRule: 'rgba(0,0,0,.12)',
+      track: 'rgba(0,0,0,.12)', fill: '#3c3f44', art: 'repeating-linear-gradient(135deg,#ececed 0 6px,#e2e3e5 6px 12px)', bezel: '#1d1d1f', hi: 'transparent' };
+    const L = {
+      ...scr,
+      body: 'linear-gradient(172deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.10) 18%,rgba(255,255,255,.42) 34%,rgba(255,255,255,.08) 48%,rgba(0,0,0,0) 58%,rgba(0,0,0,.06) 78%,rgba(255,255,255,.14) 92%,rgba(0,0,0,.04) 100%),radial-gradient(130% 100% at 50% 50%,rgba(0,0,0,0) 60%,rgba(0,0,0,.12) 100%),url(assets/aluminum-silver.png)', ink: '#1c1d1f',
+      ring: '#f7f8fa', ringShadow: '0 0 0 1px rgba(0,0,0,.07)',
+      center: 'radial-gradient(circle at 50% 70%,rgba(255,255,255,.18),rgba(255,255,255,0) 70%),url(assets/aluminum-silver.png)', centerShadow: 'inset 0 1px 2px rgba(0,0,0,.12),inset 0 0 0 1px rgba(0,0,0,.06)', wl: '#a3aab3'
+    };
+    const D = {
+      ...scr,
+      body: 'linear-gradient(172deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.04) 18%,rgba(255,255,255,.14) 34%,rgba(255,255,255,.03) 48%,rgba(0,0,0,0) 58%,rgba(0,0,0,.10) 78%,rgba(255,255,255,.05) 92%,rgba(0,0,0,.08) 100%),radial-gradient(130% 100% at 50% 50%,rgba(0,0,0,0) 60%,rgba(0,0,0,.2) 100%),url(assets/aluminum-graphite.png)', ink: '#f1f1f2',
+      ring: '#2f3032', ringShadow: '0 0 0 1px rgba(0,0,0,.18)',
+      center: 'radial-gradient(circle at 50% 70%,rgba(255,255,255,.06),rgba(255,255,255,0) 70%),url(assets/aluminum-graphite.png)', centerShadow: 'inset 0 1px 2px rgba(0,0,0,.3),inset 0 0 0 1px rgba(0,0,0,.15)', wl: '#f1f1f2'
+    };
+    const disc = (size, bg, spin) => React.createElement('span', { style: { position: 'relative', display: 'inline-block', width: size, height: size, borderRadius: '50%',
+      background: `radial-gradient(circle, ${bg} 0 6%, transparent 6.5%), radial-gradient(circle, #E4572E 0 33%, transparent 33.5%), conic-gradient(from 10deg, rgba(255,255,255,0) 0deg, rgba(255,255,255,.3) 28deg, rgba(255,255,255,0) 56deg, rgba(255,255,255,0) 180deg, rgba(255,255,255,.22) 208deg, rgba(255,255,255,0) 236deg), repeating-radial-gradient(circle, #1b1b1b 0 1px, #090909 1px 2px)`,
+      boxShadow: '0 0 0 1px rgba(0,0,0,.25)', animation: spin ? 'rbspin 1.8s linear infinite' : 'none' } });
+    const I = (t, o = {}) => ({ t, chev: !!o.c, dot: !!o.d });
+    const main = [I('Music', { c: 1 }), I('Podcasts', { c: 1 }), I('Audiobooks', { c: 1 }), I('Shuffle Songs'), I('Settings', { c: 1 })];
+    const music = ['Artists', 'Albums', 'Songs', 'Genres', 'Playlists'].map(x => I(x, { c: 1 }));
+    const artists = ['Adeline Park', 'Blue Harbor', 'Cass Monroe', 'Dune Collective', 'Ellis Grey', 'Fern & Iron', 'Hollow Pines', 'Juno Vale', 'Kite Theory', 'Maren Holt', 'Northbound', 'Otis Ray', 'Pale Lanterns', 'Quiet Fleet'].map(x => I(x, { c: 1 }));
+    const albums = ['All Songs', 'Low Tide Radio', 'Paper Satellites', 'North of Here'].map(x => I(x, { c: 1 }));
+    const songs = ['Dial Tone', 'Every Other Window', 'Glasshouse', 'Tin Can Summer', 'Weather Report', 'Satellite Hymn', 'Coastline', 'Halfway Houses', 'Night Bus', 'Paper Satellites'].map(x => I(x));
+    const pods = [I('The Long Signal', { c: 1, d: 1 }), I('Field Notes', { c: 1 }), I('Small Rooms', { c: 1, d: 1 }), I('Night Shift Radio', { c: 1 }), I('Weekly Bench', { c: 1 })];
+    const P = { song: 'Glasshouse', artist: 'Maren Holt', album: 'Paper Satellites', pos: '3 OF 10' };
+    const defs = [
+      { num: '01', label: 'Main menu', how: 'The device opens here. Turn to move the highlight.', title: 'rolabox', items: main, hi: 0, play: null, w: 'turn' },
+      { num: '02', label: 'Music', how: 'Center on Music.', title: 'Music', items: music, hi: 0, play: null, w: 'center' },
+      { num: '03', label: 'Artists', how: 'Center on Artists, then turn. The list scrolls to keep the highlight visible.', title: 'Artists', items: artists, hi: 9, top: 4, play: null, w: 'turn' },
+      { num: '04', label: 'Artist → albums', how: 'Center on Maren Holt. "All Songs" comes first.', title: 'Maren Holt', items: albums, hi: 2, play: null, w: 'center' },
+      { num: '05', label: 'Album → songs', how: 'Center on Paper Satellites, then turn to Glasshouse.', title: 'Paper Satellites', items: songs, hi: 2, play: null, w: 'turn' },
+      { num: '06', label: 'Now Playing', how: 'Center on a song starts playback. MENU goes back to the song list.', player: 1, ...P, lt: '1:12', rt: '-2:29', pct: '33%', mode: 'play', play: true, w: 'center' },
+      { num: '07', label: 'Now Playing · volume', how: 'Turn the wheel. The bar switches to volume and returns to time after 2s.', player: 1, ...P, tag: 'VOLUME', lt: 'VOL', rt: '62%', pct: '62%', mode: 'vol', play: true, w: 'turn' },
+      { num: '08', label: 'Now Playing · scrub', how: 'Press center, then turn to scrub. Returns to volume after 3s idle.', player: 1, ...P, tag: 'SCRUB', lt: '1:48', rt: '-1:53', pct: '49%', mode: 'scrub', play: true, w: 'center' },
+      { num: '09', label: 'Podcasts (still playing)', how: 'MENU back to the main menu, then Podcasts. The spinning vinyl shows music is still playing. Dots mark unplayed episodes.', title: 'Podcasts', items: pods, hi: 0, play: true, w: 'menu' }
+    ];
+    const V = 8;
+    const build = (t, bg) => defs.map(d => {
+      const w = { menu: t.wl, prev: t.wl, next: t.wl, play: t.wl, turnD: 'none', centerRing: '0 transparent' };
+      const s = { num: d.num, label: d.label, how: d.how, w, ind: d.play == null ? null : disc(13, bg, d.play) };
+      if (d.player) {
+        const scrub = d.mode === 'scrub', vol = d.mode === 'vol';
+        return { ...s, isList: false, isPlayer: true, title: 'Now Playing', song: d.song, artist: d.artist, album: d.album, pos: d.pos,
+          tag: d.tag || '', tagC: scrub ? '#E4572E' : t.sMuted, lt: d.lt, rt: d.rt, pct: d.pct,
+          barH: scrub ? '8px' : '6px', fillC: scrub ? '#E4572E' : vol ? t.sInk : t.fill, knobD: scrub ? 'block' : 'none' };
+      }
+      const top = d.top || 0, n = d.items.length, scroll = n > V;
+      const rows = d.items.slice(top, top + V).map((it, i) => {
+        const on = top + i === d.hi;
+        return { t: it.t, chevD: it.chev ? 'block' : 'none', dotD: it.dot ? 'block' : 'none', dotC: on ? '#fff' : '#E4572E',
+          bg: on ? 'linear-gradient(180deg,#5AA6EE 0%,#2F86DB 48%,#1F6FC4 52%,#1A62B0 100%)' : 'transparent', fg: on ? '#fff' : t.sInk, fw: 700 };
+      });
+      return { ...s, isList: true, isPlayer: false, title: d.title, rows, padR: scroll ? '16px' : '12px', sbD: scroll ? 'block' : 'none',
+        thumbTop: (top / n * 100).toFixed(1) + '%', thumbH: (V / n * 100).toFixed(1) + '%' };
+    });
+    return { themes: [
+      { name: 'Light · anodized aluminum', key: 'light', t: L, screens: build(L, L.hdrSolid) },
+      { name: 'Dark · gunmetal aluminum', key: 'dark', t: D, screens: build(D, D.hdrSolid) }
+    ] };
+  }
+}
+</script>
+</body>
+</html>

@@ -69,6 +69,15 @@ class FakeLibraryRepository @Inject constructor() : LibraryRepository {
             }
         }
 
+    override fun observeSongsByArtist(artistId: ArtistId): Flow<Either<LibraryError, List<Song>>> =
+        artistsState.read { artists ->
+            if (artists.any { it.id == artistId }) {
+                songs.filter { it.artistId == artistId }.sortedBy { it.title }.right()
+            } else {
+                LibraryError.ArtistNotFound(artistId).left()
+            }
+        }
+
     override fun observeSongsByAlbum(albumId: AlbumId): Flow<Either<LibraryError, List<Song>>> =
         albumsState.read { albums ->
             if (albums.any { it.id == albumId }) {

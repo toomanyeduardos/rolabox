@@ -110,6 +110,7 @@ rolabox:
       - 'DeviceBody'
       - 'DeviceDisplay'
       - 'DeviceHeader'
+      - 'DeviceMessage'
       - 'DeviceScreen'
       - 'DeviceHost'
       - 'GoogleButton'
