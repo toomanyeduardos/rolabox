@@ -63,6 +63,28 @@ class InMemoryLibraryRepositoryTest {
     }
 
     @Test
+    fun observeSongsByArtist_isEverySongOfTheArtistSortedByTitle() = runTest {
+        val artistId = albums().first { album -> albums().count { it.artistId == album.artistId } > 1 }.artistId
+
+        val songs = repository.observeSongsByArtist(artistId).first().getOrNull().orEmpty()
+
+        assertTrue(songs.map { it.albumId }.distinct().size > 1)
+        assertTrue(songs.all { it.artistId == artistId })
+        assertEquals(songs().filter { it.artistId == artistId }, songs)
+        assertEquals(songs.sortedBy { it.title }, songs)
+    }
+
+    @Test
+    fun observeSongsByArtist_unknownArtist_isNotFoundAndEnds() = runTest {
+        val unknown = ArtistId(UNKNOWN_ID)
+
+        assertEquals(
+            listOf(LibraryError.ArtistNotFound(unknown).left()),
+            repository.observeSongsByArtist(unknown).toList(),
+        )
+    }
+
+    @Test
     fun observeSongsByAlbum_followsTrackOrder() = runTest {
         val album = albums().first()
 

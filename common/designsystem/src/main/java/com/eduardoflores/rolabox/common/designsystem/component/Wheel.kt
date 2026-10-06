@@ -37,6 +37,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalViewConfiguration
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
@@ -113,6 +114,7 @@ fun Wheel(onEvent: (WheelEvent) -> Unit, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .size(WheelDiameter)
+            .testTag(WHEEL_TEST_TAG)
             .clip(CircleShape)
             .drawBehind { drawRing(colors.wheelRing, colors.wheelRingEdge) }
             .wheelGestures(holdTimeoutMillis, emit),
@@ -136,6 +138,9 @@ fun Wheel(onEvent: (WheelEvent) -> Unit, modifier: Modifier = Modifier) {
         )
     }
 }
+
+/** The tag a UI test finds the wheel by, to turn and press it with touches. */
+const val WHEEL_TEST_TAG = "wheel"
 
 private val TickSpacing = 12.milliseconds
 private const val MENU_LABEL = "MENU"

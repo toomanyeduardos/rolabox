@@ -1,0 +1,12 @@
+<resources>
+    <string name="music_menu_artists">Artists</string>
+    <string name="music_menu_albums">Albums</string>
+    <string name="music_menu_songs">Songs</string>
+    <string name="music_menu_genres">Genres</string>
+    <string name="music_menu_playlists">Playlists</string>
+    <string name="music_all_songs">All Songs</string>
+    <string name="music_no_artists">No artists</string>
+    <string name="music_no_albums">No albums</string>
+    <string name="music_no_songs">No songs</string>
+    <string name="music_library_unavailable">Can\'t read the music library</string>
+</resources>

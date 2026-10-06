@@ -18,6 +18,10 @@
   impl,testing}` (The layout, Left open). It was open; the device screens need it before the real
   library is designed, so it starts as a hard-coded implementation, in memory and with no database
   (ADR-002 isn't met yet, and the code says so). The decision is unchanged.
+- **Revised 2026-10-06:** The music screens are a part of the device, `:device:music:{api,impl}`
+  (The layout). It is the first part with device screens: it declares its keys and entry contract in
+  its `:api`, and `:device:ui:impl` injects the contract, maps its exits to keys and pushes them. The
+  decision is unchanged.
 
 ## Context
 
@@ -61,6 +65,7 @@ We will group modules **by product area**, let each area **assemble its own part
 :device:ui:{api,impl}             the device's assembly: its entries, the main menu, the exits
 :device:settings:{api,impl}       the settings list and its slots
 :device:library:{api,impl,testing}  the music library's data: artists, albums, songs
+:device:music:{api,impl}          the music screens: Music, Artists, albums, songs
 :device:playback:…                open, see "Left open"
 :common:util                      dispatchers, scopes, exception-to-error helpers
 :common:designsystem              the visual language (ADR-015)

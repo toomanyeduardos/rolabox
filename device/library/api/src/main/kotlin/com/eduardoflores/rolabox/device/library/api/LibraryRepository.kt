@@ -21,6 +21,12 @@ interface LibraryRepository {
     /** Emits [LibraryError.ArtistNotFound] and ends when there is no such artist. */
     fun observeAlbumsByArtist(artistId: ArtistId): Flow<Either<LibraryError, List<Album>>>
 
+    /**
+     * Every song of the artist, across their albums and sorted by title. Emits
+     * [LibraryError.ArtistNotFound] and ends when there is no such artist.
+     */
+    fun observeSongsByArtist(artistId: ArtistId): Flow<Either<LibraryError, List<Song>>>
+
     /** Emits [LibraryError.AlbumNotFound] and ends when there is no such album. */
     fun observeSongsByAlbum(albumId: AlbumId): Flow<Either<LibraryError, List<Song>>>
 
