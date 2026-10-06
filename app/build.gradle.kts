@@ -3,7 +3,6 @@ plugins {
     id("rolabox.android.application.firebase")
     id("rolabox.android.compose")
     id("rolabox.hilt")
-    id("rolabox.android.paparazzi")
     id("rolabox.navigation")
 }
 
@@ -15,7 +14,7 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        testInstrumentationRunner = "com.eduardoflores.rolabox.core.testing.RolaboxTestRunner"
+        testInstrumentationRunner = "com.eduardoflores.rolabox.common.testing.RolaboxTestRunner"
     }
 
     buildTypes {
@@ -28,20 +27,24 @@ android {
 }
 
 dependencies {
-    implementation(project(":core:auth:impl"))
-    implementation(project(":core:designsystem"))
-    implementation(project(":core:device"))
-    implementation(project(":core:domain"))
-    implementation(project(":core:storage:impl"))
-    implementation(project(":core:sync:impl"))
-    implementation(project(":core:userdata:impl"))
-    implementation(project(":core:auth:api"))
-    implementation(project(":core:auth:ui"))
-    implementation(project(":core:storage:api"))
-    implementation(project(":core:sync:api"))
-    implementation(project(":core:userdata:api"))
-    implementation(project(":feature:account"))
-    implementation(project(":feature:settings"))
+    // Every :impl, so Hilt can assemble the graph (ADR-020). :app's code uses none of them.
+    implementation(project(":auth:data:impl"))
+    implementation(project(":auth:settings:impl"))
+    implementation(project(":auth:ui:impl"))
+    implementation(project(":common:storage:impl"))
+    implementation(project(":common:sync:impl"))
+    implementation(project(":common:userdata:impl"))
+    implementation(project(":device:settings:impl"))
+    implementation(project(":device:ui:impl"))
+
+    // What :app's own code uses.
+    implementation(project(":auth:data:api"))
+    implementation(project(":auth:ui:api"))
+    implementation(project(":common:designsystem"))
+    implementation(project(":common:storage:api"))
+    implementation(project(":common:sync:api"))
+    implementation(project(":common:userdata:api"))
+    implementation(project(":device:ui:api"))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
@@ -49,17 +52,18 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.navigation3.ui)
-    testImplementation(project(":core:auth:testing"))
-    testImplementation(project(":core:storage:api"))
-    testImplementation(project(":core:testing"))
-    testImplementation(project(":core:userdata:testing"))
+    testImplementation(project(":auth:data:testing"))
+    testImplementation(project(":common:testing"))
+    testImplementation(project(":common:userdata:testing"))
     testImplementation(libs.junit)
-    androidTestImplementation(project(":core:auth:api"))
-    androidTestImplementation(project(":core:common"))
-    androidTestImplementation(project(":core:testing"))
-    androidTestImplementation(project(":core:auth:testing"))
-    androidTestImplementation(project(":core:sync:testing"))
-    androidTestImplementation(project(":core:userdata:testing"))
+    testImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation(project(":auth:data:testing"))
+    androidTestImplementation(project(":common:sync:testing"))
+    androidTestImplementation(project(":common:testing"))
+    androidTestImplementation(project(":common:userdata:testing"))
+    androidTestImplementation(project(":common:util"))
+    // The test of the assembled graph names the contract a section is contributed through (ADR-020, rule 20).
+    androidTestImplementation(project(":device:settings:api"))
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }

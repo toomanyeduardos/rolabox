@@ -15,6 +15,11 @@
   `SyncRepository` keeps the worker's graph complete (rule 5). The triggers are observed only while
   sync is allowed, so a local read error stops the "after local changes" trigger until the next
   sign-in, not until the app restarts (Consequences). The decision is unchanged.
+- **Revised 2026-10-06:** Module names updated for the layout of
+  [ADR-020](020-modules-by-product-area.md), now that the code has moved (37.07b). Conformance:
+  whether sync may run is no longer decided by a function inside sync. `:common:sync:api` declares
+  who to sync for, and `:auth:data:impl` provides it, so rule 8 is tested in both. The decision is
+  unchanged.
 
 ## Context
 
@@ -45,12 +50,12 @@ changing device records. Sync runs as WorkManager work, for a signed-in user who
 offline mode.
 
 **Every synced field carries when it last changed.** `SyncedValue<T>(value, updatedAt)` in
-`:core:sync:api` pairs a value with a `SyncTimestamp`: epoch milliseconds from the clock of the
+`:common:sync:api` pairs a value with a `SyncTimestamp`: epoch milliseconds from the clock of the
 device that made the change. The timestamp is stored next to the value, locally (DataStore keys
 `<key>` and `<key>_updated_at`, written in one atomic update) and remotely. Milliseconds, because
 Firestore keeps microseconds, and a finer local value would never compare equal after a round trip.
 
-**Last-write-wins, per field.** `LastWriteWins.resolve` in `:core:sync:api` keeps the more recent
+**Last-write-wins, per field.** `LastWriteWins.resolve` in `:common:sync:api` keeps the more recent
 of the local and remote values:
 
 - A field **never set** on a device has no `SyncedValue` (null), and never wins. A new device
@@ -66,10 +71,10 @@ removal beats an older add, and an add beats an older removal. Favorite artists,
 subscriptions will use it. Replacing a whole collection with last-write-wins would drop an item
 added on one device while another was offline.
 
-**How a sync runs.** Each kind of data has a `Syncer` in `:core:sync:impl`, bound into a Hilt set.
+**How a sync runs.** Each kind of data has a `Syncer` in `:common:sync:impl`, bound into a Hilt set.
 `PreferencesSyncer`:
 
-1. reads the local `SyncedPreferences` from `SyncedPreferencesRepository` (`:core:userdata:api`);
+1. reads the local `SyncedPreferences` from `SyncedPreferencesRepository` (`:common:userdata:api`);
 2. merges them with the remote copy in a **Firestore transaction**, writing back only the fields
    the remote copy lost. If another device writes in between, the transaction starts over;
 3. applies the merged result locally. `applySyncedPreferences` resolves each field against what is
@@ -202,5 +207,6 @@ same user or another one, merges them with that user's cloud copy.
 **Conformance.** Preferences (theme and accent color) sync. Collections have the merge function and
 its tests, but no data uses it until favorite artists arrive with the library area. Rule 6 is
 checked by `firebase/test/firestore.rules.test.mjs` in CI. Rule 8 is covered by `SyncTriggersTest`
-and `SyncRunnerTest`. Both go through `syncUser`, the one function that decides whether sync may
-run.
+and `SyncRunnerTest`, which obey the `SyncUserProvider` of `:common:sync:api`, and by
+`AuthSyncUserProviderTest` in `:auth:data:impl`, which implements it. That is the one place that
+decides whether sync may run ([ADR-020](020-modules-by-product-area.md), rule 18).

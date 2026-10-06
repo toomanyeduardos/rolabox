@@ -12,6 +12,10 @@
   the parent. `AuthRepository.observeCurrentUser()` now returns a plain `Flow`, because reading the
   cached auth state can't fail. The exception-to-error helpers are in `:core:common`, and fakes are
   in each area's `:testing` module.
+- **Revised 2026-10-06:** Module names updated for the layout of
+  [ADR-020](020-modules-by-product-area.md), now that the code has moved (37.07b). `StorageError` is
+  in `:common:storage:api`, and the exception-to-error helpers in `:common:util` (Decision,
+  Consequences). The decision is unchanged.
 
 ## Context
 
@@ -48,10 +52,10 @@ handles the error. That's the point: no caller has to remember whether a functio
 **Where error types live.** Error types are sealed interfaces, each declared in the `:api` module of
 the area that owns it ([ADR-003](003-module-boundaries.md)), next to the repository interfaces whose
 signatures use them. Infrastructure is an area like any other: local storage errors are owned by
-`:core:storage:api`, and network errors will be owned by the network's `:api`.
+`:common:storage:api`, and network errors will be owned by the network's `:api`.
 
 ```kotlin
-sealed interface StorageError {                    // :core:storage:api, whatever backs the storage
+sealed interface StorageError {                    // :common:storage:api, whatever backs the storage
     data object Full : StorageError
     data object Corrupted : StorageError
     data object Unavailable : StorageError
@@ -126,13 +130,13 @@ can't fail, such as the signed-in user (`AuthRepository.observeCurrentUser(): Fl
   handle the failure.
 - Signatures and call sites are noisier, including simple writes such as `setFavorite`. That's
   accepted in exchange for stability.
-- Arrow becomes a dependency of `:core:common`, of the `:api` modules with operations that can fail,
+- Arrow becomes a dependency of `:common:util`, of the `:api` modules with operations that can fail,
   and of the data layer and features. It's pure Kotlin, so the `:api` modules stay JVM modules.
 - Error types need care: too few cases and the UI can't react differently, too many and every
   `when` grows. New cases are added when the UI needs to react differently, not ahead of time.
 - The data layer needs small shared helpers to convert exceptions to errors (for `suspend`
   functions and flows), so each repository doesn't repeat the same `try`/`catch`. They're the
-  `catchNamed` functions in `:core:common`.
+  `catchNamed` functions in `:common:util`.
 - Fakes in each area's `:testing` module must be able to return `Left`, so tests cover the error
   paths as well as success.
 

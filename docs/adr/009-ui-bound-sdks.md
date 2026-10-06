@@ -26,6 +26,12 @@
   (Decision). Why: turning offline mode off before the picker left a user who cancelled it signed
   out and no longer offline. A step that the user starts isn't a Firebase request, so ADR-008's
   guarantee holds.
+- **Revised 2026-10-06:** Module names updated for the layout of
+  [ADR-020](020-modules-by-product-area.md), now that the code has moved (37.07b). The UI step lives
+  in `:auth:ui:impl`, the `:impl` of a part with screens, and "never from an `:impl`" reads "never
+  from a data part's `:impl`", as ADR-020 decided (Decision, rules 1 and 4). The configuration type
+  `:app` provides is declared in that part's `:api`. Elsewhere, "the area's `:ui` module" reads as
+  the SDK-step code inside that `:impl`. What the ADR decides is unchanged.
 
 ## Context
 
@@ -50,8 +56,8 @@ needs an `Activity`.
 We will **split each such flow into a UI step and a data step**, one per layer
 ([ADR-001](001-layered-architecture.md)):
 
-1. **The UI step runs in the UI layer.** The area's `:ui` module ([ADR-014](014-area-ui-modules.md)),
-   a feature module, or `:app` for app-wide flows, calls the SDK from a composable or `Activity`,
+1. **The UI step runs in the UI layer.** The `:impl` of a part with screens
+   ([ADR-020](020-modules-by-product-area.md)), or `:app` for app-wide flows, calls the SDK from a composable or `Activity`,
    where an `Activity` is available. It turns the SDK's result into a plain value that the area's
    `:api` defines, such as a token.
 2. **The data step goes through the `:api`.** The ViewModel passes that value to the area's
@@ -62,26 +68,26 @@ We will **split each such flow into a UI step and a data step**, one per layer
 For Google sign-in:
 
 ```
-:core:auth:ui                         :core:auth:api            :core:auth:impl
+:auth:ui:impl                         :auth:data:api            :auth:data:impl
 Credential Manager bottom sheet ──▶  SignInCredential   ──▶   FirebaseAuth.signInWithCredential
   (GoogleIdTokenCredential)            .GoogleIdToken(token)
 ```
 
 - **Errors of the UI step aren't the area's errors.** "The user closed the sheet" or "no account to
-  pick" are outcomes of the UI step. The `:ui` reports them as results of the step, the feature
+  pick" are outcomes of the UI step. The step reports them as its results, the screen's ViewModel
   handles them as UI state, and they aren't cases of the area's error type. The area's error type covers the data step only (for sign-in, `AuthError`,
   [ADR-007](007-error-handling.md)).
 - **Configuration only `:app` knows is provided by `:app` through Hilt.** For example, Credential
   Manager needs the Web client ID, which is generated from `google-services.json` as a resource in
-  `:app`. `:app` provides it in a plain configuration type owned by the `:ui`, which the feature's
-  ViewModel injects and passes on.
+  `:app`. `:app` provides it in a plain configuration type declared in the `:api` of the part with
+  screens, which the screen's ViewModel injects and passes on.
 - **UI steps that reach the network run only when the user starts them.** They may run while
   offline mode is chosen, since they aren't Firebase requests. The data step that follows turns
   offline mode off before its Firebase request, and back on if it fails
   ([ADR-008](008-one-app-with-offline-mode.md), rule 7), so cancelling the step leaves offline mode
   as it was. SDKs that bring Play services are ordinary dependencies, since there's only one app.
 - **Non-UI calls of the same SDK stay in the `:impl`.** Clearing Credential Manager's saved state on
-  sign-out needs only the application context, so `:core:auth:impl` does it (rule 6, not built
+  sign-out needs only the application context, so `:auth:data:impl` does it (rule 6, not built
   yet).
 
 ## Alternatives considered
@@ -92,7 +98,7 @@ Credential Manager bottom sheet ──▶  SignInCredential   ──▶   Fireba
   resumed, and it hides a UI interaction inside the data layer.
 - **Passing the `Context` through the `:api` as `Any`.** Keeps one call, but defeats the type system,
   and the `:api` stops being honest about being pure JVM.
-- **A shared UI module per area (`:core:auth:ui`) that owns the UI step.** Features depend on it
+- **A shared UI module per area (`:auth:ui:impl`) that owns the UI step.** Features depend on it
   instead of the SDK, so a second screen that signs in doesn't repeat the code. It was set aside at
   first, because it was a module type that ADR-003 didn't have. It's adopted in
   [ADR-014](014-area-ui-modules.md), which added the module type.
@@ -111,16 +117,16 @@ Credential Manager bottom sheet ──▶  SignInCredential   ──▶   Fireba
 
 ## Rules
 
-1. `[convention]` SDK calls that need an `Activity` or show system UI are made from the UI layer (an
-   area's `:ui` module, a feature module or `:app`), never from an `:impl` or behind an `:api`.
+1. `[convention]` SDK calls that need an `Activity` or show system UI are made from the UI layer (the
+   `:impl` of a part with screens, or `:app`), never from a data part's `:impl` or behind an `:api`.
 2. `[convention]` Only a plain value produced by the UI step crosses into the `:api`, as a type the
    `:api` defines. SDK types never appear in `:api` signatures.
 3. `[convention]` Errors from the UI step (such as the user cancelling) are results of the step,
-   shown by the feature, and aren't cases of the area's error type.
+   shown by the screen, and aren't cases of the area's error type.
 4. `[convention]` Configuration the UI step needs from `:app` (such as the Web client ID) is provided
-   by `:app` through Hilt, in a plain type owned by the `:ui`.
+   by `:app` through Hilt, in a plain type declared in the `:api` of the part with screens.
 5. `[convention]` A UI step that reaches the network runs only when the user starts it. It doesn't
    change offline mode: the data step does, as ADR-008 rule 7 says.
 6. `[planned]` (Credential Manager sign-out ticket, TBD) Calls of the same SDK that don't need an
-   `Activity` are made in the area's `:impl`. `:core:auth:impl` clears Credential Manager's saved
+   `Activity` are made in the area's `:impl`. `:auth:data:impl` clears Credential Manager's saved
    state on sign-out.

@@ -1,4 +1,4 @@
-<!-- The README's copy of the design system's record (core/designsystem ds_ic_vinyl.xml), spinning at
+<!-- The README's copy of the design system's record (common/designsystem ds_ic_vinyl.xml), spinning at
      33⅓ rpm (1.8s per turn) like SpinningVinyl.kt. Only the README uses it. -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="24 24 60 60" width="60" height="60">
   <g>

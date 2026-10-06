@@ -6,6 +6,12 @@
 - **Reviewers:** AI-assisted review
 - **Revised 2026-09-29:** Added the composite plugin `rolabox.android.ui` for the `:ui` module type of
   [ADR-014](014-area-ui-modules.md). The decision is unchanged.
+- **Revised 2026-10-06:** The composite plugins `rolabox.android.feature` and `rolabox.android.ui`
+  are replaced by `rolabox.android.screens`, for the `:impl` of a part with screens, because
+  [ADR-020](020-modules-by-product-area.md) removed the feature and `:ui` module types they
+  described. `rolabox.jvm.compose` is new: the JVM `:api` of a part with screens applies it when its
+  contract carries a composable, such as the row of a settings section (Decision). The decision is
+  unchanged.
 
 ## Context
 
@@ -27,11 +33,12 @@ included build (`build-logic/convention`), written as Kotlin classes and registe
   `rolabox.android.library` and `rolabox.jvm.library`. Each one also applies the module rules
   (`enforceModuleRules()`) and static analysis (`applyStaticAnalysis()`), so no module can opt out
   of them.
-- **Additive plugins** add one capability: `rolabox.android.compose`, `rolabox.hilt`.
-- **Composite plugins** describe a module type: `rolabox.android.feature` applies a library,
-  Compose and Hilt, plus the dependencies every feature needs.
-  `rolabox.android.ui` applies a library and Compose, without Hilt, for an area's `:ui` module
-  ([ADR-014](014-area-ui-modules.md)).
+- **Additive plugins** add one capability: `rolabox.android.compose`, `rolabox.hilt`,
+  `rolabox.navigation`, and `rolabox.jvm.compose` for a JVM `:api` whose contract carries a
+  composable.
+- **Composite plugins** describe a module type: `rolabox.android.screens` applies a library,
+  Compose, Hilt and Navigation 3, plus the design system, for the `:impl` of a part with screens
+  ([ADR-020](020-modules-by-product-area.md)).
 - Shared constants (SDK levels, Java version) live in `ProjectConfig`, and dependency versions live
   only in the version catalog (`gradle/libs.versions.toml`).
 
@@ -40,11 +47,11 @@ its own:
 
 ```kotlin
 plugins {
-    id("rolabox.android.feature")
+    id("rolabox.android.screens")
 }
 
 android {
-    namespace = "com.eduardoflores.rolabox.feature.settings"
+    namespace = "com.eduardoflores.rolabox.device.settings.impl"
 }
 ```
 

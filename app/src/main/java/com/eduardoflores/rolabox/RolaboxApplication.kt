@@ -1,7 +1,7 @@
 package com.eduardoflores.rolabox
 
 import android.app.Application
-import com.eduardoflores.rolabox.core.sync.api.SyncRepository
+import com.eduardoflores.rolabox.common.sync.api.SyncRepository
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 

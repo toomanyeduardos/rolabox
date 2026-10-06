@@ -2,7 +2,7 @@ package com.eduardoflores.rolabox.di
 
 import android.content.Context
 import com.eduardoflores.rolabox.R
-import com.eduardoflores.rolabox.core.auth.ui.SignInConfig
+import com.eduardoflores.rolabox.auth.ui.api.SignInConfig
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

@@ -23,6 +23,13 @@
   `:app` still decides every push (Decision, Consequences, rule 1). Before this, only `:app` could
   change any navigation state, which kept a mechanism that names no feature inside `:app`. Features
   still don't touch navigation state.
+- **Revised 2026-10-06:** Module names updated for the layout of
+  [ADR-020](020-modules-by-product-area.md), now that the code has moved (37.07b). The device host
+  is `:device:host` (Consequences). Rules 1 and 4, and the parts of Decision in which `:app` pushes
+  on the screen stack and declares keys, are superseded by ADR-020. The two rules now point at the
+  rules that replaced them, and the Decision is left as it was written: `:device:ui:impl` pushes on
+  the screen stack, and a part declares its keys in its `:api`. Where the text says "feature", read
+  the `:impl` of a part with screens.
 
 ## Context
 
@@ -115,7 +122,7 @@ navigation state.
 - Back handling, transitions, saved state, per-entry ViewModels and adaptive scenes come from the
   library.
 - The navigation state that holds the app stack, the auth flow and the device's screen stack is our
-  own code, and we maintain it. The screen stack's part is in `:core:device` (ADR-019).
+  own code, and we maintain it. The screen stack's part is in `:device:host` (ADR-019).
 - Every link between features goes through `:app`. That's one lambda per exit and one mapping in
   `:app`, which is more code than a feature pushing a key, and it's the price of feature
   independence.
@@ -133,15 +140,15 @@ navigation state.
 
 ## Rules
 
-1. `[convention]` `:app` owns the app stack and its `NavDisplay`, and decides what is on every
-   stack: only `:app` pushes or replaces entries. Only `:app` pops the app stack. The stack inside
-   the device's display is popped by the device host (ADR-019).
+1. Superseded by [ADR-020](020-modules-by-product-area.md), rules 13 and 14: `:app` owns the app
+   stack and is the only one that changes it, and on the screen stack inside the display
+   `:device:ui:impl` pushes and the host pops.
 2. `[convention]` Destinations are `@Serializable` classes or objects that implement `NavKey`, and
    carry identifiers, not models.
 3. `[convention]` The app stack holds the auth flow, the device and the full screens opened from
    it. There are no top-level sections. The stack inside the device's display follows ADR-018.
-4. `[convention]` A feature declares only the keys of its own screens, and never refers to another
-   feature's keys.
+4. Superseded by [ADR-020](020-modules-by-product-area.md), rules 11 and 12: a part declares its
+   keys in its `:api`, and names another part's keys only as its parent.
 5. `[convention]` A screen composable receives its exits as lambdas, and exits that open another
    feature's screen pass identifiers. Screens don't touch navigation state.
 6. `[convention]` A flow that ends in another part of the app (such as sign-in to the device)

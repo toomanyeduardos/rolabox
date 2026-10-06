@@ -47,6 +47,12 @@
   password is signed out by definition, so the reset can't wait for a sign-in, and rule 7 doesn't
   cover it because it doesn't sign anyone in. It reads nothing from the account and opens no
   session, so it doesn't turn offline mode off. No other signed-out request is added.
+- **Revised 2026-10-06:** Module names updated for the layout of
+  [ADR-020](020-modules-by-product-area.md), now that the code has moved (37.07b). Conformance: the
+  tests of rule 7 moved with the use cases to `:auth:data:impl`
+  ([ADR-021](021-data-flow-through-layers.md)), and rule 6 is now tested in two modules, because
+  sync no longer reads the auth state or the offline-mode choice itself: `:auth:data:impl` tells it
+  who to sync for. The decision is unchanged.
 
 ## Context
 
@@ -63,7 +69,7 @@ a fresh clone's build, but it cost more than expected:
 - **The default build hid the product.** `offline` was the default flavor in the IDE and in CI, and
   it never shows Sign in. The flow most users see first was only visible after adding a
   `google-services.json` and switching flavors.
-- **Everything backend-specific existed twice.** `:app`, `:core:auth:impl` and `:core:sync:impl`
+- **Everything backend-specific existed twice.** `:app`, `:auth:data:impl` and `:common:sync:impl`
   each had `src/offline` and `src/cloud`, with Hilt modules declared twice under the same name.
   `ResolveStartDestinationUseCase` needed an `accountsAvailable` flag only because of the build.
 - **CI and tasks doubled.** Every Android module built both flavors, and CI ran one job per flavor.
@@ -92,10 +98,10 @@ removed from the convention plugins ([ADR-004](004-convention-plugins.md)). Each
 `debug` and `release` build types, so task names are `testDebugUnitTest` and `lintDebug` everywhere.
 
 **Firebase is an ordinary dependency.** Modules that use Firebase or Play services declare them with
-`implementation`, like any other library. `:app` depends on `:feature:account` with
+`implementation`, like any other library. `:app` depends on `:auth:ui:impl` with
 `implementation`. There are no `src/offline` or `src/cloud` source sets: code that differed by
-flavor becomes one implementation in `src/main`. `:core:auth:impl` binds `FirebaseAuthRepository`,
-and `:core:sync:impl` binds `WorkManagerSyncRepository`. `SignedOutAuthRepository`,
+flavor becomes one implementation in `src/main`. `:auth:data:impl` binds `FirebaseAuthRepository`,
+and `:common:sync:impl` binds `WorkManagerSyncRepository`. `SignedOutAuthRepository`,
 `NoOpSyncRepository` and the offline `SignInContent` go away.
 
 **The start destination is decided at runtime.** `ResolveStartDestinationUseCase` loses its
@@ -241,8 +247,8 @@ record:
    `isCloudConfiguration` check (old rule 2) from `ModuleRules.kt`. `unitTest` runs
    `testDebugUnitTest`.
 2. Change every `cloudImplementation` to `implementation` (Firebase BoM, Firebase Auth, Firestore,
-   WorkManager, `lifecycle-process`, `kotlinx-coroutines-play-services`, `:feature:account`).
-3. Move `src/cloud` code into `src/main` in `:app`, `:core:auth:impl` and `:core:sync:impl`. Delete
+   WorkManager, `lifecycle-process`, `kotlinx-coroutines-play-services`, `:auth:ui:impl`).
+3. Move `src/cloud` code into `src/main` in `:app`, `:auth:data:impl` and `:common:sync:impl`. Delete
    `src/offline`: `SignedOutAuthRepository`, `NoOpSyncRepository`, the offline `SignInContent` and
    the duplicate Hilt modules.
 4. Remove `accountsAvailable` from `ResolveStartDestinationUseCase` and `StartupModule`, and update
@@ -296,8 +302,11 @@ record:
 (`enforceNoProductFlavors` in `ModuleRules.kt`). Rule 5 is checked by the "No Firebase config
 committed" step in [CI](../../.github/workflows/ci.yml). `rolabox.android.application.firebase`
 picks the config (rule 4), and fails the build on a `google-services.json` under `app/src/`. Rule 6
-is covered by `SyncTriggersTest` and `SyncRunnerTest` in `:core:sync:impl`, and rule 8 by
-`SyncRunnerTest.offlineMode_neverCreatesFirestore`. They check the sync path, which is the only code
+is covered in two places, since auth decides who sync runs for ([ADR-020](020-modules-by-product-area.md),
+rule 18): `AuthSyncUserProviderTest` in `:auth:data:impl` covers that nobody is synced for while
+signed out or in offline mode, and `SyncTriggersTest` and `SyncRunnerTest` in `:common:sync:impl`
+cover that sync then requests and runs nothing. Rule 8 is covered by
+`SyncRunnerTest.nobodyToSyncFor_neverCreatesFirestore`. They check the sync path, which is the only code
 that calls Firebase today. A new Firebase call elsewhere isn't covered by any test. Rule 7 is
-covered by `SignInUseCaseTest` and `SignUpUseCaseTest` in `:core:domain`, which every sign-in goes
+covered by `SignInUseCaseTest` and `SignUpUseCaseTest` in `:auth:data:impl`, which every sign-in goes
 through. Offline mode is chosen only from the Sign in screen, which is shown only while signed out.

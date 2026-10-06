@@ -8,6 +8,9 @@
   lives in `users/{uid}/settings/preferences` ([ADR-011](011-preferences-sync.md)) (Decision, rule 7).
   Preferences are synced from DataStore, not Room, so rule 7 names local storage instead of Room.
   The `users/{uid}` placeholder is unchanged. The decision is unchanged.
+- **Revised 2026-10-06:** Module names updated for the layout of
+  [ADR-020](020-modules-by-product-area.md), now that the code has moved (37.07b). Sync is
+  `:common:sync:impl` (Decision, rule 7). The decision is unchanged.
 
 ## Context
 
@@ -66,7 +69,7 @@ kept in the repo and tested against the emulator in CI.
   passed on the command line, and `.firebaserc` is git-ignored for the same reason as
   `google-services.json`.
 - **Firestore is not the source of truth on the device.** Local storage (Room, or DataStore for
-  preferences) stays the single source of truth (ADR-002). The sync code in `:core:sync:impl` is the only code that reads and writes Firestore, and the UI
+  preferences) stays the single source of truth (ADR-002). The sync code in `:common:sync:impl` is the only code that reads and writes Firestore, and the UI
   never observes Firestore directly.
 
 ## Alternatives considered
@@ -121,7 +124,7 @@ kept in the repo and tested against the emulator in CI.
    the Firebase CLI, never edited in the console.
 6. `[convention]` `.firebaserc` is never committed, just like a real `google-services.json` (ADR-008,
    rule 5).
-7. `[convention]` Only `:core:sync:impl` reads or writes Firestore. Local storage (Room, or
+7. `[convention]` Only `:common:sync:impl` reads or writes Firestore. Local storage (Room, or
    DataStore for preferences) stays the single source of truth on the device (ADR-002).
 
 **Conformance.** Rules 1 and 2 are checked by `firebase/test/firestore.rules.test.mjs`, which the

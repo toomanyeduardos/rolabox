@@ -15,6 +15,8 @@ dependencies {
     implementation(libs.detekt.gradlePlugin)
     implementation(libs.googleServices.gradlePlugin)
     implementation(libs.paparazzi.gradlePlugin)
+
+    testImplementation(libs.junit)
 }
 
 gradlePlugin {
@@ -35,13 +37,13 @@ gradlePlugin {
             id = "rolabox.android.compose"
             implementationClass = "RolaboxAndroidComposeConventionPlugin"
         }
-        register("androidFeature") {
-            id = "rolabox.android.feature"
-            implementationClass = "RolaboxAndroidFeatureConventionPlugin"
+        register("androidScreens") {
+            id = "rolabox.android.screens"
+            implementationClass = "RolaboxAndroidScreensConventionPlugin"
         }
-        register("androidUi") {
-            id = "rolabox.android.ui"
-            implementationClass = "RolaboxAndroidUiConventionPlugin"
+        register("jvmCompose") {
+            id = "rolabox.jvm.compose"
+            implementationClass = "RolaboxJvmComposeConventionPlugin"
         }
         register("navigation") {
             id = "rolabox.navigation"

@@ -16,7 +16,7 @@ import org.gradle.api.tasks.TaskAction
 import java.io.File
 
 private const val APP_PATH = ":app"
-private const val DESIGNSYSTEM_PATH = ":core:designsystem"
+private const val DESIGNSYSTEM_PATH = ":common:designsystem"
 private const val DESIGNSYSTEM_PREFIX = "ds_"
 private const val TASK_NAME = "checkDesignSystemResources"
 

@@ -9,23 +9,20 @@ import androidx.compose.runtime.setValue
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
-import com.eduardoflores.rolabox.core.domain.StartDestination
-import com.eduardoflores.rolabox.feature.account.SignInKey
-import kotlinx.serialization.Serializable
-
-/** The signed-in app's first screen: the device (ADR-018). */
-@Serializable
-internal data object DeviceKey : NavKey
+import com.eduardoflores.rolabox.auth.data.api.StartDestination
+import com.eduardoflores.rolabox.auth.ui.api.SignInKey
+import com.eduardoflores.rolabox.device.ui.api.DeviceKey
 
 /** The two parts of the app, each with a back stack of its own. */
 internal enum class NavigationFlow { Auth, Main }
 
 /**
- * The app's navigation state (ADR-012), and the only thing that changes it. Screens report their
- * exits, and `:app` turns each one into a call here.
+ * The app stack (ADR-012), and the only thing that changes it. Screens report their exits, and
+ * `:app` turns each one into a call here. `:app` declares no key of its own (ADR-020): the stacks
+ * start at keys of the two areas, which this is where they meet.
  *
- * The auth flow is a stack of its own, outside the sections. Leaving it replaces it with the main
- * stack, so back never returns to it.
+ * The auth flow is a stack of its own. Leaving it replaces it with the main stack, which starts at
+ * the device, so back never returns to it.
  */
 internal class AppNavigator(
     private val flowState: MutableState<NavigationFlow>,
@@ -54,10 +51,20 @@ internal class AppNavigator(
         while (currentBackStack.size > 1) currentBackStack.removeAt(currentBackStack.lastIndex)
     }
 
-    /** Signed in or signed up: shows the main screens, and forgets the auth ones. */
-    fun leaveAuth() {
-        flowState.value = NavigationFlow.Main
-        authBackStack.clear()
+    /**
+     * Auth reports that access is granted: the user signed in or signed up, or chose offline mode.
+     * From the auth flow, that shows the device and forgets the auth screens. From an auth screen
+     * that was opened over the device, such as from Settings, it goes back to the device.
+     */
+    fun accessGranted() {
+        when (flow) {
+            NavigationFlow.Auth -> {
+                flowState.value = NavigationFlow.Main
+                authBackStack.clear()
+            }
+
+            NavigationFlow.Main -> popToRoot()
+        }
     }
 }
 
@@ -70,7 +77,7 @@ internal fun rememberAppNavigator(startDestination: StartDestination): AppNaviga
     val flowState = rememberSaveable {
         mutableStateOf(
             when (startDestination) {
-                StartDestination.Home -> NavigationFlow.Main
+                StartDestination.AccessGranted -> NavigationFlow.Main
                 StartDestination.SignIn -> NavigationFlow.Auth
             },
         )

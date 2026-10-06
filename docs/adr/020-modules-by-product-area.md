@@ -10,6 +10,10 @@
   [ADR-012](012-navigation.md) (rules 1 and 4, and an exception to rule 5),
   [ADR-014](014-area-ui-modules.md) (rules 1 to 3), [ADR-018](018-device-navigation.md) (rules 1,
   5 and 12, in the parts that name `:app`) and [ADR-019](019-device-host-module.md) (rules 2 and 4)
+- **Revised 2026-10-06:** The migration is done ([37.07b](https://trello.com/c/NjGx7cY4)). The first
+  step held: keys, an entry contract and a section's row compile and run in a JVM `:api`, the row
+  with the Compose compiler applied to that module. Rules 1 to 8 are `[enforced]` (Rules,
+  Conformance, Migration). The decision is unchanged.
 
 ## Context
 
@@ -245,9 +249,9 @@ This ADR doesn't decide, and its module list isn't complete for:
 
 ### Migration
 
-The code doesn't match this ADR yet. Each step leaves the build green, and brings the checks for
-the modules it moves: `ModuleRules.kt` drops the ADR-003 rule and gains the rule below in the same
-change.
+The code was moved in these steps ([37.07b](https://trello.com/c/NjGx7cY4)). Each step leaves the
+build green, and brings the checks for the modules it moves: `ModuleRules.kt` drops the ADR-003
+rule and gains the rule below in the same change.
 
 1. **Prove the JVM `:api`.** On `:auth:ui:api`, declare keys and an entry contract with Navigation
    3's JVM variant. Also check that a contract can carry a row, as a settings section must. If
@@ -320,20 +324,17 @@ The Music menu is built after step 3, so the first feature with device screens i
 
 ## Rules
 
-Rules tagged `[planned]` become `[enforced]` in the migration step that moves the modules they
-name, tracked by [37.07b](https://trello.com/c/NjGx7cY4).
-
-1. `[planned]` `:common:*` modules depend only on `:common:*` modules.
-2. `[planned]` No `:device` module depends on an `:auth` module.
-3. `[planned]` The only `:auth` module that depends on a `:device` module is `:auth:settings:impl`,
+1. `[enforced]` `:common:*` modules depend only on `:common:*` modules.
+2. `[enforced]` No `:device` module depends on an `:auth` module.
+3. `[enforced]` The only `:auth` module that depends on a `:device` module is `:auth:settings:impl`,
    and it depends only on `:device:settings:api`.
-4. `[planned]` Only `:app` depends on `:impl` modules.
-5. `[planned]` An `:impl` depends only on `:api` modules, `:common:util` and `:common:designsystem`,
+4. `[enforced]` Only `:app` depends on `:impl` modules.
+5. `[enforced]` An `:impl` depends only on `:api` modules, `:common:util` and `:common:designsystem`,
    and a `:device` `:impl` also on `:device:host` (plus testing modules from test configurations).
-6. `[planned]` An `:api` is a JVM module with no Android dependencies, and depends only on other
+6. `[enforced]` An `:api` is a JVM module with no Android dependencies, and depends only on other
    `:api` modules and `:common:util`.
-7. `[planned]` Testing modules are only used from test configurations.
-8. `[planned]` `:device:host` depends only on `:common:designsystem` and `:common:util`, and only
+7. `[enforced]` Testing modules are only used from test configurations.
+8. `[enforced]` `:device:host` depends only on `:common:designsystem` and `:common:util`, and only
    `:device` `:impl` modules depend on it.
 9. `[convention]` A part is split into `:api` and `:impl`. It has a `:testing` only when it has a
    fake, and an `:api` only when another module needs something from it. `:common:util`,
@@ -365,5 +366,8 @@ name, tracked by [37.07b](https://trello.com/c/NjGx7cY4).
 20. `[convention]` `:app` has a test of the assembled graph for every contribution that should be
     present, and for every one that shouldn't.
 
-**Conformance.** Rules 1 to 8 will be checked by `ModuleRules.kt` when the build is configured.
-Until a module has moved, ADR-003's rules are checked for it.
+**Conformance.** Rules 1 to 8 are checked by `ModuleRules.kt` when the build is configured, and
+`ModuleRulesTest` in `build-logic` has a violating and a passing case for each. The slots of rule
+16 are tested by `SettingsSectionsTest` in `:device:settings:impl`, and rule 20 is
+`AssembledGraphTest` in `:app`'s instrumented tests, which checks that the settings list has the
+account section and no other.

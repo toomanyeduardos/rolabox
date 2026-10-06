@@ -18,6 +18,13 @@
 - **Revised 2026-09-28:** Added rule 8, which names use cases with a `UseCase` suffix so they are
   easy to find and tell apart from repositories. The first cross-area use case,
   `ResolveStartDestinationUseCase`, was named this way. The decision is unchanged.
+- **Revised 2026-10-06:** Module names updated for the layout of
+  [ADR-020](020-modules-by-product-area.md), now that the code has moved (37.07b). The diagram and
+  the layers name parts instead of `:core:<area>` and `:feature:*`. `:core:domain` is gone: a use
+  case is an interface in the data `:api` of the area that owns its outcome, implemented in that
+  part's `:impl` (Decision). Rules 1 and 2 are worded as the ADR-020 rules that the build now checks
+  for them. Where the text says "feature", read the `:impl` of a part with screens. The three
+  layers, and when a use case is created, are unchanged.
 
 ## Context
 
@@ -43,35 +50,37 @@ by area (auth, user data, and later the library, playlists, and so on): each are
 that area's domain layer ([ADR-003](003-module-boundaries.md)).
 
 ```
-UI (:feature:*)  ──▶  domain (:core:<area>:api)  ◀──  data (:core:<area>:impl)
-                              │
-                              ▼
-                         :core:common
+UI (:impl of a part with screens)  ──▶  domain (a data part's :api)  ◀──  data (that part's :impl)
+                                              │
+                                              ▼
+                                         :common:util
 ```
 
-**Domain layer (`:core:<area>:api`, pure Kotlin/JVM).**
+**Domain layer (a data part's `:api`, pure Kotlin/JVM).**
 - Each area's `:api` module owns the **repository interfaces** that features and use cases
   consume, plus the models and error types those interfaces use.
-- It depends only on `:core:common` and other areas' `:api` modules, such as `:core:storage:api`
+- It depends only on `:common:util` and other areas' `:api` modules, such as `:common:storage:api`
   for storage errors.
 - It has no Android dependencies, so everything in it is tested on the JVM.
-- Use cases that combine more than one area go in `:core:domain`, a JVM module that depends only on
-  `:api` modules. It's created with the first such use case. A use case that serves one area lives
-  in that area's `:api`.
+- A use case's interface is in the data `:api` of the area that owns its outcome, which depends
+  on the `:api` modules it combines. Its implementation is in that part's `:impl`
+  ([ADR-020](020-modules-by-product-area.md), [ADR-021](021-data-flow-through-layers.md)). There is
+  no shared domain module.
 
-**Data layer (`:core:<area>:impl`).**
+**Data layer (a data part's `:impl`).**
 - Each area's `:impl` module **implements** its `:api` interfaces (dependency inversion).
 - An `:impl` reaches other areas, including storage, only through their `:api` modules. For
-  example, `:core:userdata:impl` stores preferences through `PreferencesStore` from
-  `:core:storage:api`, and only `:core:storage:impl` knows about DataStore.
+  example, `:common:userdata:impl` stores preferences through `PreferencesStore` from
+  `:common:storage:api`, and only `:common:storage:impl` knows about DataStore.
 - Storage and transport types (Room entities, DTOs, DataStore keys) stay internal to the data layer
   and are mapped to `:api` types at its boundary.
 
-**UI layer (`:feature:*`).**
-- Compose screens and ViewModels. Features depend on the `:api` modules of the areas they use (and
-  `:core:domain` for cross-area use cases), never on `:impl` modules.
+**UI layer (the `:impl` of a part with screens).**
+- Compose screens and ViewModels. They depend on the `:api` modules of the parts they use, never on
+  `:impl` modules.
 - ViewModels expose UI state as a `StateFlow` and receive user actions as function calls
-  (unidirectional data flow). How UI state is shaped in detail is left to a future ADR.
+  (unidirectional data flow). The shape of a ViewModel is decided in
+  [ADR-021](021-data-flow-through-layers.md).
 
 **Use cases are optional.** A ViewModel may inject a repository interface directly. Create a use
 case only when at least one of these is true:
@@ -82,8 +91,9 @@ case only when at least one of these is true:
    rules, or matching remote favorites to local tracks).
 
 Use cases are **pure logic**: they combine repository interfaces or apply rules to what they
-return, and do no I/O of their own. That's why they can live in the domain layer, in an `:api`
-module or `:core:domain`, and be tested on the JVM with fakes.
+return, and do no I/O of their own. Their interfaces are in the domain layer, in an `:api`, and
+their implementations in the same part's `:impl` ([ADR-021](021-data-flow-through-layers.md)), tested
+on the JVM with fakes.
 
 A use case that only passes a call through to one repository is not created. When a use case
 exists for an operation, ViewModels go through it and don't call the repository directly for that
@@ -107,7 +117,7 @@ operation, so the logic never ends up in two places.
 ## Consequences
 
 - Features compile only against interfaces and models, so the UI can't reach storage types by
-  mistake, and each area's fakes fit naturally in its `:core:<area>:testing` module.
+  mistake, and each area's fakes fit naturally in its part's `:testing` module.
 - Business rules live in a JVM module, and their tests run without Robolectric or a device.
 - Every repository interface lives in its area's `:api` module, away from its implementation,
   which adds some navigation cost when reading code.
@@ -119,10 +129,11 @@ operation, so the logic never ends up in two places.
 
 ## Rules
 
-1. `[enforced]` Feature modules depend on `:api` modules and never on `:impl` modules. An `:impl`
-   depends only on `:api` modules and `:core:common` ([ADR-003](003-module-boundaries.md), rule 7).
+1. `[enforced]` Only `:app` depends on `:impl` modules: a part with screens depends on `:api`
+   modules. An `:impl` depends only on `:api` modules, `:common:util` and `:common:designsystem`
+   ([ADR-020](020-modules-by-product-area.md), rules 4 and 5).
 2. `[enforced]` Every `:api` module is a JVM module with no Android dependencies, and depends only
-   on `:core:common` and other `:api` modules.
+   on `:common:util` and other `:api` modules ([ADR-020](020-modules-by-product-area.md), rule 6).
 3. `[convention]` Every repository interface that a feature or use case consumes is declared in its
    area's `:api` module, and implemented in that area's `:impl` module.
 4. `[convention]` Room entities, DTOs and other storage types never appear in a public signature

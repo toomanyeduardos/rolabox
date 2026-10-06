@@ -1,0 +1,8 @@
+<resources>
+    <string name="device_title">Rolabox</string>
+    <string name="device_music">Music</string>
+    <string name="device_podcasts">Podcasts</string>
+    <string name="device_audiobooks">Audiobooks</string>
+    <string name="device_shuffle_songs">Shuffle Songs</string>
+    <string name="device_settings">Settings</string>
+</resources>

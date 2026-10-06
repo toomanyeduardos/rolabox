@@ -9,10 +9,15 @@
   about an area lives in the design system" (Decision, rule 1). The host assembles the device's
   parts and runs its screen stack, which needs Navigation 3 and isn't visual language. The parts
   and every token stay in the design system, and rules 2 and 3 still apply to `:core:device`.
+- **Revised 2026-10-06:** Module names updated for the layout of
+  [ADR-020](020-modules-by-product-area.md), now that the code has moved (37.07b). The design system
+  is `:common:designsystem` (Decision, rules, Conformance), and the checks and their messages name
+  it. Where the text says "feature", read the `:impl` of a part with screens. "An area's `:ui`"
+  reads as the SDK-step code inside that `:impl`. The decision is unchanged.
 
 ## Context
 
-[ADR-003](003-module-boundaries.md) created `:core:designsystem` as a utility module for "theme and
+[ADR-003](003-module-boundaries.md) created `:common:designsystem` as a utility module for "theme and
 shared composables", and limits what it may depend on (rule 9). It doesn't say what must live there,
 or what other modules may not define for themselves. Without that, the same color, text size or
 button slowly gets defined again in each feature, and the app stops looking like one app.
@@ -20,9 +25,9 @@ button slowly gets defined again in each feature, and the app stops looking like
 The first screens showed what that looks like:
 
 - Text styles were set per call site (a size here, a weight there) until they were moved into
-  `RolaboxTypography` and `RolaboxTextStyles`, and the font into `:core:designsystem`.
+  `RolaboxTypography` and `RolaboxTextStyles`, and the font into `:common:designsystem`.
 - Components written for Sign in (the recessed field, the "or" divider, the links) were first built
-  in `:feature:account`, then moved to the design system when their second user showed up.
+  in `:auth:ui:impl`, then moved to the design system when their second user showed up.
 - `:app` still had the colors of the project template, which nothing used.
 - The Google sign-in button needs colors, a shape and a label that Google's branding rules set, and
   that must not follow Rolabox's theme.
@@ -31,12 +36,12 @@ Android also merges the resources of every module into one namespace. A resource
 module defines with the same name silently replaces the design system's, with no error.
 
 Strings are a special case. Some are the same everywhere ("OK", "Cancel", "Back"). Others only look
-the same in English: "Sign in" is a title, a button and a link in `:feature:account`, and
+the same in English: "Sign in" is a title, a button and a link in `:auth:ui:impl`, and
 translators often need a different word for each.
 
 ## Decision
 
-We will keep **Rolabox's visual language only in `:core:designsystem`**, and other modules will use
+We will keep **Rolabox's visual language only in `:common:designsystem`**, and other modules will use
 it without defining their own.
 
 **What the design system owns:**
@@ -49,7 +54,7 @@ it without defining their own.
   top bars, loading states). It goes in the design system **when it is first written**, not when a
   second feature needs it, as [ADR-014](014-area-ui-modules.md) decided for area UI. The one
   exception is the device host: the composables that assemble the device and run its screen stack
-  live in `:core:device` ([ADR-019](019-device-host-module.md)), built from the design system's
+  live in `:device:host` ([ADR-019](019-device-host-module.md)), built from the design system's
   parts.
 - **Preview tooling,** such as `@PreviewLightDark` and the type specimen.
 - **Strings that mean the same thing in every context,** such as the labels of dialog buttons ("OK",
@@ -102,13 +107,13 @@ in the window theme and in `RolaboxSplash`. They don't define colors or fonts of
   `check`. Outside the design system, it rejects `res/font*` folders, `<color>` resources, and
   `<style>` resources (except in `:app`). In the design system, it rejects any resource without the
   `ds_` prefix.
-- detekt's `ForbiddenMethodCall` and `ForbiddenImport` rules reject, outside `:core:designsystem`,
+- detekt's `ForbiddenMethodCall` and `ForbiddenImport` rules reject, outside `:common:designsystem`,
   calls to `Color(…)`, `FontFamily(…)`, `Font(…)`, `TextStyle(…)`, `RoundedCornerShape(…)` and
   `CutCornerShape(…)`, and imports of `sp`, `em` and `FontWeight` (`config/detekt/detekt.yml`).
 
 ## Alternatives considered
 
-- **Leave it to review.** No build code. But `:core:designsystem` already existed, and styles were
+- **Leave it to review.** No build code. But `:common:designsystem` already existed, and styles were
   still defined in features until they were moved by hand. A rule that nobody checks decays one
   convenient `Color(0x…)` at a time, which is why ADR-003 enforces its rules.
 - **A separate `:core:strings` (or `:core:resources`) module for shared strings.** Keeps copy apart
@@ -136,7 +141,7 @@ in the window theme and in `RolaboxSplash`. They don't define colors or fonts of
 
 - A screen that needs a new color, text style or shape has to add it to the design system first.
   That's slower for a one-off, and it's the point: the token then exists for the next screen.
-- Changing the app's look (a skin, an accent, a new font) touches only `:core:designsystem`.
+- Changing the app's look (a skin, an accent, a new font) touches only `:common:designsystem`.
 - The design system grows with every shared component, and every change to it rebuilds every
   feature. Components that know about an area stay in that area's `:ui` to limit this.
 - Features may still have one-off spacing values, so spacing can be inconsistent until tokens exist
@@ -150,13 +155,13 @@ in the window theme and in `RolaboxSplash`. They don't define colors or fonts of
 ## Rules
 
 1. `[convention]` Rolabox's tokens, brand assets, preview tooling and every composable that knows
-   nothing about an area live in `:core:designsystem`. A composable goes there when it is first
-   written. The device host's composables are the exception, and live in `:core:device` (ADR-019).
-2. `[enforced]` Colors and fonts are defined only in `:core:designsystem`: no `res/font` folder, no
+   nothing about an area live in `:common:designsystem`. A composable goes there when it is first
+   written. The device host's composables are the exception, and live in `:device:host` (ADR-019).
+2. `[enforced]` Colors and fonts are defined only in `:common:designsystem`: no `res/font` folder, no
    `<color>` resource, and no `Color(…)`, `FontFamily(…)` or `Font(…)` call anywhere else.
-3. `[enforced]` Text styles and shapes are defined only in `:core:designsystem`: no `TextStyle(…)`,
+3. `[enforced]` Text styles and shapes are defined only in `:common:designsystem`: no `TextStyle(…)`,
    `RoundedCornerShape(…)` or `CutCornerShape(…)` call, and no import of `sp`, `em` or `FontWeight`,
-   anywhere else. Only `:core:designsystem` and `:app` (for its window themes) declare `<style>`
+   anywhere else. Only `:common:designsystem` and `:app` (for its window themes) declare `<style>`
    resources.
 4. `[convention]` Spacing should come from the design system's tokens. A one-off `dp` value is
    allowed, and a value used in more than one module becomes a token.
@@ -165,7 +170,7 @@ in the window theme and in `RolaboxSplash`. They don't define colors or fonts of
 6. `[convention]` A third party's branding lives in the area `:ui` that uses it, in the provider's
    `internal` subpackage. Each value that breaks rule 2 or 3 for it carries a `@Suppress` with a
    comment that names this rule.
-7. `[enforced]` Every resource in `:core:designsystem` starts with `ds_`.
+7. `[enforced]` Every resource in `:common:designsystem` starts with `ds_`.
 8. `[convention]` A string is shared, in the design system, only when its meaning and its role are
    the same everywhere it appears. A string that only has the same text as another stays in its
    feature.

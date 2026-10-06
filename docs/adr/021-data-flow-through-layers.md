@@ -7,6 +7,9 @@
 - **Supersedes:** [ADR-001](001-layered-architecture.md) (use cases as concrete classes in an
   `:api`, and the shape of ViewModels it left open) and [ADR-003](003-module-boundaries.md) (rule
   11, and the "pure-logic use cases" exception of "Where things live")
+- **Revised 2026-10-06:** The migration is done ([37.07b](https://trello.com/c/NjGx7cY4)), so rules
+  1 and 2 are `[enforced]` by two detekt rules (Rules, Conformance, Migration). The decision is
+  unchanged.
 
 ## Context
 
@@ -100,9 +103,10 @@ a composable.
 
 ### Migration
 
-The code doesn't match this ADR yet. The use cases move with
-[ADR-020](020-modules-by-product-area.md)'s second migration step, and the ViewModels of the
-account screens change in the same step, since both are being moved anyway.
+The use cases moved with [ADR-020](020-modules-by-product-area.md)'s second migration step, and
+the ViewModels of the account screens changed in the same step, since both were being moved anyway
+([37.07b](https://trello.com/c/NjGx7cY4)). `:app`'s two ViewModels, which the activity's content
+reads, follow the same shape, and the activity is where their concrete classes are named.
 
 ## Alternatives considered
 
@@ -144,11 +148,9 @@ account screens change in the same step, since both are being moved anyway.
 
 ## Rules
 
-Rules tagged `[planned]` are enforced with [37.07b](https://trello.com/c/NjGx7cY4).
-
-1. `[planned]` An `:api` module declares no class whose name ends in `UseCase` or `Repository`:
+1. `[enforced]` An `:api` module declares no class whose name ends in `UseCase` or `Repository`:
    those are interfaces.
-2. `[planned]` No composable function has a parameter or a `hiltViewModel` call typed with a
+2. `[enforced]` No composable function has a parameter or a `hiltViewModel` call typed with a
    `Default…ViewModel`. Only an entry names one.
 3. `[convention]` Every screen's ViewModel is an abstract class that extends `ViewModel` and
    declares only its UI state, as a `StateFlow`, and its actions. The class that implements it is
@@ -164,5 +166,6 @@ Rules tagged `[planned]` are enforced with [37.07b](https://trello.com/c/NjGx7cY
 8. `[convention]` An `:api` module contains only interfaces, models and error types.
 9. `[convention]` An `:impl` reaches another layer only through that layer's `:api`.
 
-**Conformance.** Rules 1 and 2 will be checked by detekt. Today the use cases are classes in
-`:core:domain`, and the account screens take their concrete ViewModels.
+**Conformance.** Rules 1 and 2 are checked by Rolabox's own detekt rules, both part of
+`./gradlew check`: `UseCaseOrRepositoryClassInApi`, which runs on the sources of `:api` modules, and
+`DefaultViewModelInComposable`. Each has unit tests with a violating and a passing sample.
