@@ -22,6 +22,8 @@
   [ADR-020](020-modules-by-product-area.md), now that the code has moved (37.07b). Auth is
   `:auth:data`, and storage, sync and user data are under `:common` (Decision). The decision is
   unchanged.
+- **Revised 2026-10-06:** Conformance notes that `:device:library:impl` serves hard-coded data in
+  memory, with no database, until the real library is designed. The decision is unchanged.
 
 ## Context
 
@@ -131,7 +133,9 @@ detailed conflict rules for each type of data.
 8. `[convention]` Play history is stored as append-only events, and aggregates are derived from them.
 9. `[convention]` Every feature works while the user is signed out.
 
-**Conformance.** Room and the library scan don't exist yet. `SyncRepository` syncs preferences from
+**Conformance.** Room and the library scan don't exist yet. `:device:library:impl` serves hard-coded
+data in memory so the device can be built, and has no database: a temporary gap in these rules,
+to be replaced when the real library is designed. `SyncRepository` syncs preferences from
 DataStore while the user is signed in and hasn't chosen offline mode
 ([ADR-011](011-preferences-sync.md)). Nothing in Room syncs yet. `AuthRepository` observes the
 Firebase user, and users can sign in with an email and password

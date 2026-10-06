@@ -54,6 +54,10 @@ include(":common:userdata:impl")
 include(":common:userdata:testing")
 
 include(":device:host")
+include(":device:library:api")
+include(":device:library:impl")
+include(":device:library:testing")
+
 include(":device:settings:api")
 include(":device:settings:impl")
 include(":device:ui:api")

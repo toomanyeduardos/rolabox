@@ -14,6 +14,10 @@
   step held: keys, an entry contract and a section's row compile and run in a JVM `:api`, the row
   with the Compose compiler applied to that module. Rules 1 to 8 are `[enforced]` (Rules,
   Conformance, Migration). The decision is unchanged.
+- **Revised 2026-10-06:** The music library's data is a part of the device, `:device:library:{api,
+  impl,testing}` (The layout, Left open). It was open; the device screens need it before the real
+  library is designed, so it starts as a hard-coded implementation, in memory and with no database
+  (ADR-002 isn't met yet, and the code says so). The decision is unchanged.
 
 ## Context
 
@@ -56,6 +60,7 @@ We will group modules **by product area**, let each area **assemble its own part
 :device:host                      the device's mechanism: screen stack, wheel routing (ADR-019)
 :device:ui:{api,impl}             the device's assembly: its entries, the main menu, the exits
 :device:settings:{api,impl}       the settings list and its slots
+:device:library:{api,impl,testing}  the music library's data: artists, albums, songs
 :device:playback:…                open, see "Left open"
 :common:util                      dispatchers, scopes, exception-to-error helpers
 :common:designsystem              the visual language (ADR-015)
@@ -243,7 +248,9 @@ This ADR doesn't decide, and its module list isn't complete for:
 
 - **Playback:** its parts. It will need a data part and screens, and possibly a part for Now
   Playing.
-- **The music library's data,** and where Room's database, entities and DAOs live.
+- **Where Room's database, entities and DAOs live,** now that `:device:library` exists. Its
+  `:impl` serves hard-coded data in memory until the real library is designed, and is replaced
+  then.
 - **`:device:data`,** which doesn't exist until the device has data of its own.
 - **Search and podcasts.**
 

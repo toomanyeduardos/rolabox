@@ -200,6 +200,9 @@ there is something to fake, a `:testing` module.
 | `:device:host` | The device's mechanism: the screen stack inside the display, wheel event routing, and the contract device screens use |
 | `:device:ui:api` | The device's keys and entry contract |
 | `:device:ui:impl` | The device's assembly: its entries, the main menu, what each exit opens, the playback handlers |
+| `:device:library:api` | The music library's API: `LibraryRepository`, `Artist`, `Album`, `Song`, `LibraryError` |
+| `:device:library:impl` | The library, hard-coded and in memory for now (no database yet, ADR-002) |
+| `:device:library:testing` | `FakeLibraryRepository` |
 | `:device:settings:api` | The settings key, the slots of the settings list, and the contract of a contributed section |
 | `:device:settings:impl` | The settings list |
 | `:common:util` | Coroutine dispatchers and scopes, helpers that turn exceptions into typed errors |
@@ -262,6 +265,9 @@ graph TD
     common_userdata_testing[":common:userdata:testing"]
     common_util[":common:util"]
     device_host[":device:host"]
+    device_library_api[":device:library:api"]
+    device_library_impl[":device:library:impl"]
+    device_library_testing[":device:library:testing"]
     device_settings_api[":device:settings:api"]
     device_settings_impl[":device:settings:impl"]
     device_ui_api[":device:ui:api"]
@@ -278,6 +284,7 @@ graph TD
     app --> common_sync_impl
     app --> common_userdata_api
     app --> common_userdata_impl
+    app --> device_library_impl
     app --> device_settings_impl
     app --> device_ui_api
     app --> device_ui_impl
@@ -314,6 +321,10 @@ graph TD
     common_userdata_testing --> common_sync_api
     common_userdata_testing --> common_userdata_api
     device_host --> common_designsystem
+    device_library_api --> common_storage_api
+    device_library_impl --> device_library_api
+    device_library_testing --> common_storage_api
+    device_library_testing --> device_library_api
     device_settings_impl --> common_designsystem
     device_settings_impl --> device_settings_api
     device_ui_impl --> common_designsystem
