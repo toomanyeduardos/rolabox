@@ -9,22 +9,24 @@ New ADR: copy [`template.md`](template.md), take the next number, and add it to 
 | ADR | Title | Status |
 | --- | --- | --- |
 | [000](000-record-architecture-decisions.md) | Record architecture decisions | Accepted |
-| [001](001-layered-architecture.md) | Layered architecture with a domain layer that owns the repository interfaces | Accepted |
+| [001](001-layered-architecture.md) | Layered architecture with a domain layer that owns the repository interfaces | Accepted, partly superseded by ADR-020 and ADR-021 |
 | [002](002-offline-first-data-flow.md) | Offline-first data flow with the local database as the single source of truth | Accepted |
-| [003](003-module-boundaries.md) | Module boundaries and dependency rules | Accepted |
+| [003](003-module-boundaries.md) | Module boundaries and dependency rules | Accepted, partly superseded by ADR-020 and ADR-021 |
 | [004](004-convention-plugins.md) | Share build configuration through convention plugins | Accepted |
 | [005](005-hilt-dependency-injection.md) | Use Hilt for dependency injection | Accepted |
 | [006](006-async-api-shape.md) | Async API shape: `Flow` for observed state, `suspend` for single operations | Accepted |
 | [007](007-error-handling.md) | Typed errors with Arrow `Either` for every fallible operation | Accepted |
 | [008](008-one-app-with-offline-mode.md) | One app with Firebase built in, and offline mode as a user choice | Accepted |
-| [009](009-ui-bound-sdks.md) | SDK steps that need an Activity live in the UI, and only their results cross the `:api` | Accepted |
+| [009](009-ui-bound-sdks.md) | SDK steps that need an Activity live in the UI, and only their results cross the `:api` | Accepted, partly superseded by ADR-020 |
 | [010](010-firestore-security-rules.md) | Firestore for synced data, with per-user security rules tested against the emulator | Accepted |
 | [011](011-preferences-sync.md) | Sync preferences through Firestore, field by field, with last-write-wins | Accepted |
-| [012](012-navigation.md) | Navigation with Jetpack Navigation 3, with the back stacks owned by `:app` | Accepted |
+| [012](012-navigation.md) | Navigation with Jetpack Navigation 3, with the back stacks owned by `:app` | Accepted, partly superseded by ADR-020 |
 | [013](013-account-linking.md) | One account per email, with Google and password sign-in linked automatically | Accepted |
-| [014](014-area-ui-modules.md) | Area UI modules for SDK steps and shared UI, `:core:<area>:ui` | Accepted |
+| [014](014-area-ui-modules.md) | Area UI modules for SDK steps and shared UI, `:core:<area>:ui` | Accepted, partly superseded by ADR-020 |
 | [015](015-design-system-owns-visual-language.md) | The design system is the only home of Rolabox's visual language | Accepted |
 | [016](016-screenshot-testing.md) | Screenshot tests with Paparazzi, run on the JVM with goldens in Git LFS | Accepted |
 | [017](017-accessibility.md) | Accessibility is an architectural rule, starting with large text | Accepted |
-| [018](018-device-navigation.md) | Device navigation: a linear screen stack driven by the wheel | Accepted |
-| [019](019-device-host-module.md) | The device is a host module, `:core:device`, that receives its screens from `:app` | Accepted |
+| [018](018-device-navigation.md) | Device navigation: a linear screen stack driven by the wheel | Accepted, partly superseded by ADR-020 |
+| [019](019-device-host-module.md) | The device is a host module, `:core:device`, that receives its screens from `:app` | Accepted, partly superseded by ADR-020 |
+| [020](020-modules-by-product-area.md) | Modules grouped by product area, with the device assembling its own screens | Accepted |
+| [021](021-data-flow-through-layers.md) | Every layer is reached through an abstraction, from the screen to the data source | Accepted |

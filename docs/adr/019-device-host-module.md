@@ -1,6 +1,6 @@
 # ADR-019: The device is a host module, `:core:device`, that receives its screens from `:app`
 
-- **Status:** Accepted
+- **Status:** Accepted. Rules 2 and 4 superseded by [ADR-020](020-modules-by-product-area.md)
 - **Date:** 2026-10-01
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review

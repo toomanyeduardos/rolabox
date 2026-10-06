@@ -1,6 +1,8 @@
 # ADR-003: Module boundaries and dependency rules
 
-- **Status:** Accepted
+- **Status:** Accepted. The module table and rules 1 to 10 and 16 to 19 superseded by
+  [ADR-020](020-modules-by-product-area.md). Rule 11 superseded by
+  [ADR-021](021-data-flow-through-layers.md)
 - **Date:** 2026-09-24
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review
