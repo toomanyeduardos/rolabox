@@ -17,6 +17,8 @@
   of rules 1, 5 and 12 that name `:app` are superseded by ADR-020 and are left as they were written:
   the main menu, the mapping from exits to keys and the playback handlers are in `:device:ui:impl`.
   Where the text says "feature", read the `:impl` of a part with screens.
+- **Revised 2026-10-06:** Rules 3 and 12 are `[enforced]`, with the checks named under Conformance
+  (37.10). The paragraph on the target state says which rules are still checked by review only.
 
 ## Context
 
@@ -48,8 +50,9 @@ tapped receives input, what each wheel control does and who decides it, or how t
 relates to MENU. [ADR-017](017-accessibility.md) requires text to follow the system font scale,
 and the display is small.
 
-**Target state.** The device isn't built yet. This ADR is written before its first ticket, so the
-rules below apply to code as it is written, and none of them has a build check yet.
+**Target state.** The device was written after this ADR, and the rules apply to code as it is
+written. Rules 3 and 12 have a build check (see Conformance under Rules). The rest are `[convention]`
+and are checked in review, and rules 8, 10 and 11 have no code to be checked against yet.
 
 ## Decision
 
@@ -274,7 +277,7 @@ as ADR-017's rule 10 requires.
    device host runs it and pops it, and `:app` decides every push (ADR-019).
 2. `[convention]` Device screens follow ADR-012 for keys, entries, exits and state. A feature
    provides its device screens and its full screens as separate sets of entries.
-3. `[convention]` A device screen has no tap, click, drag or scroll handling. Its only inputs are
+3. `[enforced]` A device screen has no tap, click, drag or scroll handling. Its only inputs are
    the wheel events the device host gives it.
 4. `[convention]` The wheel reports events from a fixed vocabulary and knows nothing about the
    screens. A turn is a number of steps, with acceleration already applied.
@@ -294,9 +297,23 @@ as ADR-017's rule 10 requires.
 11. `[convention]` A screen that needs touch or the keyboard is a full screen on the app stack, not
     a device screen. No screen mixes the two. Settings and everything under it are full screens,
     opened from the main menu.
-12. `[convention]` The device's body, display, rows and wheel, and the wheel's event vocabulary,
+12. `[enforced]` The device's body, display, rows and wheel, and the wheel's event vocabulary,
     live in `:common:designsystem`. The screen stack and the routing of events live in `:device:host`
-    (ADR-019). The main menu and the mapping from exits to keys live in `:app`.
+    (ADR-019). The main menu and the mapping from exits to keys live in `:app`. Enforced for the
+    design-system part only: where the host, the main menu and the mapping live is checked in review.
 13. `[convention]` The app is locked to portrait, and the device has one layout.
 14. `[convention]` Text on the display follows the system font scale (ADR-017). The wheel's label
     and icons don't, as an exception marked under ADR-017's rule 10.
+
+**Conformance.** Rule 3 is checked by `TouchInputInDeviceScreen`, a Rolabox detekt rule. A file is a
+device screen file when it imports `:device:host` or one of the design system's device components, and
+the rule reports a call to `clickable`, `combinedClickable`, `selectable`, `toggleable`,
+`pointerInput`, `draggable`, `scrollable`, `verticalScroll`, `horizontalScroll` or the like in it.
+Settings and the other full screens import neither, so they are not checked. `:device:host` and
+`:common:designsystem` implement the wheel's input and are excluded. Rule 12 is checked by
+`DeviceComponentOutsideDesignSystem`, which reports a declaration with the name of a design-system
+device component or of the wheel's event types (`names` in `config/detekt/detekt.yml`) anywhere but
+`:common:designsystem`. A new device component is added to that list. Both run in `detekt`, part of
+`./gradlew check` and of the CI `build` job, and their unit tests run in `./gradlew check` and
+`unitTest`. An exception is a `@Suppress` that names the rule. Rules 1, 2, 4 to 11, 13 and 14 are
+reviewed.
