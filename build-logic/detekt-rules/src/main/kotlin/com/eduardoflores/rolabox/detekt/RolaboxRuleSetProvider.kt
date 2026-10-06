@@ -15,5 +15,8 @@ import dev.detekt.api.RuleSetProvider
 class RolaboxRuleSetProvider : RuleSetProvider {
     override val ruleSetId = RuleSetId("rolabox")
 
-    override fun instance() = RuleSet(ruleSetId, listOf(::FixedHeightAroundText))
+    override fun instance() = RuleSet(
+        ruleSetId,
+        listOf(::FixedHeightAroundText, ::UseCaseOrRepositoryClassInApi, ::DefaultViewModelInComposable),
+    )
 }

@@ -1,25 +1,12 @@
 package com.eduardoflores.rolabox
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.eduardoflores.rolabox.core.domain.ResolveStartDestinationUseCase
-import com.eduardoflores.rolabox.core.domain.StartDestination
-import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
-import kotlinx.coroutines.flow.SharingStarted
+import com.eduardoflores.rolabox.auth.data.api.StartDestination
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.stateIn
 
-@HiltViewModel
-class StartupViewModel @Inject constructor(resolveStartDestinationUseCase: ResolveStartDestinationUseCase) :
-    ViewModel() {
-    // Resolved once per ViewModel, with no delay of its own. It isn't stopped when the screen stops,
-    // so coming back to the app never routes the user somewhere else.
-    val uiState: StateFlow<StartupUiState> = flow<StartupUiState> {
-        emit(StartupUiState.Ready(resolveStartDestinationUseCase()))
-    }
-        .stateIn(scope = viewModelScope, started = SharingStarted.Eagerly, initialValue = StartupUiState.Resolving)
+/** Whether the app knows yet where it opens (ADR-021). [DefaultStartupViewModel] implements it. */
+abstract class StartupViewModel : ViewModel() {
+    abstract val uiState: StateFlow<StartupUiState>
 }
 
 sealed interface StartupUiState {

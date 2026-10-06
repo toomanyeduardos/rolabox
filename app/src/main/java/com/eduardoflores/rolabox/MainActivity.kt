@@ -18,15 +18,28 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.splashscreen.SplashScreenViewProvider
 import androidx.core.view.doOnPreDraw
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxTheme
+import com.eduardoflores.rolabox.auth.ui.api.AuthUiEntries
+import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxTheme
+import com.eduardoflores.rolabox.device.ui.api.DeviceUiEntries
 import com.eduardoflores.rolabox.splash.SplashHandoff
 import com.eduardoflores.rolabox.splash.systemSplashIconAngle
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    private val viewModel: MainActivityViewModel by viewModels()
-    private val startupViewModel: StartupViewModel by viewModels()
+    // The activity is where these ViewModels are created, so it names their concrete classes. The
+    // content below reads them through the abstract ones (ADR-021).
+    private val viewModel: MainActivityViewModel by viewModels<DefaultMainActivityViewModel>()
+    private val startupViewModel: StartupViewModel by viewModels<DefaultStartupViewModel>()
+
+    // The entry contracts of the two areas. What is under each one is theirs to know (ADR-020).
+    @Inject
+    lateinit var authUiEntries: AuthUiEntries
+
+    @Inject
+    lateinit var deviceUiEntries: DeviceUiEntries
+
     private var firstFrameReady = false
     private var splashHandoff by mutableStateOf<SplashHandoff?>(null)
 
@@ -62,6 +75,8 @@ class MainActivity : ComponentActivity() {
                     startup = startup,
                     splashHandoff = splashHandoff,
                     awaitingSystemSplash = awaitingSystemSplash,
+                    authUiEntries = authUiEntries,
+                    deviceUiEntries = deviceUiEntries,
                 )
             }
         }

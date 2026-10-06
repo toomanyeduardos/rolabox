@@ -18,6 +18,10 @@
   and `AuthRepository` always observes the Firebase user. The decision is unchanged.
 - **Revised 2026-09-29:** Conformance now reflects that signing in with an email and password
   is built. The decision is unchanged.
+- **Revised 2026-10-06:** Module names updated for the layout of
+  [ADR-020](020-modules-by-product-area.md), now that the code has moved (37.07b). Auth is
+  `:auth:data`, and storage, sync and user data are under `:common` (Decision). The decision is
+  unchanged.
 
 ## Context
 
@@ -56,7 +60,7 @@ MediaStore ──scan──▶ Room ◀──sync (background)── remote back
   Room stores metadata and the file's content URI, never the audio itself. Files are read from disk
   only when played.
 - **Preferences are the exception.** User settings stay in DataStore (behind `PreferencesStore` in
-  `:core:storage`), which is their source of truth. They are key–value settings, not relational
+  `:common:storage`), which is their source of truth. They are key–value settings, not relational
   data.
 - **Writes go to the local database first.** Favoriting a song, editing a playlist, or finishing a
   play updates Room immediately. Syncing happens afterwards in the background.
@@ -77,7 +81,7 @@ MediaStore ──scan──▶ Room ◀──sync (background)── remote back
   Aggregates such as "most played this month" are computed from those events. When devices sync,
   their event logs are merged by union, so no plays are lost. A synced counter would lose plays when
   two devices are offline at the same time.
-- **Signing in is optional.** Auth (`:core:auth:api`) and sync (`:core:sync:api`) sit behind
+- **Signing in is optional.** Auth (`:auth:data:api`) and sync (`:common:sync:api`) sit behind
   interfaces. When the user is signed out, sync does nothing and every feature still works.
 
 Deferred to later ADRs: which remote backend to use, the sync schedule and mechanism, and the

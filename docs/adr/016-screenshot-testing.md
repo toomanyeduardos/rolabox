@@ -4,6 +4,11 @@
 - **Date:** 2026-09-30
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review
+- **Revised 2026-10-06:** Module names updated for the layout of
+  [ADR-020](020-modules-by-product-area.md), now that the code has moved (37.07b). The harness is in
+  the test fixtures of `:common:designsystem`, and the composite plugin that Paparazzi is not part
+  of is `rolabox.android.screens` ([ADR-004](004-convention-plugins.md)). The goldens were renamed
+  with their modules' packages, and none was recorded again. The decision is unchanged.
 
 ## Context
 
@@ -34,7 +39,7 @@ need no emulator, no device and no Robolectric, and run as ordinary unit tests.
 **Applied through a convention plugin.** `rolabox.android.paparazzi` (in `build-logic`,
 [ADR-004](004-convention-plugins.md)) adds Paparazzi and its dependencies to a module. It is **opt-in**,
 applied next to `rolabox.android.library` and `rolabox.android.compose`, and is not part of
-`rolabox.android.ui` or `rolabox.android.feature`, so only modules with UI worth snapshotting pay for
+`rolabox.android.screens`, so only modules with UI worth snapshotting pay for
 it. Two checks keep it from being forgotten or bypassed:
 
 - a module that declares Paparazzi itself, without applying the plugin, fails configuration
@@ -68,7 +73,7 @@ a revision of this ADR.
 **Where they live.** In the module's own `src/test`. Each module has a `PreviewSnapshotTest` of a few
 lines that names the packages to scan and extends `PreviewSnapshot`. The harness that does the work
 (scanning, the device, theme and font scale, the background `showBackground` asks for) lives once, in
-the **test fixtures of `:core:designsystem`**, because preview tooling is the design system's
+the **test fixtures of `:common:designsystem`**, because preview tooling is the design system's
 ([ADR-015](015-design-system-owns-visual-language.md)). The plugin adds those fixtures to every module
 that applies it. Goldens are in `src/test/snapshots/` next to the test, named after the composable and
 the render (`SignInScreen_SignInScreenPreview_Dark.png`), so adding a preview doesn't rename the
@@ -114,10 +119,10 @@ Kotlin 2.4.20, which are newer than the ones it was built against. We will **mov
   a third-party library to make coverage follow the previews.
 - **Keep goldens in plain git.** No setup, and nothing to install. But image files can't be merged
   or compressed by git, so each change to a golden adds its full size to every clone, for good.
-- **Put the harness in `:core:testing`.** Keeps test code together. But it would be a dependency of
-  every module that uses `:core:testing`, including the ones with no UI, and it would make Paparazzi
+- **Put the harness in `:common:testing`.** Keeps test code together. But it would be a dependency of
+  every module that uses `:common:testing`, including the ones with no UI, and it would make Paparazzi
   something modules get without applying the plugin, which is what the first check rejects.
-- **Bundle the plugin into `rolabox.android.ui` and `rolabox.android.feature`.** A new module
+- **Bundle the plugin into `rolabox.android.screens`.** A new module
   couldn't forget it. But every such module would carry Paparazzi, including one with no previews,
   and it contradicts applying it only where it is needed. The `@Preview` check closes the same gap
   without the cost.

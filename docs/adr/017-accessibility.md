@@ -8,6 +8,10 @@
   ([ADR-019](019-device-host-module.md)), besides the design system and the area `:ui` modules.
   ADR-019 added a third kind of module whose composables show text to other modules, and rule 9
   named only the first two, so rule 3 didn't see a fixed height around the host's composables.
+- **Revised 2026-10-06:** Module names updated for the layout of
+  [ADR-020](020-modules-by-product-area.md), now that the code has moved (37.07b). Rule 9 names the
+  `:impl` of a part with screens where it named an area `:ui` module, which no longer exists, and
+  the device host is `:device:host`. The decision is unchanged.
 
 ## Context
 
@@ -133,7 +137,7 @@ The Google sign-in button is, within Google's branding rules.
   and "shows text" still has no type to resolve. A list of names in the configuration is simple to
   read and to extend.
 - **Put the detekt rules in a module of the main build.** A normal project dependency. But the rules
-  are build tooling, which ADR-004 keeps in `build-logic`, and `:core` and `:feature` are for the
+  are build tooling, which ADR-004 keeps in `build-logic`, and the main build's modules are for the
   app's code. It remains the fallback if a future detekt can't load rules from an included build.
 - **Enforce the bar at 2.0x.** Covers every user. But ADR-016 doesn't render 2.0x, so the rule would
   have no golden to be reviewed against, and Android 14's non-linear scaling changes what 2.0x means.
@@ -158,7 +162,7 @@ The Google sign-in button is, within Google's branding rules.
 - `FixedHeightAroundText` reads syntax. It doesn't follow a modifier that is built elsewhere and
   passed in, or a content lambda that is passed as a parameter, and it only knows the text
   composables in its list. A new component that shows text has to be added to the list by hand.
-- `ForbiddenMethodCall` doesn't run on `:core:designsystem`, which ADR-015 excludes from it so it can
+- `ForbiddenMethodCall` doesn't run on `:common:designsystem`, which ADR-015 excludes from it so it can
   define colors and shapes. There, not building a `Density` is checked in review.
 - The Google button's label stays on one line. It fits at 1.5x on the Pixel 6 configuration, but on
   a narrower screen or at a larger scale it could be cut, and Google's rules leave no fix for that
@@ -178,7 +182,7 @@ The Google sign-in button is, within Google's branding rules.
    dated revision that brings its rules and their enforcement. The large-text bar is the font scale
    ADR-016 snapshots (1.5), and changing it is a revision of both ADRs.
 2. `[enforced]` Text follows the system font scale. No code builds a `Density(…)` to override or cap
-   it. Enforced everywhere except in `:core:designsystem`, where it is checked in review.
+   it. Enforced everywhere except in `:common:designsystem`, where it is checked in review.
 3. `[enforced]` A composable that shows text has no fixed height: no `.height(…)`, `.size(…)`,
    `.requiredHeight(…)` or `.requiredSize(…)` on it or on a container around it. It uses a minimum
    (`heightIn(min = …)`), or a size multiplied by the font scale.
@@ -194,8 +198,8 @@ The Google sign-in button is, within Google's branding rules.
    1.5x render to a light preview that declares none.
 8. `[convention]` A pull request that adds or changes a 1.5x golden is reviewed against rules 4 to
    6, not only for whether the image changed.
-9. `[convention]` A new composable that shows text, in the design system, in an area `:ui` module
-   or in `:core:device`, is added to `textComposables` in `config/detekt/detekt.yml`, so rule 3
+9. `[convention]` A new composable that shows text, in the design system, in the `:impl` of a part
+   with screens or in `:device:host`, is added to `textComposables` in `config/detekt/detekt.yml`, so rule 3
    sees the containers around it.
 10. `[convention]` An exception to rule 2 or 3 carries a `@Suppress` with a comment that names the
     rule and says why.

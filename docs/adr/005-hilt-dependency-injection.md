@@ -12,6 +12,11 @@
 - **Revised 2026-09-28:** The sync worker gets its dependencies from a Hilt entry point instead of
   `@HiltWorker`, so WorkManager stays out of the offline app ([ADR-011](011-preferences-sync.md))
   (Consequences). The decision is unchanged.
+- **Revised 2026-10-06:** Module names updated for the layout of
+  [ADR-020](020-modules-by-product-area.md), now that the code has moved (37.07b). `:core:domain` is
+  gone, since use cases are interfaces in an `:api` ([ADR-021](021-data-flow-through-layers.md)), so
+  the Decision and rule 3 name only `:api` modules. The dispatchers' qualifier is in `:common:util`.
+  The decision is unchanged.
 
 ## Context
 
@@ -34,7 +39,7 @@ the `rolabox.hilt` convention plugin ([ADR-004](004-convention-plugins.md)).
 - **Bindings live next to their implementations.** Each module that implements an interface binds
   it with `@Binds` in a Hilt module in its own `di` package, installed in the appropriate component.
   The implementation class and its binding function can then stay `internal` (see `UserDataModule`).
-- **The domain layer stays free of Hilt.** `:api` modules (and `:core:domain`, once it exists) use
+- **The domain layer stays free of Hilt.** `:api` modules use
   only `javax.inject` annotations (`@Inject`) and declare no Hilt modules, so they stay pure Kotlin
   and testable without Hilt.
 - **ViewModels** are annotated `@HiltViewModel` and obtained in Compose with `hiltViewModel()`.
@@ -42,7 +47,7 @@ the `rolabox.hilt` convention plugin ([ADR-004](004-convention-plugins.md)).
   sources, which bind the fakes from each area's `:testing` module in place of the production
   modules (see `TestModules.kt`). Unit tests of individual classes
   pass fakes through the constructor and don't need Hilt at all.
-- **Coroutine dispatchers are injected** with the `@Dispatcher` qualifier from `:core:common`, so
+- **Coroutine dispatchers are injected** with the `@Dispatcher` qualifier from `:common:util`, so
   tests can replace them with test dispatchers.
 
 ## Alternatives considered
@@ -78,8 +83,8 @@ the `rolabox.hilt` convention plugin ([ADR-004](004-convention-plugins.md)).
    only in Android entry points.
 2. `[convention]` Interfaces are bound with `@Binds` in a Hilt module in the implementing module's
    `di` package. Implementations are `internal` where possible.
-3. `[enforced]` `:api` modules and `:core:domain` depend only on `javax.inject` for injection, and
-   contain no Hilt modules.
+3. `[enforced]` `:api` modules depend only on `javax.inject` for injection, and contain no Hilt
+   modules.
 4. `[convention]` Tests replace production bindings with `@TestInstallIn` modules in `:app`'s test
    sources, not by editing production modules.
 5. `[enforced]` Coroutine dispatchers are injected with `@Dispatcher`, and never referenced

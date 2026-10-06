@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.eduardoflores.rolabox.auth.ui.api.AuthUiEntries
+import com.eduardoflores.rolabox.device.ui.api.DeviceUiEntries
 import com.eduardoflores.rolabox.splash.RolaboxSplash
 import com.eduardoflores.rolabox.splash.SplashHandoff
 import com.eduardoflores.rolabox.splash.rememberAnimationsEnabled
@@ -28,13 +30,20 @@ internal fun RolaboxApp(
     startup: StartupUiState,
     splashHandoff: SplashHandoff?,
     awaitingSystemSplash: Boolean,
+    authUiEntries: AuthUiEntries,
+    deviceUiEntries: DeviceUiEntries,
     modifier: Modifier = Modifier,
 ) {
     val animationsEnabled = rememberAnimationsEnabled()
 
     Box(modifier = modifier.fillMaxSize()) {
         if (startup is StartupUiState.Ready) {
-            RolaboxNavigation(startDestination = startup.destination, modifier = Modifier.fillMaxSize())
+            RolaboxNavigation(
+                startDestination = startup.destination,
+                authUiEntries = authUiEntries,
+                deviceUiEntries = deviceUiEntries,
+                modifier = Modifier.fillMaxSize(),
+            )
         }
         AnimatedVisibility(
             visible = startup is StartupUiState.Resolving || (awaitingSystemSplash && splashHandoff == null),

@@ -12,11 +12,11 @@ Offline first, account optional, and dressed like the hi-fi you wanted in the ea
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.4-7F52FF?logo=kotlin&logoColor=white)
 ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?logo=jetpackcompose&logoColor=white)
 
-<img src="https://media.githubusercontent.com/media/toomanyeduardos/rolabox/main/feature/account/src/test/snapshots/images/com.eduardoflores.rolabox.feature.account_PreviewSnapshotTest_snapshot%5BSignInScreen_SignInScreenPreview_Dark%5D.png" width="240" alt="Sign in screen, dark theme">
+<img src="https://media.githubusercontent.com/media/toomanyeduardos/rolabox/main/auth/ui/impl/src/test/snapshots/images/com.eduardoflores.rolabox.auth.ui.impl_PreviewSnapshotTest_snapshot%5BSignInScreen_SignInScreenPreview_Dark%5D.png" width="240" alt="Sign in screen, dark theme">
 &nbsp;
-<img src="https://media.githubusercontent.com/media/toomanyeduardos/rolabox/main/feature/account/src/test/snapshots/images/com.eduardoflores.rolabox.feature.account_PreviewSnapshotTest_snapshot%5BCreateAccountScreen_CreateAccountScreenPreview_Light%5D.png" width="240" alt="Create account screen, light theme">
+<img src="https://media.githubusercontent.com/media/toomanyeduardos/rolabox/main/auth/ui/impl/src/test/snapshots/images/com.eduardoflores.rolabox.auth.ui.impl_PreviewSnapshotTest_snapshot%5BCreateAccountScreen_CreateAccountScreenPreview_Light%5D.png" width="240" alt="Create account screen, light theme">
 &nbsp;
-<img src="https://media.githubusercontent.com/media/toomanyeduardos/rolabox/main/feature/account/src/test/snapshots/images/com.eduardoflores.rolabox.feature.account_PreviewSnapshotTest_snapshot%5BResetPasswordScreen_ResetPasswordStep1Preview_Dark%5D.png" width="240" alt="Reset password screen, dark theme">
+<img src="https://media.githubusercontent.com/media/toomanyeduardos/rolabox/main/auth/ui/impl/src/test/snapshots/images/com.eduardoflores.rolabox.auth.ui.impl_PreviewSnapshotTest_snapshot%5BResetPasswordScreen_ResetPasswordStep1Preview_Dark%5D.png" width="240" alt="Reset password screen, dark theme">
 
 *These are the real screenshot-test goldens, checked by Paparazzi on every CI run.*
 
@@ -181,50 +181,56 @@ and the rules that follow. Most rules are enforced by the build or by tests, not
 
 ### Modules
 
-`:core` modules are organized by area ([ADR-003](docs/adr/003-module-boundaries.md)). Each area has
-an `:api` module (pure Kotlin interfaces, models and error types), an `:impl` module (the Android
-implementation and its Hilt bindings) and a `:testing` module (fakes). An area with UI-bound code,
-such as an SDK step that shows system UI, also has a `:ui` module
-([ADR-014](docs/adr/014-area-ui-modules.md)).
+Modules are grouped by product area ([ADR-020](docs/adr/020-modules-by-product-area.md)): `:auth`
+decides whether the user may reach the device, `:device` is the music player, and `:common` is what
+both share. An area is made of parts, and a part is split into an `:api` module (a JVM module with
+interfaces, models and error types, or the keys and entry contract of its screens), an `:impl`
+module (the implementation and its Hilt bindings, or the screens and their ViewModels) and, when
+there is something to fake, a `:testing` module.
 
 | Module | Purpose |
 | --- | --- |
-| `:app` | Application shell: entry point, app identity, wires features and `:impl` modules together |
-| `:core:auth:api` | Authentication API: `AuthRepository`, `AuthUser` |
-| `:core:auth:impl` | Authentication with Firebase |
-| `:core:auth:testing` | `FakeAuthRepository` |
-| `:core:auth:ui` | Sign-in UI shared by features: the provider steps (Google) and their buttons |
-| `:core:storage:api` | Local storage API: `PreferencesStore` (key-value settings), `StorageError` |
-| `:core:storage:impl` | `PreferencesStore` backed by DataStore |
-| `:core:storage:testing` | `FakePreferencesStore` |
-| `:core:sync:api` | Sync API: `SyncRepository`, `SyncedValue`, `LastWriteWins` |
-| `:core:sync:impl` | Sync: preferences through Firestore and WorkManager, never in offline mode |
-| `:core:sync:testing` | `FakeSyncRepository` |
-| `:core:userdata:api` | User preferences API: `UserDataRepository`, `UserData`, `SyncedPreferencesRepository` |
-| `:core:userdata:impl` | User preferences, stored through `PreferencesStore` |
-| `:core:userdata:testing` | `FakeUserDataRepository` |
-| `:core:domain` | Use cases that combine more than one area, such as `ResolveStartDestinationUseCase` (pure Kotlin) |
-| `:core:common` | Utility: coroutine dispatchers, helpers that turn exceptions into typed errors |
-| `:core:designsystem` | Utility: theme and shared composables |
-| `:core:device` | Utility: the device host (the screen stack inside the display, wheel event routing) and the contract device screens use |
-| `:core:testing` | Utility, test-only: Hilt test runner, `MainDispatcherRule` |
-| `:feature:account` | Sign-in and account UI |
-| `:feature:settings` | Settings UI |
+| `:app` | Application shell and composition root: entry point, app identity, the app stack, and the place where the two areas meet |
+| `:auth:data:api` | Authentication API: `AuthRepository`, `AuthUser`, `AuthError`, and the sign-in, sign-up and start-destination use cases |
+| `:auth:data:impl` | Authentication with Firebase, the use cases' implementations, and who sync runs for |
+| `:auth:data:testing` | `FakeAuthRepository` and the fake use cases |
+| `:auth:ui:api` | The keys and entry contract of the auth screens, and `SignInConfig` |
+| `:auth:ui:impl` | Sign in, Create account and Reset password, and the sign-in provider steps (Google) |
+| `:auth:settings:impl` | The account section of the device's settings |
+| `:device:host` | The device's mechanism: the screen stack inside the display, wheel event routing, and the contract device screens use |
+| `:device:ui:api` | The device's keys and entry contract |
+| `:device:ui:impl` | The device's assembly: its entries, the main menu, what each exit opens, the playback handlers |
+| `:device:settings:api` | The settings key, the slots of the settings list, and the contract of a contributed section |
+| `:device:settings:impl` | The settings list |
+| `:common:util` | Coroutine dispatchers and scopes, helpers that turn exceptions into typed errors |
+| `:common:designsystem` | The visual language: theme, shared composables, the device's parts |
+| `:common:testing` | Test-only: Hilt test runner, `MainDispatcherRule` |
+| `:common:storage:api` | Local storage API: `PreferencesStore` (key-value settings), `StorageError` |
+| `:common:storage:impl` | `PreferencesStore` backed by DataStore |
+| `:common:storage:testing` | `FakePreferencesStore` |
+| `:common:sync:api` | Sync API: `SyncRepository`, `SyncUserProvider`, `SyncedValue`, `LastWriteWins` |
+| `:common:sync:impl` | Sync: preferences through Firestore and WorkManager, never in offline mode |
+| `:common:sync:testing` | `FakeSyncRepository`, `FakeSyncUserProvider` |
+| `:common:userdata:api` | User preferences API: `UserDataRepository`, `UserData`, `SyncedPreferencesRepository` |
+| `:common:userdata:impl` | User preferences, stored through `PreferencesStore` |
+| `:common:userdata:testing` | `FakeUserDataRepository` |
 
 ### Dependency rules
 
-The full set of rules, and the reasoning behind them, is in [ADR-003](docs/adr/003-module-boundaries.md). These are enforced by the build (see `build-logic/.../ModuleRules.kt`); breaking one fails configuration with an error naming the rule.
+The full set of rules, and the reasoning behind them, is in [ADR-020](docs/adr/020-modules-by-product-area.md). These are enforced by the build (see `build-logic/.../ModuleRules.kt`); breaking one fails configuration with an error naming the rule.
 
-- Feature modules never depend on other feature modules, and only `:app` depends on feature modules.
-- Only `:app` depends on `:impl` modules, and an `:impl` depends only on `:api` modules and `:core:common`.
-- Feature modules depend only on `:api` and `:ui` modules, `:core:domain`, `:core:common`, `:core:designsystem` and `:core:device`.
-- `:ui` modules depend only on `:api` modules, `:core:domain`, `:core:common` and `:core:designsystem`, and only features and `:app` depend on them. They have no ViewModels or navigation destinations.
-- `:api` modules, `:core:common` and `:core:domain` are JVM modules. `:api` modules depend only on `:core:common` and other `:api` modules, with no Hilt. `:core:domain` depends only on `:api` modules and `:core:common`.
-- `:core:designsystem` depends only on `:core:common`.
-- `:core:device` depends only on `:core:designsystem` and `:core:common`, and only features and `:app` depend on it.
-- Testing modules (`:core:testing` and every `:core:<area>:testing`) are only used from test configurations.
+- `:common:*` modules depend only on `:common:*` modules.
+- No `:device` module depends on an `:auth` module.
+- The only `:auth` module that depends on a `:device` module is `:auth:settings:impl`, and it depends only on `:device:settings:api`.
+- Only `:app` depends on `:impl` modules.
+- An `:impl` depends only on `:api` modules, `:common:util` and `:common:designsystem`, and a `:device` `:impl` also on `:device:host`.
+- An `:api` is a JVM module with no Android dependencies and no Hilt, and depends only on other `:api` modules and `:common:util`.
+- Testing modules (`:common:testing` and every `:testing`) are only used from test configurations.
+- `:device:host` depends only on `:common:designsystem` and `:common:util`, and only `:device` `:impl` modules depend on it.
 
-`:api` modules hold only interfaces and models (plus pure-logic use cases), and there is no shared model module: each type lives in the `:api` of the area that owns it.
+Every step from a screen to a data source depends on an abstraction ([ADR-021](docs/adr/021-data-flow-through-layers.md)), and detekt checks two parts of that: an `:api` module declares no class whose name ends in `UseCase` or `Repository`, since those are interfaces there, and no composable function takes or creates a `Default…ViewModel`.
+
+There is no shared model module: each type lives in the `:api` of the part that owns it.
 
 ### Module graph
 
@@ -237,73 +243,83 @@ Generated from the build. After changing module dependencies, regenerate with `.
 ```mermaid
 graph TD
     app[":app"]
-    core_auth_api[":core:auth:api"]
-    core_auth_impl[":core:auth:impl"]
-    core_auth_testing[":core:auth:testing"]
-    core_auth_ui[":core:auth:ui"]
-    core_common[":core:common"]
-    core_designsystem[":core:designsystem"]
-    core_device[":core:device"]
-    core_domain[":core:domain"]
-    core_storage_api[":core:storage:api"]
-    core_storage_impl[":core:storage:impl"]
-    core_storage_testing[":core:storage:testing"]
-    core_sync_api[":core:sync:api"]
-    core_sync_impl[":core:sync:impl"]
-    core_sync_testing[":core:sync:testing"]
-    core_testing[":core:testing"]
-    core_userdata_api[":core:userdata:api"]
-    core_userdata_impl[":core:userdata:impl"]
-    core_userdata_testing[":core:userdata:testing"]
-    feature_account[":feature:account"]
-    feature_settings[":feature:settings"]
-    app --> core_auth_api
-    app --> core_auth_impl
-    app --> core_auth_ui
-    app --> core_designsystem
-    app --> core_device
-    app --> core_domain
-    app --> core_storage_api
-    app --> core_storage_impl
-    app --> core_sync_api
-    app --> core_sync_impl
-    app --> core_userdata_api
-    app --> core_userdata_impl
-    app --> feature_account
-    app --> feature_settings
-    core_auth_impl --> core_auth_api
-    core_auth_impl --> core_common
-    core_auth_testing --> core_auth_api
-    core_auth_ui --> core_auth_api
-    core_auth_ui --> core_designsystem
-    core_device --> core_designsystem
-    core_domain --> core_auth_api
-    core_domain --> core_storage_api
-    core_domain --> core_userdata_api
-    core_storage_impl --> core_common
-    core_storage_impl --> core_storage_api
-    core_storage_testing --> core_storage_api
-    core_sync_impl --> core_auth_api
-    core_sync_impl --> core_common
-    core_sync_impl --> core_storage_api
-    core_sync_impl --> core_sync_api
-    core_sync_impl --> core_userdata_api
-    core_sync_testing --> core_sync_api
-    core_userdata_api --> core_storage_api
-    core_userdata_api --> core_sync_api
-    core_userdata_impl --> core_storage_api
-    core_userdata_impl --> core_sync_api
-    core_userdata_impl --> core_userdata_api
-    core_userdata_testing --> core_storage_api
-    core_userdata_testing --> core_sync_api
-    core_userdata_testing --> core_userdata_api
-    feature_account --> core_auth_api
-    feature_account --> core_auth_ui
-    feature_account --> core_designsystem
-    feature_account --> core_domain
-    feature_account --> core_storage_api
-    feature_account --> core_userdata_api
-    feature_settings --> core_designsystem
+    auth_data_api[":auth:data:api"]
+    auth_data_impl[":auth:data:impl"]
+    auth_data_testing[":auth:data:testing"]
+    auth_settings_impl[":auth:settings:impl"]
+    auth_ui_api[":auth:ui:api"]
+    auth_ui_impl[":auth:ui:impl"]
+    common_designsystem[":common:designsystem"]
+    common_storage_api[":common:storage:api"]
+    common_storage_impl[":common:storage:impl"]
+    common_storage_testing[":common:storage:testing"]
+    common_sync_api[":common:sync:api"]
+    common_sync_impl[":common:sync:impl"]
+    common_sync_testing[":common:sync:testing"]
+    common_testing[":common:testing"]
+    common_userdata_api[":common:userdata:api"]
+    common_userdata_impl[":common:userdata:impl"]
+    common_userdata_testing[":common:userdata:testing"]
+    common_util[":common:util"]
+    device_host[":device:host"]
+    device_settings_api[":device:settings:api"]
+    device_settings_impl[":device:settings:impl"]
+    device_ui_api[":device:ui:api"]
+    device_ui_impl[":device:ui:impl"]
+    app --> auth_data_api
+    app --> auth_data_impl
+    app --> auth_settings_impl
+    app --> auth_ui_api
+    app --> auth_ui_impl
+    app --> common_designsystem
+    app --> common_storage_api
+    app --> common_storage_impl
+    app --> common_sync_api
+    app --> common_sync_impl
+    app --> common_userdata_api
+    app --> common_userdata_impl
+    app --> device_settings_impl
+    app --> device_ui_api
+    app --> device_ui_impl
+    auth_data_api --> common_storage_api
+    auth_data_impl --> auth_data_api
+    auth_data_impl --> common_storage_api
+    auth_data_impl --> common_sync_api
+    auth_data_impl --> common_userdata_api
+    auth_data_impl --> common_util
+    auth_data_testing --> auth_data_api
+    auth_data_testing --> common_storage_api
+    auth_settings_impl --> auth_ui_api
+    auth_settings_impl --> common_designsystem
+    auth_settings_impl --> device_settings_api
+    auth_ui_impl --> auth_data_api
+    auth_ui_impl --> auth_ui_api
+    auth_ui_impl --> common_designsystem
+    auth_ui_impl --> common_storage_api
+    auth_ui_impl --> common_userdata_api
+    common_storage_impl --> common_storage_api
+    common_storage_impl --> common_util
+    common_storage_testing --> common_storage_api
+    common_sync_impl --> common_storage_api
+    common_sync_impl --> common_sync_api
+    common_sync_impl --> common_userdata_api
+    common_sync_impl --> common_util
+    common_sync_testing --> common_sync_api
+    common_userdata_api --> common_storage_api
+    common_userdata_api --> common_sync_api
+    common_userdata_impl --> common_storage_api
+    common_userdata_impl --> common_sync_api
+    common_userdata_impl --> common_userdata_api
+    common_userdata_testing --> common_storage_api
+    common_userdata_testing --> common_sync_api
+    common_userdata_testing --> common_userdata_api
+    device_host --> common_designsystem
+    device_settings_impl --> common_designsystem
+    device_settings_impl --> device_settings_api
+    device_ui_impl --> common_designsystem
+    device_ui_impl --> device_host
+    device_ui_impl --> device_settings_api
+    device_ui_impl --> device_ui_api
 ```
 <!-- module-graph:end -->
 
@@ -346,11 +362,11 @@ UI is covered by screenshot tests made with [Paparazzi](https://github.com/casha
 | `./gradlew recordPaparazziDebug` | Records the goldens again. Run it after a change that alters how UI looks, and review the images |
 | `./gradlew cleanRecordPaparazziDebug` | Like `recordPaparazziDebug`, and also deletes the goldens of previews that no longer exist |
 
-Prefix a task with a module path to run it for one module, for example `./gradlew :feature:account:verifyPaparazziDebug`. The aggregate `recordPaparazzi` and `verifyPaparazzi` tasks also exist, and cover every variant.
+Prefix a task with a module path to run it for one module, for example `./gradlew :auth:ui:impl:verifyPaparazziDebug`. The aggregate `recordPaparazzi` and `verifyPaparazzi` tasks also exist, and cover every variant.
 
 - **Goldens are in [Git LFS](https://git-lfs.com/).** Install it once per machine with `brew install git-lfs && git lfs install`, before cloning or committing goldens. Without it a clone has text pointer files instead of images.
 - **A failing verify** writes the actual image and a `delta-` diff to `<module>/build/paparazzi/failures/`, and an HTML report to `<module>/build/reports/paparazzi/`. On CI they are the `screenshot-diffs` artifact.
-- **A module with `@Preview` composables applies `rolabox.android.paparazzi`** and has a `PreviewSnapshotTest` (see [`feature/account`](feature/account/src/test/kotlin/com/eduardoflores/rolabox/feature/account/PreviewSnapshotTest.kt)). The build fails if it doesn't. The shared harness is in the design system's test fixtures.
+- **A module with `@Preview` composables applies `rolabox.android.paparazzi`** and has a `PreviewSnapshotTest` (see [`auth/ui/impl`](auth/ui/impl/src/test/kotlin/com/eduardoflores/rolabox/auth/ui/impl/PreviewSnapshotTest.kt)). The build fails if it doesn't. The shared harness is in the design system's test fixtures.
 - **Commit the goldens with the change** that caused them, in the same pull request. CI only verifies.
 
 ### CI

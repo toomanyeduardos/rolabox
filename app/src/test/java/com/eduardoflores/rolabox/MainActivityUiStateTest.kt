@@ -1,9 +1,9 @@
 package com.eduardoflores.rolabox
 
-import com.eduardoflores.rolabox.core.designsystem.theme.RolaboxAccent
-import com.eduardoflores.rolabox.core.userdata.api.AccentColor
-import com.eduardoflores.rolabox.core.userdata.api.DarkThemeConfig
-import com.eduardoflores.rolabox.core.userdata.api.UserData
+import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxAccent
+import com.eduardoflores.rolabox.common.userdata.api.AccentColor
+import com.eduardoflores.rolabox.common.userdata.api.DarkThemeConfig
+import com.eduardoflores.rolabox.common.userdata.api.UserData
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

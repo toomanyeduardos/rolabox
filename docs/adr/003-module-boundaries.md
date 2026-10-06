@@ -45,6 +45,13 @@
   and features and `:app` may depend on it. The module table, the utility modules guideline, rule 4
   and the new rules 18 and 19 were updated. Before this, the device's screen stack and event
   routing were in `:app`, where a feature's device screens couldn't reach the contract they need.
+- **Revised 2026-10-06:** The code has moved to the layout of
+  [ADR-020](020-modules-by-product-area.md) (37.07b), so `ModuleRules.kt` no longer checks this
+  ADR's rules 1 to 10 and 16 to 19 (Conformance). Each of those rules, and rule 11, now keeps its
+  number and points at the rule that replaced it, so no rule here claims a check the build no longer
+  makes. The module table is left as it was written, as the record of the layout that was replaced.
+  Rules 12 to 15 still apply, with "area" read as a product area or `:common`, and a module named
+  here read through the "What moved" table of ADR-020.
 
 ## Context
 
@@ -219,24 +226,20 @@ Guidelines that go with the table:
 
 ## Rules
 
-1. `[enforced]` Feature modules never depend on other feature modules.
-2. `[enforced]` Only `:app` depends on `:feature:*` modules.
-3. `[enforced]` Only `:app` depends on `:impl` modules.
-4. `[enforced]` Feature modules depend only on `:api` and `:ui` modules, `:core:domain`,
-   `:core:common`, `:core:designsystem` and `:core:device` (plus testing modules from test
-   configurations).
-5. `[enforced]` `:api` modules, `:core:common` and `:core:domain` are JVM modules with no Android
-   dependencies.
-6. `[enforced]` `:api` modules depend only on `:core:common` and other `:api` modules.
-7. `[enforced]` `:impl` modules depend only on `:api` modules and `:core:common` (plus testing
-   modules from test configurations).
-8. `[enforced]` `:core:domain` depends only on `:api` modules and `:core:common` (plus testing
-   modules from test configurations).
-9. `[enforced]` `:core:designsystem` depends only on `:core:common`.
-10. `[enforced]` Testing modules (`:core:testing` and every `:core:<area>:testing`) are only used
-    from test configurations (`testImplementation`, `androidTestImplementation`).
-11. `[convention]` `:api` modules contain only interfaces, models, error types and pure-logic use
-    cases.
+1. Superseded by [ADR-020](020-modules-by-product-area.md): there are no feature modules. Its rules
+   2 and 3 are what keep the product areas apart.
+2. Superseded by [ADR-020](020-modules-by-product-area.md): there are no feature modules. Its rules
+   2 and 3 are what keep the product areas apart.
+3. Superseded by [ADR-020](020-modules-by-product-area.md), rule 4.
+4. Superseded by [ADR-020](020-modules-by-product-area.md), rule 5.
+5. Superseded by [ADR-020](020-modules-by-product-area.md), rule 6.
+6. Superseded by [ADR-020](020-modules-by-product-area.md), rule 6.
+7. Superseded by [ADR-020](020-modules-by-product-area.md), rule 5.
+8. Superseded by [ADR-020](020-modules-by-product-area.md), rule 19: there is no shared domain
+   module.
+9. Superseded by [ADR-020](020-modules-by-product-area.md), rule 1.
+10. Superseded by [ADR-020](020-modules-by-product-area.md), rule 7.
+11. Superseded by [ADR-021](021-data-flow-through-layers.md), rule 8.
 12. `[convention]` Every type lives in the `:api` of the area that owns it, and other areas reach it
     by depending on that `:api`. There is no shared model module.
 13. `[convention]` Fakes live in their area's `:testing` module, which depends only on that area's
@@ -246,12 +249,12 @@ Guidelines that go with the table:
 15. `[convention]` Project modules are declared with `implementation`, never `api`. A module
     declares every project module whose types its code uses, including types it only meets in the
     signatures of what it calls.
-16. `[enforced]` `:core:<area>:ui` modules depend only on `:api` modules, `:core:domain`,
-    `:core:common` and `:core:designsystem` (plus testing modules from test configurations).
-17. `[enforced]` Only `:feature:*` modules and `:app` depend on `:ui` modules.
-18. `[enforced]` `:core:device` depends only on `:core:designsystem` and `:core:common` (plus
-    testing modules from test configurations).
-19. `[enforced]` Only `:feature:*` modules and `:app` depend on `:core:device`.
+16. Superseded by [ADR-020](020-modules-by-product-area.md): the `:ui` module type is gone. SDK-step
+    code lives in the `:impl` of a part with screens, under its rule 5.
+17. Superseded by [ADR-020](020-modules-by-product-area.md): the `:ui` module type is gone, and only
+    `:app` depends on the `:impl` that holds the code (its rule 4).
+18. Superseded by [ADR-020](020-modules-by-product-area.md), rule 8.
+19. Superseded by [ADR-020](020-modules-by-product-area.md), rule 8.
 
-**Conformance.** Rules 1 to 10 and 16 to 19 are checked by `ModuleRules.kt` when the build is
-configured. Rule 11 could be checked with a Konsist test later.
+**Conformance.** Rules 12 to 15 are conventions. The rules that were checked by `ModuleRules.kt`
+are superseded: it checks [ADR-020](020-modules-by-product-area.md)'s rules 1 to 8 in their place.

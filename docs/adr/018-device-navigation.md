@@ -11,6 +11,12 @@
   pops (Decision, Consequences, rules 1, 3, 5 and 12). Building the screen stack showed that this
   mechanism names no feature, and that a feature's device screens couldn't reach it inside `:app`.
   What each control does, and every other rule, is unchanged.
+- **Revised 2026-10-06:** Module names updated for the layout of
+  [ADR-020](020-modules-by-product-area.md), now that the code has moved (37.07b). The device's
+  parts are in `:common:designsystem` and the host is `:device:host` (Decision, rule 12). The parts
+  of rules 1, 5 and 12 that name `:app` are superseded by ADR-020 and are left as they were written:
+  the main menu, the mapping from exits to keys and the playback handlers are in `:device:ui:impl`.
+  Where the text says "feature", read the `:impl` of a part with screens.
 
 ## Context
 
@@ -56,7 +62,7 @@ We will build the signed-in app as **one device destination** in `:app`'s naviga
   the device. The device is a single entry of it.
 - **The screen stack** is what the display shows. It is a second Navigation 3 back stack with its
   own `NavDisplay`, placed inside the display. It starts at the main menu, and it is linear: there
-  are no sections and no tabs. It is run by the **device host**, `:core:device`
+  are no sections and no tabs. It is run by the **device host**, `:device:host`
   ([ADR-019](019-device-host-module.md)), which `:app` gives the screens to.
 
 Everything ADR-012 says about a back stack holds for the screen stack: its keys are serializable
@@ -169,10 +175,10 @@ use the wheel.
 
 ### Where the code lives
 
-- **`:core:designsystem`** has the device's body, the display's frame and header, the list rows and
+- **`:common:designsystem`** has the device's body, the display's frame and header, the list rows and
   their highlight, the wheel, and the wheel's event vocabulary. None of them knows about an area
   ([ADR-015](015-design-system-owns-visual-language.md)).
-- **`:core:device`** has the assembled device, the screen stack and its `NavDisplay`, the routing
+- **`:device:host`** has the assembled device, the screen stack and its `NavDisplay`, the routing
   of wheel events, and the contract a device screen uses to receive turn and center
   ([ADR-019](019-device-host-module.md)).
 - **`:app`** has the device destination, the main menu, the entries it gives to the host, the
@@ -244,7 +250,7 @@ as ADR-017's rule 10 requires.
 - The control table is in one place, and the host and `:app` apply the parts that are the same
   everywhere, so a new screen can't change what MENU or ⏭ does.
 - The screen stack and the routing of events are ordinary state and code, tested on the JVM in
-  `:core:device`, without any feature.
+  `:device:host`, without any feature.
 - `:app` grows: the main menu and the playback buttons are there, not in a feature.
 - Two nested `NavDisplay`s, each with its own back handling, are not a common setup, and how they
   share the system's back and predictive back will be worked out on first use.
@@ -289,7 +295,7 @@ as ADR-017's rule 10 requires.
     a device screen. No screen mixes the two. Settings and everything under it are full screens,
     opened from the main menu.
 12. `[convention]` The device's body, display, rows and wheel, and the wheel's event vocabulary,
-    live in `:core:designsystem`. The screen stack and the routing of events live in `:core:device`
+    live in `:common:designsystem`. The screen stack and the routing of events live in `:device:host`
     (ADR-019). The main menu and the mapping from exits to keys live in `:app`.
 13. `[convention]` The app is locked to portrait, and the device has one layout.
 14. `[convention]` Text on the display follows the system font scale (ADR-017). The wheel's label

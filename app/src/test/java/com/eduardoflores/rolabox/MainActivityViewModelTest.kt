@@ -1,11 +1,11 @@
 package com.eduardoflores.rolabox
 
-import com.eduardoflores.rolabox.core.storage.api.StorageError
-import com.eduardoflores.rolabox.core.testing.MainDispatcherRule
-import com.eduardoflores.rolabox.core.userdata.api.AccentColor
-import com.eduardoflores.rolabox.core.userdata.api.DarkThemeConfig
-import com.eduardoflores.rolabox.core.userdata.api.UserData
-import com.eduardoflores.rolabox.core.userdata.testing.FakeUserDataRepository
+import com.eduardoflores.rolabox.common.storage.api.StorageError
+import com.eduardoflores.rolabox.common.testing.MainDispatcherRule
+import com.eduardoflores.rolabox.common.userdata.api.AccentColor
+import com.eduardoflores.rolabox.common.userdata.api.DarkThemeConfig
+import com.eduardoflores.rolabox.common.userdata.api.UserData
+import com.eduardoflores.rolabox.common.userdata.testing.FakeUserDataRepository
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
@@ -21,7 +21,7 @@ class MainActivityViewModelTest {
 
     @Test
     fun storedPreferences_areSuccess() = runTest {
-        val viewModel = MainActivityViewModel(userDataRepository)
+        val viewModel = DefaultMainActivityViewModel(userDataRepository)
         backgroundScope.launch(mainDispatcherRule.testDispatcher) { viewModel.uiState.collect() }
 
         userDataRepository.setDarkThemeConfig(DarkThemeConfig.DARK)
@@ -37,7 +37,7 @@ class MainActivityViewModelTest {
 
     @Test
     fun readError_isPreferencesUnavailable() = runTest {
-        val viewModel = MainActivityViewModel(userDataRepository)
+        val viewModel = DefaultMainActivityViewModel(userDataRepository)
         backgroundScope.launch(mainDispatcherRule.testDispatcher) { viewModel.uiState.collect() }
 
         userDataRepository.setReadError(StorageError.Corrupted)

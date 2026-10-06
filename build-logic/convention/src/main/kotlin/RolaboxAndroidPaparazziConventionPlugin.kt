@@ -5,7 +5,7 @@ import org.gradle.api.Project
 import org.gradle.kotlin.dsl.dependencies
 import org.gradle.kotlin.dsl.project
 
-private const val DESIGNSYSTEM_PATH = ":core:designsystem"
+private const val DESIGNSYSTEM_PATH = ":common:designsystem"
 
 /**
  * Screenshot tests with Paparazzi (ADR-016). Opt-in: a module applies this next to
@@ -13,7 +13,7 @@ private const val DESIGNSYSTEM_PATH = ":core:designsystem"
  * `@Preview` composables doesn't.
  *
  * The test harness that turns every `@Preview` into a snapshot lives in the test fixtures of
- * `:core:designsystem`, so a module's own test is a few lines naming the packages to scan.
+ * `:common:designsystem`, so a module's own test is a few lines naming the packages to scan.
  */
 class RolaboxAndroidPaparazziConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {

@@ -24,7 +24,7 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.eduardoflores.rolabox.R
-import com.eduardoflores.rolabox.core.designsystem.R as DesignSystemR
+import com.eduardoflores.rolabox.common.designsystem.R as DesignSystemR
 
 private const val SPIN_MILLIS = 1_000
 private const val FULL_TURN = 360f

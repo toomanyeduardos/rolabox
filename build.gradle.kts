@@ -11,7 +11,7 @@ val checkTextStyling by tasks.registering {
     description = "Fails if text appearance is set inline anywhere but the design system's Type.kt"
     val sources = fileTree(layout.projectDirectory) {
         include("**/src/**/*.kt")
-        exclude("**/build/**", "build-logic/**", "core/designsystem/src/main/**/theme/Type.kt")
+        exclude("**/build/**", "build-logic/**", "common/designsystem/src/main/**/theme/Type.kt")
     }
     inputs.files(sources)
     val root = layout.projectDirectory.asFile
@@ -31,7 +31,7 @@ val checkTextStyling by tasks.registering {
         }
         if (violations.isNotEmpty()) {
             throw GradleException(
-                "Text appearance must come from a named style in core/designsystem's Type.kt " +
+                "Text appearance must come from a named style in common/designsystem's Type.kt " +
                     "(RolaboxType.styles). Found inline:\n" + violations.joinToString("\n"),
             )
         }
@@ -42,10 +42,13 @@ val checkTextStyling by tasks.registering {
 // only run when a task of this build asks for them.
 val detektRulesTest = gradle.includedBuild("build-logic").task(":detekt-rules:test")
 
+// The unit tests of the module rules (ADR-020), for the same reason.
+val moduleRulesTest = gradle.includedBuild("build-logic").task(":convention:test")
+
 tasks.register("unitTest") {
     group = "verification"
-    description = "Runs the unit tests of build-logic's detekt rules."
-    dependsOn(detektRulesTest)
+    description = "Runs the unit tests of build-logic: the detekt rules and the module rules."
+    dependsOn(detektRulesTest, moduleRulesTest)
 }
 
-tasks.named("check") { dependsOn(checkTextStyling, detektRulesTest) }
+tasks.named("check") { dependsOn(checkTextStyling, detektRulesTest, moduleRulesTest) }

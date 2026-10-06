@@ -4,6 +4,13 @@
 - **Date:** 2026-09-29
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review
+- **Revised 2026-10-06:** The `:core:<area>:ui` module type is gone
+  ([ADR-020](020-modules-by-product-area.md), 37.07b): `:core:auth:ui` is now the `signin` package
+  of `:auth:ui:impl`, the `:impl` of a part with screens. Rules 1 to 3 are superseded and no longer
+  checked: each now points at what replaced it, and the rest of the text is left as it was written.
+  Rules 4 and 5 still apply to that SDK-step code: it exposes neutral types, keeps a provider in its
+  own `internal` subpackage, and injects nothing. The configuration type of rule 5 is declared in
+  the part's `:api`, and the screen's ViewModel injects it and passes it on in its UI state.
 
 ## Context
 
@@ -113,12 +120,12 @@ ViewModel ── SignInStepResult.Credential's SignInCredential ─────�
 
 ## Rules
 
-1. `[enforced]` `:core:<area>:ui` modules depend only on `:api` modules, `:core:domain`,
-   `:core:common` and `:core:designsystem` (plus testing modules from test configurations).
-2. `[enforced]` Only `:feature:*` modules and `:app` depend on `:ui` modules.
-3. `[convention]` A `:ui` module has no ViewModel, no navigation destination and no Hilt module.
-   Code that has a ViewModel or a destination is a feature. Logic that meets ADR-001's use case
-   criteria is a use case, not a `:ui` class.
+1. Superseded by [ADR-020](020-modules-by-product-area.md), rule 5: the code is inside the `:impl`
+   of a part with screens.
+2. Superseded by [ADR-020](020-modules-by-product-area.md), rule 4: only `:app` depends on that
+   `:impl`.
+3. Superseded by [ADR-020](020-modules-by-product-area.md): the `:ui` module type is gone. The code
+   is a package of an `:impl` that has ViewModels and entries of its own.
 4. `[convention]` A `:ui` module exposes neutral types, and keeps what is specific to one provider
    in its own subpackage as `internal`. Adding a provider follows the checklist in Decision.
 5. `[convention]` Configuration that `:app` provides for a `:ui` is a plain type owned by that
