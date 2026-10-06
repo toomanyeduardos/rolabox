@@ -17,6 +17,12 @@ class RolaboxRuleSetProvider : RuleSetProvider {
 
     override fun instance() = RuleSet(
         ruleSetId,
-        listOf(::FixedHeightAroundText, ::UseCaseOrRepositoryClassInApi, ::DefaultViewModelInComposable),
+        listOf(
+            ::FixedHeightAroundText,
+            ::UseCaseOrRepositoryClassInApi,
+            ::DefaultViewModelInComposable,
+            ::TouchInputInDeviceScreen,
+            ::DeviceComponentOutsideDesignSystem,
+        ),
     )
 }
