@@ -1,6 +1,7 @@
 # ADR-012: Navigation with Jetpack Navigation 3, with the back stacks owned by `:app`
 
-- **Status:** Accepted
+- **Status:** Accepted. Rules 1 and 4 superseded by [ADR-020](020-modules-by-product-area.md), which
+  also adds an exception to rule 5
 - **Date:** 2026-09-28
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review

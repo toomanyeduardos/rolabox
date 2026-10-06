@@ -1,6 +1,8 @@
 # ADR-001: Layered architecture with a domain layer that owns the repository interfaces
 
-- **Status:** Accepted
+- **Status:** Accepted. Where cross-area use cases live, and the wording of rule 1, superseded by
+  [ADR-020](020-modules-by-product-area.md). Use cases as concrete classes in an `:api` superseded
+  by [ADR-021](021-data-flow-through-layers.md)
 - **Date:** 2026-09-24
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review

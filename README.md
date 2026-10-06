@@ -176,6 +176,8 @@ and the rules that follow. Most rules are enforced by the build or by tests, not
 | [017](docs/adr/017-accessibility.md) | Accessibility is an architectural rule, starting with large text |
 | [018](docs/adr/018-device-navigation.md) | Device navigation: a linear screen stack driven by the wheel |
 | [019](docs/adr/019-device-host-module.md) | The device is a host module, `:core:device`, that receives its screens from `:app` |
+| [020](docs/adr/020-modules-by-product-area.md) | Modules grouped by product area, with the device assembling its own screens |
+| [021](docs/adr/021-data-flow-through-layers.md) | Every layer is reached through an abstraction, from the screen to the data source |
 
 ### Modules
 

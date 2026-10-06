@@ -1,6 +1,7 @@
 # ADR-009: SDK steps that need an Activity live in the UI, and only their results cross the `:api`
 
-- **Status:** Accepted
+- **Status:** Accepted. The wording of rules 1 and 4 superseded by
+  [ADR-020](020-modules-by-product-area.md)
 - **Date:** 2026-09-28
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review

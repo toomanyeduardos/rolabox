@@ -1,6 +1,7 @@
 # ADR-018: Device navigation: a linear screen stack driven by the wheel
 
-- **Status:** Accepted
+- **Status:** Accepted. Rules 1, 5 and 12 superseded by [ADR-020](020-modules-by-product-area.md),
+  in the parts that name `:app`
 - **Date:** 2026-10-01
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review

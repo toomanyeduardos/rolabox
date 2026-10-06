@@ -1,6 +1,6 @@
 # ADR-014: Area UI modules for SDK steps and shared UI, `:core:<area>:ui`
 
-- **Status:** Accepted
+- **Status:** Accepted. Rules 1 to 3 superseded by [ADR-020](020-modules-by-product-area.md)
 - **Date:** 2026-09-29
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review
