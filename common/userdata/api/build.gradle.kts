@@ -9,5 +9,4 @@ dependencies {
     api(libs.arrow.core)
     implementation(project(":common:storage:api"))
     implementation(project(":common:sync:api"))
-    testImplementation(libs.junit)
 }

@@ -1,5 +1,7 @@
 package com.eduardoflores.rolabox.common.sync.impl.di
 
+import com.eduardoflores.rolabox.common.sync.api.LastWriteWins
+import com.eduardoflores.rolabox.common.sync.impl.DefaultLastWriteWins
 import com.eduardoflores.rolabox.common.sync.impl.FirestoreRemotePreferences
 import com.eduardoflores.rolabox.common.sync.impl.PreferencesSyncer
 import com.eduardoflores.rolabox.common.sync.impl.RemotePreferences
@@ -22,6 +24,10 @@ import dagger.multibindings.IntoSet
 abstract class SyncersModule {
     @Binds
     internal abstract fun bindsRemotePreferences(remote: FirestoreRemotePreferences): RemotePreferences
+
+    // Also injected by the parts that store synced data, to apply what a sync brings (ADR-011).
+    @Binds
+    internal abstract fun bindsLastWriteWins(lastWriteWins: DefaultLastWriteWins): LastWriteWins
 
     // Each kind of synced data adds its Syncer to this set (ADR-011).
     @Binds

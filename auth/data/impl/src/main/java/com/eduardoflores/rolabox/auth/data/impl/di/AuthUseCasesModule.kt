@@ -1,9 +1,11 @@
 package com.eduardoflores.rolabox.auth.data.impl.di
 
+import com.eduardoflores.rolabox.auth.data.api.PasswordPolicy
 import com.eduardoflores.rolabox.auth.data.api.ResolveStartDestinationUseCase
 import com.eduardoflores.rolabox.auth.data.api.SignInUseCase
 import com.eduardoflores.rolabox.auth.data.api.SignUpUseCase
 import com.eduardoflores.rolabox.auth.data.impl.AuthSyncUserProvider
+import com.eduardoflores.rolabox.auth.data.impl.DefaultPasswordPolicy
 import com.eduardoflores.rolabox.auth.data.impl.DefaultResolveStartDestinationUseCase
 import com.eduardoflores.rolabox.auth.data.impl.DefaultSignInUseCase
 import com.eduardoflores.rolabox.auth.data.impl.DefaultSignUpUseCase
@@ -14,9 +16,9 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 
 /**
- * Binds what is built on the repositories: the use cases (ADR-021), and what auth provides to sync
- * (ADR-020, rule 18). It's apart from [AuthModule], so a test that replaces the repository with a
- * fake still gets the real rules on top of it.
+ * Binds auth's rules: the use cases built on the repositories (ADR-021), the password policy, and
+ * what auth provides to sync (ADR-020, rule 18). It's apart from [AuthModule], so a test that
+ * replaces the repository with a fake still gets the real rules on top of it.
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -31,6 +33,9 @@ abstract class AuthUseCasesModule {
     internal abstract fun bindsResolveStartDestinationUseCase(
         useCase: DefaultResolveStartDestinationUseCase,
     ): ResolveStartDestinationUseCase
+
+    @Binds
+    internal abstract fun bindsPasswordPolicy(policy: DefaultPasswordPolicy): PasswordPolicy
 
     @Binds
     internal abstract fun bindsSyncUserProvider(provider: AuthSyncUserProvider): SyncUserProvider

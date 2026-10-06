@@ -22,6 +22,7 @@ import kotlinx.coroutines.launch
 internal class DefaultCreateAccountViewModel @Inject constructor(
     private val signUp: SignUpUseCase,
     private val signIn: SignInUseCase,
+    private val passwordPolicy: PasswordPolicy,
     private val signInConfig: SignInConfig,
 ) : CreateAccountViewModel() {
     private val _uiState = MutableStateFlow(CreateAccountUiState())
@@ -38,7 +39,7 @@ internal class DefaultCreateAccountViewModel @Inject constructor(
     override fun onPasswordChange(password: String) = _uiState.update {
         it.copy(
             password = password,
-            strength = PasswordPolicy.strengthOf(password),
+            strength = passwordPolicy.strengthOf(password),
             passwordError = null,
             formError = null,
         )
@@ -83,7 +84,7 @@ internal class DefaultCreateAccountViewModel @Inject constructor(
         val email = current.email.trim()
         val nameError = validateName(name)
         val emailError = validateEmail(email)
-        val passwordError = validatePassword(current.password)
+        val passwordError = validatePassword(current.password, passwordPolicy)
         if (nameError != null || emailError != null || passwordError != null) {
             _uiState.update {
                 it.copy(nameError = nameError, emailError = emailError, passwordError = passwordError)

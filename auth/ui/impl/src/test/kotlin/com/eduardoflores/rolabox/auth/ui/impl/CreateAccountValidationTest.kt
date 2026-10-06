@@ -1,10 +1,13 @@
 package com.eduardoflores.rolabox.auth.ui.impl
 
+import com.eduardoflores.rolabox.auth.data.testing.FakePasswordPolicy
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
 class CreateAccountValidationTest {
+    private val policy = FakePasswordPolicy()
+
     @Test
     fun name_blankIsRequired() {
         assertEquals(NameError.Required, validateName(""))
@@ -49,28 +52,33 @@ class CreateAccountValidationTest {
         ).forEach { assertNull("$it should be valid", validateEmail(it)) }
     }
 
+    // The policy is a fake (ADR-021): its rules are tested in :auth:data:impl. These cover which error
+    // each of its answers becomes.
     @Test
-    fun password_shorterThanMinimumIsTooShort() {
-        assertEquals(PasswordError.TooShort, validatePassword(""))
-        assertEquals(PasswordError.TooShort, validatePassword("1234567"))
+    fun password_notLongEnoughIsTooShort_withThePolicysMinimum() {
+        policy.longEnough = false
+        policy.minLength = 10
+
+        assertEquals(PasswordError.TooShort(minLength = 10), validatePassword("1234567", policy))
+    }
+
+    @Test
+    fun password_tooShortComesBeforeMissingCharacters() {
+        policy.longEnough = false
+        policy.requiredCharacters = false
+
+        assertEquals(PasswordError.TooShort(policy.minLength), validatePassword("", policy))
     }
 
     @Test
     fun password_longEnoughButMissingACharacterKindIsRejected() {
-        listOf(
-            "12345678!A", // no lowercase
-            "kdjfhqpw4!", // no uppercase
-            "kdjfhqPw!!", // no digit
-            "kdjfhqPw42", // no special character
-            "12345678",
-        ).forEach {
-            assertEquals("$it should be rejected", PasswordError.MissingCharacters, validatePassword(it))
-        }
+        policy.requiredCharacters = false
+
+        assertEquals(PasswordError.MissingCharacters, validatePassword("kdjfhqPw42", policy))
     }
 
     @Test
-    fun password_withEveryCharacterKindIsValidEvenIfPredictable() {
-        assertNull(validatePassword("Password1!"))
-        assertNull(validatePassword("kdjfhqPwzm4x!"))
+    fun password_thatPassesThePolicyIsValid() {
+        assertNull(validatePassword("Password1!", policy))
     }
 }

@@ -12,14 +12,15 @@ internal enum class EmailError {
     AlreadyInUse,
 }
 
-internal enum class PasswordError {
-    TooShort,
+internal sealed interface PasswordError {
+    /** Shorter than [minLength], the minimum of the password policy. */
+    data class TooShort(val minLength: Int) : PasswordError
 
     /** Long enough, but missing a lowercase letter, an uppercase letter, a digit or a special character. */
-    MissingCharacters,
+    data object MissingCharacters : PasswordError
 
     /** Reported by the backend's password policy, which can be stricter than ours. */
-    Rejected,
+    data object Rejected : PasswordError
 }
 
 // One '@' with something on both sides, and a dot in the domain. The backend has the last word: this
@@ -34,8 +35,8 @@ internal fun validateEmail(email: String): EmailError? = when {
     else -> null
 }
 
-internal fun validatePassword(password: String): PasswordError? = when {
-    !PasswordPolicy.isLongEnough(password) -> PasswordError.TooShort
-    !PasswordPolicy.hasRequiredCharacters(password) -> PasswordError.MissingCharacters
+internal fun validatePassword(password: String, policy: PasswordPolicy): PasswordError? = when {
+    !policy.isLongEnough(password) -> PasswordError.TooShort(policy.minLength)
+    !policy.hasRequiredCharacters(password) -> PasswordError.MissingCharacters
     else -> null
 }

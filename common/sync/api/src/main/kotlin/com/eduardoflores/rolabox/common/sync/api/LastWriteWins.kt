@@ -1,18 +1,13 @@
 package com.eduardoflores.rolabox.common.sync.api
 
 /** How synced data resolves conflicts (ADR-011). */
-object LastWriteWins {
+interface LastWriteWins {
     /**
      * The more recently changed of [local] and [remote]. Null means the value was never set on that
      * side, so it never wins over a value that was. On a tie, [remote] wins, so every device that
      * merges the same two values keeps the same one.
      */
-    fun <T> resolve(local: SyncedValue<T>?, remote: SyncedValue<T>?): SyncedValue<T>? = when {
-        local == null -> remote
-        remote == null -> local
-        local.updatedAt > remote.updatedAt -> local
-        else -> remote
-    }
+    fun <T> resolve(local: SyncedValue<T>?, remote: SyncedValue<T>?): SyncedValue<T>?
 
     /**
      * Merges two collections item by item, keyed by id, resolving each item on its own. A removed
@@ -23,7 +18,5 @@ object LastWriteWins {
     fun <K, V : Any> mergeById(
         local: Map<K, SyncedValue<V?>>,
         remote: Map<K, SyncedValue<V?>>,
-    ): Map<K, SyncedValue<V?>> = (local.keys + remote.keys).associateWith { id ->
-        checkNotNull(resolve(local[id], remote[id])) { "id $id is in one of the maps" }
-    }
+    ): Map<K, SyncedValue<V?>>
 }

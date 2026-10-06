@@ -6,6 +6,7 @@ import com.eduardoflores.rolabox.common.storage.api.StorageError
 import com.eduardoflores.rolabox.common.storage.testing.FakePreferencesStore
 import com.eduardoflores.rolabox.common.sync.api.SyncTimestamp
 import com.eduardoflores.rolabox.common.sync.api.SyncedValue
+import com.eduardoflores.rolabox.common.sync.testing.FakeLastWriteWins
 import com.eduardoflores.rolabox.common.userdata.api.AccentColor
 import com.eduardoflores.rolabox.common.userdata.api.DarkThemeConfig
 import com.eduardoflores.rolabox.common.userdata.api.SyncedPreferences
@@ -22,7 +23,7 @@ import org.junit.Test
 class DefaultUserDataRepositoryTest {
     private val preferencesStore = FakePreferencesStore()
     private val clock = Clock.fixed(Instant.ofEpochMilli(NOW), ZoneOffset.UTC)
-    private val repository = DefaultUserDataRepository(preferencesStore, clock)
+    private val repository = DefaultUserDataRepository(preferencesStore, clock, FakeLastWriteWins())
 
     @Test
     fun observeUserData_nothingStored_usesDefaults() = runTest {

@@ -2,6 +2,8 @@ package com.eduardoflores.rolabox.common.sync.impl
 
 import arrow.core.Either
 import arrow.core.raise.either
+import com.eduardoflores.rolabox.common.sync.api.LastWriteWins
+import com.eduardoflores.rolabox.common.userdata.api.SyncedPreferences
 import com.eduardoflores.rolabox.common.userdata.api.SyncedPreferencesRepository
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
@@ -13,6 +15,7 @@ import kotlinx.coroutines.flow.map
 internal class PreferencesSyncer @Inject constructor(
     private val local: SyncedPreferencesRepository,
     private val remote: RemotePreferences,
+    private val lastWriteWins: LastWriteWins,
 ) : Syncer {
     // The first value is what's stored when collection starts, not a change.
     override fun observeLocalChanges(): Flow<Unit> = local.observeSyncedPreferences()
@@ -27,7 +30,7 @@ internal class PreferencesSyncer @Inject constructor(
 
     override suspend fun sync(userId: String): Either<SyncError, Unit> = either {
         val localPreferences = local.getSyncedPreferences().mapLeft(SyncError::Local).bind()
-        val merged = remote.merge(userId) { remotePreferences -> localPreferences.merge(remotePreferences) }
+        val merged = remote.merge(userId) { remotePreferences -> localPreferences.mergedWith(remotePreferences) }
             .mapLeft(SyncError::Remote)
             .bind()
         // Applying checks each field again, so a change made while this sync ran isn't overwritten.
@@ -35,4 +38,10 @@ internal class PreferencesSyncer @Inject constructor(
             local.applySyncedPreferences(merged).mapLeft(SyncError::Local).bind()
         }
     }
+
+    // Each field is resolved on its own, so a change to one never overwrites a newer change to another.
+    private fun SyncedPreferences.mergedWith(remote: SyncedPreferences) = SyncedPreferences(
+        darkThemeConfig = lastWriteWins.resolve(darkThemeConfig, remote.darkThemeConfig),
+        accentColor = lastWriteWins.resolve(accentColor, remote.accentColor),
+    )
 }

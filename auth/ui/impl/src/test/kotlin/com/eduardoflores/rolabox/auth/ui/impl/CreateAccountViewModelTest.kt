@@ -4,6 +4,7 @@ import com.eduardoflores.rolabox.auth.data.api.AuthError
 import com.eduardoflores.rolabox.auth.data.api.PasswordStrength
 import com.eduardoflores.rolabox.auth.data.api.SignInCredential
 import com.eduardoflores.rolabox.auth.data.api.SignInError
+import com.eduardoflores.rolabox.auth.data.testing.FakePasswordPolicy
 import com.eduardoflores.rolabox.auth.data.testing.FakeSignInUseCase
 import com.eduardoflores.rolabox.auth.data.testing.FakeSignUpUseCase
 import com.eduardoflores.rolabox.auth.data.testing.SignUpRequest
@@ -21,15 +22,17 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
-// The use cases are fakes (ADR-021): what they do about offline mode (ADR-008, rule 7) is tested in
-// :auth:data:impl. These tests cover what the screen does with each answer.
+// The use cases and the password policy are fakes (ADR-021): what they do about offline mode (ADR-008,
+// rule 7), and the policy's rules, are tested in :auth:data:impl. These tests cover what the screen does
+// with each answer.
 class CreateAccountViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
     private val signUp = FakeSignUpUseCase()
     private val signIn = FakeSignInUseCase()
-    private val viewModel = DefaultCreateAccountViewModel(signUp, signIn, SIGN_IN_CONFIG)
+    private val passwordPolicy = FakePasswordPolicy()
+    private val viewModel = DefaultCreateAccountViewModel(signUp, signIn, passwordPolicy, SIGN_IN_CONFIG)
     private val state get() = viewModel.uiState.value
 
     private fun fill(
@@ -50,33 +53,39 @@ class CreateAccountViewModelTest {
 
     @Test
     fun password_strengthUpdatesWithEveryChange() {
+        passwordPolicy.strength = PasswordStrength.Weak
         viewModel.onPasswordChange("abc")
         assertEquals(PasswordStrength.Weak, state.strength)
 
+        passwordPolicy.strength = PasswordStrength.Good
         viewModel.onPasswordChange("kdjfhqPwzm4x")
         assertEquals(PasswordStrength.Good, state.strength)
 
+        passwordPolicy.strength = PasswordStrength.Empty
         viewModel.onPasswordChange("")
         assertEquals(PasswordStrength.Empty, state.strength)
     }
 
     @Test
     fun submit_withNothingFilledInShowsEveryFieldError() {
+        passwordPolicy.longEnough = false
+
         viewModel.onSubmit()
 
         assertEquals(NameError.Required, state.nameError)
         assertEquals(EmailError.Required, state.emailError)
-        assertEquals(PasswordError.TooShort, state.passwordError)
+        assertEquals(PasswordError.TooShort(passwordPolicy.minLength), state.passwordError)
         assertNull(signUp.lastRequest)
     }
 
     @Test
     fun submit_belowTheMinimumLengthIsBlocked() {
+        passwordPolicy.longEnough = false
         fill(password = "1234567")
 
         viewModel.onSubmit()
 
-        assertEquals(PasswordError.TooShort, state.passwordError)
+        assertEquals(PasswordError.TooShort(passwordPolicy.minLength), state.passwordError)
         assertNull(state.nameError)
         assertNull(state.emailError)
         assertNull(signUp.lastRequest)
@@ -85,6 +94,7 @@ class CreateAccountViewModelTest {
 
     @Test
     fun submit_withoutEveryCharacterKindIsBlocked() {
+        passwordPolicy.requiredCharacters = false
         fill(password = "kdjfhqPwzm4x")
 
         viewModel.onSubmit()
@@ -105,6 +115,7 @@ class CreateAccountViewModelTest {
 
     @Test
     fun editingAFieldClearsItsError() {
+        passwordPolicy.longEnough = false
         viewModel.onSubmit()
 
         viewModel.onNameChange("A")

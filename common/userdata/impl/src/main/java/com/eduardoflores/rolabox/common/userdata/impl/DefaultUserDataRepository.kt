@@ -3,6 +3,7 @@ package com.eduardoflores.rolabox.common.userdata.impl
 import arrow.core.Either
 import com.eduardoflores.rolabox.common.storage.api.PreferencesStore
 import com.eduardoflores.rolabox.common.storage.api.StorageError
+import com.eduardoflores.rolabox.common.sync.api.LastWriteWins
 import com.eduardoflores.rolabox.common.sync.api.SyncTimestamp
 import com.eduardoflores.rolabox.common.sync.api.SyncedValue
 import com.eduardoflores.rolabox.common.userdata.api.AccentColor
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.map
 internal class DefaultUserDataRepository @Inject constructor(
     private val preferencesStore: PreferencesStore,
     private val clock: Clock,
+    private val lastWriteWins: LastWriteWins,
 ) : UserDataRepository,
     SyncedPreferencesRepository {
     override fun observeUserData(): Flow<Either<StorageError, UserData>> = observeSyncedPreferences()
@@ -48,9 +50,15 @@ internal class DefaultUserDataRepository @Inject constructor(
 
     override suspend fun applySyncedPreferences(preferences: SyncedPreferences): Either<StorageError, Unit> =
         preferencesStore.updateStrings(ALL_KEYS) { stored ->
-            val merged = stored.toSyncedPreferences().merge(preferences)
+            val merged = stored.toSyncedPreferences().mergedWith(preferences)
             DarkThemeConfigField.toStored(merged.darkThemeConfig) + AccentColorField.toStored(merged.accentColor)
         }
+
+    // Each field is resolved on its own, with [remote] as the remote side.
+    private fun SyncedPreferences.mergedWith(remote: SyncedPreferences) = SyncedPreferences(
+        darkThemeConfig = lastWriteWins.resolve(darkThemeConfig, remote.darkThemeConfig),
+        accentColor = lastWriteWins.resolve(accentColor, remote.accentColor),
+    )
 
     private suspend fun <T : Enum<T>> set(field: StoredField<T>, value: T): Either<StorageError, Unit> {
         val entries = field.toStored(SyncedValue(value, SyncTimestamp(clock.millis())))

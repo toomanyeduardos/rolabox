@@ -76,12 +76,24 @@ class FakeUserDataRepository @Inject constructor() :
     override suspend fun getSyncedPreferences(): Either<StorageError, SyncedPreferences> =
         observeSyncedPreferences().first()
 
-    override suspend fun applySyncedPreferences(preferences: SyncedPreferences): Either<StorageError, Unit> =
-        write { it.merge(preferences) }
+    override suspend fun applySyncedPreferences(preferences: SyncedPreferences): Either<StorageError, Unit> = write {
+        it.copy(
+            darkThemeConfig = newer(it.darkThemeConfig, preferences.darkThemeConfig),
+            accentColor = newer(it.accentColor, preferences.accentColor),
+        )
+    }
 
     /** Makes the observed flows emit [error] and end. */
     fun setReadError(error: StorageError) {
         readError.value = error
+    }
+
+    // Like the real repository, a field is replaced only by a change that isn't older, and a field that
+    // was never set never replaces one that was.
+    private fun <T> newer(stored: SyncedValue<T>?, applied: SyncedValue<T>?): SyncedValue<T>? = when {
+        applied == null -> stored
+        stored == null || applied.updatedAt >= stored.updatedAt -> applied
+        else -> stored
     }
 
     private fun write(transform: (SyncedPreferences) -> SyncedPreferences): Either<StorageError, Unit> =

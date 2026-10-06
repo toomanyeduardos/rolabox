@@ -1,33 +1,36 @@
-package com.eduardoflores.rolabox.auth.data.api
+package com.eduardoflores.rolabox.auth.data.impl
 
+import com.eduardoflores.rolabox.auth.data.api.PasswordStrength
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PasswordPolicyTest {
-    private fun strength(password: String) = PasswordPolicy.strengthOf(password)
+    private val policy = DefaultPasswordPolicy()
+
+    private fun strength(password: String) = policy.strengthOf(password)
 
     @Test
     fun isLongEnough_boundary() {
-        assertFalse(PasswordPolicy.isLongEnough(""))
-        assertFalse(PasswordPolicy.isLongEnough("a".repeat(PasswordPolicy.MIN_LENGTH - 1)))
-        assertTrue(PasswordPolicy.isLongEnough("a".repeat(PasswordPolicy.MIN_LENGTH)))
+        assertFalse(policy.isLongEnough(""))
+        assertFalse(policy.isLongEnough("a".repeat(policy.minLength - 1)))
+        assertTrue(policy.isLongEnough("a".repeat(policy.minLength)))
     }
 
     @Test
     fun isLongEnough_countsSpacesAndDoesNotTrim() {
-        assertTrue(PasswordPolicy.isLongEnough("        "))
+        assertTrue(policy.isLongEnough("        "))
     }
 
     @Test
     fun hasRequiredCharacters_needsLowerUpperDigitAndSpecial() {
-        assertTrue(PasswordPolicy.hasRequiredCharacters("aB3\$"))
-        assertFalse(PasswordPolicy.hasRequiredCharacters("AB3\$"))
-        assertFalse(PasswordPolicy.hasRequiredCharacters("ab3\$"))
-        assertFalse(PasswordPolicy.hasRequiredCharacters("aB\$x"))
-        assertFalse(PasswordPolicy.hasRequiredCharacters("aB3x"))
-        assertFalse(PasswordPolicy.hasRequiredCharacters(""))
+        assertTrue(policy.hasRequiredCharacters("aB3\$"))
+        assertFalse(policy.hasRequiredCharacters("AB3\$"))
+        assertFalse(policy.hasRequiredCharacters("ab3\$"))
+        assertFalse(policy.hasRequiredCharacters("aB\$x"))
+        assertFalse(policy.hasRequiredCharacters("aB3x"))
+        assertFalse(policy.hasRequiredCharacters(""))
     }
 
     @Test

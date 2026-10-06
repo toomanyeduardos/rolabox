@@ -17,7 +17,6 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.eduardoflores.rolabox.auth.data.api.PasswordPolicy
 import com.eduardoflores.rolabox.auth.data.api.PasswordStrength
 import com.eduardoflores.rolabox.auth.ui.impl.signin.SignInButton
 import com.eduardoflores.rolabox.auth.ui.impl.signin.SignInProvider
@@ -213,7 +212,7 @@ private fun FormError.messageRes(): Int = when (this) {
 
 @Composable
 private fun passwordErrorText(error: PasswordError): String = when (error) {
-    PasswordError.TooShort -> stringResource(R.string.account_error_password_short, PasswordPolicy.MIN_LENGTH)
+    is PasswordError.TooShort -> stringResource(R.string.account_error_password_short, error.minLength)
     PasswordError.MissingCharacters -> stringResource(R.string.account_error_password_characters)
     PasswordError.Rejected -> stringResource(R.string.account_error_password_weak)
 }
@@ -227,7 +226,7 @@ private fun CreateAccountScreenPreview() {
                 name = "Eduardo Flores",
                 email = "toomanyeduardos@gmail.com",
                 password = "kdjfhqPwzm4x",
-                strength = PasswordPolicy.strengthOf("kdjfhqPwzm4x"),
+                strength = PasswordStrength.Good,
             ),
             onNameChange = {},
             onEmailChange = {},

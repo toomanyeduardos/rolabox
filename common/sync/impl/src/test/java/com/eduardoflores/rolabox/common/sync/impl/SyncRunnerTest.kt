@@ -91,7 +91,8 @@ class SyncRunnerTest {
             created = true
             error("Firestore was created with nobody to sync for")
         }
-        val syncer = PreferencesSyncer(userDataRepository, FirestoreRemotePreferences(firestore))
+        val syncer =
+            PreferencesSyncer(userDataRepository, FirestoreRemotePreferences(firestore), DefaultLastWriteWins())
 
         runner(syncer).sync()
 

@@ -182,7 +182,7 @@ class PreferencesSyncerTest {
 
     private fun device(now: Long): Device {
         val local = FakeUserDataRepository().apply { this.now = SyncTimestamp(now) }
-        return Device(local, PreferencesSyncer(local, remote))
+        return Device(local, PreferencesSyncer(local, remote, DefaultLastWriteWins()))
     }
 
     private class Device(val local: FakeUserDataRepository, val syncer: PreferencesSyncer)

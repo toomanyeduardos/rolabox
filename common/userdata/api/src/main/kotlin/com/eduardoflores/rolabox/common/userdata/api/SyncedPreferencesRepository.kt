@@ -15,8 +15,8 @@ interface SyncedPreferencesRepository {
     suspend fun getSyncedPreferences(): Either<StorageError, SyncedPreferences>
 
     /**
-     * Stores each field of [preferences] that wins over the stored one ([SyncedPreferences.merge],
-     * with [preferences] as the remote side), keeping its timestamp. The check and the write are one
+     * Stores each field of [preferences] that wins over the stored one (last-write-wins, with
+     * [preferences] as the remote side), keeping its timestamp. The check and the write are one
      * atomic change, so a local change made while a sync was running is never overwritten by an older
      * value.
      */

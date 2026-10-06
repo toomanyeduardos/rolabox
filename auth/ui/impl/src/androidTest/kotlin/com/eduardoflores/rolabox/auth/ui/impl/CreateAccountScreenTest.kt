@@ -21,12 +21,15 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.test.platform.app.InstrumentationRegistry
-import com.eduardoflores.rolabox.auth.data.api.PasswordPolicy
+import com.eduardoflores.rolabox.auth.data.api.PasswordStrength
 import com.eduardoflores.rolabox.common.designsystem.R as DesignSystemR
 import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
+
+private const val PASSWORD = "kdjfhqPwzm4x"
+private const val MIN_LENGTH = 8
 
 class CreateAccountScreenTest {
     @get:Rule
@@ -60,8 +63,9 @@ class CreateAccountScreenTest {
         }
     }
 
-    private fun stateWith(password: String) =
-        CreateAccountUiState(password = password, strength = PasswordPolicy.strengthOf(password))
+    // The screen shows the strength it is given. Rating a password is the policy's, tested in :auth:data:impl.
+    private fun stateWith(password: String, strength: PasswordStrength = PasswordStrength.Good) =
+        CreateAccountUiState(password = password, strength = strength)
 
     private fun field(tag: String) = composeRule.onNode(hasSetTextAction() and hasAnyAncestor(hasTestTag(tag)))
 
@@ -169,7 +173,7 @@ class CreateAccountScreenTest {
 
     @Test
     fun strengthMeter_showsTheLabelForEachStrength() {
-        var current by mutableStateOf(stateWith("abc"))
+        var current by mutableStateOf(stateWith(PASSWORD, PasswordStrength.Weak))
         composeRule.setContent {
             RolaboxTheme {
                 CreateAccountScreen(
@@ -185,14 +189,14 @@ class CreateAccountScreenTest {
             }
         }
         val cases = mapOf(
-            "abc" to DesignSystemR.string.ds_strength_weak,
-            "kdjfhqpwzmxn" to DesignSystemR.string.ds_strength_fair,
-            "kdjfhqPwzm4x" to DesignSystemR.string.ds_strength_good,
-            "kdjfhqPwzm4x!" to DesignSystemR.string.ds_strength_strong,
+            PasswordStrength.Weak to DesignSystemR.string.ds_strength_weak,
+            PasswordStrength.Fair to DesignSystemR.string.ds_strength_fair,
+            PasswordStrength.Good to DesignSystemR.string.ds_strength_good,
+            PasswordStrength.Strong to DesignSystemR.string.ds_strength_strong,
         )
 
-        cases.forEach { (password, label) ->
-            composeRule.runOnUiThread { current = stateWith(password) }
+        cases.forEach { (strength, label) ->
+            composeRule.runOnUiThread { current = stateWith(PASSWORD, strength) }
             composeRule.onNodeWithText(string(label)).assertIsDisplayed()
         }
     }
@@ -203,13 +207,13 @@ class CreateAccountScreenTest {
             CreateAccountUiState(
                 nameError = NameError.Required,
                 emailError = EmailError.Invalid,
-                passwordError = PasswordError.TooShort,
+                passwordError = PasswordError.TooShort(minLength = MIN_LENGTH),
             ),
         )
 
         composeRule.onNodeWithText(string(R.string.account_error_name_required)).assertIsDisplayed()
         composeRule.onNodeWithText(string(R.string.account_error_email_invalid)).assertIsDisplayed()
-        composeRule.onNodeWithText(string(R.string.account_error_password_short, PasswordPolicy.MIN_LENGTH))
+        composeRule.onNodeWithText(string(R.string.account_error_password_short, MIN_LENGTH))
             .assertIsDisplayed()
     }
 

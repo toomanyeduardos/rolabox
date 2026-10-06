@@ -12,6 +12,7 @@ dependencies {
     implementation(project(":common:storage:api"))
     implementation(project(":common:sync:api"))
     testImplementation(project(":common:storage:testing"))
+    testImplementation(project(":common:sync:testing"))
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
 }
