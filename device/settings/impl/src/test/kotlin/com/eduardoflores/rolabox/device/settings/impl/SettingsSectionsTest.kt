@@ -1,10 +1,8 @@
 package com.eduardoflores.rolabox.device.settings.impl
 
-import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import com.eduardoflores.rolabox.device.settings.api.SettingsKey
-import com.eduardoflores.rolabox.device.settings.api.SettingsRow
 import com.eduardoflores.rolabox.device.settings.api.SettingsSection
 import com.eduardoflores.rolabox.device.settings.api.SettingsSlot
 import org.junit.Assert.assertEquals
@@ -51,14 +49,4 @@ class SettingsSectionsTest {
         provider(SettingsKey)
         provider(FakeKey)
     }
-
-    private class FakeSection(override val slot: SettingsSlot) : SettingsSection {
-        override val row = SettingsRow(title = { slot.name }, opens = FakeKey)
-
-        override fun appStackEntries(scope: EntryProviderScope<NavKey>, onBack: () -> Unit) {
-            scope.entry<FakeKey> { }
-        }
-    }
-
-    private data object FakeKey : NavKey
 }

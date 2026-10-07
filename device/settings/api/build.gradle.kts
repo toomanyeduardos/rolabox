@@ -6,5 +6,7 @@ plugins {
 }
 
 dependencies {
+    // Flow appears in a section's public signature.
+    api(libs.kotlinx.coroutines.core)
     testImplementation(libs.junit)
 }
