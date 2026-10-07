@@ -77,6 +77,17 @@ class ModuleRulesTest {
     }
 
     @Test
+    fun `ADR-018 rule 15 - the playback screens do not see the playback impl or testing`() {
+        assertViolatesAdr018Rule15(":device:playback:ui:impl", ":device:playback:impl")
+        assertViolatesAdr018Rule15(":device:playback:ui:api", ":device:playback:impl", TEST)
+        assertViolatesAdr018Rule15(":device:playback:ui:impl", ":device:playback:testing")
+        assertAllowed(":device:playback:ui:impl", ":device:playback:api")
+        assertAllowed(":device:playback:ui:impl", ":device:playback:testing", TEST)
+        assertAllowed(":device:playback:impl", ":device:playback:api")
+        assertAllowed(":app", ":device:playback:impl")
+    }
+
+    @Test
     fun `a module may use its own test fixtures`() {
         assertAllowed(":common:designsystem", ":common:designsystem", TEST)
     }
@@ -97,6 +108,11 @@ class ModuleRulesTest {
     private fun assertViolates(rule: String, module: String, dependency: String, configuration: String = MAIN) {
         val violation = projectDependencyViolation(module, dependency, configuration)
         assertTrue("$module -> $dependency should violate $rule, but was: $violation", violation?.contains("ADR-020 $rule:") == true)
+    }
+
+    private fun assertViolatesAdr018Rule15(module: String, dependency: String, configuration: String = MAIN) {
+        val violation = projectDependencyViolation(module, dependency, configuration)
+        assertTrue("$module -> $dependency should violate ADR-018 rule 15, but was: $violation", violation?.contains("ADR-018 rule 15:") == true)
     }
 
     private fun assertAllowed(module: String, dependency: String, configuration: String = MAIN) {

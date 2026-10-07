@@ -27,6 +27,11 @@ private const val API_SUFFIX = ":api"
 private const val IMPL_SUFFIX = ":impl"
 private const val TESTING_SUFFIX = ":testing"
 
+// The playback screens never see the playback engine's side of the area (ADR-018 rule 15).
+private const val PLAYBACK_UI_PREFIX = ":device:playback:ui:"
+private const val PLAYBACK_IMPL_PATH = ":device:playback:impl"
+private const val PLAYBACK_TESTING_PATH = ":device:playback:testing"
+
 private val IMPL_ALLOWED_PATHS = setOf(UTIL_PATH, DESIGNSYSTEM_PATH)
 private val DEVICE_HOST_ALLOWED_PATHS = setOf(UTIL_PATH, DESIGNSYSTEM_PATH)
 
@@ -105,12 +110,20 @@ internal fun CommonExtension.enforceNoProductFlavors(modulePath: String) {
     }
 }
 
-/** ADR-020 rules 1 to 8, in the order a violation is most useful to read. Null when the dependency is allowed. */
+/** ADR-020 rules 1 to 8 and ADR-018 rule 15, in the order a violation is most useful to read. Null when the dependency is allowed. */
 @Suppress("CyclomaticComplexMethod") // One branch per rule, which is what makes it readable.
 internal fun projectDependencyViolation(modulePath: String, dependencyPath: String, configurationName: String): String? =
     when {
         // A module's own test fixtures.
         dependencyPath == modulePath -> null
+
+        // More specific than rules 4 and 7 below, so a playback screen gets the reason in its own terms.
+        modulePath.startsWith(PLAYBACK_UI_PREFIX) &&
+            (dependencyPath == PLAYBACK_IMPL_PATH ||
+                dependencyPath == PLAYBACK_TESTING_PATH && !configurationName.isTestConfiguration()) ->
+            "ADR-018 rule 15: the playback screens ($PLAYBACK_UI_PREFIX*) depend on the playback state only " +
+                "through :device:playback:api, never on $PLAYBACK_IMPL_PATH, and on $PLAYBACK_TESTING_PATH " +
+                "only from test configurations"
 
         dependencyPath.isTesting() && !configurationName.isTestConfiguration() ->
             "ADR-020 rule 7: testing modules (:common:testing and every :testing) may only be used from test " +

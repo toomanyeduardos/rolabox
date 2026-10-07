@@ -19,6 +19,13 @@
   Where the text says "feature", read the `:impl` of a part with screens.
 - **Revised 2026-10-06:** Rules 3 and 12 are `[enforced]`, with the checks named under Conformance
   (37.10). The paragraph on the target state says which rules are still checked by review only.
+- **Revised 2026-10-07:** The playback area is `:device:playback:{api,impl,testing}` and
+  `:device:playback:ui:{api,impl}` (Where the code lives, rule 15), and the Turn and Center rows of
+  Now Playing are made precise: center selects scrub, no selection means volume, and each mode
+  returns on its own timer (What each control does, rule 16). The playback state in the `:api` is a
+  set of `Flow`s, with a fake as its only implementation until the playback ADR (Playback state,
+  rule 10), and the Now Playing row is hidden until an item is loaded. Rule 15 is `[enforced]`
+  (38.02). The decisions about the engine and the queue are unchanged and still left open.
 
 ## Context
 
@@ -78,7 +85,7 @@ feature provides its **device screens** and its **full screens** as separate set
 as its entry is on the stack, so MENU returns to the row the user left, also after process death.
 
 **The main menu belongs to `:app`,** as a destination no feature owns (ADR-012). It gains a
-**Now Playing** row while an item is loaded.
+**Now Playing** row while an item is loaded. The row is hidden until then, and not shown disabled.
 
 ### The wheel is an input device with a fixed vocabulary
 
@@ -121,8 +128,8 @@ An item is **loaded** from the moment it starts until its queue ends. A paused i
 
 | Control | On a list | On Now Playing |
 | --- | --- | --- |
-| Turn | Moves the highlight | Changes the volume. In scrub mode, moves the position |
-| Center | Opens the highlighted row, or plays it | Enters scrub mode |
+| Turn | Moves the highlight | Scrub mode: moves the position. Otherwise: changes the volume |
+| Center | Opens the highlighted row, or plays it | Selects scrub. Turning then moves the position |
 | MENU | Goes back one screen. Does nothing on the main menu | Goes back one screen |
 | Hold MENU | Goes to the main menu | Goes to the main menu |
 | ⏮ ⏭ | Previous or next item if one is loaded. Otherwise nothing | Previous or next item |
@@ -137,9 +144,10 @@ An item is **loaded** from the moment it starts until its queue ends. A paused i
   episode. On every other row ⏯ plays or pauses the loaded item, and does nothing when nothing is
   loaded. So on a list of songs ⏯ never pauses: pausing is done from a list that isn't playable,
   or from Now Playing.
-- **Scrub is a mode of the Now Playing screen, not a destination.** Center enters it, turning moves
-  the position, and it ends on its own after a few seconds without a turn. It is the screen's own
-  state, and the screen stack doesn't change.
+- **Scrub is a mode of the Now Playing screen, not a destination.** Center selects it, and while it
+  is selected a turn moves the position. With nothing selected, a turn changes the volume. Scrub
+  ends on its own after 3 s without a turn, and the volume bar then returns to the time after 2 s.
+  It is the screen's own state, and the screen stack doesn't change.
 - **Playing a row starts its list from that row.** Song 3 of 10 is followed by songs 4
   to 10. `:app` then pushes Now Playing.
 - **Now Playing is only ever the top of the screen stack.** It is pushed by playing something, or by
@@ -158,7 +166,10 @@ Playback continues after leaving.
 ### Playback state lives above the screens
 
 What is loaded, whether it is playing, its position and its queue belong to the playback area, and
-are exposed as `Flow`s ([ADR-006](006-async-api-shape.md)). `:app` observes them for the header's
+are exposed as `Flow`s ([ADR-006](006-async-api-shape.md)). The playback state in the `:api` is a
+set of them: the current song, its position, the queue with its index, and the volume. Until the
+playback ADR there is no engine, and the fake in `:device:playback:testing` is the only
+implementation. `:app` observes them for the header's
 record, the Now Playing row and the ⏮ ⏭ ⏯ buttons, and the Now Playing screen observes them for its
 content. No entry's ViewModel owns playback state, since every entry can be popped while the music
 continues. The playback engine, its service and the media session are left to their own ADR.
@@ -186,6 +197,9 @@ use the wheel.
   ([ADR-019](019-device-host-module.md)).
 - **`:app`** has the device destination, the main menu, the entries it gives to the host, the
   mapping from exits to keys, and the handlers of the playback buttons.
+- **The playback area** is `:device:playback:{api,impl,testing}` for the state and its fake, and
+  `:device:playback:ui:{api,impl}` for the screens (the layout of
+  [ADR-020](020-modules-by-product-area.md)). The screens see the state only through the `:api`.
 - **Features** have their device screens and ViewModels. They use the design system's rows and
   receive turn and center events through the host's contract. They don't know the wheel's shape, or
   that other features exist ([ADR-003](003-module-boundaries.md)).
@@ -304,6 +318,13 @@ as ADR-017's rule 10 requires.
 13. `[convention]` The app is locked to portrait, and the device has one layout.
 14. `[convention]` Text on the display follows the system font scale (ADR-017). The wheel's label
     and icons don't, as an exception marked under ADR-017's rule 10.
+15. `[enforced]` The playback area is `:device:playback:{api,impl,testing}` and
+    `:device:playback:ui:{api,impl}`. No `:device:playback:ui:*` module depends on
+    `:device:playback:impl`, or on `:device:playback:testing` outside test configurations.
+16. `[convention]` On Now Playing, center selects scrub and no selection means volume. A turn moves
+    the position in scrub mode and changes the volume otherwise. Scrub ends after 3 s without a turn,
+    and the volume bar returns to the time after 2 s. The Now Playing row of the main menu is hidden
+    until an item is loaded.
 
 **Conformance.** Rule 3 is checked by `TouchInputInDeviceScreen`, a Rolabox detekt rule. A file is a
 device screen file when it imports `:device:host` or one of the design system's device components, and
@@ -315,5 +336,9 @@ Settings and the other full screens import neither, so they are not checked. `:d
 device component or of the wheel's event types (`names` in `config/detekt/detekt.yml`) anywhere but
 `:common:designsystem`. A new device component is added to that list. Both run in `detekt`, part of
 `./gradlew check` and of the CI `build` job, and their unit tests run in `./gradlew check` and
-`unitTest`. An exception is a `@Suppress` that names the rule. Rules 1, 2, 4 to 11, 13 and 14 are
+`unitTest`. An exception is a `@Suppress` that names the rule. Rule 15 is checked by
+`ModuleRules.kt` when the build is configured, and `ModuleRulesTest` in `build-logic` has a
+violating and a passing case. Its message names ADR-018 rule 15. It is narrower than ADR-020's rules
+4 and 7, which already forbid any `:impl` and any `:testing` outside test configurations, and says
+why in the playback area's terms. No other rule moves: rules 1, 2, 4 to 11, 13, 14 and 16 are
 reviewed.
