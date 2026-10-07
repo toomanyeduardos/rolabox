@@ -30,6 +30,10 @@
   `:device:music:{api,impl}` (The layout), so a part's screens are `:ui` the way `:auth:ui` and
   `:device:ui` already are, and the playback screens can be `:device:playback:ui` (38.01). Packages
   follow the new paths. The decision is unchanged.
+- **Revised 2026-10-07:** The playback area is a part of the device, `:device:playback:{api,impl,
+  testing}` and `:device:playback:ui:{api,impl}` (The layout, Left open), decided in
+  [ADR-018](018-device-navigation.md) (38.02). The engine, its service and the media session are
+  still open. The decision is unchanged.
 
 ## Context
 
@@ -74,7 +78,8 @@ We will group modules **by product area**, let each area **assemble its own part
 :device:settings:{api,impl}       the settings list and its slots
 :device:library:{api,impl,testing}  the music library's data: artists, albums, songs
 :device:music:ui:{api,impl}       the music screens: Music, Artists, albums, songs
-:device:playback:…                open, see "Left open"
+:device:playback:{api,impl,testing}  playback state and its fake, until the engine exists
+:device:playback:ui:{api,impl}    the playback screens: Now Playing
 :common:util                      dispatchers, scopes, exception-to-error helpers
 :common:designsystem              the visual language (ADR-015)
 :common:testing                   Hilt test runner, MainDispatcherRule
@@ -259,8 +264,9 @@ A contribution that is missing doesn't fail the build. So:
 
 This ADR doesn't decide, and its module list isn't complete for:
 
-- **Playback:** its parts. It will need a data part and screens, and possibly a part for Now
-  Playing.
+- **Playback's engine:** the service and the media session. The state and the screens are
+  `:device:playback` and `:device:playback:ui` (The layout), with a fake as the only implementation
+  until the playback ADR.
 - **Where Room's database, entities and DAOs live,** now that `:device:library` exists. Its
   `:impl` serves hard-coded data in memory until the real library is designed, and is replaced
   then.
