@@ -14,7 +14,7 @@ internal data class SettingsUiState(
     val themeSaveFailed: Boolean = false,
 )
 
-/** What Settings shows, and what the user does on it (ADR-021). [DefaultSettingsViewModel] implements it. */
+/** What Settings shows, and what the user does on it (ADR-021). [SettingsViewModelImpl] implements it. */
 internal abstract class SettingsViewModel : ViewModel() {
     abstract val uiState: StateFlow<SettingsUiState>
 

@@ -7,6 +7,7 @@ import com.eduardoflores.rolabox.auth.ui.api.AuthUiEntries
 import com.eduardoflores.rolabox.auth.ui.api.CreateAccountKey
 import com.eduardoflores.rolabox.auth.ui.api.ResetPasswordKey
 import com.eduardoflores.rolabox.auth.ui.api.SignInKey
+import com.eduardoflores.rolabox.auth.ui.api.SignOutKey
 import javax.inject.Inject
 
 /**
@@ -23,10 +24,11 @@ internal class DefaultAuthUiEntries @Inject constructor() : AuthUiEntries {
         onBackToSignIn: () -> Unit,
         onSignedUp: () -> Unit,
         onSignedIn: () -> Unit,
+        onSignedOut: () -> Unit,
     ) = with(scope) {
         entry<SignInKey> {
             SignInRoute(
-                viewModel = hiltViewModel<DefaultSignInViewModel>(),
+                viewModel = hiltViewModel<SignInViewModelImpl>(),
                 onCreateAccountClick = onCreateAccountClick,
                 onForgotPasswordClick = onForgotPasswordClick,
                 onSignedIn = onSignedIn,
@@ -34,7 +36,7 @@ internal class DefaultAuthUiEntries @Inject constructor() : AuthUiEntries {
         }
         entry<CreateAccountKey> {
             CreateAccountRoute(
-                viewModel = hiltViewModel<DefaultCreateAccountViewModel>(),
+                viewModel = hiltViewModel<CreateAccountViewModelImpl>(),
                 onBack = onBack,
                 onSignInClick = onSignInClick,
                 onSignedUp = onSignedUp,
@@ -42,10 +44,17 @@ internal class DefaultAuthUiEntries @Inject constructor() : AuthUiEntries {
         }
         entry<ResetPasswordKey> { key ->
             ResetPasswordRoute(
-                viewModel = hiltViewModel<DefaultResetPasswordViewModel>(),
+                viewModel = hiltViewModel<ResetPasswordViewModelImpl>(),
                 email = key.email,
                 onBackClick = onBack,
                 onSignInClick = onBackToSignIn,
+            )
+        }
+        entry<SignOutKey> {
+            SignOutRoute(
+                viewModel = hiltViewModel<SignOutViewModelImpl>(),
+                onCancelClick = onBack,
+                onSignedOut = onSignedOut,
             )
         }
     }

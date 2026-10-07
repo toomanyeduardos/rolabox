@@ -30,8 +30,8 @@ import javax.inject.Inject
 class MainActivity : ComponentActivity() {
     // The activity is where these ViewModels are created, so it names their concrete classes. The
     // content below reads them through the abstract ones (ADR-021).
-    private val viewModel: MainActivityViewModel by viewModels<DefaultMainActivityViewModel>()
-    private val startupViewModel: StartupViewModel by viewModels<DefaultStartupViewModel>()
+    private val viewModel: MainActivityViewModel by viewModels<MainActivityViewModelImpl>()
+    private val startupViewModel: StartupViewModel by viewModels<StartupViewModelImpl>()
 
     // The entry contracts of the two areas. What is under each one is theirs to know (ADR-020).
     @Inject

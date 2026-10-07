@@ -33,7 +33,7 @@ class SignInViewModelTest {
 
     private val signIn = FakeSignInUseCase()
     private val userDataRepository = FakeUserDataRepository()
-    private val viewModel = DefaultSignInViewModel(signIn, userDataRepository, SIGN_IN_CONFIG)
+    private val viewModel = SignInViewModelImpl(signIn, userDataRepository, SIGN_IN_CONFIG)
     private val state get() = viewModel.uiState.value
 
     private fun fill(email: String = "toomanyeduardos@gmail.com", password: String = "secret") {
@@ -124,7 +124,7 @@ class SignInViewModelTest {
                 return signIn(email, password)
             }
         }
-        val slowViewModel = DefaultSignInViewModel(slowSignIn, userDataRepository, SIGN_IN_CONFIG)
+        val slowViewModel = SignInViewModelImpl(slowSignIn, userDataRepository, SIGN_IN_CONFIG)
         slowViewModel.onEmailChange("toomanyeduardos@gmail.com")
         slowViewModel.onPasswordChange("secret")
 

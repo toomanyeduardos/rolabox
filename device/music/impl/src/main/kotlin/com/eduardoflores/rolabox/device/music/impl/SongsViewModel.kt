@@ -13,7 +13,7 @@ internal sealed interface SongsSource {
     data class Artist(val id: ArtistId) : SongsSource
 }
 
-/** The songs of the Songs screen, whichever its [SongsSource] (ADR-021). [DefaultSongsViewModel] implements it. */
+/** The songs of the Songs screen, whichever its [SongsSource] (ADR-021). [SongsViewModelImpl] implements it. */
 internal abstract class SongsViewModel : ViewModel() {
     abstract val uiState: StateFlow<ListUiState<Song>>
 }

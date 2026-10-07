@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import com.eduardoflores.rolabox.auth.data.api.StartDestination
 import kotlinx.coroutines.flow.StateFlow
 
-/** Whether the app knows yet where it opens (ADR-021). [DefaultStartupViewModel] implements it. */
+/** Whether the app knows yet where it opens (ADR-021). [StartupViewModelImpl] implements it. */
 abstract class StartupViewModel : ViewModel() {
     abstract val uiState: StateFlow<StartupUiState>
 }

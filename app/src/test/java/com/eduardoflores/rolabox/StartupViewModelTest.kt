@@ -14,7 +14,7 @@ class StartupViewModelTest {
 
     private val resolveStartDestination = FakeResolveStartDestinationUseCase()
 
-    private fun viewModel() = DefaultStartupViewModel(resolveStartDestination)
+    private fun viewModel() = StartupViewModelImpl(resolveStartDestination)
 
     @Test
     fun accessGranted_isReadyForIt() {

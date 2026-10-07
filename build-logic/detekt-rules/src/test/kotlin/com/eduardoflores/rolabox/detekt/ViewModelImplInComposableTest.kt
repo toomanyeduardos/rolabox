@@ -6,15 +6,15 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class DefaultViewModelInComposableTest {
-    private val rule = DefaultViewModelInComposable(Config.empty)
+class ViewModelImplInComposableTest {
+    private val rule = ViewModelImplInComposable(Config.empty)
 
     @Test
     fun `flags a composable that takes a concrete ViewModel`() {
         val findings = rule.lint(
             """
             @Composable
-            internal fun SignInRoute(onSignedIn: () -> Unit, viewModel: DefaultSignInViewModel = hiltViewModel()) {
+            internal fun SignInRoute(onSignedIn: () -> Unit, viewModel: SignInViewModelImpl = hiltViewModel()) {
                 SignInScreen(viewModel.uiState)
             }
             """.trimIndent(),
@@ -31,13 +31,13 @@ class DefaultViewModelInComposableTest {
             """
             @Composable
             internal fun SignInRoute(onSignedIn: () -> Unit) {
-                val viewModel = hiltViewModel<DefaultSignInViewModel>()
+                val viewModel = hiltViewModel<SignInViewModelImpl>()
                 SignInScreen(viewModel.uiState)
             }
 
             @Composable
             fun CreateAccountRoute() {
-                val viewModel: DefaultCreateAccountViewModel = hiltViewModel()
+                val viewModel: CreateAccountViewModelImpl = hiltViewModel()
                 CreateAccountScreen(viewModel.uiState)
             }
             """.trimIndent(),
@@ -73,13 +73,13 @@ class DefaultViewModelInComposableTest {
             internal class DefaultAuthUiEntries @Inject constructor() : AuthUiEntries {
                 override fun appStackEntries(scope: EntryProviderScope<NavKey>, onSignedIn: () -> Unit) = with(scope) {
                     entry<SignInKey> {
-                        SignInRoute(viewModel = hiltViewModel<DefaultSignInViewModel>(), onSignedIn = onSignedIn)
+                        SignInRoute(viewModel = hiltViewModel<SignInViewModelImpl>(), onSignedIn = onSignedIn)
                     }
                 }
             }
 
             class MainActivity : ComponentActivity() {
-                private val viewModel: MainActivityViewModel by viewModels<DefaultMainActivityViewModel>()
+                private val viewModel: MainActivityViewModel by viewModels<MainActivityViewModelImpl>()
             }
             """.trimIndent(),
         )
@@ -92,8 +92,8 @@ class DefaultViewModelInComposableTest {
         val findings = rule.lint(
             """
             @HiltViewModel
-            internal class DefaultSignInViewModel @Inject constructor(private val signIn: SignInUseCase) : SignInViewModel() {
-                fun copy(other: DefaultSignInViewModel) = Unit
+            internal class SignInViewModelImpl @Inject constructor(private val signIn: SignInUseCase) : SignInViewModel() {
+                fun copy(other: SignInViewModelImpl) = Unit
             }
             """.trimIndent(),
         )

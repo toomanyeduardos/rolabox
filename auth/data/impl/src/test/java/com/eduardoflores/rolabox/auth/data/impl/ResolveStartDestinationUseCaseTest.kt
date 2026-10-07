@@ -50,4 +50,15 @@ class ResolveStartDestinationUseCaseTest {
 
         assertEquals(StartDestination.AccessGranted, resolve()())
     }
+
+    // Ticket: signing out returns the user to Sign in, not straight back to offline mode.
+    @Test
+    fun signedOutAfterSigningInFromOfflineMode_isSignIn() = runTest {
+        userDataRepository.setOfflineModeChosen(true)
+        DefaultSignInUseCase(authRepository, userDataRepository)("alex@mail.com", "password12")
+
+        authRepository.signOut()
+
+        assertEquals(StartDestination.SignIn, resolve()())
+    }
 }

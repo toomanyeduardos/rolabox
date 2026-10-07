@@ -78,8 +78,8 @@ rolabox:
     # modules only, which this is what says so.
     active: true
     includes: ['**/api/src/**']
-  DefaultViewModelInComposable:
-    # ADR-021 rule 2: composables take the abstract ViewModel. Only an entry names a Default…ViewModel.
+  ViewModelImplInComposable:
+    # ADR-021 rule 2: composables take the abstract ViewModel. Only an entry names a …ViewModelImpl.
     active: true
   TouchInputInDeviceScreen:
     # ADR-018 rule 3: a device screen is operated by the wheel only. A file is a device screen when it

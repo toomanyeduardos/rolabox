@@ -32,7 +32,7 @@ class CreateAccountViewModelTest {
     private val signUp = FakeSignUpUseCase()
     private val signIn = FakeSignInUseCase()
     private val passwordPolicy = FakePasswordPolicy()
-    private val viewModel = DefaultCreateAccountViewModel(signUp, signIn, passwordPolicy, SIGN_IN_CONFIG)
+    private val viewModel = CreateAccountViewModelImpl(signUp, signIn, passwordPolicy, SIGN_IN_CONFIG)
     private val state get() = viewModel.uiState.value
 
     private fun fill(

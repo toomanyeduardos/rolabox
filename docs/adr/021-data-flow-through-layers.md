@@ -10,6 +10,11 @@
 - **Revised 2026-10-06:** The migration is done ([37.07b](https://trello.com/c/NjGx7cY4)), so rules
   1 and 2 are `[enforced]` by two detekt rules (Rules, Conformance, Migration). The decision is
   unchanged.
+- **Revised 2026-10-07:** The class that implements an abstract ViewModel is named
+  `…ViewModelImpl`, not `Default…ViewModel` (Decision, Rules 2 and 3, Conformance). The detekt rule
+  `DefaultViewModelInComposable` is now `ViewModelImplInComposable` and matches the new suffix. Why:
+  "Default" suggests a fallback among several implementations, and there is only one. The names of
+  use cases, entries and other classes are not part of this revision. The decision is unchanged.
 
 ## Context
 
@@ -38,7 +43,7 @@ the class that implements it.**
 ```
 Screen composable           stateless: takes state and lambdas
       ▲ state   │ actions
-Route composable ─────────▶ abstract SignInViewModel ◀──── DefaultSignInViewModel
+Route composable ─────────▶ abstract SignInViewModel ◀──── SignInViewModelImpl
                                                                   │ injects
                             SignInUseCase, AuthRepository  ◀──────┘
                             (interfaces, in :auth:data:api)
@@ -57,7 +62,7 @@ Route composable ─────────▶ abstract SignInViewModel ◀─�
   state as a `StateFlow` and one function per user action, and nothing else: no constructor
   parameters and no logic.
 - **The concrete ViewModel extends it,** is annotated with `@HiltViewModel`, and injects what it
-  needs. It is named `Default…ViewModel`.
+  needs. It is named `…ViewModelImpl`.
 - **Composables are typed with the abstract class.** The route composable takes it as a parameter,
   collects its state, and calls the stateless screen composable with state and lambdas. That
   second composable is unchanged, and is still what previews and screenshot tests call
@@ -151,10 +156,10 @@ reads, follow the same shape, and the activity is where their concrete classes a
 1. `[enforced]` An `:api` module declares no class whose name ends in `UseCase` or `Repository`:
    those are interfaces.
 2. `[enforced]` No composable function has a parameter or a `hiltViewModel` call typed with a
-   `Default…ViewModel`. Only an entry names one.
+   `…ViewModelImpl`. Only an entry names one.
 3. `[convention]` Every screen's ViewModel is an abstract class that extends `ViewModel` and
    declares only its UI state, as a `StateFlow`, and its actions. The class that implements it is
-   `Default…ViewModel`, and both live in the `:impl` of the part with screens.
+   `…ViewModelImpl`, and both live in the `:impl` of the part with screens.
 4. `[convention]` A route composable takes the abstract ViewModel, and passes state and lambdas to
    a stateless screen composable. Previews and screenshot tests call the stateless one.
 5. `[convention]` A ViewModel injects only interfaces from `:api` modules.
@@ -168,4 +173,4 @@ reads, follow the same shape, and the activity is where their concrete classes a
 
 **Conformance.** Rules 1 and 2 are checked by Rolabox's own detekt rules, both part of
 `./gradlew check`: `UseCaseOrRepositoryClassInApi`, which runs on the sources of `:api` modules, and
-`DefaultViewModelInComposable`. Each has unit tests with a violating and a passing sample.
+`ViewModelImplInComposable`. Each has unit tests with a violating and a passing sample.

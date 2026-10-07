@@ -24,7 +24,7 @@ internal class DefaultSettingsEntries @Inject constructor(sections: Set<@JvmSupp
     ) {
         scope.entry<SettingsKey> {
             SettingsRoute(
-                viewModel = hiltViewModel<DefaultSettingsViewModel>(),
+                viewModel = hiltViewModel<SettingsViewModelImpl>(),
                 onOpenFullScreen = onOpenFullScreen,
                 onBack = onBack,
             )

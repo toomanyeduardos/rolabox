@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 @HiltViewModel
-internal class DefaultCreateAccountViewModel @Inject constructor(
+internal class CreateAccountViewModelImpl @Inject constructor(
     private val signUp: SignUpUseCase,
     private val signIn: SignInUseCase,
     private val passwordPolicy: PasswordPolicy,

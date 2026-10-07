@@ -28,7 +28,7 @@ internal data class CreateAccountUiState(
 
 /**
  * What the Create account screen shows, and what the user does on it (ADR-021).
- * [DefaultCreateAccountViewModel] implements it.
+ * [CreateAccountViewModelImpl] implements it.
  */
 internal abstract class CreateAccountViewModel : ViewModel() {
     abstract val uiState: StateFlow<CreateAccountUiState>

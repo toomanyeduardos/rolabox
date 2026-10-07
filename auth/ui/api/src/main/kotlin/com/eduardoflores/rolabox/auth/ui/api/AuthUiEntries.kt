@@ -8,7 +8,10 @@ import androidx.navigation3.runtime.NavKey
  * of them as a lambda. `:app` injects it, and decides where each exit goes (ADR-012).
  */
 interface AuthUiEntries {
-    /** Adds the entries of [SignInKey], [CreateAccountKey] and [ResetPasswordKey], full screens on the app stack. */
+    /**
+     * Adds the entries of [SignInKey], [CreateAccountKey], [ResetPasswordKey] and [SignOutKey], full
+     * screens on the app stack.
+     */
     @Suppress("LongParameterList") // One lambda per exit, so the contract lists how its screens are left.
     fun appStackEntries(
         scope: EntryProviderScope<NavKey>,
@@ -19,5 +22,6 @@ interface AuthUiEntries {
         onBackToSignIn: () -> Unit,
         onSignedUp: () -> Unit,
         onSignedIn: () -> Unit,
+        onSignedOut: () -> Unit,
     )
 }

@@ -23,7 +23,7 @@ class SettingsViewModelTest {
 
     // The state is only computed while someone observes it, as the screen does.
     private fun viewModel(vararg sections: FakeSection) =
-        DefaultSettingsViewModel(sections.toSet(), userData).also { it.uiState.launchIn(it.viewModelScope) }
+        SettingsViewModelImpl(sections.toSet(), userData).also { it.uiState.launchIn(it.viewModelScope) }
 
     @Test
     fun withNoSections_thereAreNoRows_andTheThemeIsLoaded() {

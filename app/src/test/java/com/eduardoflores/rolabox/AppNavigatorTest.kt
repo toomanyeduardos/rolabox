@@ -3,6 +3,7 @@ package com.eduardoflores.rolabox
 import androidx.compose.runtime.mutableStateOf
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
+import com.eduardoflores.rolabox.auth.ui.api.SignInKey
 import com.eduardoflores.rolabox.device.ui.api.DeviceKey
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -84,6 +85,43 @@ class AppNavigatorTest {
         val navigator = navigator(NavigationFlow.Main)
         navigator.push(First)
         navigator.push(Second)
+
+        navigator.accessGranted()
+
+        assertEquals(NavigationFlow.Main, navigator.flow)
+        assertEquals(listOf<NavKey>(DeviceKey), navigator.currentBackStack.toList())
+    }
+
+    @Test
+    fun signedOut_fromAScreenOverTheDevice_showsSignInAndForgetsTheDevice() {
+        val navigator = navigator(NavigationFlow.Main)
+        navigator.push(First)
+        navigator.push(Second)
+
+        navigator.signedOut()
+
+        assertEquals(NavigationFlow.Auth, navigator.flow)
+        assertEquals(listOf<NavKey>(SignInKey), navigator.currentBackStack.toList())
+    }
+
+    @Test
+    fun signedOut_meansBackNeverReturnsToTheDevice() {
+        val navigator = navigator(NavigationFlow.Main)
+        navigator.push(First)
+        navigator.signedOut()
+
+        navigator.pop()
+
+        assertEquals(NavigationFlow.Auth, navigator.flow)
+        assertEquals(listOf<NavKey>(SignInKey), navigator.currentBackStack.toList())
+    }
+
+    // Signing in again after signing out starts from a clean device, not from the screen that was open.
+    @Test
+    fun signedOut_thenAccessGranted_showsTheDeviceAtItsRoot() {
+        val navigator = navigator(NavigationFlow.Main)
+        navigator.push(First)
+        navigator.signedOut()
 
         navigator.accessGranted()
 
