@@ -17,13 +17,13 @@ class ArtistsViewModelTest {
 
     private val library = FakeLibraryRepository()
 
-    private fun TestScope.observedViewModel() = DefaultArtistsViewModel(library).also { viewModel ->
+    private fun TestScope.observedViewModel() = ArtistsViewModelImpl(library).also { viewModel ->
         backgroundScope.launch(mainDispatcherRule.testDispatcher) { viewModel.uiState.collect() }
     }
 
     @Test
     fun beforeAnythingIsObserved_isLoading() {
-        assertEquals(ListUiState.Loading, DefaultArtistsViewModel(library).uiState.value)
+        assertEquals(ListUiState.Loading, ArtistsViewModelImpl(library).uiState.value)
     }
 
     @Test

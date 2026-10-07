@@ -32,7 +32,7 @@ internal data class SignInUiState(
     val signInRequest: SignInRequest? = null,
 )
 
-/** What the Sign in screen shows, and what the user does on it (ADR-021). [DefaultSignInViewModel] implements it. */
+/** What the Sign in screen shows, and what the user does on it (ADR-021). [SignInViewModelImpl] implements it. */
 internal abstract class SignInViewModel : ViewModel() {
     abstract val uiState: StateFlow<SignInUiState>
 

@@ -18,13 +18,13 @@ class SongsViewModelTest {
 
     private val library = filledLibrary()
 
-    private fun TestScope.observedViewModel(source: SongsSource) = DefaultSongsViewModel(source, library).also { vm ->
+    private fun TestScope.observedViewModel(source: SongsSource) = SongsViewModelImpl(source, library).also { vm ->
         backgroundScope.launch(mainDispatcherRule.testDispatcher) { vm.uiState.collect() }
     }
 
     @Test
     fun beforeAnythingIsObserved_isLoading() {
-        val viewModel = DefaultSongsViewModel(SongsSource.Album(PaperSatellites.id), library)
+        val viewModel = SongsViewModelImpl(SongsSource.Album(PaperSatellites.id), library)
 
         assertEquals(ListUiState.Loading, viewModel.uiState.value)
     }

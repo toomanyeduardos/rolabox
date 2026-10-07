@@ -29,11 +29,11 @@ internal class DefaultMusicEntries @Inject constructor() : MusicEntries {
     ) = with(scope) {
         entry<MusicMenuKey> { MusicMenuRoute(onArtistsClick = onArtistsClick) }
         entry<ArtistsKey> {
-            ArtistsRoute(viewModel = hiltViewModel<DefaultArtistsViewModel>(), onArtistClick = onArtistClick)
+            ArtistsRoute(viewModel = hiltViewModel<ArtistsViewModelImpl>(), onArtistClick = onArtistClick)
         }
         entry<ArtistAlbumsKey> { key ->
             ArtistAlbumsRoute(
-                viewModel = hiltViewModel<DefaultArtistAlbumsViewModel, DefaultArtistAlbumsViewModel.Factory>(
+                viewModel = hiltViewModel<ArtistAlbumsViewModelImpl, ArtistAlbumsViewModelImpl.Factory>(
                     creationCallback = { factory -> factory.create(key.artistId) },
                 ),
                 artistId = key.artistId,
@@ -43,7 +43,7 @@ internal class DefaultMusicEntries @Inject constructor() : MusicEntries {
         }
         entry<AlbumSongsKey> { key ->
             SongsRoute(
-                viewModel = hiltViewModel<DefaultSongsViewModel, DefaultSongsViewModel.Factory>(
+                viewModel = hiltViewModel<SongsViewModelImpl, SongsViewModelImpl.Factory>(
                     creationCallback = { factory -> factory.create(SongsSource.Album(AlbumId(key.albumId))) },
                 ),
                 onSongClick = onSongClick,
@@ -51,7 +51,7 @@ internal class DefaultMusicEntries @Inject constructor() : MusicEntries {
         }
         entry<ArtistSongsKey> { key ->
             SongsRoute(
-                viewModel = hiltViewModel<DefaultSongsViewModel, DefaultSongsViewModel.Factory>(
+                viewModel = hiltViewModel<SongsViewModelImpl, SongsViewModelImpl.Factory>(
                     creationCallback = { factory -> factory.create(SongsSource.Artist(ArtistId(key.artistId))) },
                 ),
                 onSongClick = onSongClick,

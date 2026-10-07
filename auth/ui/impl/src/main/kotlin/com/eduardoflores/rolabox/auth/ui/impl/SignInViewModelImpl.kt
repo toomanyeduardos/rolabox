@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 @HiltViewModel
-internal class DefaultSignInViewModel @Inject constructor(
+internal class SignInViewModelImpl @Inject constructor(
     private val signIn: SignInUseCase,
     private val userDataRepository: UserDataRepository,
     private val signInConfig: SignInConfig,

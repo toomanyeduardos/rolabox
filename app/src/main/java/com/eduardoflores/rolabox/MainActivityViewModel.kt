@@ -7,7 +7,7 @@ import com.eduardoflores.rolabox.common.userdata.api.DarkThemeConfig
 import com.eduardoflores.rolabox.common.userdata.api.UserData
 import kotlinx.coroutines.flow.StateFlow
 
-/** What the activity's content needs to pick the theme (ADR-021). [DefaultMainActivityViewModel] implements it. */
+/** What the activity's content needs to pick the theme (ADR-021). [MainActivityViewModelImpl] implements it. */
 abstract class MainActivityViewModel : ViewModel() {
     abstract val uiState: StateFlow<MainActivityUiState>
 }

@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 private const val TICK_MILLIS = 1_000L
 
 @HiltViewModel
-internal class DefaultResetPasswordViewModel @Inject constructor(private val authRepository: AuthRepository) :
+internal class ResetPasswordViewModelImpl @Inject constructor(private val authRepository: AuthRepository) :
     ResetPasswordViewModel() {
     private val _uiState = MutableStateFlow(ResetPasswordUiState())
     override val uiState: StateFlow<ResetPasswordUiState> = _uiState.asStateFlow()

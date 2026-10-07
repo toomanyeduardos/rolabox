@@ -13,3 +13,7 @@ data object CreateAccountKey : NavKey
 /** Reset password. [email] is what the user had typed on Sign in, and may be empty. */
 @Serializable
 data class ResetPasswordKey(val email: String = "") : NavKey
+
+/** Asks the signed-in user to confirm signing out. It's opened from Settings, over the device. */
+@Serializable
+data object SignOutKey : NavKey

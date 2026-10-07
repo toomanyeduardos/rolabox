@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 @HiltViewModel
-internal class DefaultSettingsViewModel @Inject constructor(
+internal class SettingsViewModelImpl @Inject constructor(
     sections: Set<@JvmSuppressWildcards SettingsSection>,
     private val userDataRepository: UserDataRepository,
 ) : SettingsViewModel() {

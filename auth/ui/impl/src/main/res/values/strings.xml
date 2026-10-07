@@ -71,4 +71,11 @@
     <string name="account_reset_error_network">Couldn\'t send the link. You\'re offline. Check your connection and try again.</string>
     <string name="account_reset_error_too_many_requests">Too many requests. Wait a few minutes, then try again.</string>
     <string name="account_reset_error_unknown">Something went wrong. Please try again.</string>
+
+    <string name="account_lcd_sign_out">Sign out</string>
+    <string name="account_sign_out_title">Sign out?</string>
+    <string name="account_sign_out_subtitle">You\'ll go back to Sign in. Sign in again any time to sync.</string>
+    <string name="account_sign_out_cta">Sign out</string>
+    <string name="account_sign_out_cancel">Cancel</string>
+    <string name="account_sign_out_error">Couldn\'t sign out. Please try again.</string>
 </resources>

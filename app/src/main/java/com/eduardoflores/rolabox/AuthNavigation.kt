@@ -19,5 +19,6 @@ internal fun EntryProviderScope<NavKey>.authEntries(entries: AuthUiEntries, navi
         onBackToSignIn = navigator::popToRoot,
         onSignedUp = navigator::accessGranted,
         onSignedIn = navigator::accessGranted,
+        onSignedOut = navigator::signedOut,
     )
 }

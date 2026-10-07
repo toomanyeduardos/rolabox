@@ -21,7 +21,7 @@ class MainActivityViewModelTest {
 
     @Test
     fun storedPreferences_areSuccess() = runTest {
-        val viewModel = DefaultMainActivityViewModel(userDataRepository)
+        val viewModel = MainActivityViewModelImpl(userDataRepository)
         backgroundScope.launch(mainDispatcherRule.testDispatcher) { viewModel.uiState.collect() }
 
         userDataRepository.setDarkThemeConfig(DarkThemeConfig.DARK)
@@ -37,7 +37,7 @@ class MainActivityViewModelTest {
 
     @Test
     fun readError_isPreferencesUnavailable() = runTest {
-        val viewModel = DefaultMainActivityViewModel(userDataRepository)
+        val viewModel = MainActivityViewModelImpl(userDataRepository)
         backgroundScope.launch(mainDispatcherRule.testDispatcher) { viewModel.uiState.collect() }
 
         userDataRepository.setReadError(StorageError.Corrupted)

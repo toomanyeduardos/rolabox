@@ -1,9 +1,8 @@
 package com.eduardoflores.rolabox.device.music.impl
 
 import androidx.lifecycle.viewModelScope
-import com.eduardoflores.rolabox.device.library.api.Album
-import com.eduardoflores.rolabox.device.library.api.ArtistId
 import com.eduardoflores.rolabox.device.library.api.LibraryRepository
+import com.eduardoflores.rolabox.device.library.api.Song
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -12,19 +11,22 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 
-/** The artist is the one of the entry's key, so it is given when the entry creates the ViewModel. */
-@HiltViewModel(assistedFactory = DefaultArtistAlbumsViewModel.Factory::class)
-internal class DefaultArtistAlbumsViewModel @AssistedInject constructor(
-    @Assisted artistId: Long,
+/** The source is the one of the entry's key, so it is given when the entry creates the ViewModel. */
+@HiltViewModel(assistedFactory = SongsViewModelImpl.Factory::class)
+internal class SongsViewModelImpl @AssistedInject constructor(
+    @Assisted source: SongsSource,
     libraryRepository: LibraryRepository,
-) : ArtistAlbumsViewModel() {
-    override val uiState: StateFlow<ListUiState<Album>> = libraryRepository.observeAlbumsByArtist(ArtistId(artistId))
+) : SongsViewModel() {
+    override val uiState: StateFlow<ListUiState<Song>> = when (source) {
+        is SongsSource.Album -> libraryRepository.observeSongsByAlbum(source.id)
+        is SongsSource.Artist -> libraryRepository.observeSongsByArtist(source.id)
+    }
         .asListState()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ListUiState.Loading)
 
     @AssistedFactory
     interface Factory {
-        fun create(artistId: Long): DefaultArtistAlbumsViewModel
+        fun create(source: SongsSource): SongsViewModelImpl
     }
 
     private companion object {

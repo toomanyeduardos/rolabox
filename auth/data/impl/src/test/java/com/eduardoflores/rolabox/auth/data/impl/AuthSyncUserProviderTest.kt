@@ -91,6 +91,30 @@ class AuthSyncUserProviderTest {
         assertEquals(listOf<String?>(null), users)
     }
 
+    // Ticket: signing in later from offline mode starts sync for that user, with the choice cleared.
+    @Test
+    fun signingInFromOfflineMode_startsSyncForTheUser() = runTest {
+        userDataRepository.setOfflineModeChosen(true)
+        val users = collectUsers()
+
+        val user = DefaultSignInUseCase(authRepository, userDataRepository)("alex@mail.com", "password12").getOrNull()
+
+        assertEquals(listOf(null, user?.id), users)
+        assertEquals(false, userDataRepository.observeOfflineModeChosen().first().getOrNull())
+    }
+
+    @Test
+    fun failedSignInFromOfflineMode_staysOfflineWithNobodyToSyncFor() = runTest {
+        userDataRepository.setOfflineModeChosen(true)
+        authRepository.signInWithEmailError = AuthError.InvalidCredential
+        val users = collectUsers()
+
+        DefaultSignInUseCase(authRepository, userDataRepository)("alex@mail.com", "wrong")
+
+        assertEquals(listOf<String?>(null), users)
+        assertEquals(true, userDataRepository.observeOfflineModeChosen().first().getOrNull())
+    }
+
     private fun TestScope.collectUsers(): List<String?> {
         val users = mutableListOf<String?>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { provider.observeSyncUser().toList(users) }

@@ -22,7 +22,7 @@ class ResetPasswordViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val authRepository = FakeAuthRepository()
-    private val viewModel = DefaultResetPasswordViewModel(authRepository)
+    private val viewModel = ResetPasswordViewModelImpl(authRepository)
     private val state get() = viewModel.uiState.value
 
     private fun sendTo(email: String = EMAIL) {

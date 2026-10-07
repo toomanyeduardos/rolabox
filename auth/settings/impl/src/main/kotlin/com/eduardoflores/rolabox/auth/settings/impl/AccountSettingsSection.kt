@@ -6,6 +6,7 @@ import androidx.navigation3.runtime.NavKey
 import com.eduardoflores.rolabox.auth.data.api.AuthRepository
 import com.eduardoflores.rolabox.auth.data.api.AuthState
 import com.eduardoflores.rolabox.auth.ui.api.SignInKey
+import com.eduardoflores.rolabox.auth.ui.api.SignOutKey
 import com.eduardoflores.rolabox.device.settings.api.SettingsRow
 import com.eduardoflores.rolabox.device.settings.api.SettingsSection
 import com.eduardoflores.rolabox.device.settings.api.SettingsSlot
@@ -16,8 +17,8 @@ import kotlinx.coroutines.flow.map
 /**
  * The account section of the device's settings (ADR-020). Signed out, which includes using the app
  * without an account (ADR-008), its row says "Sign in" and opens Sign in, a key of auth's own area.
- * Signed in, the row says who is signed in and opens nothing: the screens for managing an account
- * don't exist yet.
+ * Signed in, the row says who is signed in and opens Sign out, where the user confirms leaving.
+ * Both keys are of auth's own area.
  */
 internal class AccountSettingsSection @Inject constructor(private val authRepository: AuthRepository) :
     SettingsSection {
@@ -37,10 +38,11 @@ internal class AccountSettingsSection @Inject constructor(private val authReposi
                     state.user.displayName?.let { stringResource(R.string.auth_settings_signed_in_as, it) }
                         ?: stringResource(R.string.auth_settings_signed_in)
                 },
+                opens = SignOutKey,
             )
         }
     }
 
-    // Sign in's entry is added by the auth screens' own contract, so there is nothing to add here.
+    // The entries of Sign in and Sign out are added by the auth screens' own contract, so there is nothing to add here.
     override fun appStackEntries(scope: EntryProviderScope<NavKey>, onBack: () -> Unit) = Unit
 }

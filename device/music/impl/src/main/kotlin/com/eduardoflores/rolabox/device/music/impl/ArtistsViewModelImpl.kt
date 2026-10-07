@@ -10,8 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 
 @HiltViewModel
-internal class DefaultArtistsViewModel @Inject constructor(libraryRepository: LibraryRepository) :
-    ArtistsViewModel() {
+internal class ArtistsViewModelImpl @Inject constructor(libraryRepository: LibraryRepository) : ArtistsViewModel() {
     override val uiState: StateFlow<ListUiState<Artist>> = libraryRepository.observeArtists()
         .asListState()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ListUiState.Loading)

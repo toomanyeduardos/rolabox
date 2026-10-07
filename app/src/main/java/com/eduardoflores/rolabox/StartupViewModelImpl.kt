@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 
 @HiltViewModel
-class DefaultStartupViewModel @Inject constructor(resolveStartDestinationUseCase: ResolveStartDestinationUseCase) :
+class StartupViewModelImpl @Inject constructor(resolveStartDestinationUseCase: ResolveStartDestinationUseCase) :
     StartupViewModel() {
     // Resolved once per ViewModel, with no delay of its own. It isn't stopped when the screen stops,
     // so coming back to the app never routes the user somewhere else.

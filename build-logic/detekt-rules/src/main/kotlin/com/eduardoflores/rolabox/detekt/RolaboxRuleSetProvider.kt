@@ -20,7 +20,7 @@ class RolaboxRuleSetProvider : RuleSetProvider {
         listOf(
             ::FixedHeightAroundText,
             ::UseCaseOrRepositoryClassInApi,
-            ::DefaultViewModelInComposable,
+            ::ViewModelImplInComposable,
             ::TouchInputInDeviceScreen,
             ::DeviceComponentOutsideDesignSystem,
         ),

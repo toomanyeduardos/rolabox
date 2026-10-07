@@ -233,7 +233,7 @@ The full set of rules, and the reasoning behind them, is in [ADR-020](docs/adr/0
 - Testing modules (`:common:testing` and every `:testing`) are only used from test configurations.
 - `:device:host` depends only on `:common:designsystem` and `:common:util`, and only `:device` `:impl` modules depend on it.
 
-Every step from a screen to a data source depends on an abstraction ([ADR-021](docs/adr/021-data-flow-through-layers.md)), and detekt checks two parts of that: an `:api` module declares no class whose name ends in `UseCase` or `Repository`, since those are interfaces there, and no composable function takes or creates a `Default…ViewModel`.
+Every step from a screen to a data source depends on an abstraction ([ADR-021](docs/adr/021-data-flow-through-layers.md)), and detekt checks two parts of that: an `:api` module declares no class whose name ends in `UseCase` or `Repository`, since those are interfaces there, and no composable function takes or creates a `…ViewModelImpl`.
 
 There is no shared model module: each type lives in the `:api` of the part that owns it.
 

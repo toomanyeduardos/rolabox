@@ -4,11 +4,11 @@ import com.eduardoflores.rolabox.auth.data.api.AuthState
 import com.eduardoflores.rolabox.auth.data.api.AuthUser
 import com.eduardoflores.rolabox.auth.data.testing.FakeAuthRepository
 import com.eduardoflores.rolabox.auth.ui.api.SignInKey
+import com.eduardoflores.rolabox.auth.ui.api.SignOutKey
 import com.eduardoflores.rolabox.device.settings.api.SettingsSlot
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Test
 
 class AccountSettingsSectionTest {
@@ -27,16 +27,16 @@ class AccountSettingsSectionTest {
     }
 
     @Test
-    fun signedIn_theRowOpensNothing() = runTest {
+    fun signedIn_theRowOpensSignOut() = runTest {
         authRepository.setAuthState(AuthState.SignedIn(AuthUser(id = "1", displayName = "Eduardo", photoUrl = null)))
 
-        assertNull(section.observeRow().first().opens)
+        assertEquals(SignOutKey, section.observeRow().first().opens)
     }
 
     @Test
     fun theRowFollowsTheAuthState() = runTest {
         authRepository.setAuthState(AuthState.SignedIn(AuthUser(id = "1", displayName = null, photoUrl = null)))
-        assertNull(section.observeRow().first().opens)
+        assertEquals(SignOutKey, section.observeRow().first().opens)
 
         authRepository.setAuthState(AuthState.SignedOut)
         assertEquals(SignInKey, section.observeRow().first().opens)

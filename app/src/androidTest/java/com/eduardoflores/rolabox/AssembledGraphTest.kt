@@ -5,6 +5,7 @@ import com.eduardoflores.rolabox.auth.data.api.AuthUser
 import com.eduardoflores.rolabox.auth.data.testing.FakeAuthRepository
 import com.eduardoflores.rolabox.auth.ui.api.AuthUiEntries
 import com.eduardoflores.rolabox.auth.ui.api.SignInKey
+import com.eduardoflores.rolabox.auth.ui.api.SignOutKey
 import com.eduardoflores.rolabox.device.settings.api.SettingsSection
 import com.eduardoflores.rolabox.device.settings.api.SettingsSlot
 import com.eduardoflores.rolabox.device.ui.api.DeviceUiEntries
@@ -14,7 +15,6 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -52,10 +52,10 @@ class AssembledGraphTest {
     }
 
     @Test
-    fun theAccountSection_signedIn_opensNothing() {
+    fun theAccountSection_signedIn_opensSignOut() {
         authRepository.setAuthState(AuthState.SignedIn(AuthUser(id = "1", displayName = "Eduardo", photoUrl = null)))
 
-        assertNull(accountRow().opens)
+        assertEquals(SignOutKey, accountRow().opens)
     }
 
     private fun accountRow() = runBlocking {

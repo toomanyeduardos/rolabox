@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
 @HiltViewModel
-class DefaultMainActivityViewModel @Inject constructor(userDataRepository: UserDataRepository) :
+class MainActivityViewModelImpl @Inject constructor(userDataRepository: UserDataRepository) :
     MainActivityViewModel() {
     override val uiState: StateFlow<MainActivityUiState> = userDataRepository.observeUserData()
         .map { result ->

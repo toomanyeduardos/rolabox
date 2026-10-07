@@ -22,7 +22,7 @@ internal enum class NavigationFlow { Auth, Main }
  * start at keys of the two areas, which this is where they meet.
  *
  * The auth flow is a stack of its own. Leaving it replaces it with the main stack, which starts at
- * the device, so back never returns to it.
+ * the device, so back never returns to it. Signing out does the same the other way around.
  */
 internal class AppNavigator(
     private val flowState: MutableState<NavigationFlow>,
@@ -65,6 +65,18 @@ internal class AppNavigator(
 
             NavigationFlow.Main -> popToRoot()
         }
+    }
+
+    /**
+     * The user signed out from a screen over the device: that shows Sign in and forgets the device's
+     * screens, so back never returns to the account that just left.
+     */
+    fun signedOut() {
+        flowState.value = NavigationFlow.Auth
+        authBackStack.clear()
+        authBackStack.add(SignInKey)
+        mainBackStack.clear()
+        mainBackStack.add(DeviceKey)
     }
 }
 

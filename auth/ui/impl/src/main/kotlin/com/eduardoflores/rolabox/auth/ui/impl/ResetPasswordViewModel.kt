@@ -24,7 +24,7 @@ internal data class ResetPasswordUiState(
 
 /**
  * What the Reset password screen shows, and what the user does on it (ADR-021).
- * [DefaultResetPasswordViewModel] implements it.
+ * [ResetPasswordViewModelImpl] implements it.
  */
 internal abstract class ResetPasswordViewModel : ViewModel() {
     abstract val uiState: StateFlow<ResetPasswordUiState>
