@@ -7,12 +7,12 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import com.eduardoflores.rolabox.device.host.DeviceHost
 import com.eduardoflores.rolabox.device.host.rememberScreenStack
-import com.eduardoflores.rolabox.device.music.api.AlbumSongsKey
-import com.eduardoflores.rolabox.device.music.api.ArtistAlbumsKey
-import com.eduardoflores.rolabox.device.music.api.ArtistSongsKey
-import com.eduardoflores.rolabox.device.music.api.ArtistsKey
-import com.eduardoflores.rolabox.device.music.api.MusicEntries
-import com.eduardoflores.rolabox.device.music.api.MusicMenuKey
+import com.eduardoflores.rolabox.device.music.ui.api.AlbumSongsKey
+import com.eduardoflores.rolabox.device.music.ui.api.ArtistAlbumsKey
+import com.eduardoflores.rolabox.device.music.ui.api.ArtistSongsKey
+import com.eduardoflores.rolabox.device.music.ui.api.ArtistsKey
+import com.eduardoflores.rolabox.device.music.ui.api.MusicEntries
+import com.eduardoflores.rolabox.device.music.ui.api.MusicMenuKey
 import com.eduardoflores.rolabox.device.settings.api.SettingsKey
 import com.eduardoflores.rolabox.device.ui.api.MainMenuKey
 
