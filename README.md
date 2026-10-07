@@ -301,6 +301,7 @@ graph TD
     auth_data_impl --> common_util
     auth_data_testing --> auth_data_api
     auth_data_testing --> common_storage_api
+    auth_settings_impl --> auth_data_api
     auth_settings_impl --> auth_ui_api
     auth_settings_impl --> common_designsystem
     auth_settings_impl --> device_settings_api
@@ -335,6 +336,8 @@ graph TD
     device_music_impl --> device_library_api
     device_music_impl --> device_music_api
     device_settings_impl --> common_designsystem
+    device_settings_impl --> common_storage_api
+    device_settings_impl --> common_userdata_api
     device_settings_impl --> device_settings_api
     device_ui_impl --> common_designsystem
     device_ui_impl --> device_host

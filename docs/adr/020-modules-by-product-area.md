@@ -22,6 +22,10 @@
   (The layout). It is the first part with device screens: it declares its keys and entry contract in
   its `:api`, and `:device:ui:impl` injects the contract, maps its exits to keys and pushes them. The
   decision is unchanged.
+- **Revised 2026-10-06:** A section's row is observed, `observeRow(): Flow<SettingsRow>`, and a row
+  may open nothing (Settings). Both came with 37.11: the account row depends on whether the user is
+  signed in, and has no screen to open once they are. Rules 16 and 17 are unchanged. The decision is
+  unchanged.
 
 ## Context
 
