@@ -30,12 +30,10 @@ import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.hapticfeedback.HapticFeedback
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.imageResource
@@ -48,6 +46,7 @@ import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxType
 import com.eduardoflores.rolabox.common.designsystem.wheel.WheelEvent
 import com.eduardoflores.rolabox.common.designsystem.wheel.WheelGestureRecognizer
 import com.eduardoflores.rolabox.common.designsystem.wheel.WheelHaptic
+import com.eduardoflores.rolabox.common.designsystem.wheel.WheelVibrator
 import com.eduardoflores.rolabox.common.designsystem.wheel.haptic
 import com.eduardoflores.rolabox.common.designsystem.wheel.tickCount
 import kotlin.time.Duration.Companion.milliseconds
@@ -76,7 +75,7 @@ private const val CENTER_HIGHLIGHT_Y = 0.7f
  * about screens. Turning the ring reports [WheelEvent.Turn] with acceleration applied, a short press
  * reports the button under the finger, and MENU, ⏮ and ⏭ also report a hold: MENU's once, and ⏮ and ⏭
  * from the moment it is recognized until the finger lifts. A turn gets a light tick per step and a
- * press a stronger one, on devices that can vibrate.
+ * press a stronger one, on devices that can vibrate, whatever the system's touch feedback setting.
  *
  * The MENU label and the icons keep their size at any font scale, because the wheel's shape is fixed
  * (ADR-018, ADR-017 rule 2 exception).
@@ -87,22 +86,23 @@ private const val CENTER_HIGHLIGHT_Y = 0.7f
 fun Wheel(onEvent: (WheelEvent) -> Unit, modifier: Modifier = Modifier) {
     val colors = RolaboxMetal.colors
     val currentOnEvent by rememberUpdatedState(onEvent)
-    val haptics = LocalHapticFeedback.current
+    val context = LocalContext.current
+    val vibrator = remember(context) { WheelVibrator(context) }
     val scope = rememberCoroutineScope()
     val holdTimeoutMillis = LocalViewConfiguration.current.longPressTimeoutMillis
-    val emit = remember(haptics, scope) {
+    val emit = remember(vibrator, scope) {
         { event: WheelEvent ->
             val ticks = event.tickCount()
             if (ticks > 0) {
                 // Spaced out, since the system folds ticks that arrive together into one.
                 scope.launch {
                     repeat(ticks) {
-                        haptics.perform(WheelHaptic.Tick)
+                        vibrator.perform(WheelHaptic.Tick)
                         delay(TickSpacing)
                     }
                 }
             } else {
-                haptics.perform(event.haptic())
+                vibrator.perform(event.haptic())
             }
             currentOnEvent(event)
         }
@@ -144,14 +144,6 @@ const val WHEEL_TEST_TAG = "wheel"
 
 private val TickSpacing = 12.milliseconds
 private const val MENU_LABEL = "MENU"
-
-private fun HapticFeedback.perform(haptic: WheelHaptic?) {
-    when (haptic) {
-        WheelHaptic.Tick -> performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
-        WheelHaptic.Press -> performHapticFeedback(HapticFeedbackType.ContextClick)
-        null -> Unit
-    }
-}
 
 private fun Modifier.wheelGestures(holdTimeoutMillis: Long, emit: (WheelEvent) -> Unit): Modifier =
     pointerInput(holdTimeoutMillis) {
