@@ -26,6 +26,10 @@
   may open nothing (Settings). Both came with 37.11: the account row depends on whether the user is
   signed in, and has no screen to open once they are. Rules 16 and 17 are unchanged. The decision is
   unchanged.
+- **Revised 2026-10-07:** The music screens are `:device:music:ui:{api,impl}`, not
+  `:device:music:{api,impl}` (The layout), so a part's screens are `:ui` the way `:auth:ui` and
+  `:device:ui` already are, and the playback screens can be `:device:playback:ui` (38.01). Packages
+  follow the new paths. The decision is unchanged.
 
 ## Context
 
@@ -69,7 +73,7 @@ We will group modules **by product area**, let each area **assemble its own part
 :device:ui:{api,impl}             the device's assembly: its entries, the main menu, the exits
 :device:settings:{api,impl}       the settings list and its slots
 :device:library:{api,impl,testing}  the music library's data: artists, albums, songs
-:device:music:{api,impl}          the music screens: Music, Artists, albums, songs
+:device:music:ui:{api,impl}       the music screens: Music, Artists, albums, songs
 :device:playback:…                open, see "Left open"
 :common:util                      dispatchers, scopes, exception-to-error helpers
 :common:designsystem              the visual language (ADR-015)

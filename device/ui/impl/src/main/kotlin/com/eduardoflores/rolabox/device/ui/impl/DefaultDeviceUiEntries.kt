@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
-import com.eduardoflores.rolabox.device.music.api.MusicEntries
+import com.eduardoflores.rolabox.device.music.ui.api.MusicEntries
 import com.eduardoflores.rolabox.device.settings.api.SettingsEntries
 import com.eduardoflores.rolabox.device.ui.api.DeviceKey
 import com.eduardoflores.rolabox.device.ui.api.DeviceUiEntries
