@@ -272,6 +272,9 @@ graph TD
     device_library_testing[":device:library:testing"]
     device_music_ui_api[":device:music:ui:api"]
     device_music_ui_impl[":device:music:ui:impl"]
+    device_playback_api[":device:playback:api"]
+    device_playback_impl[":device:playback:impl"]
+    device_playback_testing[":device:playback:testing"]
     device_settings_api[":device:settings:api"]
     device_settings_impl[":device:settings:impl"]
     device_ui_api[":device:ui:api"]
@@ -290,6 +293,7 @@ graph TD
     app --> common_userdata_impl
     app --> device_library_impl
     app --> device_music_ui_impl
+    app --> device_playback_impl
     app --> device_settings_impl
     app --> device_ui_api
     app --> device_ui_impl
@@ -335,6 +339,11 @@ graph TD
     device_music_ui_impl --> device_host
     device_music_ui_impl --> device_library_api
     device_music_ui_impl --> device_music_ui_api
+    device_playback_api --> device_library_api
+    device_playback_impl --> device_library_api
+    device_playback_impl --> device_playback_api
+    device_playback_testing --> device_library_api
+    device_playback_testing --> device_playback_api
     device_settings_impl --> common_designsystem
     device_settings_impl --> common_storage_api
     device_settings_impl --> common_userdata_api

@@ -26,6 +26,16 @@
   set of `Flow`s, with a fake as its only implementation until the playback ADR (Playback state,
   rule 10), and the Now Playing row is hidden until an item is loaded. Rule 15 is `[enforced]`
   (38.02). The decisions about the engine and the queue are unchanged and still left open.
+- **Revised 2026-10-07:** Playing a row queues its whole list, not only the rows from the selected
+  one to the end, and ⏮ and ⏭ start the previous and the next item of the queue at 0:00, and do
+  nothing at its ends (What each control does, What was not decided, rule 17). Both were left to the
+  playback ADR, but the playback state had to answer them to be written (38.03): the queue with its
+  index is part of the state, and ⏮ on song 3 of 10 has to go somewhere. Shuffle and repeat are
+  still left open.
+- **Revised 2026-10-07:** The playback state has one implementation, in `:device:playback:impl`,
+  and it is temporary and in memory until the playback ADR. The fake in `:device:playback:testing`
+  is for tests only (Playback state). The text said the fake was the only implementation, which
+  was true only while the `:impl` was empty (38.03). The decision is unchanged.
 
 ## Context
 
@@ -148,8 +158,11 @@ An item is **loaded** from the moment it starts until its queue ends. A paused i
   is selected a turn moves the position. With nothing selected, a turn changes the volume. Scrub
   ends on its own after 3 s without a turn, and the volume bar then returns to the time after 2 s.
   It is the screen's own state, and the screen stack doesn't change.
-- **Playing a row starts its list from that row.** Song 3 of 10 is followed by songs 4
-  to 10. `:app` then pushes Now Playing.
+- **Playing a row queues its whole list, and starts from that row.** The queue is the list the row
+  was selected from, in the order it is shown, including the rows before it. Song 3 of 10 is
+  followed by songs 4 to 10, and ⏮ goes back to song 2. `:app` then pushes Now Playing.
+- **⏮ and ⏭ start the previous and the next item of the queue at 0:00,** wherever the loaded item
+  is. ⏮ does nothing on the first item, and ⏭ nothing on the last.
 - **Now Playing is only ever the top of the screen stack.** It is pushed by playing something, or by
   the main menu's Now Playing row. When the queue ends, nothing is loaded: `:app` pops Now Playing
   if it is showing, and the main menu's row goes away.
@@ -168,8 +181,9 @@ Playback continues after leaving.
 What is loaded, whether it is playing, its position and its queue belong to the playback area, and
 are exposed as `Flow`s ([ADR-006](006-async-api-shape.md)). The playback state in the `:api` is a
 set of them: the current song, its position, the queue with its index, and the volume. Until the
-playback ADR there is no engine, and the fake in `:device:playback:testing` is the only
-implementation. `:app` observes them for the header's
+playback ADR there is no engine: the implementation in `:device:playback:impl` is temporary and
+keeps the state in memory, and is replaced when the engine is chosen. The fake in
+`:device:playback:testing` is what tests use. `:app` observes them for the header's
 record, the Now Playing row and the ⏮ ⏭ ⏯ buttons, and the Now Playing screen observes them for its
 content. No entry's ViewModel owns playback state, since every entry can be popped while the music
 continues. The playback engine, its service and the media session are left to their own ADR.
@@ -228,8 +242,8 @@ as ADR-017's rule 10 requires.
   ticket, as a revision of this ADR.
 - **Screen readers.** A display that isn't touched and a wheel that is a custom gesture both need a
   TalkBack design. It comes as a section of ADR-017, and may add rules here.
-- **Queue rules** beyond "from the selected row to the end": shuffle, repeat, and what ⏮ does in the
-  middle of an item. They belong to the playback ADR.
+- **Queue rules** beyond the whole list, started from the selected row: shuffle and repeat. They
+  belong to the playback ADR.
 
 ## Alternatives considered
 
@@ -325,6 +339,9 @@ as ADR-017's rule 10 requires.
     the position in scrub mode and changes the volume otherwise. Scrub ends after 3 s without a turn,
     and the volume bar returns to the time after 2 s. The Now Playing row of the main menu is hidden
     until an item is loaded.
+17. `[convention]` Playing a row queues the whole list it was selected from, in the order it is
+    shown, and starts from that row. ⏮ and ⏭ start the previous and the next item of the queue at
+    0:00, and do nothing at its ends.
 
 **Conformance.** Rule 3 is checked by `TouchInputInDeviceScreen`, a Rolabox detekt rule. A file is a
 device screen file when it imports `:device:host` or one of the design system's device components, and
@@ -340,5 +357,5 @@ device component or of the wheel's event types (`names` in `config/detekt/detekt
 `ModuleRules.kt` when the build is configured, and `ModuleRulesTest` in `build-logic` has a
 violating and a passing case. Its message names ADR-018 rule 15. It is narrower than ADR-020's rules
 4 and 7, which already forbid any `:impl` and any `:testing` outside test configurations, and says
-why in the playback area's terms. No other rule moves: rules 1, 2, 4 to 11, 13, 14 and 16 are
-reviewed.
+why in the playback area's terms. No other rule moves: rules 1, 2, 4 to 11, 13, 14, 16 and 17
+are reviewed.
