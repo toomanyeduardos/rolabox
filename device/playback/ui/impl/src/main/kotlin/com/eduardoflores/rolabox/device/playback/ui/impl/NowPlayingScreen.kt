@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -22,7 +23,11 @@ import com.eduardoflores.rolabox.common.designsystem.component.DeviceCoverArtPla
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceMessage
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceProgressBar
 import com.eduardoflores.rolabox.common.designsystem.component.ProgressBarMode
+import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxMetal
 import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxType
+import com.eduardoflores.rolabox.common.designsystem.wheel.WheelEvent
+import com.eduardoflores.rolabox.device.host.HandleMenu
+import com.eduardoflores.rolabox.device.host.HandleWheelEvents
 
 private val ScreenPadding = 12.dp
 private val ScreenTopPadding = 10.dp
@@ -34,12 +39,24 @@ private val CoverMinSize = 56.dp
 private const val TITLE_MAX_LINES = 2
 
 /**
- * Connects Now Playing to its ViewModel, which the entry creates (ADR-021). The screen takes no input yet:
- * it only shows the state. Scrub and volume are modes that come with the wheel's events.
+ * Connects Now Playing to its ViewModel, which the entry creates (ADR-021). Turn and center go to the
+ * ViewModel, and MENU too while scrubbing, so it leaves scrub and the host doesn't go back a screen
+ * (ADR-018, rule 16).
  */
 @Composable
 internal fun NowPlayingRoute(viewModel: NowPlayingViewModel) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    HandleWheelEvents { event ->
+        when (event) {
+            is WheelEvent.Turn -> viewModel.onTurn(event.steps)
+            WheelEvent.Center -> viewModel.onCenter()
+            else -> Unit
+        }
+    }
+    HandleMenu(
+        enabled = (state as? NowPlayingUiState.Playing)?.mode == NowPlayingMode.Scrub,
+        onMenu = viewModel::onMenu,
+    )
     NowPlayingScreen(state)
 }
 
@@ -75,7 +92,16 @@ private fun NowPlayingContent(state: NowPlayingUiState.Playing) {
                 stringResource(R.string.now_playing_position, state.number, state.count),
                 style = RolaboxType.styles.displayMeta,
             )
-            state.tag?.let { Text(it, style = RolaboxType.styles.displayMeta) }
+            when (state.mode) {
+                NowPlayingMode.Time -> Unit
+
+                NowPlayingMode.Scrub -> ModeTag(
+                    stringResource(R.string.now_playing_tag_scrub),
+                    RolaboxMetal.colors.accent,
+                )
+
+                NowPlayingMode.Volume -> ModeTag(stringResource(R.string.now_playing_tag_volume))
+            }
         }
         // Takes what the meta row and the bar leave. The cover art can only use this, so the bar stays at the bottom.
         Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.TopStart) {
@@ -97,14 +123,35 @@ private fun NowPlayingContent(state: NowPlayingUiState.Playing) {
                 SongNames(state, Modifier.weight(1f))
             }
         }
+        NowPlayingBar(state)
+    }
+}
+
+/** The bar: the time, and the volume while it is changing. Scrub is the marker's time with a thicker, orange bar. */
+@Composable
+private fun NowPlayingBar(state: NowPlayingUiState.Playing) {
+    if (state.mode == NowPlayingMode.Volume) {
+        DeviceProgressBar(
+            progress = state.volumeFraction,
+            startLabel = stringResource(R.string.now_playing_volume_label),
+            endLabel = stringResource(R.string.now_playing_volume_level, state.volume),
+            description = stringResource(R.string.now_playing_volume_description),
+            mode = ProgressBarMode.Volume,
+        )
+    } else {
         DeviceProgressBar(
             progress = state.progress,
             startLabel = state.position.toClock(),
             endLabel = timeLeftClock(state.position, state.duration),
             description = stringResource(R.string.now_playing_progress_description),
-            mode = ProgressBarMode.Normal,
+            mode = if (state.mode == NowPlayingMode.Scrub) ProgressBarMode.Scrub else ProgressBarMode.Normal,
         )
     }
+}
+
+@Composable
+private fun ModeTag(text: String, color: Color = Color.Unspecified) {
+    Text(text, style = RolaboxType.styles.displayMeta, color = color)
 }
 
 /** The song's title, artist and album. Each one ends in an ellipsis when it is longer than its lines. */

@@ -12,6 +12,11 @@
   the rules that replaced them, and that section is left as it was written: `:device:ui:impl` gives
   the host its start key, entries and playback handlers. Conformance now points at ADR-020's rule 8.
   Where the text says "feature", read the `:impl` of a part with screens.
+- **Revised 2026-10-08:** The contract lets the top screen take MENU while it is in a mode of its
+  own, so the mode ends before the host pops (What `:device:host` owns, rules 3 and 6). Scrub on Now
+  Playing needed a cancel ([ADR-018](018-device-navigation.md), rule 16), and without this the
+  screen would have taken an input outside the host (38.05). Hold MENU, the system's back and the
+  playback buttons still never reach a screen.
 
 ## Context
 
@@ -54,10 +59,11 @@ the screens.
   handles the system's back, as ADR-018 describes. On the first screen it leaves back to whoever
   shows the device.
 - **The routing of wheel events** (ADR-018, rule 5): turn and center go to the top screen, MENU and
-  its hold are the host's own, and ⏮, ⏭, ⏯ and their holds are passed to handlers.
-- **The contract its screens use:** how a device screen receives turn and center, and the state
-  holder for a list's highlight. A screen asks for "the events meant for me". It doesn't name its
-  key, and it never sees the stack or the router.
+  its hold are the host's own, and ⏮, ⏭, ⏯ and their holds are passed to handlers. While the top
+  screen asks for MENU, to leave a mode of its own, MENU goes to it and the host doesn't pop.
+- **The contract its screens use:** how a device screen receives turn and center, how it takes MENU
+  while it is in a mode, and the state holder for a list's highlight. A screen asks for "the events
+  meant for me". It doesn't name its key, and it never sees the stack or the router.
 
 ### What `:app` gives it
 
@@ -159,14 +165,16 @@ for the host.
    depend on the host.
 3. `[convention]` `:device:host` owns the assembled device, the screen stack and its `NavDisplay`,
    back inside the display, and the routing of wheel events. It pops, and it never decides what is
-   pushed.
+   pushed. MENU pops unless the top screen takes it through the contract (rule 6).
 4. Superseded by [ADR-020](020-modules-by-product-area.md), rules 14 and 15: `:device:ui:impl` gives
    the host its start key, its entries and the handlers of the playback buttons, pushes on the
    screen stack, and declares the main menu.
 5. `[convention]` `:device:host` has no navigation destination, no ViewModel and no Hilt module,
    and depends on no area. What it needs from the product arrives as a parameter.
-6. `[convention]` A device screen receives turn and center through `:device:host`'s contract. It
-   doesn't name its key to do so, and it never sees the stack or the router.
+6. `[convention]` A device screen receives turn and center through `:device:host`'s contract, and
+   MENU only while it is in a mode of its own, to leave it. It takes no other input: not hold MENU,
+   the playback buttons or the system's back. It doesn't name its key, and it never sees the stack
+   or the router.
 7. `[convention]` The device's parts and their look stay in `:common:designsystem` (ADR-015).
    `:device:host` assembles them, and defines no color, text style or shape.
 8. `[convention]` `:device:host` is one module. It isn't split into `:api`, `:impl` and `:testing`.

@@ -42,10 +42,11 @@ fun rememberScreenStack(startKey: NavKey): ScreenStack {
 /**
  * Where the screens receive the wheel events that are theirs. A screen registers for its own key
  * while it is composed, so a screen that is still animating out never gets an event meant for the
- * one on top.
+ * one on top. A screen registers for MENU apart, and only while it is in a mode of its own.
  */
 internal class ScreenInputs {
     private val handlers = mutableMapOf<NavKey, (WheelEvent) -> Unit>()
+    private val menuHandlers = mutableMapOf<NavKey, () -> Unit>()
 
     fun register(key: NavKey, handler: (WheelEvent) -> Unit) {
         handlers[key] = handler
@@ -58,12 +59,28 @@ internal class ScreenInputs {
     fun dispatch(key: NavKey, event: WheelEvent) {
         handlers[key]?.invoke(event)
     }
+
+    fun registerMenu(key: NavKey, handler: () -> Unit) {
+        menuHandlers[key] = handler
+    }
+
+    fun unregisterMenu(key: NavKey) {
+        menuHandlers -= key
+    }
+
+    /** Gives MENU to the screen of [key] when it asked for it. False when it didn't, and MENU is the host's. */
+    fun dispatchMenu(key: NavKey): Boolean {
+        val handler = menuHandlers[key] ?: return false
+        handler()
+        return true
+    }
 }
 
 /**
- * Decides where each wheel event goes (ADR-018, rule 5). The screens never see MENU or the playback
- * buttons, so none of them can change what those do. The playback buttons go to [onPlaybackEvent],
- * so the host doesn't depend on the playback area (ADR-019).
+ * Decides where each wheel event goes (ADR-018, rule 5). The screens never see hold MENU or the
+ * playback buttons, so none of them can change what those do, and they see MENU only while they are
+ * in a mode of their own (ADR-019, rule 6). The playback buttons go to [onPlaybackEvent], so the
+ * host doesn't depend on the playback area (ADR-019).
  */
 internal class WheelEventRouter(
     private val stack: ScreenStack,
@@ -74,7 +91,7 @@ internal class WheelEventRouter(
         when (event) {
             is WheelEvent.Turn, WheelEvent.Center -> inputs.dispatch(stack.top, event)
 
-            WheelEvent.Menu -> stack.pop()
+            WheelEvent.Menu -> if (!inputs.dispatchMenu(stack.top)) stack.pop()
 
             WheelEvent.HoldMenu -> stack.popToRoot()
 

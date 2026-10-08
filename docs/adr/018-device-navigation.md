@@ -36,6 +36,13 @@
   and it is temporary and in memory until the playback ADR. The fake in `:device:playback:testing`
   is for tests only (Playback state). The text said the fake was the only implementation, which
   was true only while the `:impl` was empty (38.03). The decision is unchanged.
+- **Revised 2026-10-08:** Scrub has an accept and a cancel (What each control does, The system's
+  back, rules 5, 9 and 16). A turn in scrub moves a marker and no longer the position: center, or
+  3 s without a turn, seeks to the marker, and MENU leaves scrub without seeking and stays on Now
+  Playing. The system's back no longer leaves scrub first. Building scrub (38.05) showed that with
+  every turn seeking at once, center and MENU could only do the same thing, and that the screen
+  needed an input of its own for back, outside the host's contract (rule 3). A screen in a mode
+  now takes MENU through the host's contract ([ADR-019](019-device-host-module.md)).
 
 ## Context
 
@@ -121,7 +128,9 @@ math.
 The device host receives every event and decides where it goes:
 
 - **Turn and center go to the screen on top of the screen stack,** and to no other.
-- **MENU and its hold are handled by the host,** the same way on every screen.
+- **MENU and its hold are handled by the host,** the same way on every screen. The one exception
+  is a screen that is in a mode of its own: it takes MENU, through the host's contract, to leave
+  the mode, and the screen stack doesn't change. Now Playing does this in scrub.
 - **⏮, ⏭ and their holds are handled by `:app`,** the same way on every screen. The host passes
   them to handlers that `:app` provides, so it doesn't depend on the playback area.
 - **⏯ goes to the top screen first.** If the highlighted row can be played, the screen plays it.
@@ -138,9 +147,9 @@ An item is **loaded** from the moment it starts until its queue ends. A paused i
 
 | Control | On a list | On Now Playing |
 | --- | --- | --- |
-| Turn | Moves the highlight | Scrub mode: moves the position. Otherwise: changes the volume |
-| Center | Opens the highlighted row, or plays it | Selects scrub. Turning then moves the position |
-| MENU | Goes back one screen. Does nothing on the main menu | Goes back one screen |
+| Turn | Moves the highlight | Scrub mode: moves the marker. Otherwise: changes the volume |
+| Center | Opens the highlighted row, or plays it | Selects scrub. In scrub: seeks to the marker and leaves scrub |
+| MENU | Goes back one screen. Does nothing on the main menu | In scrub: leaves scrub without seeking. Otherwise: goes back one screen |
 | Hold MENU | Goes to the main menu | Goes to the main menu |
 | ⏮ ⏭ | Previous or next item if one is loaded. Otherwise nothing | Previous or next item |
 | Hold ⏮ ⏭ | Seeks in the loaded item. Otherwise nothing | Seeks |
@@ -155,9 +164,12 @@ An item is **loaded** from the moment it starts until its queue ends. A paused i
   loaded. So on a list of songs ⏯ never pauses: pausing is done from a list that isn't playable,
   or from Now Playing.
 - **Scrub is a mode of the Now Playing screen, not a destination.** Center selects it, and while it
-  is selected a turn moves the position. With nothing selected, a turn changes the volume. Scrub
-  ends on its own after 3 s without a turn, and the volume bar then returns to the time after 2 s.
-  It is the screen's own state, and the screen stack doesn't change.
+  is selected a turn moves a marker on the bar, with its times. The music keeps playing from where
+  it was. Center is the accept: it seeks to the marker and leaves scrub. So is waiting: scrub ends
+  on its own after 3 s without a turn, counted again from each turn, and seeks to the marker. MENU
+  is the cancel: it leaves scrub without seeking, and Now Playing stays. A second MENU goes back one
+  screen. With nothing selected, a turn changes the volume, and the volume bar returns to the time
+  after 2 s. The mode and the marker are the screen's own state, and the screen stack doesn't change.
 - **Playing a row queues its whole list, and starts from that row.** The queue is the list the row
   was selected from, in the order it is shown, including the rows before it. Song 3 of 10 is
   followed by songs 4 to 10, and ⏮ goes back to song 2. `:app` then pushes Now Playing.
@@ -171,8 +183,9 @@ An item is **loaded** from the moment it starts until its queue ends. A paused i
 
 ### The system's back
 
-Inside the tree, the system's back does what MENU does. On Now Playing in scrub mode, it leaves
-scrub first. **On the main menu it leaves the app,** where MENU does nothing: Android expects back
+Inside the tree, the system's back goes back one screen, as MENU does. It never leaves a mode: on
+Now Playing in scrub mode it goes back one screen too, and nothing is sought. **On the main menu it
+leaves the app,** where MENU does nothing: Android expects back
 to leave from an app's first screen, and predictive back previews the home screen on that gesture.
 Playback continues after leaving.
 
@@ -310,7 +323,8 @@ as ADR-017's rule 10 requires.
 4. `[convention]` The wheel reports events from a fixed vocabulary and knows nothing about the
    screens. A turn is a number of steps, with acceleration already applied.
 5. `[convention]` Turn and center go to the top screen only. MENU and its hold are handled by the
-   device host, and ⏮, ⏭ and their holds by `:app`, and no screen changes what they do. ⏯ plays the
+   device host, and ⏮, ⏭ and their holds by `:app`, and no screen changes what they do, except
+   that a screen in a mode of its own takes MENU to leave the mode (rule 16). ⏯ plays the
    highlighted row when that row can be played, and is handled by `:app` everywhere else.
 6. `[convention]` What turn and center do depends on the screen. What ⏮ and ⏭ do depends on
    whether an item is loaded. The table in Decision is the reference for every control.
@@ -318,8 +332,8 @@ as ADR-017's rule 10 requires.
    comes back to it.
 8. `[convention]` Now Playing is only ever the top of the screen stack. Its modes, such as scrub,
    are state of the screen and not destinations.
-9. `[convention]` The system's back does what MENU does, except on the main menu, where it leaves
-   the app.
+9. `[convention]` The system's back goes back one screen, as MENU does outside a mode, except on
+   the main menu, where it leaves the app. No screen handles the system's back.
 10. `[convention]` Playback state belongs to the playback area and is observed as `Flow`s. No
     entry's ViewModel owns it.
 11. `[convention]` A screen that needs touch or the keyboard is a full screen on the app stack, not
@@ -336,9 +350,10 @@ as ADR-017's rule 10 requires.
     `:device:playback:ui:{api,impl}`. No `:device:playback:ui:*` module depends on
     `:device:playback:impl`, or on `:device:playback:testing` outside test configurations.
 16. `[convention]` On Now Playing, center selects scrub and no selection means volume. A turn moves
-    the position in scrub mode and changes the volume otherwise. Scrub ends after 3 s without a turn,
-    and the volume bar returns to the time after 2 s. The Now Playing row of the main menu is hidden
-    until an item is loaded.
+    a marker in scrub mode, without seeking, and changes the volume otherwise. Center in scrub, or
+    3 s without a turn, seeks to the marker and leaves scrub. MENU in scrub leaves it without
+    seeking, and the screen stays. The volume bar returns to the time after 2 s. The Now Playing row
+    of the main menu is hidden until an item is loaded.
 17. `[convention]` Playing a row queues the whole list it was selected from, in the order it is
     shown, and starts from that row. ⏮ and ⏭ start the previous and the next item of the queue at
     0:00, and do nothing at its ends.

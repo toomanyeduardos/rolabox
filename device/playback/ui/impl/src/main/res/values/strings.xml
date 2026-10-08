@@ -2,5 +2,11 @@
     <!-- The place of the song in its queue, in the monospaced capitals of the display: "3 OF 10". -->
     <string name="now_playing_position">%1$d OF %2$d</string>
     <string name="now_playing_progress_description">Playback position</string>
+    <!-- The mode in the corner of the display, when the bar is not showing the time. -->
+    <string name="now_playing_tag_scrub">SCRUB</string>
+    <string name="now_playing_tag_volume">VOLUME</string>
+    <string name="now_playing_volume_label">VOL</string>
+    <string name="now_playing_volume_level">%1$d%%</string>
+    <string name="now_playing_volume_description">Volume</string>
     <string name="now_playing_nothing_loaded">Nothing is playing</string>
 </resources>

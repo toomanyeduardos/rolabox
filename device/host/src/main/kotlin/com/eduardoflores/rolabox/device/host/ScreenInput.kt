@@ -13,6 +13,10 @@ internal class ScreenInput(private val inputs: ScreenInputs, private val key: Na
     fun register(handler: (WheelEvent) -> Unit) = inputs.register(key, handler)
 
     fun unregister() = inputs.unregister(key)
+
+    fun registerMenu(handler: () -> Unit) = inputs.registerMenu(key, handler)
+
+    fun unregisterMenu() = inputs.unregisterMenu(key)
 }
 
 /** Null outside the device, such as in a preview, where a screen receives no events. */
@@ -30,5 +34,20 @@ fun HandleWheelEvents(handler: (WheelEvent) -> Unit) {
     DisposableEffect(input) {
         input.register { currentHandler(it) }
         onDispose { input.unregister() }
+    }
+}
+
+/**
+ * While [enabled], MENU goes to [onMenu] and the host doesn't go back a screen. It is for a device
+ * screen that is in a mode of its own, such as scrub on Now Playing, to leave that mode first
+ * (ADR-018, rule 16, and ADR-019, rule 6). Hold MENU is always the host's.
+ */
+@Composable
+fun HandleMenu(enabled: Boolean, onMenu: () -> Unit) {
+    val input = LocalScreenInput.current ?: return
+    val currentOnMenu by rememberUpdatedState(onMenu)
+    DisposableEffect(input, enabled) {
+        if (enabled) input.registerMenu { currentOnMenu() }
+        onDispose { input.unregisterMenu() }
     }
 }

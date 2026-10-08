@@ -7,7 +7,7 @@ import com.eduardoflores.rolabox.device.host.DeviceScreen
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
-// The screen as the design shows it (player-designs/device, frame 06), on the assembled device. They call
+// The screen as the design shows it (player-designs/device, frames 06 to 08), on the assembled device. They call
 // the stateless composable with explicit state (ADR-016, rule 3).
 
 private val Glasshouse = NowPlayingUiState.Playing(
@@ -25,6 +25,10 @@ private val LongTitle = Glasshouse.copy(
     artist = "Maren Holt and the Quiet Fleet Orchestra of Northbound",
     album = "Paper Satellites: The Complete Recordings, Remastered and Expanded",
 )
+
+private val Scrubbing = Glasshouse.copy(position = 1.minutes + 48.seconds, mode = NowPlayingMode.Scrub)
+
+private val ChangingVolume = Glasshouse.copy(mode = NowPlayingMode.Volume, volume = 62)
 
 @Composable
 private fun DevicePreview(state: NowPlayingUiState) {
@@ -46,3 +50,11 @@ private fun NowPlayingLongTitlePreview() = DevicePreview(LongTitle)
 @PreviewLightDark
 @Composable
 private fun NowPlayingNothingLoadedPreview() = DevicePreview(NowPlayingUiState.NothingLoaded)
+
+@PreviewLightDark
+@Composable
+private fun NowPlayingScrubPreview() = DevicePreview(Scrubbing)
+
+@PreviewLightDark
+@Composable
+private fun NowPlayingVolumePreview() = DevicePreview(ChangingVolume)
