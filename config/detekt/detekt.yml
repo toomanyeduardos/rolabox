@@ -102,6 +102,9 @@ rolabox:
       - 'DeviceList'
       - 'DeviceListRow'
       - 'DeviceMessage'
+      - 'DeviceProgressBar'
+      - 'ProgressBarMode'
+      - 'DeviceCoverArtPlaceholder'
   FixedHeightAroundText:
     # ADR-017 rule 3: a container of text grows with it.
     active: true
@@ -135,7 +138,10 @@ rolabox:
       - 'DeviceDisplay'
       - 'DeviceHeader'
       - 'DeviceMessage'
+      - 'DeviceProgressBar'
       - 'DeviceScreen'
       - 'DeviceHost'
+      - 'NowPlayingContent'
+      - 'SongNames'
       - 'GoogleButton'
       - 'SignInButton'

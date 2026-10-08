@@ -13,6 +13,7 @@ import com.eduardoflores.rolabox.device.music.ui.api.ArtistSongsKey
 import com.eduardoflores.rolabox.device.music.ui.api.ArtistsKey
 import com.eduardoflores.rolabox.device.music.ui.api.MusicEntries
 import com.eduardoflores.rolabox.device.music.ui.api.MusicMenuKey
+import com.eduardoflores.rolabox.device.playback.ui.api.PlaybackEntries
 import com.eduardoflores.rolabox.device.settings.api.SettingsKey
 import com.eduardoflores.rolabox.device.ui.api.MainMenuKey
 
@@ -22,11 +23,13 @@ import com.eduardoflores.rolabox.device.ui.api.MainMenuKey
  * exits to keys, pushes on the screen stack, and handles the playback buttons.
  *
  * [musicEntries] adds the music screens, whose exits are mapped to keys here and pushed.
+ * [playbackEntries] adds Now Playing, which nothing pushes yet.
  * [onOpenFullScreen] is the generic exit, which leaves the display for a full screen on the app stack.
  */
 @Composable
 internal fun DeviceRoute(
     musicEntries: MusicEntries,
+    playbackEntries: PlaybackEntries,
     onOpenFullScreen: (NavKey) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -48,6 +51,7 @@ internal fun DeviceRoute(
                 // Received and ignored until playback exists.
                 onSongClick = {},
             )
+            playbackEntries.screenStackEntries(scope = this)
         },
         // Received and ignored until playback exists.
         onPlaybackEvent = {},

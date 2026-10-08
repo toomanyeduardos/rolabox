@@ -62,6 +62,11 @@ data class MetalColors(
     val displayInk: Color = Color(0xFF0E0E0F),
     val displayMuted: Color = Color(0xFF5F6368),
     val displayRule: Color = Color(0x1F000000),
+    /** The progress bar's fill on the display, in the time look. The track behind it is [displayRule]. */
+    val displayFill: Color = Color(0xFF3C3F44),
+    /** The aluminum tile of the default cover art, top to bottom: the same as the launcher icon's. */
+    val displayArt: Color = Color(0xFFE9EAEC),
+    val displayArtEnd: Color = Color(0xFFC3C6CA),
     /** The strength meter's color for levels 1 to 4. */
     val strength: List<Color> = listOf(Color(0xFFC8322B), Color(0xFFE0A21B), Color(0xFF6FBF5A), Color(0xFF2E9E57)),
 )
