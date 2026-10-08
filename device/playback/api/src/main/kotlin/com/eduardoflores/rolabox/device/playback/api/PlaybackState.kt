@@ -22,6 +22,6 @@ interface PlaybackState {
     /** Where [currentSong] is in [queue], or `null` when nothing is loaded. */
     val queueIndex: Flow<Int?>
 
-    /** The volume, from 0 to 100. It is the player's own level, not the system's. */
+    /** The volume, from 0 to 100. */
     val volume: Flow<Int>
 }
