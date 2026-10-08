@@ -1,6 +1,5 @@
 package com.eduardoflores.rolabox.device.playback.ui.impl
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,6 +26,7 @@ import com.eduardoflores.rolabox.common.designsystem.component.ProgressBarMode
 import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxMetal
 import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxType
 import com.eduardoflores.rolabox.common.designsystem.wheel.WheelEvent
+import com.eduardoflores.rolabox.device.host.HandleMenu
 import com.eduardoflores.rolabox.device.host.HandleWheelEvents
 
 private val ScreenPadding = 12.dp
@@ -40,7 +40,8 @@ private const val TITLE_MAX_LINES = 2
 
 /**
  * Connects Now Playing to its ViewModel, which the entry creates (ADR-021). Turn and center go to the
- * ViewModel, and the system's back too while scrubbing, so it leaves scrub before the host goes back a screen.
+ * ViewModel, and MENU too while scrubbing, so it leaves scrub and the host doesn't go back a screen
+ * (ADR-018, rule 16).
  */
 @Composable
 internal fun NowPlayingRoute(viewModel: NowPlayingViewModel) {
@@ -52,9 +53,9 @@ internal fun NowPlayingRoute(viewModel: NowPlayingViewModel) {
             else -> Unit
         }
     }
-    BackHandler(
+    HandleMenu(
         enabled = (state as? NowPlayingUiState.Playing)?.mode == NowPlayingMode.Scrub,
-        onBack = viewModel::onBack,
+        onMenu = viewModel::onMenu,
     )
     NowPlayingScreen(state)
 }
@@ -126,7 +127,7 @@ private fun NowPlayingContent(state: NowPlayingUiState.Playing) {
     }
 }
 
-/** The bar: the time, and the volume while it is changing. Scrub is the time with a thicker, orange bar. */
+/** The bar: the time, and the volume while it is changing. Scrub is the marker's time with a thicker, orange bar. */
 @Composable
 private fun NowPlayingBar(state: NowPlayingUiState.Playing) {
     if (state.mode == NowPlayingMode.Volume) {

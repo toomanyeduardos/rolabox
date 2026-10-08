@@ -84,6 +84,54 @@ class WheelEventRouterTest {
     }
 
     @Test
+    fun menu_goesToTheTopScreenThatAskedForIt_andTheStackStays() {
+        stack.push(Second)
+        var menus = 0
+        inputs.registerMenu(Second) { menus++ }
+
+        router.route(WheelEvent.Menu)
+
+        assertEquals(1, menus)
+        assertEquals(listOf<NavKey>(First, Second), stack.keys)
+        assertEquals(emptyList<WheelEvent>(), firstReceived + secondReceived)
+    }
+
+    @Test
+    fun menu_goesBackAgain_onceTheScreenStopsAskingForIt() {
+        stack.push(Second)
+        inputs.registerMenu(Second) {}
+        inputs.unregisterMenu(Second)
+
+        router.route(WheelEvent.Menu)
+
+        assertEquals(listOf<NavKey>(First), stack.keys)
+    }
+
+    @Test
+    fun menu_neverGoesToAScreenBelowTheTop() {
+        var menus = 0
+        inputs.registerMenu(First) { menus++ }
+        stack.push(Second)
+
+        router.route(WheelEvent.Menu)
+
+        assertEquals(0, menus)
+        assertEquals(listOf<NavKey>(First), stack.keys)
+    }
+
+    @Test
+    fun holdMenu_goesToTheFirstScreen_evenWhenTheTopScreenAskedForMenu() {
+        stack.push(Second)
+        var menus = 0
+        inputs.registerMenu(Second) { menus++ }
+
+        router.route(WheelEvent.HoldMenu)
+
+        assertEquals(0, menus)
+        assertEquals(listOf<NavKey>(First), stack.keys)
+    }
+
+    @Test
     fun holdMenu_goesToTheFirstScreen() {
         stack.push(Second)
         stack.push(First)

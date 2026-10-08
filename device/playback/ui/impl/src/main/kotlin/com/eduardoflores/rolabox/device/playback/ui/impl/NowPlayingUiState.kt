@@ -7,7 +7,7 @@ internal enum class NowPlayingMode {
     /** The time of the song. */
     Time,
 
-    /** Turning moves the position. */
+    /** Turning moves a marker, and the song is sought when scrub is accepted. */
     Scrub,
 
     /** The volume, for a moment after it changed. */
@@ -26,7 +26,8 @@ internal sealed interface NowPlayingUiState {
 
     /**
      * The loaded song. [number] is its place in the queue from 1, out of [count]. [position] is kept
-     * between 0:00 and [duration]. [mode] says what the bar and the corner of the screen show, and [volume] is
+     * between 0:00 and [duration], and in [NowPlayingMode.Scrub] it is where the marker is, not where the
+     * song is. [mode] says what the bar and the corner of the screen show, and [volume] is
      * the level from 0 to 100 that the bar shows in [NowPlayingMode.Volume].
      */
     data class Playing(

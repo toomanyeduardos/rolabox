@@ -15,7 +15,6 @@ dependencies {
     // The ids in the playback API's models.
     implementation(project(":device:library:api"))
 
-    implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
 

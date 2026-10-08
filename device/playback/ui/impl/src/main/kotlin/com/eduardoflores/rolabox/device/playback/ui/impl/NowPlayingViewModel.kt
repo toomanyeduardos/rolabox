@@ -10,14 +10,14 @@ internal abstract class NowPlayingViewModel : ViewModel() {
     abstract val uiState: StateFlow<NowPlayingUiState>
 
     /**
-     * The wheel turned by [steps], positive clockwise. Moves the position in scrub, and changes the volume
+     * The wheel turned by [steps], positive clockwise. Moves the marker in scrub, and changes the volume
      * otherwise.
      */
     abstract fun onTurn(steps: Int)
 
-    /** Center was pressed: enters scrub, or leaves it when it is already on. */
+    /** Center was pressed: enters scrub, or accepts it when it is already on, and seeks to the marker. */
     abstract fun onCenter()
 
-    /** The system's back: leaves scrub. */
-    abstract fun onBack()
+    /** MENU was pressed in scrub: leaves it without seeking. */
+    abstract fun onMenu()
 }
