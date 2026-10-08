@@ -49,6 +49,10 @@ class RolaboxTypography internal constructor(
     internal val displayTitle: TextStyle,
     internal val displayRow: TextStyle,
     internal val displayChevron: TextStyle,
+    internal val displayMeta: TextStyle,
+    internal val displayHeadline: TextStyle,
+    internal val displayBody: TextStyle,
+    internal val displayCaption: TextStyle,
 )
 
 /**
@@ -126,6 +130,25 @@ internal fun rolaboxTypography(
         displayTitle = body.copy(fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.01).em),
         displayRow = body.copy(fontSize = 16.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.01).em),
         displayChevron = body.copy(fontSize = 18.sp),
+        // Small monospaced text on the display: the position, the mode tag and the times. Tabular digits, so
+        // the times don't jitter as they change.
+        displayMeta = body.copy(
+            fontFamily = monoFamily,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 0.06.em,
+            lineHeight = 1.2.em,
+            fontFeatureSettings = "tnum",
+        ),
+        // The three lines of the song on Now Playing: its title, its artist and its album.
+        displayHeadline = body.copy(
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = (-0.01).em,
+            lineHeight = 1.2.em,
+        ),
+        displayBody = body.copy(fontSize = 14.sp, letterSpacing = 0.em, lineHeight = 1.25.em),
+        displayCaption = body.copy(fontSize = 13.sp, letterSpacing = 0.em, lineHeight = 1.25.em),
     )
 }
 

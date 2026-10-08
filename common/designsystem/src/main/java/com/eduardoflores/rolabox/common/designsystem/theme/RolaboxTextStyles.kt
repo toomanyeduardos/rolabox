@@ -64,6 +64,18 @@ class RolaboxTextStyles internal constructor(
     /** The `›` on a row that opens a submenu. */
     internal val displayChevron = typography.displayChevron.copy(color = colors.displayInk)
 
+    /** Small monospaced text on the display, such as the position and the times. It's the display's secondary ink. */
+    val displayMeta = typography.displayMeta.copy(color = colors.displayMuted)
+
+    /** The title of the song on Now Playing. */
+    val displayHeadline = typography.displayHeadline.copy(color = colors.displayInk)
+
+    /** The artist on Now Playing. */
+    val displayBody = typography.displayBody.copy(color = colors.displayInk)
+
+    /** The album on Now Playing. It's the display's secondary ink. */
+    val displayCaption = typography.displayCaption.copy(color = colors.displayMuted)
+
     /** Every role with its name, for the type specimen. */
     internal val all: List<Pair<String, TextStyle>>
         get() = listOf(
@@ -92,6 +104,10 @@ class RolaboxTextStyles internal constructor(
             "displayTitle" to displayTitle,
             "displayRow" to displayRow,
             "displayChevron" to displayChevron,
+            "displayMeta" to displayMeta,
+            "displayHeadline" to displayHeadline,
+            "displayBody" to displayBody,
+            "displayCaption" to displayCaption,
         )
 }
 

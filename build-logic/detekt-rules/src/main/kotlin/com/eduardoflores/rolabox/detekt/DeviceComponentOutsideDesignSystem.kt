@@ -54,6 +54,9 @@ class DeviceComponentOutsideDesignSystem(config: Config) :
             "DeviceList",
             "DeviceListRow",
             "DeviceMessage",
+            "DeviceProgressBar",
+            "ProgressBarMode",
+            "DeviceCoverArtPlaceholder",
         )
     }
 }
