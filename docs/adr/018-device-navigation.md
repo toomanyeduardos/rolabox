@@ -43,6 +43,14 @@
   every turn seeking at once, center and MENU could only do the same thing, and that the screen
   needed an input of its own for back, outside the host's contract (rule 3). A screen in a mode
   now takes MENU through the host's contract ([ADR-019](019-device-host-module.md)).
+- **Revised 2026-10-08:** Scrub belongs to the song it was selected on, and a play that fails says
+  why (What each control does, When playing fails, rules 16 and 18). ⏮, ⏭ and the end of the queue
+  leave scrub without seeking, and center or ⏯ on a row that can't be played shows a system toast
+  and pushes nothing. Wiring Now Playing (38.06) made both reachable: ⏭ in scrub left the marker of
+  one song on the bar of the next, and a failed play did nothing the user could see. The toast is
+  the least that tells them, and a message drawn in the display is left open. Rule 8 now says
+  that Now Playing is popped when the queue ends, which the Decision already did: the display goes
+  back to the list under it. The host pops it when asked ([ADR-019](019-device-host-module.md)).
 
 ## Context
 
@@ -151,7 +159,7 @@ An item is **loaded** from the moment it starts until its queue ends. A paused i
 | Center | Opens the highlighted row, or plays it | Selects scrub. In scrub: seeks to the marker and leaves scrub |
 | MENU | Goes back one screen. Does nothing on the main menu | In scrub: leaves scrub without seeking. Otherwise: goes back one screen |
 | Hold MENU | Goes to the main menu | Goes to the main menu |
-| ⏮ ⏭ | Previous or next item if one is loaded. Otherwise nothing | Previous or next item |
+| ⏮ ⏭ | Previous or next item if one is loaded. Otherwise nothing | Previous or next item. In scrub: leaves scrub without seeking first |
 | Hold ⏮ ⏭ | Seeks in the loaded item. Otherwise nothing | Seeks |
 | ⏯ | On a playable row, plays it. On any other row, plays or pauses the loaded item | Plays or pauses |
 
@@ -170,6 +178,9 @@ An item is **loaded** from the moment it starts until its queue ends. A paused i
   is the cancel: it leaves scrub without seeking, and Now Playing stays. A second MENU goes back one
   screen. With nothing selected, a turn changes the volume, and the volume bar returns to the time
   after 2 s. The mode and the marker are the screen's own state, and the screen stack doesn't change.
+- **Scrub belongs to the song it was selected on.** When another song is loaded, by ⏮, by ⏭ or by
+  the queue moving on, or when the queue ends, scrub ends and nothing is sought: a marker is never
+  applied to a song it wasn't set on.
 - **Playing a row queues its whole list, and starts from that row.** The queue is the list the row
   was selected from, in the order it is shown, including the rows before it. Song 3 of 10 is
   followed by songs 4 to 10, and ⏮ goes back to song 2. `:app` then pushes Now Playing.
@@ -200,6 +211,18 @@ keeps the state in memory, and is replaced when the engine is chosen. The fake i
 record, the Now Playing row and the ⏮ ⏭ ⏯ buttons, and the Now Playing screen observes them for its
 content. No entry's ViewModel owns playback state, since every entry can be popped while the music
 continues. The playback engine, its service and the media session are left to their own ADR.
+
+### When playing fails
+
+Playing a row can fail: the list it is in can't be read from the library, or the song is no longer
+in it. Nothing is loaded in place of what was, Now Playing isn't pushed, and the user is told why
+in a **toast**, with a message for each kind of failure. The playback area's error doesn't reach a
+composable: the ViewModel turns it into a UI type ([ADR-007](007-error-handling.md), rule 8).
+
+A toast is the system's, and is drawn over the device and not in its display. It is the least that
+tells the user, chosen so that no failure is silent before the display has a message of its own.
+This is about an action that fails. A screen that has nothing to show, or can't load its content,
+says so in the display.
 
 ### Full screens
 
@@ -330,8 +353,9 @@ as ADR-017's rule 10 requires.
    whether an item is loaded. The table in Decision is the reference for every control.
 7. `[convention]` A list's highlight is saved state of its entry, and is restored when the user
    comes back to it.
-8. `[convention]` Now Playing is only ever the top of the screen stack. Its modes, such as scrub,
-   are state of the screen and not destinations.
+8. `[convention]` Now Playing is only ever the top of the screen stack, and it is popped when the
+   queue ends, back to the screen under it. Its modes, such as scrub, are state of the screen and
+   not destinations.
 9. `[convention]` The system's back goes back one screen, as MENU does outside a mode, except on
    the main menu, where it leaves the app. No screen handles the system's back.
 10. `[convention]` Playback state belongs to the playback area and is observed as `Flow`s. No
@@ -352,11 +376,14 @@ as ADR-017's rule 10 requires.
 16. `[convention]` On Now Playing, center selects scrub and no selection means volume. A turn moves
     a marker in scrub mode, without seeking, and changes the volume otherwise. Center in scrub, or
     3 s without a turn, seeks to the marker and leaves scrub. MENU in scrub leaves it without
-    seeking, and the screen stays. The volume bar returns to the time after 2 s. The Now Playing row
-    of the main menu is hidden until an item is loaded.
+    seeking, and the screen stays. Scrub ends without seeking when another song is loaded or the
+    queue ends. The volume bar returns to the time after 2 s. The Now Playing row of the main menu
+    is hidden until an item is loaded.
 17. `[convention]` Playing a row queues the whole list it was selected from, in the order it is
     shown, and starts from that row. ⏮ and ⏭ start the previous and the next item of the queue at
     0:00, and do nothing at its ends.
+18. `[convention]` A play that fails loads nothing, pushes nothing, and tells the user why in a
+    toast, with a message for each kind of failure. No failure of an action is silent.
 
 **Conformance.** Rule 3 is checked by `TouchInputInDeviceScreen`, a Rolabox detekt rule. A file is a
 device screen file when it imports `:device:host` or one of the design system's device components, and
@@ -372,5 +399,5 @@ device component or of the wheel's event types (`names` in `config/detekt/detekt
 `ModuleRules.kt` when the build is configured, and `ModuleRulesTest` in `build-logic` has a
 violating and a passing case. Its message names ADR-018 rule 15. It is narrower than ADR-020's rules
 4 and 7, which already forbid any `:impl` and any `:testing` outside test configurations, and says
-why in the playback area's terms. No other rule moves: rules 1, 2, 4 to 11, 13, 14, 16 and 17
+why in the playback area's terms. No other rule moves: rules 1, 2, 4 to 11, 13, 14 and 16 to 18
 are reviewed.

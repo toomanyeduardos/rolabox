@@ -315,15 +315,27 @@ class NowPlayingViewModelTest {
     }
 
     @Test
-    fun theSongChangesInScrub_theMarkerIsNotSought() = runTest {
+    fun theSongChangesInScrub_scrubEnds_andTheMarkerIsNotSought() = runTest {
         val viewModel = scrubbingViewModel()
         viewModel.onTurn(20)
 
         playback.load(Queue, index = 1)
-        viewModel.onCenter()
 
         assertEquals(emptyList<Duration>(), playback.seekCalls)
+        assertEquals(NowPlayingMode.Time, viewModel.playing().mode)
         assertEquals(Duration.ZERO, viewModel.playing().position)
+    }
+
+    @Test
+    fun theSongChangesInScrub_theScrubTimerDoesNotSeekLater() = runTest {
+        val viewModel = scrubbingViewModel()
+        viewModel.onTurn(20)
+        playback.load(Queue, index = 1)
+
+        advanceTimeBy(ScrubIdle + 1.seconds)
+
+        assertEquals(emptyList<Duration>(), playback.seekCalls)
+        assertEquals(NowPlayingMode.Time, viewModel.playing().mode)
     }
 
     @Test

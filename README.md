@@ -232,6 +232,7 @@ The full set of rules, and the reasoning behind them, is in [ADR-020](docs/adr/0
 - An `:api` is a JVM module with no Android dependencies and no Hilt, and depends only on other `:api` modules and `:common:util`.
 - Testing modules (`:common:testing` and every `:testing`) are only used from test configurations.
 - `:device:host` depends only on `:common:designsystem` and `:common:util`, and only `:device` `:impl` modules depend on it.
+- `:app`'s code uses only `:auth:data:api`, `:auth:ui:api`, `:device:ui:api` and `:common` modules, besides listing every `:impl`. Its tests may also name the `:api` of a part whose assembly they assert.
 
 Every step from a screen to a data source depends on an abstraction ([ADR-021](docs/adr/021-data-flow-through-layers.md)), and detekt checks two parts of that: an `:api` module declares no class whose name ends in `UseCase` or `Repository`, since those are interfaces there, and no composable function takes or creates a `…ViewModelImpl`.
 

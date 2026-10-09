@@ -44,6 +44,37 @@ class ScreenStackTest {
     }
 
     @Test
+    fun popIfTop_theScreenOnTop_goesBackOneScreen() {
+        val stack = stack()
+        stack.push(Second)
+        stack.push(Third)
+
+        stack.popIfTop(Third)
+
+        assertEquals(listOf<NavKey>(First, Second), stack.keys)
+    }
+
+    @Test
+    fun popIfTop_aScreenThatIsNotOnTop_doesNothing() {
+        val stack = stack()
+        stack.push(Second)
+        stack.push(Third)
+
+        stack.popIfTop(Second)
+
+        assertEquals(listOf<NavKey>(First, Second, Third), stack.keys)
+    }
+
+    @Test
+    fun popIfTop_theFirstScreen_doesNothing() {
+        val stack = stack()
+
+        stack.popIfTop(First)
+
+        assertEquals(listOf<NavKey>(First), stack.keys)
+    }
+
+    @Test
     fun pop_onTheFirstScreen_doesNothing() {
         val stack = stack()
 

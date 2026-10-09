@@ -32,6 +32,9 @@ private const val PLAYBACK_UI_PREFIX = ":device:playback:ui:"
 private const val PLAYBACK_IMPL_PATH = ":device:playback:impl"
 private const val PLAYBACK_TESTING_PATH = ":device:playback:testing"
 
+// What :app's own code uses from the product areas (ADR-020 rule 13). It also uses :common, and lists every :impl.
+private val APP_ALLOWED_API_PATHS = setOf(":auth:data:api", ":auth:ui:api", ":device:ui:api")
+
 private val IMPL_ALLOWED_PATHS = setOf(UTIL_PATH, DESIGNSYSTEM_PATH)
 private val DEVICE_HOST_ALLOWED_PATHS = setOf(UTIL_PATH, DESIGNSYSTEM_PATH)
 
@@ -110,7 +113,7 @@ internal fun CommonExtension.enforceNoProductFlavors(modulePath: String) {
     }
 }
 
-/** ADR-020 rules 1 to 8 and ADR-018 rule 15, in the order a violation is most useful to read. Null when the dependency is allowed. */
+/** ADR-020 rules 1 to 8 and 13, and ADR-018 rule 15, in the order a violation is most useful to read. Null when the dependency is allowed. */
 @Suppress("CyclomaticComplexMethod") // One branch per rule, which is what makes it readable.
 internal fun projectDependencyViolation(modulePath: String, dependencyPath: String, configurationName: String): String? =
     when {
@@ -150,6 +153,11 @@ internal fun projectDependencyViolation(modulePath: String, dependencyPath: Stri
         modulePath == DEVICE_HOST_PATH && !dependencyPath.isTesting() &&
             dependencyPath !in DEVICE_HOST_ALLOWED_PATHS ->
             "ADR-020 rule 8: $DEVICE_HOST_PATH may only depend on $DESIGNSYSTEM_PATH and $UTIL_PATH"
+
+        modulePath == APP_PATH && !configurationName.isTestConfiguration() && !dependencyPath.isImpl() &&
+            !dependencyPath.startsWith(COMMON_PREFIX) && dependencyPath !in APP_ALLOWED_API_PATHS ->
+            "ADR-020 rule 13: $APP_PATH's code may only use ${APP_ALLOWED_API_PATHS.joinToString()} and :common " +
+                "modules. Only its tests may name another part's :api, to assert how the part is assembled"
 
         modulePath.isApi() && !dependencyPath.isApi() && dependencyPath != UTIL_PATH ->
             "ADR-020 rule 6: :api modules may only depend on other :api modules and $UTIL_PATH"
