@@ -14,14 +14,18 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import androidx.test.core.app.ActivityScenario
+import arrow.core.Either
+import arrow.core.getOrElse
 import com.eduardoflores.rolabox.common.designsystem.component.WHEEL_TEST_TAG
 import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxTheme
+import com.eduardoflores.rolabox.device.library.api.LibraryError
 import com.eduardoflores.rolabox.device.library.api.LibraryRepository
 import com.eduardoflores.rolabox.device.ui.api.DeviceKey
 import com.eduardoflores.rolabox.device.ui.api.DeviceUiEntries
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import javax.inject.Inject
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -78,10 +82,10 @@ class DeviceNavigationTest {
 
     @Test
     fun fromTheMainMenuDownToSongsAndBack_everyLevelComesBackOnItsRow() {
-        val artists = runBlocking { library.observeArtists().first().getOrNull().orEmpty() }
+        val artists = library.observeArtists().rows()
         val artist = artists[ARTIST_INDEX]
-        val albums = runBlocking { library.observeAlbumsByArtist(artist.id).first().getOrNull().orEmpty() }
-        val songs = runBlocking { library.observeSongsByAlbum(albums[0].id).first().getOrNull().orEmpty() }
+        val albums = library.observeAlbumsByArtist(artist.id).rows()
+        val songs = library.observeSongsByAlbum(albums[0].id).rows()
 
         // Main menu, then Music, then Artists.
         assertHighlighted("Music")
@@ -117,10 +121,10 @@ class DeviceNavigationTest {
 
     @Test
     fun aSongPlaysItsListAndOpensNowPlaying_nextAndPreviousMoveTheQueue_andMenuComesBackOnEveryRow() {
-        val artists = runBlocking { library.observeArtists().first().getOrNull().orEmpty() }
+        val artists = library.observeArtists().rows()
         val artist = artists[ARTIST_INDEX]
-        val albums = runBlocking { library.observeAlbumsByArtist(artist.id).first().getOrNull().orEmpty() }
-        val songs = runBlocking { library.observeSongsByAlbum(albums[0].id).first().getOrNull().orEmpty() }
+        val albums = library.observeAlbumsByArtist(artist.id).rows()
+        val songs = library.observeSongsByAlbum(albums[0].id).rows()
 
         // Nothing is loaded yet, so the main menu has no Now Playing row.
         assertNoRow("Now Playing")
@@ -166,9 +170,9 @@ class DeviceNavigationTest {
 
     @Test
     fun theHighlights_surviveTheActivityBeingRecreated() {
-        val artists = runBlocking { library.observeArtists().first().getOrNull().orEmpty() }
+        val artists = library.observeArtists().rows()
         val artist = artists[ARTIST_INDEX]
-        val albums = runBlocking { library.observeAlbumsByArtist(artist.id).first().getOrNull().orEmpty() }
+        val albums = library.observeAlbumsByArtist(artist.id).rows()
         wheel().pressCenter()
         wheel().pressCenter()
         wheel().turn(ARTIST_INDEX)
@@ -183,6 +187,10 @@ class DeviceNavigationTest {
         wheel().pressMenu()
         assertHighlighted(artist.name)
     }
+
+    /** The rows the library has. A library that fails is a failed test, not an empty list (ADR-007, rule 7). */
+    private fun <T> Flow<Either<LibraryError, List<T>>>.rows(): List<T> =
+        runBlocking { first().getOrElse { error -> throw AssertionError("The library failed: $error") } }
 
     private fun wheel() = composeRule.onNodeWithTag(WHEEL_TEST_TAG)
 

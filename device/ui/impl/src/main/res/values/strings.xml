@@ -6,4 +6,6 @@
     <string name="device_audiobooks">Audiobooks</string>
     <string name="device_shuffle_songs">Shuffle Songs</string>
     <string name="device_settings">Settings</string>
+    <string name="device_play_failed_library">Couldn\'t read your library. Try again.</string>
+    <string name="device_play_failed_song">That song is no longer in this list.</string>
 </resources>

@@ -38,6 +38,15 @@
   playback state until the engine exists, and `:device:playback:testing` its fake, for tests (The
   layout, Left open). The text called the fake the only implementation, which was true only while
   the `:impl` was empty (38.03). The decision is unchanged.
+- **Revised 2026-10-08:** `:app`'s tests may name the `:api` of a part whose assembly they assert,
+  and what `:app`'s own code uses is `[enforced]` (Who may depend on whom, rule 13, Conformance).
+  The rule didn't say whether it covered test sources, and read strictly it contradicted rule 20,
+  whose test has to name the contract a section is contributed through. Wiring Now Playing (38.06)
+  added a third such dependency, which showed it. The decision is unchanged.
+- **Revised 2026-10-08:** `:device:ui:impl` asks the host to pop Now Playing when the queue ends
+  (The device assembles itself, rule 14), as [ADR-018](018-device-navigation.md) decides and
+  [ADR-019](019-device-host-module.md)'s rule 3 now allows (38.06). The host still does every pop.
+  The decision is unchanged.
 
 ## Context
 
@@ -156,7 +165,7 @@ screens, `:auth:ui:impl`.
 
 | Module | May depend on |
 | --- | --- |
-| `:app` | Every `:impl`, so Hilt can assemble the graph. In code, only `:auth:data:api`, `:auth:ui:api`, `:device:ui:api` and `:common` |
+| `:app` | Every `:impl`, so Hilt can assemble the graph. In code, only `:auth:data:api`, `:auth:ui:api`, `:device:ui:api` and `:common`. Its tests, also the `:api` of a part whose assembly they assert |
 | An `:api` | Other `:api` modules it is allowed to see (below), `:common:util` |
 | An `:impl` | `:api` modules it is allowed to see, `:common:util`, and `:common:designsystem` when it has screens |
 | A `:device` `:impl` with device screens | The above, and `:device:host` |
@@ -221,7 +230,8 @@ implements and binds it.
 
 `:device:ui:impl` owns the device's entry, the **main menu**, the mapping from a device screen's
 exits to keys, and what the playback buttons do, by calling the `:api` of the device's own parts.
-It pushes on the screen stack, and the host pops it.
+It pushes on the screen stack, and the host pops it. When the queue ends, it asks the host to pop
+Now Playing (ADR-019, rule 3).
 
 The main menu is a fixed list declared in `:device:ui:impl`. Whether a row is in the product is
 that list. Whether the user sees it, such as hiding Podcasts, is a preference read at runtime. The
@@ -377,10 +387,14 @@ The Music menu is built after step 3, so the first feature with device screens i
     entries of the app stack apart from those of the screen stack.
 12. `[convention]` A part with screens names another part's keys only as its parent, to map that
     part's exits. It never names a sibling's keys, except through the generic exit.
-13. `[convention]` `:app` declares no navigation key, entry, menu or list of features. In code it
-    uses only `:auth:data:api`, `:auth:ui:api`, `:device:ui:api` and `:common` modules.
+13. `[enforced]` `:app` declares no navigation key, entry, menu or list of features. In code it
+    uses only `:auth:data:api`, `:auth:ui:api`, `:device:ui:api` and `:common` modules. Its test
+    sources may also name the `:api` of a part whose assembly they assert (rule 20), and nothing
+    else of that part. Enforced for the modules `:app`'s code depends on: what it declares, and
+    which `:api` a test names, are checked in review.
 14. `[convention]` `:app` owns the app stack, and only `:app` pushes, pops or replaces its entries.
-    On the screen stack inside the display, only `:device:ui:impl` pushes, and the host pops.
+    On the screen stack inside the display, only `:device:ui:impl` pushes, and the host pops. The
+    one pop `:device:ui:impl` asks the host for is Now Playing when the queue ends.
 15. `[convention]` The main menu is a fixed list in `:device:ui:impl`. Hiding a row is a
     preference, not a contribution.
 16. `[convention]` The order of the settings list is the list of slots in `:device:settings:api`.
@@ -396,8 +410,10 @@ The Music menu is built after step 3, so the first feature with device screens i
 20. `[convention]` `:app` has a test of the assembled graph for every contribution that should be
     present, and for every one that shouldn't.
 
-**Conformance.** Rules 1 to 8 are checked by `ModuleRules.kt` when the build is configured, and
-`ModuleRulesTest` in `build-logic` has a violating and a passing case for each. The slots of rule
+**Conformance.** Rules 1 to 8 and 13 are checked by `ModuleRules.kt` when the build is configured,
+and `ModuleRulesTest` in `build-logic` has a violating and a passing case for each. For rule 13 it
+checks `:app`'s dependencies outside test configurations: an `:impl`, a `:common` module or one of
+the three `:api` modules the rule names. The slots of rule
 16 are tested by `SettingsSectionsTest` in `:device:settings:impl`, and rule 20 is
 `AssembledGraphTest` in `:app`'s instrumented tests, which checks that the settings list has the
 account section and no other.

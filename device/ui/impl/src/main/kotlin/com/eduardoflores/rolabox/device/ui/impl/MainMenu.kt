@@ -6,7 +6,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceList
@@ -17,7 +16,6 @@ import com.eduardoflores.rolabox.common.designsystem.wheel.WheelEvent
 import com.eduardoflores.rolabox.device.host.DeviceScreen
 import com.eduardoflores.rolabox.device.host.HandleWheelEvents
 import com.eduardoflores.rolabox.device.ui.api.MainMenuKey
-import kotlinx.coroutines.flow.StateFlow
 
 /**
  * The main menu's rows, in the order they are shown. This fixed list is what the product has
@@ -27,14 +25,14 @@ import kotlinx.coroutines.flow.StateFlow
 private enum class MainMenuRow { NowPlaying, Music, Podcasts, Audiobooks, ShuffleSongs, Settings }
 
 internal fun EntryProviderScope<NavKey>.mainMenuEntry(
-    hasLoadedSong: StateFlow<Boolean>,
+    nowPlayingShown: Boolean,
     onNowPlayingClick: () -> Unit,
     onMusicClick: () -> Unit,
     onSettingsClick: () -> Unit,
 ) {
     entry<MainMenuKey> {
         MainMenu(
-            hasLoadedSong = hasLoadedSong,
+            nowPlayingShown = nowPlayingShown,
             onNowPlayingClick = onNowPlayingClick,
             onMusicClick = onMusicClick,
             onSettingsClick = onSettingsClick,
@@ -52,12 +50,11 @@ internal fun EntryProviderScope<NavKey>.mainMenuEntry(
  */
 @Composable
 private fun MainMenu(
-    hasLoadedSong: StateFlow<Boolean>,
+    nowPlayingShown: Boolean,
     onNowPlayingClick: () -> Unit,
     onMusicClick: () -> Unit,
     onSettingsClick: () -> Unit,
 ) {
-    val nowPlayingShown by hasLoadedSong.collectAsStateWithLifecycle()
     val shown = MainMenuRow.entries.filter { it != MainMenuRow.NowPlaying || nowPlayingShown }
     var highlightedOrdinal by rememberSaveable { mutableIntStateOf(MainMenuRow.Music.ordinal) }
     // A highlighted row that is gone leaves the highlight on Music.

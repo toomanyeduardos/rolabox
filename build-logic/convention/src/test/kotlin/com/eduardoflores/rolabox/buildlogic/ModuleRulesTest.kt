@@ -88,6 +88,19 @@ class ModuleRulesTest {
     }
 
     @Test
+    fun `rule 13 - app's code uses only the auth and device entry apis and common`() {
+        assertViolates("rule 13", ":app", ":device:playback:api")
+        assertViolates("rule 13", ":app", ":device:settings:api")
+        assertAllowed(":app", ":auth:data:api")
+        assertAllowed(":app", ":auth:ui:api")
+        assertAllowed(":app", ":device:ui:api")
+        assertAllowed(":app", ":common:designsystem")
+        assertAllowed(":app", ":device:playback:impl")
+        assertAllowed(":app", ":device:settings:api", ANDROID_TEST)
+        assertAllowed(":app", ":device:library:api", ANDROID_TEST)
+    }
+
+    @Test
     fun `a module may use its own test fixtures`() {
         assertAllowed(":common:designsystem", ":common:designsystem", TEST)
     }
@@ -122,5 +135,6 @@ class ModuleRulesTest {
     private companion object {
         const val MAIN = "implementation"
         const val TEST = "testImplementation"
+        const val ANDROID_TEST = "androidTestImplementation"
     }
 }

@@ -3,6 +3,7 @@ package com.eduardoflores.rolabox.device.playback.ui.impl
 import androidx.lifecycle.viewModelScope
 import com.eduardoflores.rolabox.device.library.api.SongId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackController
+import com.eduardoflores.rolabox.device.playback.api.PlaybackSong
 import com.eduardoflores.rolabox.device.playback.api.PlaybackState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -14,9 +15,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -51,20 +51,11 @@ internal class NowPlayingViewModelImpl @Inject constructor(
     private val marker = MutableStateFlow<ScrubMarker?>(null)
     private var idleJob: Job? = null
 
-    init {
-        // Scrub doesn't carry over to another song, whether ⏮ or ⏭ started it or the queue ended (ADR-018, rule 16).
-        viewModelScope.launch {
-            playbackState.currentSong.map { it?.id }.distinctUntilChanged().collect {
-                if (mode.value == NowPlayingMode.Scrub) {
-                    idleJob?.cancel()
-                    leaveScrub()
-                }
-            }
-        }
-    }
+    /** The song scrub was selected on. */
+    private var scrubSongId: SongId? = null
 
     override val uiState: StateFlow<NowPlayingUiState> = combine(
-        playbackState.currentSong,
+        playbackState.currentSong.onEach(::endScrubOnAnotherSong),
         playbackState.position,
         playbackState.queueIndex,
         playbackState.queue,
@@ -107,11 +98,12 @@ internal class NowPlayingViewModelImpl @Inject constructor(
 
     override fun onCenter() {
         viewModelScope.launch {
-            if (playbackState.currentSong.first() == null) return@launch
+            val song = playbackState.currentSong.first() ?: return@launch
             if (mode.value == NowPlayingMode.Scrub) {
                 idleJob?.cancel()
                 acceptScrub()
             } else {
+                scrubSongId = song.id
                 marker.value = null
                 mode.value = NowPlayingMode.Scrub
                 acceptScrubAfterIdle()
@@ -134,6 +126,18 @@ internal class NowPlayingViewModelImpl @Inject constructor(
             playbackController.seekTo(accepted.position)
         }
         leaveScrub()
+    }
+
+    /**
+     * Scrub doesn't carry over to another song, whether ⏮ or ⏭ started it or the queue ended (ADR-018, rule 16).
+     * It runs with [uiState], so only while the screen is observed (ADR-006, rule 5): unobserved, scrub's own
+     * timer ends it, and a marker of another song is never sought.
+     */
+    private fun endScrubOnAnotherSong(song: PlaybackSong?) {
+        if (mode.value == NowPlayingMode.Scrub && song?.id != scrubSongId) {
+            idleJob?.cancel()
+            leaveScrub()
+        }
     }
 
     private fun leaveScrub() {

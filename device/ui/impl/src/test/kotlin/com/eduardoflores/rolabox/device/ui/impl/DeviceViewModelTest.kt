@@ -1,8 +1,10 @@
 package com.eduardoflores.rolabox.device.ui.impl
 
 import arrow.core.left
+import arrow.core.right
 import com.eduardoflores.rolabox.common.testing.MainDispatcherRule
 import com.eduardoflores.rolabox.device.library.api.AlbumId
+import com.eduardoflores.rolabox.device.library.api.LibraryError
 import com.eduardoflores.rolabox.device.library.api.SongId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackError
 import com.eduardoflores.rolabox.device.playback.api.PlaybackSong
@@ -15,6 +17,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -60,7 +63,7 @@ class DeviceViewModelTest {
     }
 
     @Test
-    fun aSongClickThatFails_doesNotReportPlaying() = runTest {
+    fun aSongClickThatFails_doesNotReportPlaying_andSaysTheSongIsNotInTheList() = runTest {
         val viewModel = observedViewModel()
         val source = PlaybackSource.ByAlbum(AlbumId(7))
         playback.playResult = PlaybackError.SongNotInSource(SongId(3), source).left()
@@ -70,6 +73,32 @@ class DeviceViewModelTest {
 
         assertEquals(1, playback.playCalls.size)
         assertEquals(0, playing)
+        assertEquals(PlayFailure.SongNotInList, viewModel.playFailure.value)
+    }
+
+    @Test
+    fun aSongClickWhoseListCannotBeRead_saysTheLibraryIsUnavailable() = runTest {
+        val viewModel = observedViewModel()
+        playback.playResult = PlaybackError.Library(LibraryError.AlbumNotFound(AlbumId(7))).left()
+
+        viewModel.onSongClick(PlaybackSource.ByAlbum(AlbumId(7)), SongId(3)) {}
+
+        assertEquals(PlayFailure.LibraryUnavailable, viewModel.playFailure.value)
+    }
+
+    @Test
+    fun aFailureThatWasShown_isNotShownAgain_andASongThatPlaysHasNone() = runTest {
+        val viewModel = observedViewModel()
+        val source = PlaybackSource.ByAlbum(AlbumId(7))
+        playback.playResult = PlaybackError.SongNotInSource(SongId(3), source).left()
+        viewModel.onSongClick(source, SongId(3)) {}
+
+        viewModel.onPlayFailureShown()
+        assertNull(viewModel.playFailure.value)
+
+        playback.playResult = Unit.right()
+        viewModel.onSongClick(source, SongId(3)) {}
+        assertNull(viewModel.playFailure.value)
     }
 
     @Test
