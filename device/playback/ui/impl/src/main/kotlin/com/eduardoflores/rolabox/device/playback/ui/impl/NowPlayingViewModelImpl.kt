@@ -14,7 +14,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -48,6 +50,18 @@ internal class NowPlayingViewModelImpl @Inject constructor(
     /** `null` until the first turn of a scrub: the bar follows the song until then. */
     private val marker = MutableStateFlow<ScrubMarker?>(null)
     private var idleJob: Job? = null
+
+    init {
+        // Scrub doesn't carry over to another song, whether ⏮ or ⏭ started it or the queue ended (ADR-018, rule 16).
+        viewModelScope.launch {
+            playbackState.currentSong.map { it?.id }.distinctUntilChanged().collect {
+                if (mode.value == NowPlayingMode.Scrub) {
+                    idleJob?.cancel()
+                    leaveScrub()
+                }
+            }
+        }
+    }
 
     override val uiState: StateFlow<NowPlayingUiState> = combine(
         playbackState.currentSong,

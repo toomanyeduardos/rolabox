@@ -7,6 +7,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isSelected
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
@@ -30,7 +31,8 @@ import org.junit.Test
 
 /**
  * The device as it is assembled, with the wheel as the only input (ADR-018): from the main menu down
- * to a list of songs and back with MENU, checking that each level comes back on the row the user left.
+ * to a list of songs and back with MENU, checking that each level comes back on the row the user left,
+ * and playing a song, Now Playing and the previous and next buttons.
  * The library is the in-memory one, so the rows are read from it and not repeated here.
  */
 @HiltAndroidTest
@@ -114,6 +116,55 @@ class DeviceNavigationTest {
     }
 
     @Test
+    fun aSongPlaysItsListAndOpensNowPlaying_nextAndPreviousMoveTheQueue_andMenuComesBackOnEveryRow() {
+        val artists = runBlocking { library.observeArtists().first().getOrNull().orEmpty() }
+        val artist = artists[ARTIST_INDEX]
+        val albums = runBlocking { library.observeAlbumsByArtist(artist.id).first().getOrNull().orEmpty() }
+        val songs = runBlocking { library.observeSongsByAlbum(albums[0].id).first().getOrNull().orEmpty() }
+
+        // Nothing is loaded yet, so the main menu has no Now Playing row.
+        assertNoRow("Now Playing")
+        wheel().pressCenter()
+        wheel().pressCenter()
+        wheel().turn(ARTIST_INDEX)
+        wheel().pressCenter()
+        wheel().turn(1)
+        wheel().pressCenter()
+        wheel().turn(SONG_INDEX)
+        assertHighlighted(songs[SONG_INDEX].title)
+
+        // Center plays the album from that song, and Now Playing shows its place in the queue.
+        wheel().pressCenter()
+        composeRule.onNodeWithText(positionOf(SONG_INDEX + 1, songs.size)).assertExists()
+
+        // Next and previous load the neighbour at its place, and never move in the screen stack.
+        wheel().pressNext()
+        composeRule.onNodeWithText(positionOf(SONG_INDEX + 2, songs.size)).assertExists()
+        wheel().pressPrevious()
+        wheel().pressPrevious()
+        composeRule.onNodeWithText(positionOf(SONG_INDEX, songs.size)).assertExists()
+
+        // MENU leaves Now Playing, and every level is on the row it was left on.
+        wheel().pressMenu()
+        assertHighlighted(songs[SONG_INDEX].title)
+        wheel().pressMenu()
+        assertHighlighted(albums[0].title)
+        wheel().pressMenu()
+        assertHighlighted(artist.name)
+        wheel().pressMenu()
+        assertHighlighted("Artists")
+        wheel().pressMenu()
+
+        // Something is loaded now: the row is at the top, and the highlight stayed on Music.
+        assertHighlighted("Music")
+        assertRow("Now Playing")
+        wheel().turn(-1)
+        assertHighlighted("Now Playing")
+        wheel().pressCenter()
+        composeRule.onNodeWithText(positionOf(SONG_INDEX, songs.size)).assertExists()
+    }
+
+    @Test
     fun theHighlights_surviveTheActivityBeingRecreated() {
         val artists = runBlocking { library.observeArtists().first().getOrNull().orEmpty() }
         val artist = artists[ARTIST_INDEX]
@@ -134,6 +185,16 @@ class DeviceNavigationTest {
     }
 
     private fun wheel() = composeRule.onNodeWithTag(WHEEL_TEST_TAG)
+
+    private fun positionOf(number: Int, count: Int) = "$number OF $count"
+
+    private fun assertRow(text: String) {
+        composeRule.onNode(hasText(text), useUnmergedTree = true).assertExists()
+    }
+
+    private fun assertNoRow(text: String) {
+        composeRule.onNode(hasText(text), useUnmergedTree = true).assertDoesNotExist()
+    }
 
     private fun assertHighlighted(text: String) {
         composeRule.onNode(isSelected() and hasAnyDescendant(hasText(text)), useUnmergedTree = true).assertExists()

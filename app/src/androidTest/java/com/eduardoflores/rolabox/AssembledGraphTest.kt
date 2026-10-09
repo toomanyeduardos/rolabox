@@ -6,6 +6,8 @@ import com.eduardoflores.rolabox.auth.data.testing.FakeAuthRepository
 import com.eduardoflores.rolabox.auth.ui.api.AuthUiEntries
 import com.eduardoflores.rolabox.auth.ui.api.SignInKey
 import com.eduardoflores.rolabox.auth.ui.api.SignOutKey
+import com.eduardoflores.rolabox.device.playback.api.PlaybackController
+import com.eduardoflores.rolabox.device.playback.api.PlaybackState
 import com.eduardoflores.rolabox.device.settings.api.SettingsSection
 import com.eduardoflores.rolabox.device.settings.api.SettingsSlot
 import com.eduardoflores.rolabox.device.ui.api.DeviceUiEntries
@@ -15,6 +17,8 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -36,6 +40,10 @@ class AssembledGraphTest {
 
     @Inject lateinit var deviceUiEntries: DeviceUiEntries
 
+    @Inject lateinit var playbackState: PlaybackState
+
+    @Inject lateinit var playbackController: PlaybackController
+
     @Before
     fun setUp() {
         hiltRule.inject()
@@ -56,6 +64,12 @@ class AssembledGraphTest {
         authRepository.setAuthState(AuthState.SignedIn(AuthUser(id = "1", displayName = "Eduardo", photoUrl = null)))
 
         assertEquals(SignOutKey, accountRow().opens)
+    }
+
+    @Test
+    fun theDevice_isGivenThePlaybackItActsOn_andNothingIsLoadedAtStart() {
+        assertNull(runBlocking { playbackState.currentSong.first() })
+        assertNotNull(playbackController)
     }
 
     private fun accountRow() = runBlocking {

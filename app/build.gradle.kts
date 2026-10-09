@@ -68,6 +68,8 @@ dependencies {
     androidTestImplementation(project(":common:util"))
     // The navigation test reads the rows it expects from the library the app is built with.
     androidTestImplementation(project(":device:library:api"))
+    // The test of the assembled graph names the playback the device acts on.
+    androidTestImplementation(project(":device:playback:api"))
     // The test of the assembled graph names the contract a section is contributed through (ADR-020, rule 20).
     androidTestImplementation(project(":device:settings:api"))
     androidTestImplementation(libs.androidx.junit)

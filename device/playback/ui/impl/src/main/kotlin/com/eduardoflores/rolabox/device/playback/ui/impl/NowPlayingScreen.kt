@@ -1,14 +1,13 @@
 package com.eduardoflores.rolabox.device.playback.ui.impl
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -16,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -32,9 +32,7 @@ import com.eduardoflores.rolabox.device.host.HandleWheelEvents
 private val ScreenPadding = 12.dp
 private val ScreenTopPadding = 10.dp
 private val SectionGap = 12.dp
-private val CoverGap = 12.dp
 private val TextGap = 4.dp
-private val CoverSize = 108.dp
 private val CoverMinSize = 56.dp
 private const val TITLE_MAX_LINES = 2
 
@@ -74,7 +72,7 @@ internal fun NowPlayingScreen(state: NowPlayingUiState) {
 }
 
 /**
- * The song on the display, top to bottom: its place in the queue, its cover art with its title, artist and
+ * The song on the display, top to bottom: its place in the queue, its cover art, its title, artist and
  * album, and the bar with the time. It can't scroll, since the wheel is its volume (ADR-018), so at large
  * font scales the text keeps its space and the cover art shrinks to what is left, down to a minimum.
  * The long lines of the song end in an ellipsis, so they never push the bar off the display.
@@ -103,26 +101,12 @@ private fun NowPlayingContent(state: NowPlayingUiState.Playing) {
                 NowPlayingMode.Volume -> ModeTag(stringResource(R.string.now_playing_tag_volume))
             }
         }
-        // Takes what the meta row and the bar leave. The cover art can only use this, so the bar stays at the bottom.
-        Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.TopStart) {
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(CoverGap),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                DeviceCoverArtPlaceholder(
-                    Modifier
-                        .sizeIn(
-                            minWidth = CoverMinSize,
-                            minHeight = CoverMinSize,
-                            maxWidth = CoverSize,
-                            maxHeight = CoverSize,
-                        )
-                        .aspectRatio(1f),
-                )
-                SongNames(state, Modifier.weight(1f))
-            }
+        // Takes what the meta row, the names and the bar leave. The cover art is the largest square that fits in it,
+        // so it grows with the display and the names keep their space.
+        BoxWithConstraints(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+            DeviceCoverArtPlaceholder(Modifier.size(minOf(maxWidth, maxHeight).coerceAtLeast(CoverMinSize)))
         }
+        SongNames(state, Modifier.fillMaxWidth())
         NowPlayingBar(state)
     }
 }
@@ -157,14 +141,31 @@ private fun ModeTag(text: String, color: Color = Color.Unspecified) {
 /** The song's title, artist and album. Each one ends in an ellipsis when it is longer than its lines. */
 @Composable
 private fun SongNames(state: NowPlayingUiState.Playing, modifier: Modifier = Modifier) {
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(TextGap)) {
+    Column(
+        modifier,
+        verticalArrangement = Arrangement.spacedBy(TextGap),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
         Text(
             state.title,
             style = RolaboxType.styles.displayHeadline,
+            textAlign = TextAlign.Center,
             maxLines = TITLE_MAX_LINES,
             overflow = TextOverflow.Ellipsis,
         )
-        Text(state.artist, style = RolaboxType.styles.displayBody, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        Text(state.album, style = RolaboxType.styles.displayCaption, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(
+            state.artist,
+            style = RolaboxType.styles.displayBody,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            state.album,
+            style = RolaboxType.styles.displayCaption,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
