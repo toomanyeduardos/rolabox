@@ -87,6 +87,11 @@ rolabox:
     # The host and the design system implement the wheel's input, and are left out.
     active: true
     excludes: ['**/device/host/**', '**/common/designsystem/**']
+  SystemBackInDevice:
+    # ADR-018 rule 9: the system's back leaves the app from every device screen. The rule reports a back
+    # handler, or a NavDisplay that isn't built from its sceneState, in the device host and in a device
+    # screen file (one that imports the host or a device component). A full screen is not checked.
+    active: true
   DeviceComponentOutsideDesignSystem:
     # ADR-018 rule 12: the device's parts and the wheel's events are declared in the design system only.
     # A new device component or event type is added to `names` (the rule's own default is the same list).

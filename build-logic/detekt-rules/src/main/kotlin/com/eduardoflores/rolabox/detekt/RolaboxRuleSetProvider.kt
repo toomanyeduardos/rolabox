@@ -22,6 +22,7 @@ class RolaboxRuleSetProvider : RuleSetProvider {
             ::UseCaseOrRepositoryClassInApi,
             ::ViewModelImplInComposable,
             ::TouchInputInDeviceScreen,
+            ::SystemBackInDevice,
             ::DeviceComponentOutsideDesignSystem,
         ),
     )

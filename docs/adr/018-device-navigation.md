@@ -51,6 +51,15 @@
   the least that tells them, and a message drawn in the display is left open. Rule 8 now says
   that Now Playing is popped when the queue ends, which the Decision already did: the display goes
   back to the list under it. The host pops it when asked ([ADR-019](019-device-host-module.md)).
+- **Revised 2026-10-10:** The system's back leaves the app from every device screen, and no longer
+  goes back one screen (Two stacks, What each control does, The system's back, Alternatives,
+  Consequences, rules 9 and 16). MENU is the only way back inside the display, as on the player the
+  device is drawn after, and the phone's back button has one job after sign-in. Decided while
+  building scrub (38.05), where back and MENU had already stopped meaning the same. The host no
+  longer handles back ([ADR-019](019-device-host-module.md)). Scrub also ends without seeking when
+  the app goes to the background: its 3 s wait would otherwise seek after the user had left.
+  Whether the screen stack is still there on return is left to the platform. Back from a full
+  screen is unchanged. Rule 9 is `[enforced]`, with its check named under Conformance.
 
 ## Context
 
@@ -102,7 +111,7 @@ We will build the signed-in app as **one device destination** in `:app`'s naviga
 
 Everything ADR-012 says about a back stack holds for the screen stack: its keys are serializable
 and carry identifiers, features declare the keys and entries of their own screens, only `:app`
-pushes, and saved state and ViewModels follow the entry. The host pops it, on MENU and on back. A
+pushes, and saved state and ViewModels follow the entry. The host pops it, on MENU. A
 feature provides its **device screens** and its **full screens** as separate sets of entries, and
 `:app` adds each to the stack it belongs to.
 
@@ -181,6 +190,9 @@ An item is **loaded** from the moment it starts until its queue ends. A paused i
 - **Scrub belongs to the song it was selected on.** When another song is loaded, by ⏮, by ⏭ or by
   the queue moving on, or when the queue ends, scrub ends and nothing is sought: a marker is never
   applied to a song it wasn't set on.
+- **Scrub ends when the app goes to the background,** and nothing is sought. The app is left with
+  the system's back or with Home, and the 3 s wait is not an accept the user can see from outside
+  the app. Now Playing is on the time when they return.
 - **Playing a row queues its whole list, and starts from that row.** The queue is the list the row
   was selected from, in the order it is shown, including the rows before it. Song 3 of 10 is
   followed by songs 4 to 10, and ⏮ goes back to song 2. `:app` then pushes Now Playing.
@@ -194,11 +206,21 @@ An item is **loaded** from the moment it starts until its queue ends. A paused i
 
 ### The system's back
 
-Inside the tree, the system's back goes back one screen, as MENU does. It never leaves a mode: on
-Now Playing in scrub mode it goes back one screen too, and nothing is sought. **On the main menu it
-leaves the app,** where MENU does nothing: Android expects back
-to leave from an app's first screen, and predictive back previews the home screen on that gesture.
-Playback continues after leaving.
+**On every device screen, the system's back leaves the app.** It never pops the screen stack and
+it never leaves a mode: on Now Playing in scrub it leaves the app too, and nothing is sought. MENU
+is the only way back inside the display. The device is operated by its wheel alone, and the
+phone's back button belongs to the phone: after sign-in it has one job, at any depth. Predictive
+back previews the home screen on that gesture, not the screen under the top one. Playback continues
+after leaving.
+
+**A full screen is not a device screen,** and back there is ADR-012's: in Settings, and on
+everything under it, back goes back one screen on the app stack, and from Settings it returns to
+the device with its screen stack as it was left.
+
+**Whether the screen stack is there on return is the platform's decision.** The app does nothing of
+its own when it is left. On Android 12 and later, back from an app's first screen moves the task to
+the background, so the screen stack and its highlights are as they were, as after Home. On Android
+10 and 11 it finishes the activity, and the app starts again at the main menu.
 
 ### Playback state lives above the screens
 
@@ -302,8 +324,15 @@ as ADR-017's rule 10 requires.
 - **Every event goes to the top screen, which forwards what it doesn't use.** One path for input.
   But MENU and the playback buttons must behave the same everywhere, and each screen would be a
   place to get that wrong.
-- **Back does nothing on the main menu, like MENU.** One meaning for "back". But the app would trap
-  the system's gesture, and the user would have no way to leave except Home.
+- **The system's back goes back one screen, as MENU does, and leaves the app from the main menu.**
+  What Android apps do, and the decision until 2026-10-10. But the device then has two ways back
+  that differ only in a mode, where MENU cancels scrub and back didn't, and leaving the app from a
+  deep screen takes one back per level.
+- **Back does nothing on the device, like MENU on the main menu.** One meaning for "back". But the
+  app would trap the system's gesture, and the user would have no way to leave except Home.
+- **The screen stack starts at the main menu again after leaving with back,** on every Android
+  version. One behavior to describe. But the host would have to handle back to reset it, and on
+  Android 12 and later the app would differ from leaving with Home for no reason the user can see.
 - **A hand-rolled stack for the display,** since it is a simple list of screens. No nested
   `NavDisplay`. But saved state, a ViewModel per entry and transitions would be rebuilt by hand,
   which ADR-012 already rejected for the app.
@@ -319,8 +348,12 @@ as ADR-017's rule 10 requires.
 - The screen stack and the routing of events are ordinary state and code, tested on the JVM in
   `:device:host`, without any feature.
 - `:app` grows: the main menu and the playback buttons are there, not in a feature.
-- Two nested `NavDisplay`s, each with its own back handling, are not a common setup, and how they
-  share the system's back and predictive back will be worked out on first use.
+- Two nested `NavDisplay`s are not a common setup, but they don't share the system's back: the one
+  inside the display has no back handling, so back and predictive back are the app stack's alone.
+- Leaving the app from a deep screen is one back. Going up one level is MENU only, which a user
+  who expects Android's back has to learn.
+- Returning after back differs by Android version: the screen that was left on 12 and later, the
+  main menu on 10 and 11.
 - A device screen can't be operated by touch at all. Until the screen reader section exists, the
   device is not usable with TalkBack, and that is a known gap, not an accepted end state.
 - At large font scales the display shows few rows, and Now Playing has little room. The design has
@@ -356,8 +389,10 @@ as ADR-017's rule 10 requires.
 8. `[convention]` Now Playing is only ever the top of the screen stack, and it is popped when the
    queue ends, back to the screen under it. Its modes, such as scrub, are state of the screen and
    not destinations.
-9. `[convention]` The system's back goes back one screen, as MENU does outside a mode, except on
-   the main menu, where it leaves the app. No screen handles the system's back.
+9. `[enforced]` On every device screen the system's back leaves the app. It never pops the screen
+   stack and never leaves a mode, and MENU is the only way back inside the display. Neither the
+   device host nor a screen handles the system's back. On a full screen, back is ADR-012's.
+   Enforced for the handling: that back leaves the app is tested on a device.
 10. `[convention]` Playback state belongs to the playback area and is observed as `Flow`s. No
     entry's ViewModel owns it.
 11. `[convention]` A screen that needs touch or the keyboard is a full screen on the app stack, not
@@ -376,8 +411,8 @@ as ADR-017's rule 10 requires.
 16. `[convention]` On Now Playing, center selects scrub and no selection means volume. A turn moves
     a marker in scrub mode, without seeking, and changes the volume otherwise. Center in scrub, or
     3 s without a turn, seeks to the marker and leaves scrub. MENU in scrub leaves it without
-    seeking, and the screen stays. Scrub ends without seeking when another song is loaded or the
-    queue ends. The volume bar returns to the time after 2 s. The Now Playing row of the main menu
+    seeking, and the screen stays. Scrub ends without seeking when another song is loaded, the
+    queue ends or the app goes to the background. The volume bar returns to the time after 2 s. The Now Playing row of the main menu
     is hidden until an item is loaded.
 17. `[convention]` Playing a row queues the whole list it was selected from, in the order it is
     shown, and starts from that row. ⏮ and ⏭ start the previous and the next item of the queue at
@@ -390,7 +425,12 @@ device screen file when it imports `:device:host` or one of the design system's 
 the rule reports a call to `clickable`, `combinedClickable`, `selectable`, `toggleable`,
 `pointerInput`, `draggable`, `scrollable`, `verticalScroll`, `horizontalScroll` or the like in it.
 Settings and the other full screens import neither, so they are not checked. `:device:host` and
-`:common:designsystem` implement the wheel's input and are excluded. Rule 12 is checked by
+`:common:designsystem` implement the wheel's input and are excluded. Rule 9 is checked by
+`SystemBackInDevice`, which reports a back handler (`BackHandler`, `PredictiveBackHandler`,
+`NavigationBackHandler`) in a device screen file or in `:device:host`, and a `NavDisplay` there that
+isn't built from its `sceneState`, the one overload with no back handler. `DeviceBackTest`, an
+instrumented test in `:app`, shows back leaving the app from a deep screen and from scrub. It runs on
+a device, so not in `./gradlew check`. Rule 12 is checked by
 `DeviceComponentOutsideDesignSystem`, which reports a declaration with the name of a design-system
 device component or of the wheel's event types (`names` in `config/detekt/detekt.yml`) anywhere but
 `:common:designsystem`. A new device component is added to that list. Both run in `detekt`, part of
@@ -399,5 +439,5 @@ device component or of the wheel's event types (`names` in `config/detekt/detekt
 `ModuleRules.kt` when the build is configured, and `ModuleRulesTest` in `build-logic` has a
 violating and a passing case. Its message names ADR-018 rule 15. It is narrower than ADR-020's rules
 4 and 7, which already forbid any `:impl` and any `:testing` outside test configurations, and says
-why in the playback area's terms. No other rule moves: rules 1, 2, 4 to 11, 13, 14 and 16 to 18
-are reviewed.
+why in the playback area's terms. No other rule moves: rules 1, 2, 4 to 8, 10, 11, 13, 14 and 16
+to 18 are reviewed.

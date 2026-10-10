@@ -18,6 +18,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceCoverArtPlaceholder
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceMessage
@@ -39,7 +41,8 @@ private const val TITLE_MAX_LINES = 2
 /**
  * Connects Now Playing to its ViewModel, which the entry creates (ADR-021). Turn and center go to the
  * ViewModel, and MENU too while scrubbing, so it leaves scrub and the host doesn't go back a screen
- * (ADR-018, rule 16).
+ * (ADR-018, rule 16). The ViewModel is also told when the app goes to the background, with the system's
+ * back or with Home, which ends scrub: the screen takes no back of its own (ADR-018, rule 9).
  */
 @Composable
 internal fun NowPlayingRoute(viewModel: NowPlayingViewModel) {
@@ -55,6 +58,7 @@ internal fun NowPlayingRoute(viewModel: NowPlayingViewModel) {
         enabled = (state as? NowPlayingUiState.Playing)?.mode == NowPlayingMode.Scrub,
         onMenu = viewModel::onMenu,
     )
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onBackground() }
     NowPlayingScreen(state)
 }
 

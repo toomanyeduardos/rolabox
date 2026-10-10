@@ -9,8 +9,9 @@ import com.eduardoflores.rolabox.common.designsystem.wheel.WheelEvent
 
 /**
  * The stack of screens inside the device's display (ADR-018): linear, and starting at its first
- * screen. `:device:ui:impl` decides every push (ADR-020), and only the host pops, in response to the wheel and the
- * system's back (ADR-019). The one pop it is asked for is [popIfTop].
+ * screen. `:device:ui:impl` decides every push (ADR-020), and only the host pops, in response to the wheel
+ * (ADR-019). The system's back never changes it: on every screen it leaves the app (ADR-018, rule 9). The one
+ * pop the host is asked for is [popIfTop].
  */
 class ScreenStack internal constructor(private val backStack: NavBackStack<NavKey>) {
     val keys: List<NavKey> get() = backStack
@@ -29,7 +30,7 @@ class ScreenStack internal constructor(private val backStack: NavBackStack<NavKe
         if (top == key) pop()
     }
 
-    /** Goes back one screen. The first screen stays: the system's back leaves the device from there. */
+    /** Goes back one screen, for MENU. The first screen stays, and MENU does nothing there. */
     internal fun pop() {
         if (backStack.size > 1) backStack.removeAt(backStack.lastIndex)
     }

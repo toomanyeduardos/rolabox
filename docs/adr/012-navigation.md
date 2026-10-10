@@ -30,6 +30,10 @@
   rules that replaced them, and the Decision is left as it was written: `:device:ui:impl` pushes on
   the screen stack, and a part declares its keys in its `:api`. Where the text says "feature", read
   the `:impl` of a part with screens.
+- **Revised 2026-10-10:** The device host pops the stack inside the display on MENU only, and no
+  longer on the system's back (Decision). On every device screen back leaves the app
+  ([ADR-018](018-device-navigation.md), rule 9), so back acts on the app stack alone. Back on the
+  app stack, and every rule, is unchanged.
 
 ## Context
 
@@ -69,8 +73,9 @@ navigation state.
   display is a second back stack (ADR-018). `:app` decides what is on both: every push and every
   replacement is made by `:app`, in code that responds to the exits a screen reports. On the app
   stack `:app` also pops. On the stack inside the display, popping is done by the device host
-  (ADR-019), since MENU and back do the same on every screen. Back at the first screen of the app
-  stack leaves the app.
+  (ADR-019), since MENU does the same on every screen. The system's back is the app stack's alone:
+  it never pops the stack inside the display (ADR-018). Back at the first screen of the app stack
+  leaves the app, and the device is that screen after sign-in.
 - **Keys are declared where the screen lives.** A feature declares the keys of its own screens and
   provides their entries as one function, which `:app` adds to the `entryProvider`. This is
   Navigation 3's modularization pattern. Destinations that no feature owns are declared in `:app`.
