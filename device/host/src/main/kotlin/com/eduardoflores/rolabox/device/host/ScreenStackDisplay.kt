@@ -20,8 +20,12 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.scene.Scene
+import androidx.navigation3.scene.SinglePaneSceneStrategy
+import androidx.navigation3.scene.rememberNavigationEventState
+import androidx.navigation3.scene.rememberSceneState
 import androidx.navigation3.ui.NavDisplay
 import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxMetal
 
@@ -32,10 +36,10 @@ private const val BEHIND_PARALLAX = 3
  * The display's content: a second `NavDisplay` for the screen stack (ADR-018). Going deeper slides
  * the new screen in from the right and going back slides it out, and only this content moves.
  *
- * The system's back is shared with the `NavDisplay` the device is shown in by the library: each one
- * handles back only while it has a screen to go back to, and the one composed deeper is asked first.
- * So while the display has screens above its first, back is [ScreenStack.pop], like MENU, and on the
- * first screen it falls through to the stack the device is on.
+ * The system's back is not handled here (ADR-018, rule 9): this `NavDisplay` is built from its
+ * scene state, without the library's back handler, which would take back whenever there is a screen
+ * under the top one. So from any depth back reaches the stack the device is on and leaves the app,
+ * predictive back previews that and not the screen below, and only MENU is [ScreenStack.pop].
  */
 @Composable
 internal fun ScreenStackDisplay(
@@ -63,19 +67,24 @@ internal fun ScreenStackDisplay(
         // The screen leaving is on top, so it slides out over the one coming back.
         transform.apply { targetContentZIndex = -1f }
     }
-    NavDisplay(
+    val entries = rememberDecoratedNavEntries(
         backStack = stack.keys,
-        modifier = modifier.clipToBounds(),
-        onBack = stack::pop,
         // A screen's highlight and ViewModels live as long as its entry is on the stack.
         entryDecorators = listOf(
             rememberSaveableStateHolderNavEntryDecorator(),
             rememberViewModelStoreNavEntryDecorator(),
         ),
+        entryProvider = { key -> deviceEntry(key, entryProvider(key), inputs) },
+    )
+    // One screen at a time, and no scene of the display asks to go back.
+    val sceneState = rememberSceneState(entries, listOf(SinglePaneSceneStrategy()), onBack = {})
+    NavDisplay(
+        sceneState = sceneState,
+        // Never given to a back handler, so no back gesture is ever in progress on the display.
+        navigationEventState = rememberNavigationEventState(sceneState),
+        modifier = modifier.clipToBounds(),
         transitionSpec = pushSpec,
         popTransitionSpec = popSpec,
-        predictivePopTransitionSpec = { popSpec() },
-        entryProvider = { key -> deviceEntry(key, entryProvider(key), inputs) },
     )
 }
 

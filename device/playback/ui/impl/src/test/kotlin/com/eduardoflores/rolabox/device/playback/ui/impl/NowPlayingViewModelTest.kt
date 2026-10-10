@@ -303,6 +303,30 @@ class NowPlayingViewModelTest {
     }
 
     @Test
+    fun theAppGoingToTheBackground_leavesScrubWithoutSeeking_andItsWaitNeverSeeks() = runTest {
+        val viewModel = scrubbingViewModel()
+        viewModel.onTurn(20)
+
+        viewModel.onBackground()
+        advanceTimeBy(ScrubIdle + 1.milliseconds)
+
+        assertEquals(NowPlayingMode.Time, viewModel.playing().mode)
+        assertEquals(1.minutes, viewModel.playing().position)
+        assertEquals(emptyList<Duration>(), playback.seekCalls)
+    }
+
+    @Test
+    fun theAppGoingToTheBackground_outsideScrub_doesNothing() = runTest {
+        val viewModel = observedViewModel()
+        playback.load(Queue, index = 0)
+        viewModel.onTurn(1)
+
+        viewModel.onBackground()
+
+        assertEquals(NowPlayingMode.Volume, viewModel.playing().mode)
+    }
+
+    @Test
     fun aNewScrub_startsFromTheSong_notFromTheLastMarker() = runTest {
         val viewModel = scrubbingViewModel()
         viewModel.onTurn(20)

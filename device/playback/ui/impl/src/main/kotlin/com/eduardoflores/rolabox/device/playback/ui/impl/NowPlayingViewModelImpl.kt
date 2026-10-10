@@ -111,7 +111,12 @@ internal class NowPlayingViewModelImpl @Inject constructor(
         }
     }
 
-    override fun onMenu() {
+    override fun onMenu() = cancelScrub()
+
+    override fun onBackground() = cancelScrub()
+
+    /** Leaves scrub without seeking. The volume keeps its own wait. */
+    private fun cancelScrub() {
         if (mode.value != NowPlayingMode.Scrub) return
         idleJob?.cancel()
         leaveScrub()

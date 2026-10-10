@@ -15,6 +15,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import androidx.test.core.app.ActivityScenario
+import androidx.test.espresso.Espresso
 import com.eduardoflores.rolabox.common.designsystem.component.WHEEL_TEST_TAG
 import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxTheme
 import com.eduardoflores.rolabox.device.ui.api.DeviceKey
@@ -29,9 +30,9 @@ import org.junit.Test
 
 /**
  * The round trip to Settings (ADR-018, rule 11): the main menu's Settings row opens a full screen on
- * the app stack through the generic exit, and back returns to the device with its screen stack and
- * highlight as they were. The stack is the saveable one the app uses, so recreating the activity
- * restores it as it does after the process is killed (ADR-012).
+ * the app stack through the generic exit, and back, the screen's own or the system's, returns to
+ * the device with its screen stack and highlight as they were. The stack is the saveable one the
+ * app uses, so recreating the activity restores it as it does after the process is killed (ADR-012).
  */
 @HiltAndroidTest
 class SettingsNavigationTest {
@@ -85,6 +86,18 @@ class SettingsNavigationTest {
 
         assertSettingsIsOpen()
         composeRule.onNodeWithContentDescription("Back").performClick()
+
+        assertDeviceIsShownOnSettings()
+    }
+
+    @Test
+    fun theSystemsBackInSettings_returnsToTheDeviceOnTheRowItWasLeftOn() {
+        highlightSettings()
+        wheel().pressCenter()
+        assertSettingsIsOpen()
+
+        // Settings is a full screen, so back is the app stack's (ADR-018, rule 9), and it stays in the app.
+        Espresso.pressBack()
 
         assertDeviceIsShownOnSettings()
     }

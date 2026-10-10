@@ -22,6 +22,11 @@
   3). [ADR-018](018-device-navigation.md) pops Now Playing when the queue ends, and the end of the
   queue is playback state, which the host can't see (rule 5). Wiring Now Playing (38.06) needed it.
   The host still does the pop and still decides no push.
+- **Revised 2026-10-10:** The host no longer handles the system's back (What `:device:host` owns,
+  Who changes the stack, rule 3). On every device screen back leaves the app
+  ([ADR-018](018-device-navigation.md), rule 9), so the `NavDisplay` inside the display has no back
+  handling, and back reaches whoever shows the device from any depth. The host still pops on MENU,
+  goes to the first screen on hold MENU, and pops the screen it is asked to.
 
 ## Context
 
@@ -60,10 +65,10 @@ the screens.
   screen, with the battery level in the display's header.
 - **The screen stack:** its state, saved across process death, and the `NavDisplay` inside the
   display, with its transitions.
-- **Back inside the display.** The host pops on MENU, goes to the first screen on hold MENU, and
-  handles the system's back, as ADR-018 describes. On the first screen it leaves back to whoever
-  shows the device. It also pops a screen that whoever assembles the device names, if that screen
-  is on top: Now Playing when the queue ends.
+- **Back inside the display.** The host pops on MENU and goes to the first screen on hold MENU. It
+  doesn't handle the system's back: on every screen, at any depth, back is left to whoever shows
+  the device, and ADR-018 says what it does. The host also pops a screen that whoever assembles the
+  device names, if that screen is on top: Now Playing when the queue ends.
 - **The routing of wheel events** (ADR-018, rule 5): turn and center go to the top screen, MENU and
   its hold are the host's own, and ⏮, ⏭, ⏯ and their holds are passed to handlers. While the top
   screen asks for MENU, to leave a mode of its own, MENU goes to it and the host doesn't pop.
@@ -93,7 +98,7 @@ the screens.
 
 ADR-012's rule becomes: **`:app` decides every push, and the host pops.** Features still don't
 touch navigation state. A pop needs no knowledge of the screens, and it is the same on every one of
-them, which is why the host can do it.
+them, which is why the host can do it. It pops for the wheel only, never for the system's back.
 
 One pop starts outside the host: when the queue ends, Now Playing can't stay (ADR-018). The host
 doesn't know playback, so `:device:ui:impl` names the screen and the host pops it if it is on top.
@@ -177,6 +182,7 @@ for the host.
    back inside the display, and the routing of wheel events. It pops, and it never decides what is
    pushed. MENU pops unless the top screen takes it through the contract (rule 6). The one pop it
    is asked for is a named screen, popped only if it is on top: Now Playing when the queue ends.
+   It doesn't handle the system's back, and its `NavDisplay` has no back handling.
 4. Superseded by [ADR-020](020-modules-by-product-area.md), rules 14 and 15: `:device:ui:impl` gives
    the host its start key, its entries and the handlers of the playback buttons, pushes on the
    screen stack, and declares the main menu.

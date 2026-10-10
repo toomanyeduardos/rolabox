@@ -359,7 +359,9 @@ graph TD
     device_settings_impl --> device_settings_api
     device_ui_impl --> common_designsystem
     device_ui_impl --> device_host
+    device_ui_impl --> device_library_api
     device_ui_impl --> device_music_ui_api
+    device_ui_impl --> device_playback_api
     device_ui_impl --> device_playback_ui_api
     device_ui_impl --> device_settings_api
     device_ui_impl --> device_ui_api
