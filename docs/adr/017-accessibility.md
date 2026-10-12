@@ -12,6 +12,13 @@
   [ADR-020](020-modules-by-product-area.md), now that the code has moved (37.07b). Rule 9 names the
   `:impl` of a part with screens where it named an area `:ui` module, which no longer exists, and
   the device host is `:device:host`. The decision is unchanged.
+- **Revised 2026-10-12:** A row of the device's list is one line at every font scale, as an
+  exception to rules 4 and 5 (Large text, Alternatives, Consequences, new rule 12, Conformance). A
+  review of the project on 2026-10-11 found that wrapped rows had different heights and that one
+  long title could take a third of the display ([ADR-018](018-device-navigation.md), rule 14). The
+  bar is unchanged: every row's text can still be read in full at 1.5x, by highlighting the row,
+  which scrolls its text sideways, or wraps it where the system's animations are off. The rules had
+  no place for a text that is reached by an input and not by layout (39.09).
 
 ## Context
 
@@ -80,6 +87,17 @@ Compose's `FlowRow` does this for a row of items. Shrinking the text, clipping i
 ellipsis, or scrolling the screen sideways are not accepted fixes. Where the row fits, the layout at
 1.0x doesn't change.
 
+**A row of the device's list is one line, and its text is reached by highlighting it.** The display
+is small, and its list is read a row at a time with the wheel
+([ADR-018](018-device-navigation.md)). A row there doesn't wrap: a text that doesn't fit is cut with
+an ellipsis, also when it is one of the app's own labels, and the highlighted row scrolls its text
+sideways until all of it has been shown. The wheel reaches every row, so no text is lost, which is
+what the two rules above protect. It is the one place where an ellipsis on the app's own text and
+text that moves sideways are accepted, and only because the same row shows the whole text when the
+user stops on it. Where the system's animations are off the text can't scroll, so the highlighted
+row wraps instead. The exception is for the rows of the device's list and nothing else: the
+display's header, its messages and Now Playing follow the rules above.
+
 **Every screen scrolls vertically** when its content is taller than the viewport, so that with the
 keyboard closed every control can be reached on the Pixel 6 configuration at 1.5x.
 
@@ -144,6 +162,11 @@ The Google sign-in button is, within Google's branding rules.
 - **Wrap the Google button's label and let the button grow taller,** like Rolabox's own keys. It
   loses no text at any width. But Google's branding rules show a one-line label with fixed
   proportions, and don't allow uses they don't cover. Scaling the whole button is what they allow.
+- **Device rows wrap like every other text.** No exception to write, and the rule until 2026-10-12.
+  But at 1.5x a list of songs showed two or three rows, each of a different height, and the user
+  turned the wheel through titles they could read in full but not scan.
+- **One line with an ellipsis and no scrolling.** The simplest row. But the end of a long title
+  could never be read, which is the defect this ADR exists to prevent.
 - **One ADR per accessibility topic.** Smaller records. But they share their context, their bar
   and their enforcement, and a reader would have to collect "what does Rolabox do for accessibility"
   from several files.
@@ -167,6 +190,11 @@ The Google sign-in button is, within Google's branding rules.
 - The Google button's label stays on one line. It fits at 1.5x on the Pixel 6 configuration, but on
   a narrower screen or at a larger scale it could be cut, and Google's rules leave no fix for that
   other than a shorter approved label.
+- On the device, the text of a long row is read by stopping on it and waiting. It is all there, but
+  it takes time, and it moves. Reduced motion has no section here yet, and when it gets one, this
+  row is the first thing it has to look at.
+- A 1.5x golden of a device list shows a cut row and is correct. Whether the highlighted row shows
+  all of its text is a test of the row, not something a golden can show.
 - A justified fixed size needs a `@Suppress` with a comment, which is noise, and is the point: each
   exception is visible.
 - The rules that matter most to a user, no lost text and reflow, are still checked by a person
@@ -207,8 +235,15 @@ The Google sign-in button is, within Google's branding rules.
 11. `[convention]` The Sign in with Google button follows Google's branding rules first (ADR-000
     rule 5): it scales as one piece with the font scale, and its label stays on one line. A comment
     at each exception to this ADR names this rule.
+12. `[convention]` A row of the device's list is one line at every font scale. A text that doesn't
+    fit ends in an ellipsis, and the highlighted row scrolls it sideways until all of it has been
+    shown, or wraps it where the system's animations are off, so every row's full text can be read
+    at 1.5x. This is the only exception to rules 4 and 5, and it covers those rows only.
 
 **Conformance.** Rule 2 is checked by detekt's `ForbiddenMethodCall` in `detektMain` and
 `detektTest`, and rule 3 by `FixedHeightAroundText` in `detekt`, all part of `./gradlew check` and
 of the CI `build` job. The rule's own unit tests run in `./gradlew check` and `unitTest`. Rules 4 to
-6 are reviewed against the 1.5x goldens that ADR-016's `screenshots` job verifies.
+6 are reviewed against the 1.5x goldens that ADR-016's `screenshots` job verifies. Rule 12 has no
+build check: one line, an ellipsis and a scrolling text are properties of one design-system
+component, the device's list, and not a pattern in the code of its callers. It is ahead of the code
+until 39.09, which brings a test of that component for each of its three cases.
