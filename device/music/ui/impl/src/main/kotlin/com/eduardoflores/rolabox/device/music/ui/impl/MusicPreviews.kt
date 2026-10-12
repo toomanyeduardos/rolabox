@@ -24,9 +24,9 @@ private val Songs = listOf(
 ).map { DeviceListRow(it) }
 
 @Composable
-private fun DevicePreview(content: @Composable () -> Unit) {
+private fun DevicePreview(title: String, content: @Composable () -> Unit) {
     RolaboxTheme {
-        DeviceScreen(title = "Rolabox", batteryLevel = 0.7f, onWheelEvent = {}) {
+        DeviceScreen(title = title, batteryLevel = 0.7f, onWheelEvent = {}) {
             Box(Modifier.fillMaxSize()) { content() }
         }
     }
@@ -34,17 +34,17 @@ private fun DevicePreview(content: @Composable () -> Unit) {
 
 @PreviewLightDark
 @Composable
-private fun MusicMenuPreview() = DevicePreview { MusicMenu(highlightedIndex = 0) }
+private fun MusicMenuPreview() = DevicePreview(title = "Music") { MusicMenu(highlightedIndex = 0) }
 
 @PreviewLightDark
 @Composable
-private fun ArtistsPreview() = DevicePreview {
+private fun ArtistsPreview() = DevicePreview(title = "Artists") {
     MusicList(ListUiState.Loaded(Artists), highlightedIndex = 9, emptyText = stringResource(R.string.music_no_artists))
 }
 
 @PreviewLightDark
 @Composable
-private fun ArtistAlbumsPreview() = DevicePreview {
+private fun ArtistAlbumsPreview() = DevicePreview(title = "Maren Holt") {
     val rows = listOf("Low Tide Radio", "Paper Satellites", "North of Here").map { DeviceListRow(it, true) }
     val allSongs = DeviceListRow(stringResource(R.string.music_all_songs), opensSubmenu = true)
     MusicList(
@@ -56,13 +56,13 @@ private fun ArtistAlbumsPreview() = DevicePreview {
 
 @PreviewLightDark
 @Composable
-private fun SongsPreview() = DevicePreview {
+private fun SongsPreview() = DevicePreview(title = "Paper Satellites") {
     MusicList(ListUiState.Loaded(Songs), highlightedIndex = 2, emptyText = stringResource(R.string.music_no_songs))
 }
 
 @PreviewLightDark
 @Composable
-private fun EmptyPreview() = DevicePreview {
+private fun EmptyPreview() = DevicePreview(title = "Artists") {
     MusicList(
         ListUiState.Loaded(emptyList()),
         highlightedIndex = 0,
@@ -72,6 +72,6 @@ private fun EmptyPreview() = DevicePreview {
 
 @PreviewLightDark
 @Composable
-private fun FailedPreview() = DevicePreview {
+private fun FailedPreview() = DevicePreview(title = "Artists") {
     MusicList(ListUiState.Failed, highlightedIndex = 0, emptyText = stringResource(R.string.music_no_artists))
 }

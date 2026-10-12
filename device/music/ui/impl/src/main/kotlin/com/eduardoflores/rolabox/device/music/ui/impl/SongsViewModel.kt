@@ -16,4 +16,10 @@ internal sealed interface SongsSource {
 /** The songs of the Songs screen, whichever its [SongsSource] (ADR-021). [SongsViewModelImpl] implements it. */
 internal abstract class SongsViewModel : ViewModel() {
     abstract val uiState: StateFlow<ListUiState<Song>>
+
+    /**
+     * The screen's title: the album's name, or the artist's for all of their songs. `null` until it is read,
+     * and when it can't be.
+     */
+    abstract val title: StateFlow<String?>
 }

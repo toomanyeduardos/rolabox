@@ -1,5 +1,7 @@
 package com.eduardoflores.rolabox.common.designsystem.component
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -24,10 +26,12 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.eduardoflores.rolabox.common.designsystem.R
 import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxMetal
@@ -44,6 +48,7 @@ private val ScreenShape = RoundedCornerShape(10.dp)
 private val HeaderMinHeight = 28.dp
 private val HeaderSlotWidth = 44.dp
 private val HeaderPadding = 10.dp
+private val HeaderRecordSize = 13.dp
 private val BatteryWidth = 18.dp
 private val BatteryHeight = 9.dp
 private val BatteryStroke = 1.5.dp
@@ -84,19 +89,39 @@ fun DeviceBody(
 }
 
 /**
+ * How long the display takes to go from one screen to another (ADR-018). The header's title changes
+ * over it, and whoever slides the display's content uses it too, so the two move in step.
+ */
+const val DEVICE_TRANSITION_MILLIS = 300
+
+/** The record in the display's header (ADR-018, rule 19). */
+enum class DeviceRecord {
+    /** Nothing is loaded. The record's place stays empty. */
+    Hidden,
+
+    /** What is loaded is paused. */
+    Still,
+
+    /** What is loaded is playing. */
+    Spinning,
+}
+
+/**
  * The display of the device: a dark frame around a white screen that stays white in light and dark.
- * The screen has a header, with the [title] in the center, the battery on the right and an optional
- * [record] on the left, and [content] fills the rest. [batteryLevel] runs from 0 to 1.
+ * The screen has a header, with the [title] in the center, the battery on the right and the [record]
+ * on the left, and [content] fills the rest. [batteryLevel] runs from 0 to 1.
  *
- * [record] is for the spinning record while something is loaded. With none, its place stays empty so
- * the title stays centered. The header is as tall as its text needs, and grows with the font scale.
+ * The [title] is one line, and one that doesn't fit ends in an ellipsis, so it never moves the record
+ * or the battery. A new title fades in over [DEVICE_TRANSITION_MILLIS]. With the [record] hidden, its
+ * place stays empty so the title stays centered. The header is as tall as its text needs, and grows
+ * with the font scale.
  */
 @Composable
 fun DeviceDisplay(
     title: String,
     batteryLevel: Float,
     modifier: Modifier = Modifier,
-    record: (@Composable () -> Unit)? = null,
+    record: DeviceRecord = DeviceRecord.Hidden,
     content: @Composable () -> Unit,
 ) {
     val colors = RolaboxMetal.colors
@@ -120,20 +145,36 @@ fun DeviceDisplay(
 }
 
 @Composable
-internal fun DeviceHeader(title: String, batteryLevel: Float, record: (@Composable () -> Unit)?) {
+internal fun DeviceHeader(title: String, batteryLevel: Float, record: DeviceRecord) {
     val colors = RolaboxMetal.colors
     Column(Modifier.fillMaxWidth().background(colors.displayHeader)) {
         Row(
             Modifier.fillMaxWidth().heightIn(min = HeaderMinHeight).padding(horizontal = HeaderPadding),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(Modifier.width(HeaderSlotWidth), contentAlignment = Alignment.CenterStart) { record?.invoke() }
-            Text(
-                text = title,
-                style = RolaboxType.styles.displayTitle,
-                textAlign = TextAlign.Center,
+            Box(Modifier.width(HeaderSlotWidth), contentAlignment = Alignment.CenterStart) {
+                if (record != DeviceRecord.Hidden) {
+                    SpinningVinyl(
+                        isPlaying = record == DeviceRecord.Spinning,
+                        size = HeaderRecordSize * LocalDensity.current.fontScale,
+                    )
+                }
+            }
+            Crossfade(
+                targetState = title,
+                animationSpec = tween(DEVICE_TRANSITION_MILLIS),
                 modifier = Modifier.weight(1f),
-            )
+                label = "DeviceHeaderTitle",
+            ) { shown ->
+                Text(
+                    text = shown,
+                    style = RolaboxType.styles.displayTitle,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
             Box(Modifier.width(HeaderSlotWidth), contentAlignment = Alignment.CenterEnd) {
                 DeviceBattery(batteryLevel)
             }
@@ -182,6 +223,8 @@ private fun DeviceBattery(level: Float) {
 
 private const val PERCENT = 100
 private val DisplayPreviewMax = 160.dp
+private val HeaderPreviewMax = 80.dp
+private const val LONG_PREVIEW_TITLE = "The Northern Lights Philharmonic Orchestra and Chorus"
 
 @Composable
 private fun PreviewRows() {
@@ -218,9 +261,7 @@ private fun DeviceDisplayPreview() {
                 modifier = Modifier.heightIn(
                     max = DisplayPreviewMax,
                 ),
-                record = {
-                    SpinningVinyl(isPlaying = false, size = 13.dp)
-                },
+                record = DeviceRecord.Still,
             ) {
                 PreviewRows()
             }
@@ -229,4 +270,28 @@ private fun DeviceDisplayPreview() {
             }
         }
     }
+}
+
+/** The header's cases (ADR-018, rule 19): a short and a long title, and the record playing and paused. */
+@PreviewLightDark
+@Composable
+private fun DeviceHeaderPreview() {
+    RolaboxTheme {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            HeaderPreviewDisplay(title = "Music", record = DeviceRecord.Hidden)
+            HeaderPreviewDisplay(title = LONG_PREVIEW_TITLE, record = DeviceRecord.Spinning)
+            HeaderPreviewDisplay(title = "Now Playing", record = DeviceRecord.Spinning)
+            HeaderPreviewDisplay(title = "Now Playing", record = DeviceRecord.Still)
+        }
+    }
+}
+
+@Composable
+private fun HeaderPreviewDisplay(title: String, record: DeviceRecord) {
+    DeviceDisplay(
+        title = title,
+        batteryLevel = 0.7f,
+        modifier = Modifier.heightIn(max = HeaderPreviewMax),
+        record = record,
+    ) {}
 }

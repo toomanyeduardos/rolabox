@@ -10,4 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
  */
 internal abstract class ArtistAlbumsViewModel : ViewModel() {
     abstract val uiState: StateFlow<ListUiState<Album>>
+
+    /** The screen's title: the artist's name. `null` until it is read, and when it can't be. */
+    abstract val title: StateFlow<String?>
 }

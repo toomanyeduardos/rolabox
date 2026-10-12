@@ -8,8 +8,12 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.navigation3.runtime.NavKey
 import com.eduardoflores.rolabox.common.designsystem.wheel.WheelEvent
 
-/** Where the screen of one entry registers for its events. The host provides one to each entry. */
-internal class ScreenInput(private val inputs: ScreenInputs, private val key: NavKey) {
+/** Where the screen of one entry registers for its events and gives its title. The host provides one to each entry. */
+internal class ScreenInput(
+    private val inputs: ScreenInputs,
+    private val titles: ScreenTitles,
+    private val key: NavKey,
+) {
     fun register(handler: (WheelEvent) -> Unit) = inputs.register(key, handler)
 
     fun unregister() = inputs.unregister(key)
@@ -21,9 +25,11 @@ internal class ScreenInput(private val inputs: ScreenInputs, private val key: Na
     fun registerPlayPause(handler: () -> Unit) = inputs.registerPlayPause(key, handler)
 
     fun unregisterPlayPause() = inputs.unregisterPlayPause(key)
+
+    fun setTitle(title: String?) = titles.set(key, title)
 }
 
-/** Null outside the device, such as in a preview, where a screen receives no events. */
+/** Null outside the device, such as in a preview, where a screen receives no events and its title goes nowhere. */
 internal val LocalScreenInput = staticCompositionLocalOf<ScreenInput?> { null }
 
 /**
@@ -68,5 +74,21 @@ fun HandlePlayPause(enabled: Boolean, onPlayPause: () -> Unit) {
     DisposableEffect(input, enabled) {
         if (enabled) input.registerPlayPause { currentOnPlayPause() }
         onDispose { input.unregisterPlayPause() }
+    }
+}
+
+/**
+ * Gives the display's header the [title] of the device screen that calls this: the header shows the title
+ * of the screen on top of the stack (ADR-018, rule 19, and ADR-019, rule 9). Every device screen calls it.
+ * A title that is loaded, such as an artist's name, is `null` until it is known, and the header shows none.
+ *
+ * The host keeps the title while the screen is on the stack, so it is there when MENU returns to it.
+ */
+@Composable
+fun ScreenTitle(title: String?) {
+    val input = LocalScreenInput.current ?: return
+    DisposableEffect(input, title) {
+        input.setTitle(title)
+        onDispose {}
     }
 }

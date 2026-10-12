@@ -5,12 +5,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceListRow
+import com.eduardoflores.rolabox.device.host.ScreenTitle
 import com.eduardoflores.rolabox.device.library.api.Album
 
 /**
  * Connects the albums of the artist [artistId] to its ViewModel, which the entry creates (ADR-021).
  * "All Songs" comes first, and then the albums. Center on it reports [onAllSongsClick] with the
- * artist, and on an album [onAlbumClick] with its id.
+ * artist, and on an album [onAlbumClick] with its id. The screen's title is the artist's name.
  */
 @Composable
 internal fun ArtistAlbumsRoute(
@@ -20,7 +21,9 @@ internal fun ArtistAlbumsRoute(
     onAlbumClick: (albumId: Long) -> Unit,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val title by viewModel.title.collectAsStateWithLifecycle()
     val allSongs = stringResource(R.string.music_all_songs)
+    ScreenTitle(title)
     WheelList(
         state = state.withAllSongs(allSongs),
         emptyText = stringResource(R.string.music_no_albums),

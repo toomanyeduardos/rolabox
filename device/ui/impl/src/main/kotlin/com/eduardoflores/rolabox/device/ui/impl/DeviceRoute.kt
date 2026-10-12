@@ -10,7 +10,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
@@ -39,7 +38,8 @@ import com.eduardoflores.rolabox.device.ui.api.MainMenuKey
  *
  * [musicEntries] adds the music screens, whose exits are mapped to keys here and pushed.
  * [playbackEntries] adds Now Playing, which a song click and the main menu's row push. [viewModel] acts on
- * playback for them and for the playback buttons, and a song click that couldn't play is told in a toast.
+ * playback for them and for the playback buttons, and gives the host the state of the header's record. A song
+ * click that couldn't play is told in a toast.
  * [onOpenFullScreen] is the generic exit, which leaves the display for a full screen on the app stack.
  */
 @Composable
@@ -52,6 +52,7 @@ internal fun DeviceRoute(
 ) {
     val stack = rememberScreenStack(MainMenuKey)
     val nowPlayingShown by viewModel.hasLoadedSong.collectAsStateWithLifecycle()
+    val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
     val playFailure by viewModel.playFailure.collectAsStateWithLifecycle()
     val context = LocalContext.current
     // A song click that couldn't play says why (ADR-007, rule 7), once for each failure.
@@ -69,7 +70,8 @@ internal fun DeviceRoute(
     }
     DeviceHost(
         stack = stack,
-        title = stringResource(R.string.device_title),
+        isItemLoaded = nowPlayingShown,
+        isItemPlaying = isPlaying,
         entryProvider = entryProvider {
             mainMenuEntry(
                 nowPlayingShown = nowPlayingShown,

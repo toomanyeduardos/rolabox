@@ -27,9 +27,11 @@ import androidx.navigation3.scene.SinglePaneSceneStrategy
 import androidx.navigation3.scene.rememberNavigationEventState
 import androidx.navigation3.scene.rememberSceneState
 import androidx.navigation3.ui.NavDisplay
+import com.eduardoflores.rolabox.common.designsystem.component.DEVICE_TRANSITION_MILLIS
 import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxMetal
 
-private const val SLIDE_MILLIS = 300
+// The design system's, so the header's title changes in step with the slide (ADR-018, rule 19).
+private const val SLIDE_MILLIS = DEVICE_TRANSITION_MILLIS
 private const val BEHIND_PARALLAX = 3
 
 /**
@@ -45,6 +47,7 @@ private const val BEHIND_PARALLAX = 3
 internal fun ScreenStackDisplay(
     stack: ScreenStack,
     inputs: ScreenInputs,
+    titles: ScreenTitles,
     entryProvider: (NavKey) -> NavEntry<NavKey>,
     modifier: Modifier = Modifier,
 ) {
@@ -74,7 +77,7 @@ internal fun ScreenStackDisplay(
             rememberSaveableStateHolderNavEntryDecorator(),
             rememberViewModelStoreNavEntryDecorator(),
         ),
-        entryProvider = { key -> deviceEntry(key, entryProvider(key), inputs) },
+        entryProvider = { key -> deviceEntry(key, entryProvider(key), inputs, titles) },
     )
     // One screen at a time, and no scene of the display asks to go back.
     val sceneState = rememberSceneState(entries, listOf(SinglePaneSceneStrategy()), onBack = {})
@@ -88,17 +91,24 @@ internal fun ScreenStackDisplay(
     )
 }
 
-/** What the host adds around every screen: where it registers for its events, and an opaque background. */
-private fun deviceEntry(key: NavKey, entry: NavEntry<NavKey>, inputs: ScreenInputs): NavEntry<NavKey> =
-    NavEntry(navEntry = entry) {
-        val input = remember(inputs, key) { ScreenInput(inputs, key) }
-        CompositionLocalProvider(LocalScreenInput provides input) {
-            // Opaque, so the screen that is leaving doesn't show through the one that is arriving.
-            Box(Modifier.fillMaxSize().background(RolaboxMetal.colors.displayScreen)) {
-                entry.Content()
-            }
+/**
+ * What the host adds around every screen: where it registers for its events and gives its title, and an
+ * opaque background.
+ */
+private fun deviceEntry(
+    key: NavKey,
+    entry: NavEntry<NavKey>,
+    inputs: ScreenInputs,
+    titles: ScreenTitles,
+): NavEntry<NavKey> = NavEntry(navEntry = entry) {
+    val input = remember(inputs, titles, key) { ScreenInput(inputs, titles, key) }
+    CompositionLocalProvider(LocalScreenInput provides input) {
+        // Opaque, so the screen that is leaving doesn't show through the one that is arriving.
+        Box(Modifier.fillMaxSize().background(RolaboxMetal.colors.displayScreen)) {
+            entry.Content()
         }
     }
+}
 
 /** False when the user removed animations in the system settings (animator duration scale 0). */
 @Composable

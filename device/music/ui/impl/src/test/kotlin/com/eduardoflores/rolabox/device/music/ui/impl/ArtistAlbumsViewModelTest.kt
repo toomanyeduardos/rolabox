@@ -7,6 +7,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
 
@@ -19,6 +20,7 @@ class ArtistAlbumsViewModelTest {
     private fun TestScope.observedViewModel(artistId: Long) =
         ArtistAlbumsViewModelImpl(artistId, library).also { viewModel ->
             backgroundScope.launch(mainDispatcherRule.testDispatcher) { viewModel.uiState.collect() }
+            backgroundScope.launch(mainDispatcherRule.testDispatcher) { viewModel.title.collect() }
         }
 
     @Test
@@ -50,6 +52,23 @@ class ArtistAlbumsViewModelTest {
         library.setReadError(StorageError.Corrupted)
 
         assertEquals(ListUiState.Failed, observedViewModel(MarenHolt.id.value).uiState.value)
+    }
+
+    @Test
+    fun title_isTheArtistsName() = runTest {
+        assertEquals("Maren Holt", observedViewModel(MarenHolt.id.value).title.value)
+    }
+
+    @Test
+    fun title_ofAnUnknownArtist_isNone() = runTest {
+        assertNull(observedViewModel(UNKNOWN_ID).title.value)
+    }
+
+    @Test
+    fun title_whenTheLibraryCantBeRead_isNone() = runTest {
+        library.setReadError(StorageError.Corrupted)
+
+        assertNull(observedViewModel(MarenHolt.id.value).title.value)
     }
 
     private companion object {

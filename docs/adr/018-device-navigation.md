@@ -96,6 +96,9 @@
   a hold does at the end of a playing item, and a hold that moved on to the next item would have
   changed the queue, which only ⏮, ⏭ and the end of an item do. Rule 10 is now in the code, so
   Target state names four rules ahead of it, and Conformance names the tests of rule 10.
+- **Revised 2026-10-12:** The header of rule 19 is in the code (Target state, Conformance). 39.03
+  built it: each screen gives its title, and the record is hidden, still or spinning. It is covered by
+  `ScreenTitlesTest`, in `:device:host`, and by the goldens of the header. No rule changes.
 
 ## Context
 
@@ -129,9 +132,9 @@ and the display is small.
 
 **Target state.** The device was written after this ADR, and the rules apply to code as it is
 written. Rules 3, 9, 11, 12 and 15 have a build check (see Conformance under Rules). The rest are
-`[convention]` and are checked in review. Since the revisions of 2026-10-12, four rules are ahead of
+`[convention]` and are checked in review. Since the revisions of 2026-10-12, three rules are ahead of
 the code, each until its ticket: the settings in the display in rule 11 (39.07), one-line rows in
-rule 14 (39.09), ⏮ in rule 17 (39.04), and the header in rule 19 (39.03).
+rule 14 (39.09), and ⏮ in rule 17 (39.04). The header in rule 19 was the fourth, until 39.03 built it.
 
 ## Decision
 
@@ -562,4 +565,6 @@ are reviewed. What rules 10, 14, 17 and 19 say of playing and paused, the one-li
 header is behavior, with no syntax for a build check to read. It is covered by the unit tests of the
 tickets that build it, named under Target state. Rule 10's playing and paused, the clock and the
 holds are covered by `InMemoryPlayerTest`, ⏯ by `WheelEventRouterTest` and `DeviceViewModelTest`,
-and the end of the queue on Now Playing by `DeviceNavigationTest`, which runs on a device.
+and the end of the queue on Now Playing by `DeviceNavigationTest`, which runs on a device. Rule 19's
+title and record are covered by `ScreenTitlesTest`, and the header's look by the goldens of
+`DeviceHeaderPreview`.

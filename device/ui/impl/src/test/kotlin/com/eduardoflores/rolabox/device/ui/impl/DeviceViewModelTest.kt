@@ -33,6 +33,7 @@ class DeviceViewModelTest {
 
     private fun TestScope.observedViewModel() = DeviceViewModelImpl(playback, playback).also { viewModel ->
         backgroundScope.launch(mainDispatcherRule.testDispatcher) { viewModel.hasLoadedSong.collect() }
+        backgroundScope.launch(mainDispatcherRule.testDispatcher) { viewModel.isPlaying.collect() }
     }
 
     @Test
@@ -49,6 +50,19 @@ class DeviceViewModelTest {
 
         playback.unload()
         assertFalse(viewModel.hasLoadedSong.value)
+    }
+
+    @Test
+    fun isPlaying_followsThePlaybackState() = runTest {
+        val viewModel = observedViewModel()
+        assertFalse(viewModel.isPlaying.value)
+
+        playback.load(Queue, index = 0)
+        playback.playing(true)
+        assertTrue(viewModel.isPlaying.value)
+
+        playback.playing(false)
+        assertFalse(viewModel.isPlaying.value)
     }
 
     @Test
