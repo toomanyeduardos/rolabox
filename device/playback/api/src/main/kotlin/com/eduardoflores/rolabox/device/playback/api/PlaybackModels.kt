@@ -14,6 +14,9 @@ data class PlaybackSong(
     val duration: Duration,
 )
 
+/** Which way [PlaybackController.startSeeking] moves the position. */
+enum class SeekDirection { Backward, Forward }
+
 /** The list a song was selected from. Playing a song queues the whole list, in the order it is shown. */
 sealed interface PlaybackSource {
     /** Every song of the library. */

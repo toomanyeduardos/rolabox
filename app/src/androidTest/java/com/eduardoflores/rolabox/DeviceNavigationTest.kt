@@ -25,9 +25,12 @@ import com.eduardoflores.rolabox.device.ui.api.DeviceUiEntries
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import javax.inject.Inject
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.TestDispatcher
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -36,8 +39,9 @@ import org.junit.Test
 /**
  * The device as it is assembled, with the wheel as the only input (ADR-018): from the main menu down
  * to a list of songs and back with MENU, checking that each level comes back on the row the user left,
- * and playing a song, Now Playing and the previous and next buttons.
- * The library is the in-memory one, so the rows are read from it and not repeated here.
+ * and playing a song, Now Playing and the playback buttons.
+ * The library is the in-memory one, so the rows are read from it and not repeated here. The playback's
+ * clock is the test dispatcher's scheduler, so a song only moves when a test lets time pass.
  */
 @HiltAndroidTest
 class DeviceNavigationTest {
@@ -52,6 +56,8 @@ class DeviceNavigationTest {
     @Inject lateinit var deviceUiEntries: DeviceUiEntries
 
     @Inject lateinit var library: LibraryRepository
+
+    @Inject lateinit var testDispatcher: TestDispatcher
 
     @Before
     fun setUp() {
@@ -169,6 +175,83 @@ class DeviceNavigationTest {
     }
 
     @Test
+    fun playPause_playsTheHighlightedSong_andPausesFromNowPlayingAndFromAListThatIsNotPlayable() {
+        val artists = library.observeArtists().rows()
+        val albums = library.observeAlbumsByArtist(artists[ARTIST_INDEX].id).rows()
+        val songs = library.observeSongsByAlbum(albums[0].id).rows()
+
+        // Nothing is loaded: ⏯ on the main menu does nothing.
+        wheel().pressPlayPause()
+        assertNoRow("Now Playing")
+        wheel().pressCenter()
+        wheel().pressCenter()
+        wheel().turn(ARTIST_INDEX)
+        wheel().pressCenter()
+        wheel().turn(1)
+        wheel().pressCenter()
+        wheel().turn(SONG_INDEX)
+
+        // On a song ⏯ does what center does: it plays the album from that song, and Now Playing is pushed.
+        wheel().pressPlayPause()
+        composeRule.onNodeWithText(positionOf(SONG_INDEX + 1, songs.size)).assertExists()
+        after(5.seconds)
+        composeRule.onNodeWithText("0:05").assertExists()
+
+        // On Now Playing ⏯ pauses, and the time stays. A second ⏯ plays from where it was.
+        wheel().pressPlayPause()
+        after(5.seconds)
+        composeRule.onNodeWithText("0:05").assertExists()
+        wheel().pressPlayPause()
+        after(5.seconds)
+        composeRule.onNodeWithText("0:10").assertExists()
+
+        // The albums are not playable rows, so ⏯ pauses there too, and nothing is pushed.
+        wheel().pressMenu()
+        wheel().pressMenu()
+        wheel().pressPlayPause()
+        assertHighlighted(albums[0].title)
+        after(5.seconds)
+        wheel().pressMenu()
+        wheel().pressMenu()
+        wheel().pressMenu()
+        wheel().turn(-1)
+        wheel().pressCenter()
+        composeRule.onNodeWithText("0:10").assertExists()
+    }
+
+    @Test
+    fun theQueueEndsOnNowPlaying_theDisplayGoesBackToTheListUnderIt_andTheMainMenuLosesItsRow() {
+        val artists = library.observeArtists().rows()
+        val artist = artists[ARTIST_INDEX]
+        val albums = library.observeAlbumsByArtist(artist.id).rows()
+        val songs = library.observeSongsByAlbum(albums[0].id).rows()
+        wheel().pressCenter()
+        wheel().pressCenter()
+        wheel().turn(ARTIST_INDEX)
+        wheel().pressCenter()
+        wheel().turn(1)
+        wheel().pressCenter()
+        wheel().turn(songs.lastIndex)
+
+        // The last song of the album plays, so the queue has nothing after it.
+        wheel().pressCenter()
+        composeRule.onNodeWithText(positionOf(songs.size, songs.size)).assertExists()
+
+        // It ends: nothing is loaded, and Now Playing leaves the display for the list it was played from.
+        after(songs.last().duration + 1.seconds)
+        composeRule.onNodeWithText(positionOf(songs.size, songs.size)).assertDoesNotExist()
+        assertHighlighted(songs.last().title)
+
+        // The main menu has no Now Playing row again.
+        wheel().pressMenu()
+        wheel().pressMenu()
+        wheel().pressMenu()
+        wheel().pressMenu()
+        assertHighlighted("Music")
+        assertNoRow("Now Playing")
+    }
+
+    @Test
     fun theHighlights_surviveTheActivityBeingRecreated() {
         val artists = library.observeArtists().rows()
         val artist = artists[ARTIST_INDEX]
@@ -191,6 +274,13 @@ class DeviceNavigationTest {
     /** The rows the library has. A library that fails is a failed test, not an empty list (ADR-007, rule 7). */
     private fun <T> Flow<Either<LibraryError, List<T>>>.rows(): List<T> =
         runBlocking { first().getOrElse { error -> throw AssertionError("The library failed: $error") } }
+
+    /** Lets [duration] pass on the playback's clock. */
+    private fun after(duration: Duration) {
+        testDispatcher.scheduler.advanceTimeBy(duration)
+        testDispatcher.scheduler.runCurrent()
+        composeRule.waitForIdle()
+    }
 
     private fun wheel() = composeRule.onNodeWithTag(WHEEL_TEST_TAG)
 

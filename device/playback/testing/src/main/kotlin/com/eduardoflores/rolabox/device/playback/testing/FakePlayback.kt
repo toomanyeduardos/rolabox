@@ -8,6 +8,7 @@ import com.eduardoflores.rolabox.device.playback.api.PlaybackError
 import com.eduardoflores.rolabox.device.playback.api.PlaybackSong
 import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
 import com.eduardoflores.rolabox.device.playback.api.PlaybackState
+import com.eduardoflores.rolabox.device.playback.api.SeekDirection
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.Duration
@@ -16,16 +17,19 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 
 /**
- * Playback that tests drive: [load], [unload], [positionAt] and [volumeAt] set what the observed flows
+ * Playback that tests drive: [load], [unload], [playing], [positionAt] and [volumeAt] set what the observed flows
  * emit. The actions change nothing. They are recorded, so a test can check what a ViewModel asked for.
  * [play] answers with [playResult].
  */
+// One function for each action of the controller, and one for each part of the state a test sets.
+@Suppress("TooManyFunctions")
 @Singleton
 class FakePlayback @Inject constructor() :
     PlaybackState,
     PlaybackController {
     private val queueState = MutableStateFlow<List<PlaybackSong>>(emptyList())
     private val queueIndexState = MutableStateFlow<Int?>(null)
+    private val playingState = MutableStateFlow(false)
     private val positionState = MutableStateFlow(Duration.ZERO)
     private val volumeState = MutableStateFlow(INITIAL_VOLUME)
 
@@ -36,23 +40,32 @@ class FakePlayback @Inject constructor() :
 
     val playCalls = mutableListOf<PlayCall>()
     val seekCalls = mutableListOf<Duration>()
+    val startSeekingCalls = mutableListOf<SeekDirection>()
     val volumeCalls = mutableListOf<Int>()
     var nextCalls = 0
         private set
     var previousCalls = 0
         private set
+    var pauseCalls = 0
+        private set
+    var resumeCalls = 0
+        private set
+    var stopSeekingCalls = 0
+        private set
 
     override val currentSong: Flow<PlaybackSong?> =
         combine(queueState, queueIndexState) { queue, index -> index?.let(queue::getOrNull) }
+    override val isPlaying: Flow<Boolean> = playingState
     override val position: Flow<Duration> = positionState
     override val queue: Flow<List<PlaybackSong>> = queueState
     override val queueIndex: Flow<Int?> = queueIndexState
     override val volume: Flow<Int> = volumeState
 
-    /** Loads [queue] with the song at [index] current, at 0:00. */
+    /** Loads [queue] with the song at [index] current, playing at 0:00. */
     fun load(queue: List<PlaybackSong>, index: Int) {
         queueState.value = queue
         queueIndexState.value = index
+        playingState.value = true
         positionState.value = Duration.ZERO
     }
 
@@ -60,7 +73,13 @@ class FakePlayback @Inject constructor() :
     fun unload() {
         queueState.value = emptyList()
         queueIndexState.value = null
+        playingState.value = false
         positionState.value = Duration.ZERO
+    }
+
+    /** Whether the loaded song is playing, or paused. */
+    fun playing(isPlaying: Boolean) {
+        playingState.value = isPlaying
     }
 
     fun positionAt(position: Duration) {
@@ -76,8 +95,24 @@ class FakePlayback @Inject constructor() :
         return playResult
     }
 
+    override suspend fun pause() {
+        pauseCalls++
+    }
+
+    override suspend fun resume() {
+        resumeCalls++
+    }
+
     override suspend fun seekTo(position: Duration) {
         seekCalls += position
+    }
+
+    override suspend fun startSeeking(direction: SeekDirection) {
+        startSeekingCalls += direction
+    }
+
+    override suspend fun stopSeeking() {
+        stopSeekingCalls++
     }
 
     override suspend fun next() {

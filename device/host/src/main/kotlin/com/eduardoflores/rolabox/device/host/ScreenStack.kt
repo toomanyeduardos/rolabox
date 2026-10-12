@@ -51,11 +51,13 @@ fun rememberScreenStack(startKey: NavKey): ScreenStack {
 /**
  * Where the screens receive the wheel events that are theirs. A screen registers for its own key
  * while it is composed, so a screen that is still animating out never gets an event meant for the
- * one on top. A screen registers for MENU apart, and only while it is in a mode of its own.
+ * one on top. A screen registers for MENU apart, and only while it is in a mode of its own, and for ⏯
+ * apart, and only while its highlighted row can be played.
  */
 internal class ScreenInputs {
     private val handlers = mutableMapOf<NavKey, (WheelEvent) -> Unit>()
     private val menuHandlers = mutableMapOf<NavKey, () -> Unit>()
+    private val playPauseHandlers = mutableMapOf<NavKey, () -> Unit>()
 
     fun register(key: NavKey, handler: (WheelEvent) -> Unit) {
         handlers[key] = handler
@@ -83,13 +85,28 @@ internal class ScreenInputs {
         handler()
         return true
     }
+
+    fun registerPlayPause(key: NavKey, handler: () -> Unit) {
+        playPauseHandlers[key] = handler
+    }
+
+    fun unregisterPlayPause(key: NavKey) {
+        playPauseHandlers -= key
+    }
+
+    /** Gives ⏯ to the screen of [key] when it asked for it. False when it didn't, and ⏯ is a playback button. */
+    fun dispatchPlayPause(key: NavKey): Boolean {
+        val handler = playPauseHandlers[key] ?: return false
+        handler()
+        return true
+    }
 }
 
 /**
- * Decides where each wheel event goes (ADR-018, rule 5). The screens never see hold MENU or the
- * playback buttons, so none of them can change what those do, and they see MENU only while they are
- * in a mode of their own (ADR-019, rule 6). The playback buttons go to [onPlaybackEvent], so the
- * host doesn't depend on the playback area (ADR-019).
+ * Decides where each wheel event goes (ADR-018, rule 5). The screens never see hold MENU, ⏮, ⏭ or
+ * their holds, so none of them can change what those do. They see MENU only while they are in a mode of
+ * their own, and ⏯ only while their highlighted row can be played (ADR-019, rule 6). The playback buttons
+ * go to [onPlaybackEvent], so the host doesn't depend on the playback area (ADR-019).
  */
 internal class WheelEventRouter(
     private val stack: ScreenStack,
@@ -104,9 +121,10 @@ internal class WheelEventRouter(
 
             WheelEvent.HoldMenu -> stack.popToRoot()
 
+            WheelEvent.PlayPause -> if (!inputs.dispatchPlayPause(stack.top)) onPlaybackEvent(event)
+
             WheelEvent.Previous,
             WheelEvent.Next,
-            WheelEvent.PlayPause,
             is WheelEvent.HoldPrevious,
             is WheelEvent.HoldNext,
             -> onPlaybackEvent(event)

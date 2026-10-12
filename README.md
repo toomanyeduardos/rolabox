@@ -344,6 +344,7 @@ graph TD
     device_music_ui_impl --> device_library_api
     device_music_ui_impl --> device_music_ui_api
     device_playback_api --> device_library_api
+    device_playback_impl --> common_util
     device_playback_impl --> device_library_api
     device_playback_impl --> device_playback_api
     device_playback_testing --> device_library_api

@@ -18,8 +18,8 @@ import com.eduardoflores.rolabox.common.designsystem.wheel.WheelEvent
  * stack and routes the wheel's events, and knows nothing about the screens it shows.
  *
  * The caller gives it the screens as [entryProvider], and pushes on [stack] in response to the exits
- * they report. The host pops. [onPlaybackEvent] receives ⏮, ⏭, ⏯ and the holds of ⏮ and ⏭, which are
- * the same on every screen (ADR-018, rule 5).
+ * they report. The host pops. [onPlaybackEvent] receives ⏮, ⏭ and their holds, which are the same on
+ * every screen, and ⏯ unless the top screen plays its highlighted row with it (ADR-018, rule 5).
  */
 @Composable
 fun DeviceHost(

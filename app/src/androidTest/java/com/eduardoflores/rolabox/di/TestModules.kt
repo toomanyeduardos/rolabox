@@ -14,12 +14,14 @@ import com.eduardoflores.rolabox.common.util.Dispatcher
 import com.eduardoflores.rolabox.common.util.RolaboxDispatchers.Default
 import com.eduardoflores.rolabox.common.util.RolaboxDispatchers.IO
 import com.eduardoflores.rolabox.common.util.di.DispatchersModule
+import com.eduardoflores.rolabox.common.util.di.TimeSourceModule
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.components.SingletonComponent
 import dagger.hilt.testing.TestInstallIn
 import javax.inject.Singleton
+import kotlin.time.TimeSource
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestDispatcher
@@ -45,6 +47,16 @@ object TestDispatchersModule {
     @Provides
     @Dispatcher(Default)
     fun providesDefaultDispatcher(testDispatcher: TestDispatcher): CoroutineDispatcher = testDispatcher
+}
+
+// The time that has passed is the scheduler's, like the delays of the test dispatcher: a test that advances
+// it moves the playback's clock, and nothing plays on its own in the others.
+@Module
+@TestInstallIn(components = [SingletonComponent::class], replaces = [TimeSourceModule::class])
+object TestTimeSourceModule {
+    @Provides
+    fun providesTimeSource(testDispatcher: TestDispatcher): TimeSource.WithComparableMarks =
+        testDispatcher.scheduler.timeSource
 }
 
 @Module

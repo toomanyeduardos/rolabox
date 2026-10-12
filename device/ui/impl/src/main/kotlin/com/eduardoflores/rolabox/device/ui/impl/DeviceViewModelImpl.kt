@@ -6,23 +6,25 @@ import com.eduardoflores.rolabox.device.playback.api.PlaybackController
 import com.eduardoflores.rolabox.device.playback.api.PlaybackError
 import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
 import com.eduardoflores.rolabox.device.playback.api.PlaybackState
+import com.eduardoflores.rolabox.device.playback.api.SeekDirection
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
  * Observes the playback state and acts on it, and owns none of it (ADR-018, rule 10). The ends of the
- * queue and nothing being loaded are the controller's to handle, so ⏮ and ⏭ only ask.
+ * queue and nothing being loaded are the controller's to handle, so the buttons only ask.
  */
 @HiltViewModel
 internal class DeviceViewModelImpl @Inject constructor(
-    playbackState: PlaybackState,
+    private val playbackState: PlaybackState,
     private val playbackController: PlaybackController,
 ) : DeviceViewModel() {
     override val hasLoadedSong: StateFlow<Boolean> = playbackState.currentSong
@@ -51,6 +53,20 @@ internal class DeviceViewModelImpl @Inject constructor(
 
     override fun onPrevious() {
         viewModelScope.launch { playbackController.previous() }
+    }
+
+    override fun onPlayPause() {
+        viewModelScope.launch {
+            if (playbackState.isPlaying.first()) playbackController.pause() else playbackController.resume()
+        }
+    }
+
+    override fun onSeekStart(direction: SeekDirection) {
+        viewModelScope.launch { playbackController.startSeeking(direction) }
+    }
+
+    override fun onSeekEnd() {
+        viewModelScope.launch { playbackController.stopSeeking() }
     }
 
     private companion object {

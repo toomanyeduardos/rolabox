@@ -9,15 +9,20 @@ import com.eduardoflores.rolabox.common.designsystem.component.DeviceListRow
 
 /**
  * Connects a list of songs to its ViewModel, which the entry creates (ADR-021). A song opens
- * nothing on the display: center on it reports [onSongClick] with its id.
+ * nothing on the display: center on it reports [onSongClick] with its id, and so does ⏯, since a song
+ * is a row that can be played (ADR-018, rule 5).
  */
 @Composable
 internal fun SongsRoute(viewModel: SongsViewModel, onSongClick: (songId: Long) -> Unit) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val rows = remember(state) { state.map { DeviceListRow(it.title) } }
+    val onSongRow: (Int) -> Unit = { index ->
+        (state as? ListUiState.Loaded)?.items?.get(index)?.let { onSongClick(it.id.value) }
+    }
     WheelList(
         state = rows,
         emptyText = stringResource(R.string.music_no_songs),
-        onCenter = { index -> (state as? ListUiState.Loaded)?.items?.get(index)?.let { onSongClick(it.id.value) } },
+        onCenter = onSongRow,
+        onPlayPause = onSongRow,
     )
 }

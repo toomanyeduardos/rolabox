@@ -8,6 +8,8 @@ android {
 }
 
 dependencies {
+    // The application scope the clock runs in.
+    implementation(project(":common:util"))
     implementation(project(":device:library:api"))
     implementation(project(":device:playback:api"))
     testImplementation(project(":common:storage:api"))
