@@ -6,16 +6,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceListRow
+import com.eduardoflores.rolabox.device.host.ScreenTitle
 
 /**
  * Connects a list of songs to its ViewModel, which the entry creates (ADR-021). A song opens
  * nothing on the display: center on it reports [onSongClick] with its id, and so does ⏯, since a song
- * is a row that can be played (ADR-018, rule 5).
+ * is a row that can be played (ADR-018, rule 5). The screen's title is the name of what the songs are of.
  */
 @Composable
 internal fun SongsRoute(viewModel: SongsViewModel, onSongClick: (songId: Long) -> Unit) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val title by viewModel.title.collectAsStateWithLifecycle()
     val rows = remember(state) { state.map { DeviceListRow(it.title) } }
+    ScreenTitle(title)
     val onSongRow: (Int) -> Unit = { index ->
         (state as? ListUiState.Loaded)?.items?.get(index)?.let { onSongClick(it.id.value) }
     }

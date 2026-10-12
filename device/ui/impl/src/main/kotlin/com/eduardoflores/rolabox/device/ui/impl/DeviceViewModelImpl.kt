@@ -31,6 +31,9 @@ internal class DeviceViewModelImpl @Inject constructor(
         .map { it != null }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), false)
 
+    override val isPlaying: StateFlow<Boolean> = playbackState.isPlaying
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), false)
+
     private val playFailureState = MutableStateFlow<PlayFailure?>(null)
     override val playFailure: StateFlow<PlayFailure?> = playFailureState.asStateFlow()
 

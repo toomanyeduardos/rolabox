@@ -30,6 +30,7 @@ import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxType
 import com.eduardoflores.rolabox.common.designsystem.wheel.WheelEvent
 import com.eduardoflores.rolabox.device.host.HandleMenu
 import com.eduardoflores.rolabox.device.host.HandleWheelEvents
+import com.eduardoflores.rolabox.device.host.ScreenTitle
 
 private val ScreenPadding = 12.dp
 private val ScreenTopPadding = 10.dp
@@ -47,6 +48,7 @@ private const val TITLE_MAX_LINES = 2
 @Composable
 internal fun NowPlayingRoute(viewModel: NowPlayingViewModel) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    ScreenTitle(stringResource(R.string.now_playing_title))
     HandleWheelEvents { event ->
         when (event) {
             is WheelEvent.Turn -> viewModel.onTurn(event.steps)

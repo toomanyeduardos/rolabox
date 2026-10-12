@@ -6,6 +6,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceListRow
+import com.eduardoflores.rolabox.device.host.ScreenTitle
 
 /**
  * Connects the Artists list to its ViewModel, which the entry creates (ADR-021). Center on an artist
@@ -15,6 +16,7 @@ import com.eduardoflores.rolabox.common.designsystem.component.DeviceListRow
 internal fun ArtistsRoute(viewModel: ArtistsViewModel, onArtistClick: (artistId: Long) -> Unit) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val rows = remember(state) { state.map { DeviceListRow(it.name, opensSubmenu = true) } }
+    ScreenTitle(stringResource(R.string.music_artists_title))
     WheelList(
         state = rows,
         emptyText = stringResource(R.string.music_no_artists),

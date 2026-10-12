@@ -17,11 +17,15 @@ internal enum class PlayFailure {
 
 /**
  * What the device does with playback: the song click, the ⏮, ⏭ and ⏯ buttons, and whether something is
- * loaded for the main menu's row (ADR-018). [DeviceViewModelImpl] implements it (ADR-021).
+ * loaded and playing, for the main menu's row and the header's record (ADR-018). [DeviceViewModelImpl]
+ * implements it (ADR-021).
  */
 internal abstract class DeviceViewModel : ViewModel() {
     /** Whether a song is loaded, so the main menu shows its Now Playing row. */
     abstract val hasLoadedSong: StateFlow<Boolean>
+
+    /** Whether the loaded song is playing, so the header's record spins. */
+    abstract val isPlaying: StateFlow<Boolean>
 
     /** Why the last song click couldn't play, until [onPlayFailureShown]. `null` when there is nothing to show. */
     abstract val playFailure: StateFlow<PlayFailure?>

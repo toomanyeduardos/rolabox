@@ -1,6 +1,7 @@
 package com.eduardoflores.rolabox.device.host
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
@@ -99,6 +100,28 @@ internal class ScreenInputs {
         val handler = playPauseHandlers[key] ?: return false
         handler()
         return true
+    }
+}
+
+/**
+ * The titles the screens gave for the display's header (ADR-019, rule 9). A screen gives its own by its
+ * key, and the header shows the one of the screen on top of [ScreenStack]. A title is kept while its
+ * screen is under the top one and no longer composed, so it is there when MENU returns to it.
+ */
+internal class ScreenTitles {
+    private val titles = mutableStateMapOf<NavKey, String>()
+
+    /** [title] is `null` while the screen doesn't know it yet. */
+    fun set(key: NavKey, title: String?) {
+        if (title == null) titles -= key else titles[key] = title
+    }
+
+    /** The title the screen of [key] gave, or `null` when it gave none. */
+    fun titleOf(key: NavKey): String? = titles[key]
+
+    /** Forgets the titles of the screens that left the stack, whose keys aren't in [keys]. */
+    fun retainOnly(keys: List<NavKey>) {
+        (titles.keys - keys.toSet()).forEach { titles -= it }
     }
 }
 

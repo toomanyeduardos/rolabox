@@ -42,6 +42,10 @@
   highlighted row, and the highlight is the screen's own state, so the handler of the playback
   buttons can't know which row it is. Building ⏯ (39.02) needed it. It is the same shape as MENU
   for a mode. ⏮, ⏭, their holds, hold MENU and the system's back still never reach a screen.
+- **Revised 2026-10-12:** The contract for the title, and the record, are in the code (Conformance).
+  39.03 built them: a screen gives its title with `ScreenTitle`, and `:device:ui:impl` gives the host
+  whether an item is loaded and whether it is playing. Their unit tests are `ScreenTitlesTest`, in
+  `:device:host`. No rule changes.
 
 ## Context
 
@@ -261,5 +265,6 @@ that reports a call to the design system's `DeviceDisplay` or `DeviceHeader` any
 `:device:host` and `:common:designsystem`, which declares and previews them. It runs in `detekt`, part
 of `./gradlew check` and of the CI `build` job, and its unit tests have a violating and a passing
 case. An exception is a `@Suppress` that names the rule. The contract for the title, and the record,
-are ahead of the code until 39.03, which brings their unit tests in `:device:host`. The other rules
-are reviewed.
+are behavior, with no syntax for a build check to read: they are covered by `ScreenTitlesTest`, the
+unit tests of `:device:host` that 39.03 brought. That every screen gives a title, and the other
+rules, are reviewed.

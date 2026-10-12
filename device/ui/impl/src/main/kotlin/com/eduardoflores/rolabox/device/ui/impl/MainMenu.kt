@@ -15,6 +15,7 @@ import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxTheme
 import com.eduardoflores.rolabox.common.designsystem.wheel.WheelEvent
 import com.eduardoflores.rolabox.device.host.DeviceScreen
 import com.eduardoflores.rolabox.device.host.HandleWheelEvents
+import com.eduardoflores.rolabox.device.host.ScreenTitle
 import com.eduardoflores.rolabox.device.ui.api.MainMenuKey
 
 /**
@@ -59,6 +60,8 @@ private fun MainMenu(
     var highlightedOrdinal by rememberSaveable { mutableIntStateOf(MainMenuRow.Music.ordinal) }
     // A highlighted row that is gone leaves the highlight on Music.
     val highlighted = MainMenuRow.entries[highlightedOrdinal].takeIf { it in shown } ?: MainMenuRow.Music
+    // The app's name is this screen's title, and no other's (ADR-018, rule 19).
+    ScreenTitle(stringResource(R.string.device_title))
     HandleWheelEvents { event ->
         when (event) {
             is WheelEvent.Turn -> {

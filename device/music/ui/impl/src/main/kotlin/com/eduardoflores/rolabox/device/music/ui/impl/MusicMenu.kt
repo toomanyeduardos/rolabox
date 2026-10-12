@@ -6,6 +6,7 @@ import com.eduardoflores.rolabox.common.designsystem.component.DeviceList
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceListRow
 import com.eduardoflores.rolabox.common.designsystem.wheel.WheelEvent
 import com.eduardoflores.rolabox.device.host.HandleWheelEvents
+import com.eduardoflores.rolabox.device.host.ScreenTitle
 import com.eduardoflores.rolabox.device.host.rememberListHighlight
 
 /** The rows of the Music menu, in the order they are shown. */
@@ -18,6 +19,7 @@ private enum class MusicMenuRow { Artists, Albums, Songs, Genres, Playlists }
 @Composable
 internal fun MusicMenuRoute(onArtistsClick: () -> Unit) {
     val highlight = rememberListHighlight()
+    ScreenTitle(stringResource(R.string.music_title))
     HandleWheelEvents { event ->
         when (event) {
             is WheelEvent.Turn -> highlight.move(event.steps, MusicMenuRow.entries.size)

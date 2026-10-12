@@ -37,6 +37,10 @@ class RolaboxAndroidLibraryConventionPlugin : Plugin<Project> {
 
             extensions.configure<LibraryAndroidComponentsExtension> {
                 finalizeDsl { it.enforceNoProductFlavors(path) }
+                // A module without instrumented tests builds no androidTest APK. One with test fixtures would
+                // package them in it, and Paparazzi's are for the JVM only (ADR-016).
+                val hasAndroidTests = file("src/androidTest").exists()
+                beforeVariants { it.androidTest.enable = hasAndroidTests }
             }
         }
     }

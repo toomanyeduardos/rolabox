@@ -1,4 +1,6 @@
 <resources>
+    <string name="music_title">Music</string>
+    <string name="music_artists_title">Artists</string>
     <string name="music_menu_artists">Artists</string>
     <string name="music_menu_albums">Albums</string>
     <string name="music_menu_songs">Songs</string>
