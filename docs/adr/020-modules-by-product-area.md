@@ -47,6 +47,13 @@
   (The device assembles itself, rule 14), as [ADR-018](018-device-navigation.md) decides and
   [ADR-019](019-device-host-module.md)'s rule 3 now allows (38.06). The host still does every pop.
   The decision is unchanged.
+- **Revised 2026-10-12:** The settings list is a device screen, and only the screens of a
+  contributed section are full screens (Settings, Leaving the display, Consequences, rule 17).
+  [ADR-018](018-device-navigation.md)'s rule 11 changed: a review of the project on 2026-10-11
+  found that Settings was a full screen only because the account needs the keyboard. So
+  `:device:settings:impl` uses `:device:host`, as rules 5 and 8 already allow, the main menu's
+  Settings row is an ordinary exit, and the generic exit is left to the rows of contributed
+  sections. The slots, the Hilt set and who depends on whom are unchanged (39.07).
 
 ## Context
 
@@ -251,16 +258,23 @@ So the order of the settings list is in one file, in the device, and the device 
 account slot exists without knowing who fills it. Adding a new kind of section means adding a slot
 in `:device:settings:api`.
 
-Settings and everything under it stay full screens on the app stack (ADR-018, rule 11). So a
-contributed section never needs `:device:host`.
+The settings list and the device's own settings are device screens (ADR-018, rule 11):
+`:device:settings:impl` uses `:device:host` like any other part with screens in the display, and
+`:device:ui:impl` pushes its key on the screen stack. The list draws every row, a contributed one
+too, as a row of the display: one line, with a value where the row has one.
+
+What is behind a contributed row is the contributor's, and it is a full screen on the app stack:
+the account needs the keyboard. So a contributed section still never needs `:device:host`, and
+`:auth:settings:impl` still depends on `:device:settings:api` alone.
 
 ### Leaving the display
 
 One exit is generic: **"open this key as a full screen."** The device's entry contract takes it as
 a lambda, `:app` implements it by pushing on the app stack, and it is passed down unchanged. It is
-used by the main menu's Settings row and by contributed settings sections, whose exits the device
-can't know. A section opens only keys of its own area, so the account section opens sign-in with a
-key from `:auth:ui:api`. No other screen uses it.
+used by the rows of contributed settings sections, whose exits the device can't know: the settings
+list reports it when such a row is opened. A section opens only keys of its own area, so the account
+section opens sign-in with a key from `:auth:ui:api`. No other screen uses it. The main menu's
+Settings row doesn't: Settings is in the display, and its row is mapped to a key like Music's.
 
 It passes a key where ADR-012's rule 5 asks for an identifier. This is a narrow navigator, accepted
 so that the device doesn't have to know auth, and it is to be looked at again once it has been
@@ -355,6 +369,8 @@ The Music menu is built after step 3, so the first feature with device screens i
   goldens move with them.
 - A missing contribution is found by a test, not by the compiler.
 - There is a second kind of exit, the generic one, and its limit to settings is a convention.
+- The settings list is the one device screen with rows it didn't declare, and the one place where
+  a row of the display opens a full screen.
 - `:api` modules of parts with screens put Navigation 3's runtime, and with it the Compose runtime,
   on a JVM classpath.
 - Until step 4 of the migration, other ADRs name modules that no longer exist, and are read through
@@ -400,9 +416,10 @@ The Music menu is built after step 3, so the first feature with device screens i
 16. `[convention]` The order of the settings list is the list of slots in `:device:settings:api`.
     A section is contributed through a Hilt set and fills one slot, and a slot has at most one
     section.
-17. `[convention]` The generic "open this key as a full screen" exit is used only by the main
-    menu's Settings row and by contributed settings sections, and a section opens only keys of its
-    own area.
+17. `[convention]` The generic "open this key as a full screen" exit is used only by the rows of
+    contributed settings sections, and a section opens only keys of its own area. The settings list
+    and the device's own settings are device screens, and a contributed section's screens are full
+    screens.
 18. `[convention]` When a `:common` module needs something from a product area, it declares the
     interface in its own `:api`, and the area implements it.
 19. `[convention]` A use case belongs to the data part of the area that owns its outcome

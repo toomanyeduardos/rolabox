@@ -13,7 +13,7 @@ import org.jetbrains.kotlin.psi.KtFile
  *
  * It reads the syntax only. A file belongs to the device when it is in the device host's package, or
  * when it imports the host's API or one of the design system's device components, as a device screen
- * does. A full screen, such as Settings, is neither, and its back is ADR-012's. In such a file the rule
+ * does. A full screen, such as the account, is neither, and its back is ADR-012's. In such a file the rule
  * reports a back handler, and a `NavDisplay` that isn't built from its `sceneState`: every other
  * overload installs the library's back handler, which takes back whenever a screen is under the top one.
  */

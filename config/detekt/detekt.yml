@@ -83,10 +83,41 @@ rolabox:
     active: true
   TouchInputInDeviceScreen:
     # ADR-018 rule 3: a device screen is operated by the wheel only. A file is a device screen when it
-    # imports the device host or a device component, so a full screen such as Settings is not checked.
+    # imports the device host or a device component, so a full screen such as the account is not checked.
     # The host and the design system implement the wheel's input, and are left out.
     active: true
     excludes: ['**/device/host/**', '**/common/designsystem/**']
+  TouchComponentInDeviceScreen:
+    # ADR-018 rule 11: a screen that needs touch or the keyboard is a full screen, and no screen mixes
+    # the two. The rule reports a component that is operated by touch or by the keyboard in a device
+    # screen file. A new touch component of the design system is added to `components` (the rule's own
+    # default is the same list).
+    active: true
+    excludes: ['**/device/host/**', '**/common/designsystem/**']
+    components:
+      - 'PrimaryButton'
+      - 'SecondaryButton'
+      - 'BackKey'
+      - 'WordmarkHeader'
+      - 'RolaboxTopBar'
+      - 'RowKey'
+      - 'ChoiceKey'
+      - 'ChoiceGroup'
+      - 'RecessedField'
+      - 'FooterLink'
+      - 'UnderlinedLink'
+      - 'TextAction'
+      - 'Button'
+      - 'TextButton'
+      - 'OutlinedButton'
+      - 'IconButton'
+      - 'TextField'
+      - 'OutlinedTextField'
+      - 'BasicTextField'
+      - 'Switch'
+      - 'Checkbox'
+      - 'RadioButton'
+      - 'Slider'
   SystemBackInDevice:
     # ADR-018 rule 9: the system's back leaves the app from every device screen. The rule reports a back
     # handler, or a NavDisplay that isn't built from its sceneState, in the device host and in a device
@@ -110,6 +141,11 @@ rolabox:
       - 'DeviceProgressBar'
       - 'ProgressBarMode'
       - 'DeviceCoverArtPlaceholder'
+  DeviceDisplayOutsideHost:
+    # ADR-019 rule 9: only the device host draws the display and its header. The design system declares
+    # and previews the two, and is left out with the host.
+    active: true
+    excludes: ['**/device/host/**', '**/common/designsystem/**']
   FixedHeightAroundText:
     # ADR-017 rule 3: a container of text grows with it.
     active: true

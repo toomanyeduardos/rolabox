@@ -60,6 +60,36 @@
   the app goes to the background: its 3 s wait would otherwise seek after the user had left.
   Whether the screen stack is still there on return is left to the platform. Back from a full
   screen is unchanged. Rule 9 is `[enforced]`, with its check named under Conformance.
+- **Revised 2026-10-12:** The playback state says whether the loaded item is playing (What each
+  control does, Playback state, rule 10). A review of the project on 2026-10-11 found that the
+  device had no "paused": the state had no playing flag, so ⏯ and the holds of ⏮ and ⏭ were
+  received and ignored. Only ⏯ and playing a row change whether the item is playing, and ⏮, ⏭, a
+  hold and a seek leave it as it was. The in-memory implementation gains a clock so that paused
+  means something, and is still temporary until the playback ADR (39.02).
+- **Revised 2026-10-12:** The display's header shows the title of the screen on top of the screen
+  stack, and the record while an item is loaded: spinning while it plays, still while it is paused
+  (Two stacks, rule 19). The review found that the header said "Rolabox" on every screen, so it
+  never said where the user was, and that the record was never shown. The screen gives its title
+  through the host's contract ([ADR-019](019-device-host-module.md), rule 9), and the app's name is
+  the main menu's title only (39.03).
+- **Revised 2026-10-12:** ⏮ restarts the loaded item when its position is past 3 s, and goes to the
+  previous item only at or below it. On the first item it always restarts (What each control does,
+  Alternatives, Consequences, rules 16 and 17). The review found that ⏮ always went to the previous
+  song, where the player the device is drawn after restarts the song first. The threshold belongs
+  to the playback area. ⏭ is unchanged (39.04).
+- **Revised 2026-10-12:** The device's settings are device screens, and only the account leaves the
+  display: "Settings is the way out of the device" is now "Account is the way out" (The system's
+  back, Full screens, Alternatives, Consequences, rule 11, Conformance). The review found that
+  Settings was a Material full screen only because the account needs the keyboard, and the settings
+  themselves need neither touch nor the keyboard. Rule 11 is `[enforced]` for a screen that mixes
+  the two, by a new check, `TouchComponentInDeviceScreen`. [ADR-020](020-modules-by-product-area.md)
+  is revised with it (39.07).
+- **Revised 2026-10-12:** A list row is one line at every font scale, and the highlighted row
+  scrolls its text sideways when it doesn't fit, or wraps it where the system's animations are off
+  (Large text, Alternatives, Consequences, rule 14). The review found that long titles wrapped, so
+  rows had different heights and one title could take a third of the display. Every row's text is
+  still reached in full, by highlighting it. It is an exception to
+  [ADR-017](017-accessibility.md)'s rules 4 and 5, recorded there as rule 12 (39.09).
 
 ## Context
 
@@ -92,8 +122,11 @@ relates to MENU. [ADR-017](017-accessibility.md) requires text to follow the sys
 and the display is small.
 
 **Target state.** The device was written after this ADR, and the rules apply to code as it is
-written. Rules 3 and 12 have a build check (see Conformance under Rules). The rest are `[convention]`
-and are checked in review, and rules 8, 10 and 11 have no code to be checked against yet.
+written. Rules 3, 9, 11, 12 and 15 have a build check (see Conformance under Rules). The rest are
+`[convention]` and are checked in review. Since the revisions of 2026-10-12, five rules are ahead of
+the code, each until its ticket: playing and paused in rule 10 (39.02), the settings in the display
+in rule 11 (39.07), one-line rows in rule 14 (39.09), ⏮ in rule 17 (39.04), and the header in rule
+19 (39.03).
 
 ## Decision
 
@@ -120,6 +153,13 @@ as its entry is on the stack, so MENU returns to the row the user left, also aft
 
 **The main menu belongs to `:app`,** as a destination no feature owns (ADR-012). It gains a
 **Now Playing** row while an item is loaded. The row is hidden until then, and not shown disabled.
+
+**The header says where the user is.** The display's header shows the title of the screen on top of
+the screen stack, and that screen gives it, through the host's contract
+([ADR-019](019-device-host-module.md)): "Artists" on the list of artists, and the artist's name on
+the list of their albums. The app's name is the main menu's title, and no other screen's. Beside the
+title, the header's record is shown while an item is loaded: it spins while the item plays, and is
+still while it is paused.
 
 ### The wheel is an input device with a fixed vocabulary
 
@@ -160,7 +200,8 @@ triggers the exit, not how it is reported.
 
 ### What each control does
 
-An item is **loaded** from the moment it starts until its queue ends. A paused item is loaded.
+An item is **loaded** from the moment it starts until its queue ends. A loaded item is either
+**playing** or **paused**: a paused item is loaded.
 
 | Control | On a list | On Now Playing |
 | --- | --- | --- |
@@ -168,7 +209,8 @@ An item is **loaded** from the moment it starts until its queue ends. A paused i
 | Center | Opens the highlighted row, or plays it | Selects scrub. In scrub: seeks to the marker and leaves scrub |
 | MENU | Goes back one screen. Does nothing on the main menu | In scrub: leaves scrub without seeking. Otherwise: goes back one screen |
 | Hold MENU | Goes to the main menu | Goes to the main menu |
-| ⏮ ⏭ | Previous or next item if one is loaded. Otherwise nothing | Previous or next item. In scrub: leaves scrub without seeking first |
+| ⏮ | Restarts the loaded item, or goes to the previous one at its start. Nothing if none is loaded | The same. In scrub: leaves scrub without seeking first |
+| ⏭ | Next item if one is loaded. Otherwise nothing | Next item. In scrub: leaves scrub without seeking first |
 | Hold ⏮ ⏭ | Seeks in the loaded item. Otherwise nothing | Seeks |
 | ⏯ | On a playable row, plays it. On any other row, plays or pauses the loaded item | Plays or pauses |
 
@@ -180,6 +222,9 @@ An item is **loaded** from the moment it starts until its queue ends. A paused i
   episode. On every other row ⏯ plays or pauses the loaded item, and does nothing when nothing is
   loaded. So on a list of songs ⏯ never pauses: pausing is done from a list that isn't playable,
   or from Now Playing.
+- **Only ⏯ and playing a row change whether the item is playing.** ⏯ pauses a playing item, and
+  plays a paused one from where it was. Playing a row always starts playing. ⏮, ⏭, their holds and
+  a seek move in the item or in the queue and leave the rest as it was: a paused item stays paused.
 - **Scrub is a mode of the Now Playing screen, not a destination.** Center selects it, and while it
   is selected a turn moves a marker on the bar, with its times. The music keeps playing from where
   it was. Center is the accept: it seeks to the marker and leaves scrub. So is waiting: scrub ends
@@ -189,15 +234,20 @@ An item is **loaded** from the moment it starts until its queue ends. A paused i
   after 2 s. The mode and the marker are the screen's own state, and the screen stack doesn't change.
 - **Scrub belongs to the song it was selected on.** When another song is loaded, by ⏮, by ⏭ or by
   the queue moving on, or when the queue ends, scrub ends and nothing is sought: a marker is never
-  applied to a song it wasn't set on.
+  applied to a song it wasn't set on. ⏮ ends scrub also when it restarts the same song.
 - **Scrub ends when the app goes to the background,** and nothing is sought. The app is left with
   the system's back or with Home, and the 3 s wait is not an accept the user can see from outside
   the app. Now Playing is on the time when they return.
 - **Playing a row queues its whole list, and starts from that row.** The queue is the list the row
   was selected from, in the order it is shown, including the rows before it. Song 3 of 10 is
-  followed by songs 4 to 10, and ⏮ goes back to song 2. `:app` then pushes Now Playing.
-- **⏮ and ⏭ start the previous and the next item of the queue at 0:00,** wherever the loaded item
-  is. ⏮ does nothing on the first item, and ⏭ nothing on the last.
+  followed by songs 4 to 10, and ⏮ at its start goes back to song 2. `:app` then pushes Now Playing.
+- **⏮ restarts the loaded item first.** When the item's position is past 3 s, ⏮ starts it again at
+  0:00. At 3 s or less it starts the previous item of the queue at 0:00, so a second ⏮ soon after
+  the first goes back one. The first item has no previous one, and ⏮ restarts it at any position.
+  The threshold is the playback area's, since the position is its state: the handler of ⏮ asks for
+  the previous item, and doesn't read the position.
+- **⏭ starts the next item of the queue at 0:00,** wherever the loaded item is, and does nothing
+  on the last.
 - **Now Playing is only ever the top of the screen stack.** It is pushed by playing something, or by
   the main menu's Now Playing row. When the queue ends, nothing is loaded: `:app` pops Now Playing
   if it is showing, and the main menu's row goes away.
@@ -213,9 +263,9 @@ phone's back button belongs to the phone: after sign-in it has one job, at any d
 back previews the home screen on that gesture, not the screen under the top one. Playback continues
 after leaving.
 
-**A full screen is not a device screen,** and back there is ADR-012's: in Settings, and on
-everything under it, back goes back one screen on the app stack, and from Settings it returns to
-the device with its screen stack as it was left.
+**A full screen is not a device screen,** and back there is ADR-012's: on the account, and on
+everything under it, back goes back one screen on the app stack, and from the account it returns to
+the device with its screen stack as it was left, on the Settings menu.
 
 **Whether the screen stack is there on return is the platform's decision.** The app does nothing of
 its own when it is left. On Android 12 and later, back from an app's first screen moves the task to
@@ -226,9 +276,11 @@ the background, so the screen stack and its highlights are as they were, as afte
 
 What is loaded, whether it is playing, its position and its queue belong to the playback area, and
 are exposed as `Flow`s ([ADR-006](006-async-api-shape.md)). The playback state in the `:api` is a
-set of them: the current song, its position, the queue with its index, and the volume. Until the
-playback ADR there is no engine: the implementation in `:device:playback:impl` is temporary and
-keeps the state in memory, and is replaced when the engine is chosen. The fake in
+set of them: the current song, whether it is playing, its position, the queue with its index, and
+the volume. Until the playback ADR there is no engine: the implementation in `:device:playback:impl`
+is temporary and keeps the state in memory, with a clock in place of the audio. While the item
+plays its position advances, at its end the next item starts, and after the last one nothing is
+loaded. While it is paused the position stays. It is replaced when the engine is chosen. The fake in
 `:device:playback:testing` is what tests use. `:app` observes them for the header's
 record, the Now Playing row and the ⏮ ⏭ ⏯ buttons, and the Now Playing screen observes them for its
 content. No entry's ViewModel owns playback state, since every entry can be popped while the music
@@ -248,16 +300,22 @@ says so in the display.
 
 ### Full screens
 
-Screens that need touch or the keyboard are not device screens: the auth flow, Settings and the
-account. A full screen is an ordinary Material screen, like Sign in: it fills the window, it is
-operated by touch, and the device's body, display and wheel are not drawn. It is an entry on the
-app stack, pushed on top of the device.
+Screens that need touch or the keyboard are not device screens: the auth flow and the account. A
+full screen is an ordinary Material screen, like Sign in: it fills the window, it is operated by
+touch, and the device's body, display and wheel are not drawn. It is an entry on the app stack,
+pushed on top of the device.
 
-**Settings is the way out of the device.** The main menu's Settings row opens Settings as a full
-screen, and everything under it stays outside the device. A row on the display opens a full screen
-by reporting an exit, like any other, and back returns to the device with its screen stack as it
-was. A screen is one or the other: a device screen has no touch handling, and a full screen doesn't
-use the wheel.
+**The device's settings are device screens.** Settings is a menu in the display, like Music: its
+rows are the display's rows, the wheel moves through them, and a setting with choices opens a list
+of them. None of it needs touch or the keyboard, so none of it is a full screen. Where the settings
+are stored is decided on its own (39.05).
+
+**Account is the way out of the device.** The Settings menu has an Account row, which opens the
+account as a full screen, and everything under it stays outside the device. Nothing else leaves the
+display. A row on the display opens a full screen by reporting an exit, like any other, and back
+returns to the device with its screen stack as it was. A screen is one or the other: a device screen
+has no touch handling and no component that is operated by touch or by the keyboard, and a full
+screen doesn't use the wheel.
 
 ### Where the code lives
 
@@ -284,10 +342,22 @@ layout, and there are no side-by-side scenes.
 ### Large text
 
 **Text on the display follows the system font scale**
-([ADR-017](017-accessibility.md)). Rows grow with their text, so fewer of them fit, and the list
-still reaches every row with the wheel. Now Playing can't scroll, since the wheel is its volume, so
-its layout has to fit the display at 1.5x by giving space to the text first and to the cover art
-last.
+([ADR-017](017-accessibility.md)). A row is as tall as its text at that scale, so fewer rows fit,
+and the list still reaches every row with the wheel. Now Playing can't scroll, since the wheel is
+its volume, so its layout has to fit the display at 1.5x by giving space to the text first and to
+the cover art last.
+
+**A list row is one line, at every font scale.** A text that doesn't fit is cut with an ellipsis,
+and the highlighted row scrolls its text sideways, from its start to its end and around again. The
+wheel reaches every row, so every row's full text can be read by highlighting it. Rows wrapped
+their text until 2026-10-12: that gave rows of different heights, and one long title could take a
+third of the display. This is an exception to ADR-017's rules 4 and 5, which ask for wrapping, and
+ADR-017 records it as its rule 12. The scrolling is the row's own, in the design system, and a
+screen does nothing for it.
+
+**Where the system's animations are off, the highlighted row wraps.** The scrolling is an
+animation, and a user who has turned animations off would have no way to read a long row. For them
+the highlighted row, and only it, shows its text on as many lines as it needs.
 
 **The wheel doesn't scale:** its MENU label and its icons keep their size, as parts of a control
 whose shape is fixed. That is an exception to ADR-017's rule 2, and it is marked where it is made,
@@ -307,7 +377,7 @@ as ADR-017's rule 10 requires.
 
 - **One stack: device screens as entries of the app stack.** No second `NavDisplay`. But the body
   and the wheel would be drawn by every entry or around the whole `NavDisplay`, so the auth and
-  Settings screens would need a way out of them, and a transition between two device screens would
+  account screens would need a way out of them, and a transition between two device screens would
   move the whole device instead of the display's content.
 - **Keep ADR-012's sections,** with Music, Podcasts and Audiobooks each keeping a stack. It would
   remember where the user was in each. But the device has no control to switch sections with, and
@@ -333,6 +403,21 @@ as ADR-017's rule 10 requires.
 - **The screen stack starts at the main menu again after leaving with back,** on every Android
   version. One behavior to describe. But the host would have to handle back to reset it, and on
   Android 12 and later the app would differ from leaving with Home for no reason the user can see.
+- **⏮ always goes to the previous item.** One press, one meaning, and the decision until
+  2026-10-12. But hearing a song again from its start took ⏮ and then ⏭, and it isn't what the
+  player the device is drawn after does.
+- **Settings as a full screen, with the account inside it.** The decision until 2026-10-12, made
+  because the account needs the keyboard. But the device's settings need neither touch nor the
+  keyboard, and opening them replaced the device with a Material screen.
+- **The account in the display too,** with its email and password entered by a letter picker on the
+  wheel. Nothing would leave the device. But text input on the device isn't decided, and a password
+  entered one letter at a time is slow and easy to watch.
+- **List rows that wrap their text.** Nothing is ever cut, and it is what ADR-017 asks of every
+  other text. The decision until 2026-10-12. But rows have different heights, a long title takes
+  the room of three rows, and at 1.5x a list of songs shows two or three of them.
+- **Every row scrolls its text, not only the highlighted one.** No row is ever cut for long. But a
+  display full of moving text is hard to read, and the highlight stops being the one thing that
+  moves.
 - **A hand-rolled stack for the display,** since it is a simple list of screens. No nested
   `NavDisplay`. But saved state, a ViewModel per entry and transitions would be rebuilt by hand,
   which ADR-012 already rejected for the app.
@@ -356,8 +441,15 @@ as ADR-017's rule 10 requires.
   main menu on 10 and 11.
 - A device screen can't be operated by touch at all. Until the screen reader section exists, the
   device is not usable with TalkBack, and that is a known gap, not an accepted end state.
-- At large font scales the display shows few rows, and Now Playing has little room. The design has
-  to be checked at 1.5x for every screen ([ADR-016](016-screenshot-testing.md)).
+- At large font scales the display shows fewer rows, each of one line, and Now Playing has little
+  room. The design has to be checked at 1.5x for every screen ([ADR-016](016-screenshot-testing.md)).
+- A long row is read by highlighting it and waiting for it to scroll, which is slower than reading a
+  wrapped one. A golden shows a row at the start of its text, so that the rest can be reached is
+  shown by a test of the row, not by the golden.
+- ⏮ has two meanings, told apart by 3 s of position. Going back one song from the middle of
+  another takes two presses.
+- Leaving the device for the account takes two steps: Settings, then Account.
+- The header is empty for a moment on a screen whose title is loaded, such as an artist's name.
 - The display's size comes from the device's layout and not from its text, which ADR-017's check on
   fixed heights around text is likely to flag. It is laid out without a fixed height, or it is an
   exception marked as ADR-017's rule 10 requires.
@@ -393,39 +485,55 @@ as ADR-017's rule 10 requires.
    stack and never leaves a mode, and MENU is the only way back inside the display. Neither the
    device host nor a screen handles the system's back. On a full screen, back is ADR-012's.
    Enforced for the handling: that back leaves the app is tested on a device.
-10. `[convention]` Playback state belongs to the playback area and is observed as `Flow`s. No
-    entry's ViewModel owns it.
-11. `[convention]` A screen that needs touch or the keyboard is a full screen on the app stack, not
-    a device screen. No screen mixes the two. Settings and everything under it are full screens,
-    opened from the main menu.
+10. `[convention]` Playback state belongs to the playback area and is observed as `Flow`s, and
+    whether the loaded item is playing is part of it. A paused item is loaded. Only ⏯ and playing a
+    row change whether it is playing. No entry's ViewModel owns playback state.
+11. `[enforced]` A screen that needs touch or the keyboard is a full screen on the app stack, not
+    a device screen. No screen mixes the two. The device's settings are device screens. The account
+    and everything under it are full screens, opened from the Settings menu's Account row, and
+    nothing else leaves the display. Enforced for the mixing: which screens are which is checked in
+    review.
 12. `[enforced]` The device's body, display, rows and wheel, and the wheel's event vocabulary,
     live in `:common:designsystem`. The screen stack and the routing of events live in `:device:host`
     (ADR-019). The main menu and the mapping from exits to keys live in `:app`. Enforced for the
     design-system part only: where the host, the main menu and the mapping live is checked in review.
 13. `[convention]` The app is locked to portrait, and the device has one layout.
-14. `[convention]` Text on the display follows the system font scale (ADR-017). The wheel's label
-    and icons don't, as an exception marked under ADR-017's rule 10.
+14. `[convention]` Text on the display follows the system font scale (ADR-017). A list row is one
+    line: a text that doesn't fit ends in an ellipsis, and the highlighted row scrolls it sideways,
+    or wraps it where the system's animations are off (ADR-017, rule 12). The wheel's label and
+    icons don't follow the font scale, as an exception marked under ADR-017's rule 10.
 15. `[enforced]` The playback area is `:device:playback:{api,impl,testing}` and
     `:device:playback:ui:{api,impl}`. No `:device:playback:ui:*` module depends on
     `:device:playback:impl`, or on `:device:playback:testing` outside test configurations.
 16. `[convention]` On Now Playing, center selects scrub and no selection means volume. A turn moves
     a marker in scrub mode, without seeking, and changes the volume otherwise. Center in scrub, or
     3 s without a turn, seeks to the marker and leaves scrub. MENU in scrub leaves it without
-    seeking, and the screen stays. Scrub ends without seeking when another song is loaded, the
-    queue ends or the app goes to the background. The volume bar returns to the time after 2 s. The Now Playing row of the main menu
+    seeking, and the screen stays. Scrub ends without seeking when another song is loaded, ⏮
+    restarts the song, the queue ends or the app goes to the background. The volume bar returns to the time after 2 s. The Now Playing row of the main menu
     is hidden until an item is loaded.
 17. `[convention]` Playing a row queues the whole list it was selected from, in the order it is
-    shown, and starts from that row. ⏮ and ⏭ start the previous and the next item of the queue at
-    0:00, and do nothing at its ends.
+    shown, and starts from that row. ⏮ restarts the loaded item at 0:00 when its position is past
+    3 s, and starts the previous item at 0:00 otherwise. On the first item it always restarts. ⏭
+    starts the next item at 0:00, and does nothing on the last. The threshold belongs to the
+    playback area.
 18. `[convention]` A play that fails loads nothing, pushes nothing, and tells the user why in a
     toast, with a message for each kind of failure. No failure of an action is silent.
+19. `[convention]` The display's header shows the title of the screen on top of the screen stack,
+    which that screen gives through the host's contract (ADR-019, rule 9). The app's name is the
+    main menu's title only. The header's record is shown while an item is loaded, spinning while it
+    plays and still while it is paused.
 
 **Conformance.** Rule 3 is checked by `TouchInputInDeviceScreen`, a Rolabox detekt rule. A file is a
 device screen file when it imports `:device:host` or one of the design system's device components, and
 the rule reports a call to `clickable`, `combinedClickable`, `selectable`, `toggleable`,
 `pointerInput`, `draggable`, `scrollable`, `verticalScroll`, `horizontalScroll` or the like in it.
-Settings and the other full screens import neither, so they are not checked. `:device:host` and
-`:common:designsystem` implement the wheel's input and are excluded. Rule 9 is checked by
+The account and the other full screens import neither, so they are not checked. `:device:host` and
+`:common:designsystem` implement the wheel's input and are excluded. Rule 11 is checked by
+`TouchComponentInDeviceScreen`, in the same files and with the same exclusions. It reports a call to
+a component that is operated by touch or by the keyboard: the design system's buttons, keys, links
+and editable field, and Material's (`components` in `config/detekt/detekt.yml`). A new touch
+component of the design system is added to that list. Rule 3 sees a touch modifier a screen writes,
+and rule 11 the one inside a component. Rule 9 is checked by
 `SystemBackInDevice`, which reports a back handler (`BackHandler`, `PredictiveBackHandler`,
 `NavigationBackHandler`) in a device screen file or in `:device:host`, and a `NavDisplay` there that
 isn't built from its `sceneState`, the one overload with no back handler. `DeviceBackTest`, an
@@ -433,11 +541,13 @@ instrumented test in `:app`, shows back leaving the app from a deep screen and f
 a device, so not in `./gradlew check`. Rule 12 is checked by
 `DeviceComponentOutsideDesignSystem`, which reports a declaration with the name of a design-system
 device component or of the wheel's event types (`names` in `config/detekt/detekt.yml`) anywhere but
-`:common:designsystem`. A new device component is added to that list. Both run in `detekt`, part of
-`./gradlew check` and of the CI `build` job, and their unit tests run in `./gradlew check` and
-`unitTest`. An exception is a `@Suppress` that names the rule. Rule 15 is checked by
+`:common:designsystem`. A new device component is added to that list. All four run in `detekt`,
+part of `./gradlew check` and of the CI `build` job, and their unit tests run in `./gradlew check`
+and `unitTest`. An exception is a `@Suppress` that names the rule. Rule 15 is checked by
 `ModuleRules.kt` when the build is configured, and `ModuleRulesTest` in `build-logic` has a
 violating and a passing case. Its message names ADR-018 rule 15. It is narrower than ADR-020's rules
 4 and 7, which already forbid any `:impl` and any `:testing` outside test configurations, and says
-why in the playback area's terms. No other rule moves: rules 1, 2, 4 to 8, 10, 11, 13, 14 and 16
-to 18 are reviewed.
+why in the playback area's terms. No other rule moves: rules 1, 2, 4 to 8, 10, 13, 14 and 16 to 19
+are reviewed. What rules 10, 14, 17 and 19 say of playing and paused, the one-line row, ⏮ and the
+header is behavior, with no syntax for a build check to read. It is covered by the unit tests of the
+tickets that build it, named under Target state.

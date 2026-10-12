@@ -27,6 +27,15 @@
   ([ADR-018](018-device-navigation.md), rule 9), so the `NavDisplay` inside the display has no back
   handling, and back reaches whoever shows the device from any depth. The host still pops on MENU,
   goes to the first screen on hold MENU, and pops the screen it is asked to.
+- **Revised 2026-10-12:** The header shows the title of the screen on top of the screen stack, and
+  the screen gives it through the host's contract. `:device:ui:impl` no longer gives the host a
+  title, and gives it the state of the header's record (What `:device:host` owns, What `:app` gives
+  it, The header, Alternatives, Consequences, rules 3 and 6, new rule 9, Conformance). A review of
+  the project on 2026-10-11 found that the header said "Rolabox" on every screen and never showed
+  the record ([ADR-018](018-device-navigation.md), rule 19). The title is given by the screen, and
+  not by its entry, because some titles are loaded: an artist's name. Rule 9 is `[enforced]` for
+  who draws the display, by a new check, `DeviceDisplayOutsideHost`. The contract and the record
+  come with 39.03.
 
 ## Context
 
@@ -62,7 +71,9 @@ the screens.
 ### What `:device:host` owns
 
 - **The assembled device:** the design system's body, display and wheel put together as one
-  screen, with the battery level in the display's header.
+  screen.
+- **The display's header:** the title of the top screen, the battery level and the record. No
+  screen draws a display or a header of its own.
 - **The screen stack:** its state, saved across process death, and the `NavDisplay` inside the
   display, with its transitions.
 - **Back inside the display.** The host pops on MENU and goes to the first screen on hold MENU. It
@@ -73,8 +84,9 @@ the screens.
   its hold are the host's own, and ⏮, ⏭, ⏯ and their holds are passed to handlers. While the top
   screen asks for MENU, to leave a mode of its own, MENU goes to it and the host doesn't pop.
 - **The contract its screens use:** how a device screen receives turn and center, how it takes MENU
-  while it is in a mode, and the state holder for a list's highlight. A screen asks for "the events
-  meant for me". It doesn't name its key, and it never sees the stack or the router.
+  while it is in a mode, how it gives the header its title, and the state holder for a list's
+  highlight. A screen asks for "the events meant for me" and says "this is my title". It doesn't
+  name its key, and it never sees the stack or the router.
 
 ### What `:app` gives it
 
@@ -85,7 +97,8 @@ the screens.
   on the host's stack. The host never decides what is pushed.
 - **What the playback buttons do.** The host calls handlers for ⏮, ⏭, ⏯ and their holds, and `:app`
   connects them to the playback area. So the host never depends on an area.
-- **What the display's header says:** its title.
+- **The state of the header's record:** whether an item is loaded, and whether it is playing. The
+  title is no longer given here: each screen gives its own (see "The header").
 
 ```
 :app ── start key, entries, exits → keys, playback handlers ──▶ :device:host (host)
@@ -93,6 +106,24 @@ the screens.
 :feature:music ── device screens, using the host's contract ◀──────┘
 :common:designsystem ── body, display, rows, wheel, WheelEvent (used by all three)
 ```
+
+### The header
+
+The header shows **the title of the screen on top of the screen stack**
+([ADR-018](018-device-navigation.md), rule 19). The screen gives it through the contract, the same
+way it asks for its events: it states its title while it is composed, and the host shows the title
+of whichever screen is on top. A screen under the top one keeps its title for when MENU returns to
+it.
+
+The screen gives it, and not its entry or its key, because a title can be loaded. The list of an
+artist's albums is titled with the artist's name, which its ViewModel reads from the library, and a
+key carries only the identifier ([ADR-012](012-navigation.md)). A fixed title, such as "Artists", is
+given the same way, from the screen's string resources. Until the top screen has given a title, the
+header shows none.
+
+The **record** is playback state, which the host can't see (rule 5). Whoever assembles the device
+gives the host two values, whether an item is loaded and whether it is playing, and the host shows
+the record spinning, still or not at all.
 
 ### Who changes the stack
 
@@ -153,6 +184,16 @@ for the host.
 - **Move the device's parts into `:device:host` too,** so the whole device is in one module. But
   the rows are used by every feature, and their look is Rolabox's visual language, which ADR-015
   keeps in one place.
+- **The entry gives the title,** as metadata of its `NavEntry`. Nothing to register, and the host
+  reads it without the screen being composed. But the metadata is built from the key alone, before
+  the screen has loaded anything, so an artist's name would have to travel in the key, where ADR-012
+  wants an identifier, or the title would be a second thing the entry has to observe.
+- **`:device:ui:impl` gives the title, from the key on top.** It already knows every key, and the
+  host keeps one parameter. But it would have to read the library to name an artist, which is the
+  screen's ViewModel's job, and a new screen would be titled in a module that isn't its own.
+- **Each screen draws its own header.** The screen has everything it needs. But the header would
+  slide with every transition, the battery and the record would be repeated on every screen, and
+  each screen would be a place to get them wrong.
 - **The host depends on the playback `:api`** and handles ⏮, ⏭ and ⏯ itself. Fewer parameters. But
   a utility module would depend on an area, and the host couldn't be used without that area.
 
@@ -169,6 +210,10 @@ for the host.
 - The host's parameters are its whole interface with `:app`. Each new thing the device needs from
   the product, such as the Now Playing row's state, is a parameter and not a dependency.
 - Every change to `:device:host` rebuilds every feature that has device screens.
+- Every device screen has one more thing to do: give its title. One that doesn't has an empty
+  header, which shows in its golden and nowhere else.
+- A preview of a screen in the device gives the title to the host's stateless device directly,
+  since nothing runs the contract in a preview.
 - ADR-015's rule that an area-agnostic composable lives in the design system has an exception, and
   where a new device composable goes is decided by whether it is a part or the mechanism.
 
@@ -178,8 +223,8 @@ for the host.
    modules from test configurations).
 2. Superseded by [ADR-020](020-modules-by-product-area.md), rule 8: only `:device` `:impl` modules
    depend on the host.
-3. `[convention]` `:device:host` owns the assembled device, the screen stack and its `NavDisplay`,
-   back inside the display, and the routing of wheel events. It pops, and it never decides what is
+3. `[convention]` `:device:host` owns the assembled device with the display's header, the screen
+   stack and its `NavDisplay`, back inside the display, and the routing of wheel events. It pops, and it never decides what is
    pushed. MENU pops unless the top screen takes it through the contract (rule 6). The one pop it
    is asked for is a named screen, popped only if it is on top: Now Playing when the queue ends.
    It doesn't handle the system's back, and its `NavDisplay` has no back handling.
@@ -190,12 +235,22 @@ for the host.
    and depends on no area. What it needs from the product arrives as a parameter.
 6. `[convention]` A device screen receives turn and center through `:device:host`'s contract, and
    MENU only while it is in a mode of its own, to leave it. It takes no other input: not hold MENU,
-   the playback buttons or the system's back. It doesn't name its key, and it never sees the stack
-   or the router.
+   the playback buttons or the system's back. It gives its title through the same contract. It
+   doesn't name its key, and it never sees the stack or the router.
 7. `[convention]` The device's parts and their look stay in `:common:designsystem` (ADR-015).
    `:device:host` assembles them, and defines no color, text style or shape.
 8. `[convention]` `:device:host` is one module. It isn't split into `:api`, `:impl` and `:testing`.
+9. `[enforced]` Only `:device:host` draws the display and its header. The header shows the title
+   that the top screen gives through the contract, and every device screen gives one. The state of
+   the record arrives as a parameter (rule 5). Enforced for who draws the display: that every
+   screen gives a title is checked in review.
 
 **Conformance.** Rule 1 is checked by `ModuleRules.kt` when the build is configured, as
 [ADR-020](020-modules-by-product-area.md)'s rule 8, which also replaces rule 2: only `:device` `:impl`
-modules depend on the host.
+modules depend on the host. Rule 9 is checked by `DeviceDisplayOutsideHost`, a Rolabox detekt rule
+that reports a call to the design system's `DeviceDisplay` or `DeviceHeader` anywhere but
+`:device:host` and `:common:designsystem`, which declares and previews them. It runs in `detekt`, part
+of `./gradlew check` and of the CI `build` job, and its unit tests have a violating and a passing
+case. An exception is a `@Suppress` that names the rule. The contract for the title, and the record,
+are ahead of the code until 39.03, which brings their unit tests in `:device:host`. The other rules
+are reviewed.

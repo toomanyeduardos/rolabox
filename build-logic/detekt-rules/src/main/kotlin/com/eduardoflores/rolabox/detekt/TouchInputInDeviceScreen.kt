@@ -13,7 +13,7 @@ import org.jetbrains.kotlin.psi.KtFile
  *
  * It reads the syntax only. A file is a device screen file when it imports the device host's API or one
  * of the design system's device components, which is what a screen needs to be on the display. A full
- * screen, such as Settings, imports neither and is left alone. The rule reports a call to a modifier
+ * screen, such as the account, imports neither and is left alone. The rule reports a call to a modifier
  * that reacts to touch, in such a file. It knows nothing about modules: that it doesn't run on
  * `:device:host` and `:common:designsystem`, which implement the wheel, is its `excludes` in
  * `config/detekt/detekt.yml`.
