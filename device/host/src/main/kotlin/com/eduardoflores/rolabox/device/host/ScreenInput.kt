@@ -17,6 +17,10 @@ internal class ScreenInput(private val inputs: ScreenInputs, private val key: Na
     fun registerMenu(handler: () -> Unit) = inputs.registerMenu(key, handler)
 
     fun unregisterMenu() = inputs.unregisterMenu(key)
+
+    fun registerPlayPause(handler: () -> Unit) = inputs.registerPlayPause(key, handler)
+
+    fun unregisterPlayPause() = inputs.unregisterPlayPause(key)
 }
 
 /** Null outside the device, such as in a preview, where a screen receives no events. */
@@ -49,5 +53,20 @@ fun HandleMenu(enabled: Boolean, onMenu: () -> Unit) {
     DisposableEffect(input, enabled) {
         if (enabled) input.registerMenu { currentOnMenu() }
         onDispose { input.unregisterMenu() }
+    }
+}
+
+/**
+ * While [enabled], ⏯ goes to [onPlayPause] and not to the device's handler of the playback buttons. It is for
+ * a device screen whose highlighted row can be played, such as a list of songs, to play that row (ADR-018,
+ * rule 5, and ADR-019, rule 6). On every other screen ⏯ plays or pauses what is loaded, and no screen sees it.
+ */
+@Composable
+fun HandlePlayPause(enabled: Boolean, onPlayPause: () -> Unit) {
+    val input = LocalScreenInput.current ?: return
+    val currentOnPlayPause by rememberUpdatedState(onPlayPause)
+    DisposableEffect(input, enabled) {
+        if (enabled) input.registerPlayPause { currentOnPlayPause() }
+        onDispose { input.unregisterPlayPause() }
     }
 }

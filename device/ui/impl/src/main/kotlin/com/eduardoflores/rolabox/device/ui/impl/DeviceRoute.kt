@@ -14,6 +14,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
+import com.eduardoflores.rolabox.common.designsystem.wheel.HoldState
 import com.eduardoflores.rolabox.common.designsystem.wheel.WheelEvent
 import com.eduardoflores.rolabox.device.host.DeviceHost
 import com.eduardoflores.rolabox.device.host.rememberScreenStack
@@ -24,6 +25,7 @@ import com.eduardoflores.rolabox.device.music.ui.api.ArtistSongsKey
 import com.eduardoflores.rolabox.device.music.ui.api.ArtistsKey
 import com.eduardoflores.rolabox.device.music.ui.api.MusicEntries
 import com.eduardoflores.rolabox.device.music.ui.api.MusicMenuKey
+import com.eduardoflores.rolabox.device.playback.api.SeekDirection
 import com.eduardoflores.rolabox.device.playback.ui.api.NowPlayingKey
 import com.eduardoflores.rolabox.device.playback.ui.api.PlaybackEntries
 import com.eduardoflores.rolabox.device.settings.api.SettingsKey
@@ -37,7 +39,7 @@ import com.eduardoflores.rolabox.device.ui.api.MainMenuKey
  *
  * [musicEntries] adds the music screens, whose exits are mapped to keys here and pushed.
  * [playbackEntries] adds Now Playing, which a song click and the main menu's row push. [viewModel] acts on
- * playback for them and for ⏮ and ⏭, and a song click that couldn't play is told in a toast.
+ * playback for them and for the playback buttons, and a song click that couldn't play is told in a toast.
  * [onOpenFullScreen] is the generic exit, which leaves the display for a full screen on the app stack.
  */
 @Composable
@@ -89,16 +91,30 @@ internal fun DeviceRoute(
             )
             playbackEntries.screenStackEntries(scope = this)
         },
-        // ⏯ and the holds of ⏮ and ⏭ are received and ignored until they have their tickets.
-        onPlaybackEvent = { event ->
-            when (event) {
-                WheelEvent.Next -> viewModel.onNext()
-                WheelEvent.Previous -> viewModel.onPrevious()
-                else -> Unit
-            }
-        },
+        onPlaybackEvent = { event -> viewModel.onPlaybackEvent(event) },
         modifier = modifier,
     )
+}
+
+/**
+ * What each playback button does (ADR-018, the control table). ⏯ arrives here only when the top screen
+ * didn't play its highlighted row with it, so here it plays or pauses what is loaded. The host keeps the
+ * other wheel events to itself and its screens.
+ */
+internal fun DeviceViewModel.onPlaybackEvent(event: WheelEvent) {
+    when (event) {
+        WheelEvent.Next -> onNext()
+        WheelEvent.Previous -> onPrevious()
+        WheelEvent.PlayPause -> onPlayPause()
+        is WheelEvent.HoldPrevious -> onSeekHold(SeekDirection.Backward, event.state)
+        is WheelEvent.HoldNext -> onSeekHold(SeekDirection.Forward, event.state)
+        is WheelEvent.Turn, WheelEvent.Center, WheelEvent.Menu, WheelEvent.HoldMenu -> Unit
+    }
+}
+
+private fun DeviceViewModel.onSeekHold(direction: SeekDirection, state: HoldState) = when (state) {
+    HoldState.Held -> onSeekStart(direction)
+    HoldState.Released -> onSeekEnd()
 }
 
 @get:StringRes

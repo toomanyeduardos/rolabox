@@ -36,6 +36,12 @@
   not by its entry, because some titles are loaded: an artist's name. Rule 9 is `[enforced]` for
   who draws the display, by a new check, `DeviceDisplayOutsideHost`. The contract and the record
   come with 39.03.
+- **Revised 2026-10-12:** The contract lets the top screen take ⏯ while its highlighted row can be
+  played, and ⏯ reaches the handlers of the playback buttons only when it doesn't (What
+  `:device:host` owns, rule 6). [ADR-018](018-device-navigation.md)'s rule 5 has ⏯ play the
+  highlighted row, and the highlight is the screen's own state, so the handler of the playback
+  buttons can't know which row it is. Building ⏯ (39.02) needed it. It is the same shape as MENU
+  for a mode. ⏮, ⏭, their holds, hold MENU and the system's back still never reach a screen.
 
 ## Context
 
@@ -82,9 +88,11 @@ the screens.
   device names, if that screen is on top: Now Playing when the queue ends.
 - **The routing of wheel events** (ADR-018, rule 5): turn and center go to the top screen, MENU and
   its hold are the host's own, and ⏮, ⏭, ⏯ and their holds are passed to handlers. While the top
-  screen asks for MENU, to leave a mode of its own, MENU goes to it and the host doesn't pop.
+  screen asks for MENU, to leave a mode of its own, MENU goes to it and the host doesn't pop. While
+  the top screen asks for ⏯, to play its highlighted row, ⏯ goes to it and not to the handlers.
 - **The contract its screens use:** how a device screen receives turn and center, how it takes MENU
-  while it is in a mode, how it gives the header its title, and the state holder for a list's
+  while it is in a mode and ⏯ while its highlighted row can be played, how it gives the header its
+  title, and the state holder for a list's
   highlight. A screen asks for "the events meant for me" and says "this is my title". It doesn't
   name its key, and it never sees the stack or the router.
 
@@ -234,8 +242,9 @@ for the host.
 5. `[convention]` `:device:host` has no navigation destination, no ViewModel and no Hilt module,
    and depends on no area. What it needs from the product arrives as a parameter.
 6. `[convention]` A device screen receives turn and center through `:device:host`'s contract, and
-   MENU only while it is in a mode of its own, to leave it. It takes no other input: not hold MENU,
-   the playback buttons or the system's back. It gives its title through the same contract. It
+   MENU only while it is in a mode of its own, to leave it, and ⏯ only while its highlighted row can
+   be played, to play it. It takes no other input: not hold MENU, ⏮, ⏭, their holds or the system's
+   back. It gives its title through the same contract. It
    doesn't name its key, and it never sees the stack or the router.
 7. `[convention]` The device's parts and their look stay in `:common:designsystem` (ADR-015).
    `:device:host` assembles them, and defines no color, text style or shape.

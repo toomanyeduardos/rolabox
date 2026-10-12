@@ -90,6 +90,12 @@
   rows had different heights and one title could take a third of the display. Every row's text is
   still reached in full, by highlighting it. It is an exception to
   [ADR-017](017-accessibility.md)'s rules 4 and 5, recorded there as rule 12 (39.09).
+- **Revised 2026-10-12:** A hold of ⏮ or ⏭ is made precise: it seeks at one speed for as long as
+  the button is held, it stops at the start and at the end of the item, and the item doesn't end
+  during the hold (What each control does). Building playing and paused (39.02) had to decide what
+  a hold does at the end of a playing item, and a hold that moved on to the next item would have
+  changed the queue, which only ⏮, ⏭ and the end of an item do. Rule 10 is now in the code, so
+  Target state names four rules ahead of it, and Conformance names the tests of rule 10.
 
 ## Context
 
@@ -123,10 +129,9 @@ and the display is small.
 
 **Target state.** The device was written after this ADR, and the rules apply to code as it is
 written. Rules 3, 9, 11, 12 and 15 have a build check (see Conformance under Rules). The rest are
-`[convention]` and are checked in review. Since the revisions of 2026-10-12, five rules are ahead of
-the code, each until its ticket: playing and paused in rule 10 (39.02), the settings in the display
-in rule 11 (39.07), one-line rows in rule 14 (39.09), ⏮ in rule 17 (39.04), and the header in rule
-19 (39.03).
+`[convention]` and are checked in review. Since the revisions of 2026-10-12, four rules are ahead of
+the code, each until its ticket: the settings in the display in rule 11 (39.07), one-line rows in
+rule 14 (39.09), ⏮ in rule 17 (39.04), and the header in rule 19 (39.03).
 
 ## Decision
 
@@ -225,6 +230,11 @@ An item is **loaded** from the moment it starts until its queue ends. A loaded i
 - **Only ⏯ and playing a row change whether the item is playing.** ⏯ pauses a playing item, and
   plays a paused one from where it was. Playing a row always starts playing. ⏮, ⏭, their holds and
   a seek move in the item or in the queue and leave the rest as it was: a paused item stays paused.
+- **A hold of ⏮ or ⏭ seeks for as long as the button is held,** backwards or forwards, at one
+  speed that is faster than playing, and stops when the button is released. It stops at the start
+  and at the end of the item, and the item doesn't end during the hold: a hold never changes the
+  item. On release a playing item goes on from where the hold left it, so one left at its end ends
+  then, and the next item starts or the queue ends. A paused item stays where the hold left it.
 - **Scrub is a mode of the Now Playing screen, not a destination.** Center selects it, and while it
   is selected a turn moves a marker on the bar, with its times. The music keeps playing from where
   it was. Center is the accept: it seeks to the marker and leaves scrub. So is waiting: scrub ends
@@ -550,4 +560,6 @@ violating and a passing case. Its message names ADR-018 rule 15. It is narrower 
 why in the playback area's terms. No other rule moves: rules 1, 2, 4 to 8, 10, 13, 14 and 16 to 19
 are reviewed. What rules 10, 14, 17 and 19 say of playing and paused, the one-line row, ⏮ and the
 header is behavior, with no syntax for a build check to read. It is covered by the unit tests of the
-tickets that build it, named under Target state.
+tickets that build it, named under Target state. Rule 10's playing and paused, the clock and the
+holds are covered by `InMemoryPlayerTest`, ⏯ by `WheelEventRouterTest` and `DeviceViewModelTest`,
+and the end of the queue on Now Playing by `DeviceNavigationTest`, which runs on a device.

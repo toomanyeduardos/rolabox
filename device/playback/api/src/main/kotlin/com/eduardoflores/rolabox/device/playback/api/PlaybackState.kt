@@ -4,7 +4,8 @@ import kotlin.time.Duration
 import kotlinx.coroutines.flow.Flow
 
 /**
- * What is loaded and how far it is. An item is loaded from the moment it starts until its queue ends.
+ * What is loaded, whether it is playing and how far it is. An item is loaded from the moment it starts until
+ * its queue ends, and a loaded item is either playing or paused.
  *
  * Nothing is loaded until [PlaybackController.play] succeeds: [currentSong] is `null`, [queue] is empty
  * and [queueIndex] is `null`. The state lives above the screens, so it outlives each of them.
@@ -13,7 +14,13 @@ interface PlaybackState {
     /** The song at [queueIndex], or `null` when nothing is loaded. */
     val currentSong: Flow<PlaybackSong?>
 
-    /** How far into [currentSong] it is. [Duration.ZERO] when nothing is loaded. */
+    /** Whether [currentSong] is playing, and not paused. `false` when nothing is loaded. */
+    val isPlaying: Flow<Boolean>
+
+    /**
+     * How far into [currentSong] it is. It advances while the song plays and stays while it is paused.
+     * [Duration.ZERO] when nothing is loaded.
+     */
     val position: Flow<Duration>
 
     /** The whole list that was played, including the songs before the one it started from. */

@@ -28,6 +28,10 @@ internal fun SemanticsNodeInteraction.pressPrevious() {
     performTouchInput { click(pointOnRing(PREVIOUS_ANGLE_DEGREES)) }
 }
 
+internal fun SemanticsNodeInteraction.pressPlayPause() {
+    performTouchInput { click(pointOnRing(PLAY_PAUSE_ANGLE_DEGREES)) }
+}
+
 /**
  * Turns the ring by [steps] steps, clockwise when positive: a finger that goes round it slowly enough
  * that the wheel applies no acceleration, so a step moves a row.
@@ -49,6 +53,7 @@ internal fun SemanticsNodeInteraction.turn(steps: Int) {
 private const val MENU_ANGLE_DEGREES = -90f
 private const val NEXT_ANGLE_DEGREES = 0f
 private const val PREVIOUS_ANGLE_DEGREES = 180f
+private const val PLAY_PAUSE_ANGLE_DEGREES = 90f
 private const val START_ANGLE_DEGREES = 45f
 private const val DEGREES_PER_MOVE = 5f
 private const val MOVES_PER_STEP = 3

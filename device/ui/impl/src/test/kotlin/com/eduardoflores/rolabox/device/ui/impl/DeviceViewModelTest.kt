@@ -2,6 +2,8 @@ package com.eduardoflores.rolabox.device.ui.impl
 
 import arrow.core.left
 import arrow.core.right
+import com.eduardoflores.rolabox.common.designsystem.wheel.HoldState
+import com.eduardoflores.rolabox.common.designsystem.wheel.WheelEvent
 import com.eduardoflores.rolabox.common.testing.MainDispatcherRule
 import com.eduardoflores.rolabox.device.library.api.AlbumId
 import com.eduardoflores.rolabox.device.library.api.LibraryError
@@ -9,6 +11,7 @@ import com.eduardoflores.rolabox.device.library.api.SongId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackError
 import com.eduardoflores.rolabox.device.playback.api.PlaybackSong
 import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
+import com.eduardoflores.rolabox.device.playback.api.SeekDirection
 import com.eduardoflores.rolabox.device.playback.testing.FakePlayback
 import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.flow.collect
@@ -138,6 +141,89 @@ class DeviceViewModelTest {
 
         assertEquals(2, playback.nextCalls)
         assertEquals(2, playback.previousCalls)
+    }
+
+    @Test
+    fun playPause_onAPlayingSong_pausesIt() = runTest {
+        val viewModel = observedViewModel()
+        playback.load(Queue, index = 1)
+
+        viewModel.onPlayPause()
+
+        assertEquals(1, playback.pauseCalls)
+        assertEquals(0, playback.resumeCalls)
+    }
+
+    @Test
+    fun playPause_onAPausedSong_playsItFromWhereItWas() = runTest {
+        val viewModel = observedViewModel()
+        playback.load(Queue, index = 1)
+        playback.playing(false)
+
+        viewModel.onPlayPause()
+
+        assertEquals(1, playback.resumeCalls)
+        assertEquals(0, playback.pauseCalls)
+        assertEquals(emptyList<FakePlayback.PlayCall>(), playback.playCalls)
+    }
+
+    // Nothing is playing, so the handler asks to resume, and with nothing loaded that is the controller's to
+    // ignore: InMemoryPlayerTest covers it. What the handler never does is load something.
+    @Test
+    fun playPause_withNothingLoaded_neitherPausesNorLoadsAnything() = runTest {
+        val viewModel = observedViewModel()
+
+        viewModel.onPlayPause()
+
+        assertEquals(0, playback.pauseCalls)
+        assertEquals(emptyList<FakePlayback.PlayCall>(), playback.playCalls)
+        assertFalse(viewModel.hasLoadedSong.value)
+    }
+
+    @Test
+    fun aSeekThatStartsAndEnds_asksThePlaybackForBoth() = runTest {
+        val viewModel = observedViewModel()
+        playback.load(Queue, index = 1)
+
+        viewModel.onSeekStart(SeekDirection.Backward)
+        assertEquals(listOf(SeekDirection.Backward), playback.startSeekingCalls)
+        assertEquals(0, playback.stopSeekingCalls)
+
+        viewModel.onSeekEnd()
+        assertEquals(1, playback.stopSeekingCalls)
+    }
+
+    @Test
+    fun thePlaybackButtons_eachDoWhatTheControlTableSays() = runTest {
+        val viewModel = observedViewModel()
+        playback.load(Queue, index = 1)
+
+        viewModel.onPlaybackEvent(WheelEvent.Next)
+        viewModel.onPlaybackEvent(WheelEvent.Previous)
+        viewModel.onPlaybackEvent(WheelEvent.PlayPause)
+        viewModel.onPlaybackEvent(WheelEvent.HoldPrevious(HoldState.Held))
+        viewModel.onPlaybackEvent(WheelEvent.HoldPrevious(HoldState.Released))
+        viewModel.onPlaybackEvent(WheelEvent.HoldNext(HoldState.Held))
+        viewModel.onPlaybackEvent(WheelEvent.HoldNext(HoldState.Released))
+
+        assertEquals(1, playback.nextCalls)
+        assertEquals(1, playback.previousCalls)
+        assertEquals(1, playback.pauseCalls)
+        assertEquals(listOf(SeekDirection.Backward, SeekDirection.Forward), playback.startSeekingCalls)
+        assertEquals(2, playback.stopSeekingCalls)
+    }
+
+    @Test
+    fun theWheelEventsThatAreNotPlaybackButtons_doNothingToPlayback() = runTest {
+        val viewModel = observedViewModel()
+        playback.load(Queue, index = 1)
+
+        listOf(WheelEvent.Turn(1), WheelEvent.Center, WheelEvent.Menu, WheelEvent.HoldMenu)
+            .forEach(viewModel::onPlaybackEvent)
+
+        assertEquals(0, playback.nextCalls + playback.previousCalls + playback.pauseCalls + playback.resumeCalls)
+        assertEquals(emptyList<SeekDirection>(), playback.startSeekingCalls)
+        assertEquals(0, playback.stopSeekingCalls)
     }
 }
 

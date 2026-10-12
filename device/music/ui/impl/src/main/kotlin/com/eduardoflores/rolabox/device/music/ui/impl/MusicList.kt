@@ -6,21 +6,32 @@ import com.eduardoflores.rolabox.common.designsystem.component.DeviceList
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceListRow
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceMessage
 import com.eduardoflores.rolabox.common.designsystem.wheel.WheelEvent
+import com.eduardoflores.rolabox.device.host.HandlePlayPause
 import com.eduardoflores.rolabox.device.host.HandleWheelEvents
 import com.eduardoflores.rolabox.device.host.rememberListHighlight
 
 /**
  * A list on the display, driven by the wheel (ADR-018): turning moves the highlight, which stops at
  * the first and last rows, and center reports the index of the highlighted row to [onCenter]. It does
- * nothing while there are no rows to highlight.
+ * nothing while there are no rows to highlight. [onPlayPause] is for a list whose rows can be played: ⏯
+ * reports the highlighted row to it, and on every other list ⏯ isn't the screen's (ADR-018, rule 5).
  *
  * The highlight is saved with the entry that calls this (ADR-018, rule 7), and belongs to the host's
  * holder. [emptyText] is shown when the list has no rows.
  */
 @Composable
-internal fun WheelList(state: ListUiState<DeviceListRow>, emptyText: String, onCenter: (index: Int) -> Unit) {
+internal fun WheelList(
+    state: ListUiState<DeviceListRow>,
+    emptyText: String,
+    onCenter: (index: Int) -> Unit,
+    onPlayPause: ((index: Int) -> Unit)? = null,
+) {
     val highlight = rememberListHighlight()
     val rowCount = (state as? ListUiState.Loaded)?.items?.size ?: 0
+    // With no row to play, ⏯ is left to the device, which plays or pauses what is loaded.
+    HandlePlayPause(enabled = onPlayPause != null && rowCount > 0) {
+        onPlayPause?.invoke(highlight.index.coerceAtMost(rowCount - 1))
+    }
     HandleWheelEvents { event ->
         when {
             rowCount == 0 -> Unit

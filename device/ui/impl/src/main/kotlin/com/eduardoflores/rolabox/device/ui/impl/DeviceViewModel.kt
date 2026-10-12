@@ -3,6 +3,7 @@ package com.eduardoflores.rolabox.device.ui.impl
 import androidx.lifecycle.ViewModel
 import com.eduardoflores.rolabox.device.library.api.SongId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
+import com.eduardoflores.rolabox.device.playback.api.SeekDirection
 import kotlinx.coroutines.flow.StateFlow
 
 /** Why a song click couldn't play, as the device tells the user (ADR-007, rule 8). */
@@ -15,7 +16,7 @@ internal enum class PlayFailure {
 }
 
 /**
- * What the device does with playback: the song click, the ⏮ and ⏭ buttons, and whether something is
+ * What the device does with playback: the song click, the ⏮, ⏭ and ⏯ buttons, and whether something is
  * loaded for the main menu's row (ADR-018). [DeviceViewModelImpl] implements it (ADR-021).
  */
 internal abstract class DeviceViewModel : ViewModel() {
@@ -39,4 +40,16 @@ internal abstract class DeviceViewModel : ViewModel() {
 
     /** ⏮: starts the previous song at 0:00. Does nothing on the first song, or when nothing is loaded. */
     abstract fun onPrevious()
+
+    /**
+     * ⏯ where it isn't the highlighted row's: pauses the loaded song when it is playing, and plays it from
+     * where it was when it is paused. Does nothing when nothing is loaded.
+     */
+    abstract fun onPlayPause()
+
+    /** ⏮ or ⏭ is held: seeks in the loaded song towards [direction] until [onSeekEnd]. Nothing if none is loaded. */
+    abstract fun onSeekStart(direction: SeekDirection)
+
+    /** The held ⏮ or ⏭ was released. */
+    abstract fun onSeekEnd()
 }

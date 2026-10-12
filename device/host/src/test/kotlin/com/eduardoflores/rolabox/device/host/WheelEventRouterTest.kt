@@ -153,6 +153,56 @@ class WheelEventRouterTest {
     }
 
     @Test
+    fun playPause_goesToTheTopScreenThatAskedForIt_andNotToThePlaybackHandler() {
+        stack.push(Second)
+        var playPauses = 0
+        inputs.registerPlayPause(Second) { playPauses++ }
+
+        router.route(WheelEvent.PlayPause)
+
+        assertEquals(1, playPauses)
+        assertEquals(emptyList<WheelEvent>(), playbackReceived)
+        assertEquals(emptyList<WheelEvent>(), firstReceived + secondReceived)
+        assertEquals(listOf<NavKey>(First, Second), stack.keys)
+    }
+
+    @Test
+    fun playPause_goesToThePlaybackHandlerAgain_onceTheScreenStopsAskingForIt() {
+        stack.push(Second)
+        inputs.registerPlayPause(Second) {}
+        inputs.unregisterPlayPause(Second)
+
+        router.route(WheelEvent.PlayPause)
+
+        assertEquals(listOf<WheelEvent>(WheelEvent.PlayPause), playbackReceived)
+    }
+
+    @Test
+    fun playPause_neverGoesToAScreenBelowTheTop() {
+        var playPauses = 0
+        inputs.registerPlayPause(First) { playPauses++ }
+        stack.push(Second)
+
+        router.route(WheelEvent.PlayPause)
+
+        assertEquals(0, playPauses)
+        assertEquals(listOf<WheelEvent>(WheelEvent.PlayPause), playbackReceived)
+    }
+
+    @Test
+    fun theOtherPlaybackButtons_neverGoToAScreenThatAskedForPlayPause() {
+        stack.push(Second)
+        var playPauses = 0
+        inputs.registerPlayPause(Second) { playPauses++ }
+        val others = playbackEvents - WheelEvent.PlayPause
+
+        others.forEach(router::route)
+
+        assertEquals(0, playPauses)
+        assertEquals(others, playbackReceived)
+    }
+
+    @Test
     fun turnCenterAndMenu_neverReachThePlaybackHandler() {
         stack.push(Second)
 
