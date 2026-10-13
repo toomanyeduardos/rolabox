@@ -1,6 +1,6 @@
 # ADR-010: Firestore for synced data, with per-user security rules tested against the emulator
 
-- **Status:** Accepted
+- **Status:** Accepted. Rule 7 superseded by [ADR-022](022-data-source-sub-parts.md)
 - **Date:** 2026-09-28
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review
