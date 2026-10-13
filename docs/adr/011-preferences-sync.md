@@ -1,6 +1,7 @@
 # ADR-011: Sync preferences through Firestore, field by field, with last-write-wins
 
-- **Status:** Accepted
+- **Status:** Accepted. Rule 5, and where the `Syncer` and the Firestore mapping live, superseded by
+  [ADR-022](022-data-source-sub-parts.md)
 - **Date:** 2026-09-28
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review
@@ -20,6 +21,13 @@
   whether sync may run is no longer decided by a function inside sync. `:common:sync:api` declares
   who to sync for, and `:auth:data:impl` provides it, so rule 8 is tested in both. The decision is
   unchanged.
+- **Revised 2026-10-12:** The device's settings are preferences (Decision, Alternatives,
+  Consequences, rules 9 to 11). 39.05 asked where Clicker, the main menu's rows, and later Shuffle
+  and Repeat are stored. They are more fields of the same document, written locally first like the
+  theme, and all of them sync. A fixed set of switches, such as the main menu's rows, is a field
+  each and not a collection. The mechanism is unchanged. The fields are not in the code until
+  39.05b. Which module holds the `Syncer` and the Firestore mapping changed on the same date, in
+  [ADR-022](022-data-source-sub-parts.md): the text below is left as it was written.
 
 ## Context
 
@@ -90,6 +98,42 @@ data get their own collections under `users/{uid}`, each with rules and tests (A
 Favorite artists wait for the library area, which will own their identity (`ArtistId`,
 [ADR-003](003-module-boundaries.md) rule 12), and for Room, where ADR-002 keeps favorites.
 
+**The device's settings are preferences.** The settings in the display
+([ADR-018](018-device-navigation.md)) are stored like the theme: `:common:userdata` owns them, they
+are written to DataStore first, with their timestamp, and they sync as fields of the same document.
+So they work signed out and in offline mode, where nothing syncs
+([ADR-008](008-one-app-with-offline-mode.md)). `:device:settings` has the screens that change them
+and stores nothing. The parts of the device that use a setting read it from
+`:common:userdata:api`.
+
+| Field | Values | Never set reads as |
+| --- | --- | --- |
+| `darkThemeConfig` | `FOLLOW_SYSTEM`, `LIGHT`, `DARK` | `FOLLOW_SYSTEM` |
+| `accentColor` | `BLUE`, `GREEN`, `PURPLE`, `PINK` | `BLUE` |
+| `clicker` | `ON`, `OFF` | `ON` |
+| `mainMenuMusic` | `SHOWN`, `HIDDEN` | `SHOWN` |
+| `mainMenuPodcasts` | `SHOWN`, `HIDDEN` | `SHOWN` |
+| `mainMenuAudiobooks` | `SHOWN`, `HIDDEN` | `SHOWN` |
+| `mainMenuShuffleSongs` | `SHOWN`, `HIDDEN` | `SHOWN` |
+
+Every field is the same map, `{ value: <enum name>, updatedAt: <timestamp> }`, a switch too. So the
+rules and the two mappings have one kind of value, and a switch can gain a third value without
+changing its type. Shuffle and Repeat follow the account and will be two more fields of this
+document, added when their values are decided (39.11).
+
+**A fixed set of switches is a field each, not a collection.** The main menu's rows are a list on
+the screen, but the user adds and removes nothing: the rows are fixed
+([ADR-020](020-modules-by-product-area.md), rule 15), and each one is shown or hidden. So each row
+that can be hidden is a field, resolved on its own. Hiding Podcasts on one phone and Audiobooks on
+another, both offline, keeps both. There are no tombstones, and a row added by a later version is a
+new field that reads as shown until it is set. `mergeById` stays for collections whose items the
+user creates.
+
+**A preference syncs unless it belongs to this installation.** Clicker syncs: it is a taste, like
+the theme, and the click is silent anyway when the phone is. The one value that doesn't sync is
+whether offline mode was chosen, which says how this installation is used and not what the user
+likes. A value like that has no timestamp and is never part of what sync reads.
+
 **When sync runs.** `SyncRepository.start()`, called from `Application.onCreate`, requests a sync:
 
 - **on sign-in**, including a user already signed in when the app starts;
@@ -152,6 +196,23 @@ same user or another one, merges them with that user's cloud copy.
   default initializer removed from the manifest, which put WorkManager in the offline app while
   that flavor existed. The entry point kept it in the cloud flavor, at the cost of one lookup in
   `doWork`. That reason is gone since ADR-008's 2026-09-28 revision.
+- **A document of their own for the device's settings,** `users/{uid}/settings/device`. It keeps
+  the theme and the device's settings apart in the cloud. But they are merged by the same code at
+  the same moments, and a second document is a second read and a second transaction on every sync.
+- **A data part of the device that owns its settings.** They would live with the device that shows
+  them. But the theme and the accent color are set from the same menu and are already here, several
+  parts of the device read them, and there would be two stores of preferences on the device.
+- **The main menu's rows as a collection, merged by id.** It is the mechanism this ADR has for
+  lists. But a row is never added or removed, so a tombstone would mean "hidden" and say it less
+  plainly than a value does.
+- **The main menu's rows as one field holding the list of hidden rows.** One field to validate.
+  But it is last-write-wins on the whole list, the loss this ADR rejects for the document.
+- **Booleans for the switches.** Closer to what On and Off are. But the rules and both mappings
+  would have a second kind of value, and a switch that gains a third value, as Clicker did on later
+  players, would have to change its type in a document where a field is never removed.
+- **Clicker as a setting of this phone, never synced.** A phone and a tablet could differ. But
+  silent mode already silences the click on one device, and a second kind of device setting needs a
+  rule for telling the two apart on every new one.
 - **Name the API `SyncManager`, as before.** It had one method, `requestSync()`. We renamed it to
   `SyncRepository` so that sync is named like every other area's API, and it now also starts the
   triggers.
@@ -182,6 +243,13 @@ same user or another one, merges them with that user's cloud copy.
   the app restarts. The observed flow ends on its first error (ADR-007), and resubscribing right
   away would loop on a corrupted file. Sign-in and foreground still trigger sync, and each sync
   reports the same error itself.
+- **`:common:userdata:api` names things of the device:** the click, and the rows of the main menu
+  that can be hidden. The main menu in `:device:ui:impl` is still the list of what the product has,
+  and it maps its rows to these.
+- **A row that leaves the main menu leaves its field behind.** A field is never removed (rule 6),
+  so the document keeps it, unread.
+- **The rules are deployed before the app that writes the new fields,** as for a new value. Until
+  then that app's syncs are rejected, and its settings stay on the device.
 - Every kind of synced data needs a `Syncer`, a local repository that can store timestamps, a
   Firestore mapping, and rules with tests. That's the cost of adding data to sync, and it's intended.
 
@@ -203,6 +271,23 @@ same user or another one, merges them with that user's cloud copy.
 7. `[convention]` Synced enum values are stored by name, and a name is never renamed or reused.
 8. `[convention]` `SyncRunner` runs `Syncer`s only for a signed-in user who hasn't chosen offline
    mode, and the triggers request no work in offline mode (ADR-008, rule 6). Tests cover both.
+9. `[convention]` A set of switches that the user can't add to or remove from, such as the rows of
+   the main menu, is a synced field for each switch. `mergeById` is for collections whose items the
+   user creates.
+10. `[convention]` A preference syncs unless it describes this installation and not the user's
+    choice, as offline mode does. A value that doesn't sync has no timestamp and isn't part of what
+    sync reads.
+11. `[planned]` (39.05b) The device's settings are preferences: `:common:userdata` stores them, and
+    they sync as fields of `users/{uid}/settings/preferences`, with the names and values of the
+    table in Decision. No `:device` module stores a setting. The rules tests cover each field as
+    rule 6 says.
+
+**Target state.** Since the revision of 2026-10-12, rule 11 is ahead of the code until
+[39.05b](https://trello.com/c/gjuKXyIz): only
+the theme and the accent color are stored and synced. Rule 5, and the modules this ADR names for
+the `Syncer` and the Firestore mapping, describe the code until
+[39.05a](https://trello.com/c/zFqeUhYB) moves it
+([ADR-022](022-data-source-sub-parts.md)).
 
 **Conformance.** Preferences (theme and accent color) sync. Collections have the merge function and
 its tests, but no data uses it until favorite artists arrive with the library area. Rule 6 is

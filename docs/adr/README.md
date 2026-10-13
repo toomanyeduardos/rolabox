@@ -18,8 +18,8 @@ New ADR: copy [`template.md`](template.md), take the next number, and add it to 
 | [007](007-error-handling.md) | Typed errors with Arrow `Either` for every fallible operation | Accepted |
 | [008](008-one-app-with-offline-mode.md) | One app with Firebase built in, and offline mode as a user choice | Accepted |
 | [009](009-ui-bound-sdks.md) | SDK steps that need an Activity live in the UI, and only their results cross the `:api` | Accepted, partly superseded by ADR-020 |
-| [010](010-firestore-security-rules.md) | Firestore for synced data, with per-user security rules tested against the emulator | Accepted |
-| [011](011-preferences-sync.md) | Sync preferences through Firestore, field by field, with last-write-wins | Accepted |
+| [010](010-firestore-security-rules.md) | Firestore for synced data, with per-user security rules tested against the emulator | Accepted, partly superseded by ADR-022 |
+| [011](011-preferences-sync.md) | Sync preferences through Firestore, field by field, with last-write-wins | Accepted, partly superseded by ADR-022 |
 | [012](012-navigation.md) | Navigation with Jetpack Navigation 3, with the back stacks owned by `:app` | Accepted, partly superseded by ADR-020 |
 | [013](013-account-linking.md) | One account per email, with Google and password sign-in linked automatically | Accepted |
 | [014](014-area-ui-modules.md) | Area UI modules for SDK steps and shared UI, `:core:<area>:ui` | Accepted, partly superseded by ADR-020 |
@@ -30,3 +30,4 @@ New ADR: copy [`template.md`](template.md), take the next number, and add it to 
 | [019](019-device-host-module.md) | The device is a host module, `:core:device`, that receives its screens from `:app` | Accepted, partly superseded by ADR-020 |
 | [020](020-modules-by-product-area.md) | Modules grouped by product area, with the device assembling its own screens | Accepted |
 | [021](021-data-flow-through-layers.md) | Every layer is reached through an abstraction, from the screen to the data source | Accepted |
+| [022](022-data-source-sub-parts.md) | A data part's local and network sides are sub-parts, and the part that owns synced data syncs it | Accepted |
