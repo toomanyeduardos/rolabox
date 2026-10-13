@@ -46,6 +46,12 @@
   39.03 built them: a screen gives its title with `ScreenTitle`, and `:device:ui:impl` gives the host
   whether an item is loaded and whether it is playing. Their unit tests are `ScreenTitlesTest`, in
   `:device:host`. No rule changes.
+- **Revised 2026-10-12:** The contract lets the top screen be told of the playback buttons while it
+  is in a mode of its own (What `:device:host` owns, rule 6, Conformance).
+  [ADR-018](018-device-navigation.md)'s rule 16 has ⏮, ⏭, ⏯ and the holds end scrub before they do
+  what they do, also when they change nothing in the playback state, so the screen can't learn of
+  them from that state. Building ⏮ (39.04) needed it. The screen is told and doesn't take the
+  button: the handlers receive every one, as before, and the screen isn't told which one it was.
 
 ## Context
 
@@ -94,9 +100,11 @@ the screens.
   its hold are the host's own, and ⏮, ⏭, ⏯ and their holds are passed to handlers. While the top
   screen asks for MENU, to leave a mode of its own, MENU goes to it and the host doesn't pop. While
   the top screen asks for ⏯, to play its highlighted row, ⏯ goes to it and not to the handlers.
+  While the top screen asks to be told of the playback buttons, to leave a mode of its own, it is
+  told before the handlers, and the handlers still receive the button.
 - **The contract its screens use:** how a device screen receives turn and center, how it takes MENU
-  while it is in a mode and ⏯ while its highlighted row can be played, how it gives the header its
-  title, and the state holder for a list's
+  while it is in a mode and ⏯ while its highlighted row can be played, how it is told of a playback
+  button while it is in a mode, how it gives the header its title, and the state holder for a list's
   highlight. A screen asks for "the events meant for me" and says "this is my title". It doesn't
   name its key, and it never sees the stack or the router.
 
@@ -247,8 +255,9 @@ for the host.
    and depends on no area. What it needs from the product arrives as a parameter.
 6. `[convention]` A device screen receives turn and center through `:device:host`'s contract, and
    MENU only while it is in a mode of its own, to leave it, and ⏯ only while its highlighted row can
-   be played, to play it. It takes no other input: not hold MENU, ⏮, ⏭, their holds or the system's
-   back. It gives its title through the same contract. It
+   be played, to play it. While it is in a mode of its own it is told that a playback button was
+   pressed, to leave the mode: it isn't told which, and the button still goes to the handlers. It
+   takes no other input: not hold MENU, ⏮, ⏭, their holds or the system's back. It gives its title through the same contract. It
    doesn't name its key, and it never sees the stack or the router.
 7. `[convention]` The device's parts and their look stay in `:common:designsystem` (ADR-015).
    `:device:host` assembles them, and defines no color, text style or shape.
@@ -266,5 +275,6 @@ that reports a call to the design system's `DeviceDisplay` or `DeviceHeader` any
 of `./gradlew check` and of the CI `build` job, and its unit tests have a violating and a passing
 case. An exception is a `@Suppress` that names the rule. The contract for the title, and the record,
 are behavior, with no syntax for a build check to read: they are covered by `ScreenTitlesTest`, the
-unit tests of `:device:host` that 39.03 brought. That every screen gives a title, and the other
+unit tests of `:device:host` that 39.03 brought. The routing of rules 3 and 6, with who is told of a
+playback button and when, is covered by `WheelEventRouterTest`. That every screen gives a title, and the other
 rules, are reviewed.

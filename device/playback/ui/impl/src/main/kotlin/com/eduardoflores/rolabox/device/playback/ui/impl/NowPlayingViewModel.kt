@@ -21,6 +21,9 @@ internal abstract class NowPlayingViewModel : ViewModel() {
     /** MENU was pressed in scrub: leaves it without seeking. */
     abstract fun onMenu()
 
+    /** ⏮, ⏭ or ⏯ was pressed, or ⏮ or ⏭ held: leaves scrub without seeking, and the button does what it does. */
+    abstract fun onPlaybackButton()
+
     /** The app went to the background: leaves scrub without seeking, so its wait never seeks unseen. */
     abstract fun onBackground()
 }

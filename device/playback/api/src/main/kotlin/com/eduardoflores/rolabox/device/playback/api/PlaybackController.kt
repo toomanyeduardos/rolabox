@@ -40,7 +40,11 @@ interface PlaybackController {
     /** Starts the next song at 0:00. Does nothing on the last song, or when nothing is loaded. */
     suspend fun next()
 
-    /** Starts the previous song at 0:00. Does nothing on the first song, or when nothing is loaded. */
+    /**
+     * What ⏮ does: starts the loaded song again at 0:00 when it is past its first seconds, and the previous
+     * song at 0:00 otherwise. The first song has no previous one, and starts again wherever it is. The
+     * threshold is the playback area's (ADR-018, rule 17). Does nothing when nothing is loaded.
+     */
     suspend fun previous()
 
     /** Sets the volume, kept between 0 and 100. */

@@ -1,7 +1,6 @@
 package com.eduardoflores.rolabox.device.playback.ui.impl
 
 import androidx.lifecycle.viewModelScope
-import com.eduardoflores.rolabox.device.library.api.SongId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackController
 import com.eduardoflores.rolabox.device.playback.api.PlaybackSong
 import com.eduardoflores.rolabox.device.playback.api.PlaybackState
@@ -42,8 +41,8 @@ internal class NowPlayingViewModelImpl @Inject constructor(
     private val playbackState: PlaybackState,
     private val playbackController: PlaybackController,
 ) : NowPlayingViewModel() {
-    /** Where a turn left the marker, and the song it was turned on. */
-    private data class ScrubMarker(val songId: SongId, val position: Duration)
+    /** Where a turn left the marker, and the start of the song it was turned on. */
+    private data class ScrubMarker(val start: Int, val position: Duration)
 
     private val mode = MutableStateFlow(NowPlayingMode.Time)
 
@@ -51,20 +50,21 @@ internal class NowPlayingViewModelImpl @Inject constructor(
     private val marker = MutableStateFlow<ScrubMarker?>(null)
     private var idleJob: Job? = null
 
-    /** The song scrub was selected on. */
-    private var scrubSongId: SongId? = null
+    /** The start of the song scrub was selected on: ⏮ can start the same song again. */
+    private var scrubStart: Int? = null
 
     override val uiState: StateFlow<NowPlayingUiState> = combine(
-        playbackState.currentSong.onEach(::endScrubOnAnotherSong),
+        combine(playbackState.currentSong, playbackState.startCount, ::Pair)
+            .onEach { (song, start) -> endScrubOnAnotherStart(song, start) },
         playbackState.position,
         playbackState.queueIndex,
         playbackState.queue,
         combine(mode, playbackState.volume, marker, ::Triple),
-    ) { song, position, index, queue, (mode, volume, marker) ->
+    ) { (song, start), position, index, queue, (mode, volume, marker) ->
         if (song == null || index == null) {
             NowPlayingUiState.NothingLoaded
         } else {
-            val shown = marker?.takeIf { mode == NowPlayingMode.Scrub && it.songId == song.id }?.position ?: position
+            val shown = marker?.takeIf { mode == NowPlayingMode.Scrub && it.start == start }?.position ?: position
             NowPlayingUiState.Playing(
                 title = song.title,
                 artist = song.artist,
@@ -83,9 +83,10 @@ internal class NowPlayingViewModelImpl @Inject constructor(
         viewModelScope.launch {
             val song = playbackState.currentSong.first() ?: return@launch
             if (mode.value == NowPlayingMode.Scrub) {
-                val from = marker.value?.takeIf { it.songId == song.id }?.position ?: playbackState.position.first()
+                val start = playbackState.startCount.first()
+                val from = marker.value?.takeIf { it.start == start }?.position ?: playbackState.position.first()
                 val end = song.duration.coerceAtLeast(Duration.ZERO)
-                marker.value = ScrubMarker(song.id, (from + ScrubStep * steps).coerceIn(Duration.ZERO, end))
+                marker.value = ScrubMarker(start, (from + ScrubStep * steps).coerceIn(Duration.ZERO, end))
                 acceptScrubAfterIdle()
             } else {
                 val volume = playbackState.volume.first() + VOLUME_STEP * steps
@@ -98,12 +99,12 @@ internal class NowPlayingViewModelImpl @Inject constructor(
 
     override fun onCenter() {
         viewModelScope.launch {
-            val song = playbackState.currentSong.first() ?: return@launch
+            if (playbackState.currentSong.first() == null) return@launch
             if (mode.value == NowPlayingMode.Scrub) {
                 idleJob?.cancel()
                 acceptScrub()
             } else {
-                scrubSongId = song.id
+                scrubStart = playbackState.startCount.first()
                 marker.value = null
                 mode.value = NowPlayingMode.Scrub
                 acceptScrubAfterIdle()
@@ -112,6 +113,8 @@ internal class NowPlayingViewModelImpl @Inject constructor(
     }
 
     override fun onMenu() = cancelScrub()
+
+    override fun onPlaybackButton() = cancelScrub()
 
     override fun onBackground() = cancelScrub()
 
@@ -124,22 +127,22 @@ internal class NowPlayingViewModelImpl @Inject constructor(
 
     private fun acceptScrubAfterIdle() = afterIdle(ScrubIdle) { acceptScrub() }
 
-    /** Seeks to the marker, unless it was never moved or the song changed under it, and leaves scrub. */
+    /** Seeks to the marker, unless it was never moved or another song started under it, and leaves scrub. */
     private suspend fun acceptScrub() {
         val accepted = marker.value
-        if (accepted != null && accepted.songId == playbackState.currentSong.first()?.id) {
+        if (accepted != null && accepted.start == playbackState.startCount.first()) {
             playbackController.seekTo(accepted.position)
         }
         leaveScrub()
     }
 
     /**
-     * Scrub doesn't carry over to another song, whether ⏮ or ⏭ started it or the queue ended (ADR-018, rule 16).
-     * It runs with [uiState], so only while the screen is observed (ADR-006, rule 5): unobserved, scrub's own
-     * timer ends it, and a marker of another song is never sought.
+     * Scrub doesn't carry over to another start of a song, whether the queue moved on, ⏮ started the same song
+     * again or the queue ended (ADR-018, rule 16). It runs with [uiState], so only while the screen is observed
+     * (ADR-006, rule 5): unobserved, scrub's own timer ends it, and a marker of another start is never sought.
      */
-    private fun endScrubOnAnotherSong(song: PlaybackSong?) {
-        if (mode.value == NowPlayingMode.Scrub && song?.id != scrubSongId) {
+    private fun endScrubOnAnotherStart(song: PlaybackSong?, start: Int) {
+        if (mode.value == NowPlayingMode.Scrub && (song == null || start != scrubStart)) {
             idleJob?.cancel()
             leaveScrub()
         }

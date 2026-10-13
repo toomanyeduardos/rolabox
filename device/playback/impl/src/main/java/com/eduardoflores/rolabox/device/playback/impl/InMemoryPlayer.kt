@@ -18,6 +18,7 @@ import javax.inject.Singleton
 import kotlin.time.ComparableTimeMark
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -37,14 +38,21 @@ internal val Tick: Duration = 250.milliseconds
 internal const val SEEK_SPEED = 10
 
 /**
+ * How far into a song ⏮ stops going to the previous one and starts the loaded one again (ADR-018,
+ * rule 17). At this position or before it, ⏮ goes to the previous song.
+ */
+internal val RestartThreshold: Duration = 3.seconds
+
+/**
  * A player with no engine: a clock in place of the audio (ADR-018). TEMPORARY: it is replaced when the
  * playback ADR chooses an engine, and only this class and its binding change, since everything it knows is a
  * plain value.
  *
  * While the song plays its position advances with [timeSource]. At its end the next song starts, and after
- * the last one nothing is loaded. The state says when its position was true, so every action first brings it
- * up to date, and the clock in [scope] does the same every [Tick] while the position moves. It runs in the
- * application scope, since the song goes on when its screen is gone (ADR-006, rule 6). Nothing here blocks.
+ * the last one nothing is loaded. ⏮ starts the loaded song again once it is past [RestartThreshold]. The
+ * state says when its position was true, so every action first brings it up to date, and the clock in
+ * [scope] does the same every [Tick] while the position moves. It runs in the application scope, since the
+ * song goes on when its screen is gone (ADR-006, rule 6). Nothing here blocks.
  */
 @Singleton
 internal class InMemoryPlayer @Inject constructor(
@@ -71,15 +79,14 @@ internal class InMemoryPlayer @Inject constructor(
     override val position: Flow<Duration> = state.map { it.position }.distinctUntilChanged()
     override val queue: Flow<List<PlaybackSong>> = state.map { it.queue }.distinctUntilChanged()
     override val queueIndex: Flow<Int?> = state.map { it.queueIndex }.distinctUntilChanged()
+    override val startCount: Flow<Int> = state.map { it.startCount }.distinctUntilChanged()
     override val volume: Flow<Int> = state.map { it.volume }.distinctUntilChanged()
 
     override suspend fun play(source: PlaybackSource, from: SongId): Either<PlaybackError, Unit> = either {
         val queue = library.queueOf(source).bind()
         val index = queue.indexOfFirst { it.id == from }
         if (index < 0) raise(PlaybackError.SongNotInSource(from, source))
-        change {
-            it.copy(queue = queue, queueIndex = index, position = Duration.ZERO, isPlaying = true, seeking = null)
-        }
+        change { it.copy(queue = queue, isPlaying = true, seeking = null).startedAt(index) }
     }
 
     override suspend fun pause() = change { it.copy(isPlaying = false) }
@@ -97,20 +104,18 @@ internal class InMemoryPlayer @Inject constructor(
 
     override suspend fun stopSeeking() = change { it.copy(seeking = null) }
 
-    override suspend fun next() = moveBy(1)
+    override suspend fun next() = change { snapshot ->
+        val next = (snapshot.queueIndex ?: return@change snapshot) + 1
+        if (next in snapshot.queue.indices) snapshot.startedAt(next) else snapshot
+    }
 
-    override suspend fun previous() = moveBy(-1)
+    override suspend fun previous() = change { snapshot ->
+        val index = snapshot.queueIndex ?: return@change snapshot
+        val restarts = index == 0 || snapshot.position > RestartThreshold
+        snapshot.startedAt(if (restarts) index else index - 1)
+    }
 
     override suspend fun setVolume(level: Int) = change { it.copy(volume = level.coerceIn(MIN_VOLUME, MAX_VOLUME)) }
-
-    private fun moveBy(step: Int) = change { snapshot ->
-        val target = (snapshot.queueIndex ?: return@change snapshot) + step
-        if (target !in snapshot.queue.indices) {
-            snapshot
-        } else {
-            snapshot.copy(queueIndex = target, position = Duration.ZERO)
-        }
-    }
 
     /** Brings the state up to now, and then applies [transform] to it. */
     private fun change(transform: (Snapshot) -> Snapshot) {
@@ -152,6 +157,7 @@ private data class Snapshot(
     val queue: List<PlaybackSong> = emptyList(),
     val queueIndex: Int? = null,
     val position: Duration = Duration.ZERO,
+    val startCount: Int = 0,
     val isPlaying: Boolean = false,
     val seeking: SeekDirection? = null,
     val volume: Int = INITIAL_VOLUME,
@@ -160,6 +166,10 @@ private data class Snapshot(
 
     /** Whether the position changes with time, so the clock has to run. */
     val isMoving: Boolean get() = currentSong != null && (isPlaying || seeking != null)
+
+    /** The song at [index] from 0:00, which is one more start, also when it is the loaded song again. */
+    fun startedAt(index: Int): Snapshot =
+        copy(queueIndex = index, position = Duration.ZERO, startCount = startCount + 1)
 
     /**
      * The state at [now]. A song that is being sought moves at [SEEK_SPEED] and stops at its ends, without
@@ -186,9 +196,9 @@ private data class Snapshot(
     private fun afterTheSongEnds(now: ComparableTimeMark): Snapshot {
         val next = (queueIndex ?: return this) + 1
         return if (next in queue.indices) {
-            copy(queueIndex = next, position = Duration.ZERO, positionAt = now)
+            startedAt(next).copy(positionAt = now)
         } else {
-            Snapshot(positionAt = now, volume = volume)
+            Snapshot(positionAt = now, startCount = startCount, volume = volume)
         }
     }
 }
