@@ -17,8 +17,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 
 /**
- * Playback that tests drive: [load], [unload], [playing], [positionAt] and [volumeAt] set what the observed flows
- * emit. The actions change nothing. They are recorded, so a test can check what a ViewModel asked for.
+ * Playback that tests drive: [load], [restarted], [unload], [playing], [positionAt] and [volumeAt] set what the
+ * observed flows emit. The actions change nothing. They are recorded, so a test can check what a ViewModel asked for.
  * [play] answers with [playResult].
  */
 // One function for each action of the controller, and one for each part of the state a test sets.
@@ -31,6 +31,7 @@ class FakePlayback @Inject constructor() :
     private val queueIndexState = MutableStateFlow<Int?>(null)
     private val playingState = MutableStateFlow(false)
     private val positionState = MutableStateFlow(Duration.ZERO)
+    private val startCountState = MutableStateFlow(0)
     private val volumeState = MutableStateFlow(INITIAL_VOLUME)
 
     /** What [play] answers with. */
@@ -59,6 +60,7 @@ class FakePlayback @Inject constructor() :
     override val position: Flow<Duration> = positionState
     override val queue: Flow<List<PlaybackSong>> = queueState
     override val queueIndex: Flow<Int?> = queueIndexState
+    override val startCount: Flow<Int> = startCountState
     override val volume: Flow<Int> = volumeState
 
     /** Loads [queue] with the song at [index] current, playing at 0:00. */
@@ -67,6 +69,13 @@ class FakePlayback @Inject constructor() :
         queueIndexState.value = index
         playingState.value = true
         positionState.value = Duration.ZERO
+        startCountState.value++
+    }
+
+    /** The loaded song starts again at 0:00, as ⏮ does past the first seconds of a song. */
+    fun restarted() {
+        positionState.value = Duration.ZERO
+        startCountState.value++
     }
 
     /** Back to nothing loaded. */

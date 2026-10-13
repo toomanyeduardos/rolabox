@@ -363,6 +363,56 @@ class NowPlayingViewModelTest {
     }
 
     @Test
+    fun theSongStartsAgainInScrub_scrubEnds_andTheMarkerIsNotSought() = runTest {
+        val viewModel = scrubbingViewModel()
+        viewModel.onTurn(20)
+
+        playback.restarted()
+        advanceTimeBy(ScrubIdle + 1.seconds)
+
+        assertEquals(emptyList<Duration>(), playback.seekCalls)
+        assertEquals(NowPlayingMode.Time, viewModel.playing().mode)
+        assertEquals("Glasshouse", viewModel.playing().title)
+        assertEquals(Duration.ZERO, viewModel.playing().position)
+    }
+
+    @Test
+    fun aScrubAfterTheSongStartedAgain_isSoughtAsAnyOther() = runTest {
+        val viewModel = scrubbingViewModel()
+        playback.restarted()
+
+        viewModel.onCenter()
+        viewModel.onTurn(4)
+        viewModel.onCenter()
+
+        assertEquals(listOf(ScrubStep * 4), playback.seekCalls)
+    }
+
+    @Test
+    fun aPlaybackButton_leavesScrubWithoutSeeking_alsoWhenNothingStarts() = runTest {
+        val viewModel = scrubbingViewModel()
+        viewModel.onTurn(20)
+
+        viewModel.onPlaybackButton()
+        advanceTimeBy(ScrubIdle + 1.milliseconds)
+
+        assertEquals(NowPlayingMode.Time, viewModel.playing().mode)
+        assertEquals(1.minutes, viewModel.playing().position)
+        assertEquals(emptyList<Duration>(), playback.seekCalls)
+    }
+
+    @Test
+    fun aPlaybackButton_outsideScrub_doesNothing() = runTest {
+        val viewModel = observedViewModel()
+        playback.load(Queue, index = 0)
+        viewModel.onTurn(1)
+
+        viewModel.onPlaybackButton()
+
+        assertEquals(NowPlayingMode.Volume, viewModel.playing().mode)
+    }
+
+    @Test
     fun outsideScrub_aTurnChangesTheVolumeAndShowsIt() = runTest {
         val viewModel = observedViewModel()
         playback.load(Queue, index = 0)

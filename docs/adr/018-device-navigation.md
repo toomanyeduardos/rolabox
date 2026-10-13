@@ -99,6 +99,17 @@
 - **Revised 2026-10-12:** The header of rule 19 is in the code (Target state, Conformance). 39.03
   built it: each screen gives its title, and the record is hidden, still or spinning. It is covered by
   `ScreenTitlesTest`, in `:device:host`, and by the goldens of the header. No rule changes.
+- **Revised 2026-10-12:** A playback button wins over scrub (The wheel is an input device, What each
+  control does, rules 5, 10 and 16). ⏮, ⏭, ⏯ and a hold of ⏮ or ⏭ leave scrub without seeking and
+  then do what they always do, also when that changes nothing, as ⏭ on the last song. Until now
+  only another song ended scrub, and ⏯ and the holds left it on. Building ⏮ (39.04) showed two
+  gaps: a restart loads no other song, so scrub outlived it and its marker was sought 3 s later,
+  and a button that changes nothing in the playback state can't be seen through it. So the playback
+  state says when an item starts, and a screen in a mode of its own is told of the playback buttons
+  through the host's contract ([ADR-019](019-device-host-module.md), rule 6). It is told and
+  doesn't take them: `:app` still handles them the same way on every screen.
+- **Revised 2026-10-12:** ⏮ of rule 17 is in the code (Target state, Conformance). 39.04 built it,
+  with the buttons in scrub of the revision above. No rule changes.
 
 ## Context
 
@@ -132,9 +143,10 @@ and the display is small.
 
 **Target state.** The device was written after this ADR, and the rules apply to code as it is
 written. Rules 3, 9, 11, 12 and 15 have a build check (see Conformance under Rules). The rest are
-`[convention]` and are checked in review. Since the revisions of 2026-10-12, three rules are ahead of
-the code, each until its ticket: the settings in the display in rule 11 (39.07), one-line rows in
-rule 14 (39.09), and ⏮ in rule 17 (39.04). The header in rule 19 was the fourth, until 39.03 built it.
+`[convention]` and are checked in review. Since the revisions of 2026-10-12, two rules are ahead of
+the code, each until its ticket: the settings in the display in rule 11 (39.07) and one-line rows in
+rule 14 (39.09). The header in rule 19 and ⏮ in rule 17 were the others, until 39.03 and 39.04 built
+them.
 
 ## Decision
 
@@ -198,6 +210,9 @@ The device host receives every event and decides where it goes:
   the mode, and the screen stack doesn't change. Now Playing does this in scrub.
 - **⏮, ⏭ and their holds are handled by `:app`,** the same way on every screen. The host passes
   them to handlers that `:app` provides, so it doesn't depend on the playback area.
+- **A screen in a mode of its own is told of the playback buttons,** through the host's contract,
+  before the handlers receive them, so it leaves the mode first. It doesn't take them and isn't
+  told which one it was: what they do stays `:app`'s. Now Playing does this in scrub.
 - **⏯ goes to the top screen first.** If the highlighted row can be played, the screen plays it.
   On any other row, and on Now Playing, `:app` handles it, the same way everywhere.
 
@@ -219,8 +234,8 @@ An item is **loaded** from the moment it starts until its queue ends. A loaded i
 | Hold MENU | Goes to the main menu | Goes to the main menu |
 | ⏮ | Restarts the loaded item, or goes to the previous one at its start. Nothing if none is loaded | The same. In scrub: leaves scrub without seeking first |
 | ⏭ | Next item if one is loaded. Otherwise nothing | Next item. In scrub: leaves scrub without seeking first |
-| Hold ⏮ ⏭ | Seeks in the loaded item. Otherwise nothing | Seeks |
-| ⏯ | On a playable row, plays it. On any other row, plays or pauses the loaded item | Plays or pauses |
+| Hold ⏮ ⏭ | Seeks in the loaded item. Otherwise nothing | Seeks. In scrub: leaves scrub without seeking first |
+| ⏯ | On a playable row, plays it. On any other row, plays or pauses the loaded item | Plays or pauses. In scrub: leaves scrub without seeking first |
 
 - **What the wheel does depends on the screen, not on playback.** Turning changes the volume only
   on Now Playing. That is what lets the user browse while something plays.
@@ -247,7 +262,12 @@ An item is **loaded** from the moment it starts until its queue ends. A loaded i
   after 2 s. The mode and the marker are the screen's own state, and the screen stack doesn't change.
 - **Scrub belongs to the song it was selected on.** When another song is loaded, by ⏮, by ⏭ or by
   the queue moving on, or when the queue ends, scrub ends and nothing is sought: a marker is never
-  applied to a song it wasn't set on. ⏮ ends scrub also when it restarts the same song.
+  applied to a song it wasn't set on. ⏮ ends scrub also when it restarts the same song: the
+  playback state says when an item starts, and a marker belongs to one start of its song.
+- **A playback button wins over scrub.** ⏮, ⏭, ⏯ and a hold of ⏮ or ⏭ leave scrub without seeking,
+  and then do what they always do. That holds when the button changes nothing, as ⏭ on the last
+  song: the button was pressed, and scrub is over. The marker is never sought after a button, since
+  the user has just said where the song should be.
 - **Scrub ends when the app goes to the background,** and nothing is sought. The app is left with
   the system's back or with Home, and the 3 s wait is not an accept the user can see from outside
   the app. Now Playing is on the time when they return.
@@ -486,7 +506,8 @@ as ADR-017's rule 10 requires.
 5. `[convention]` Turn and center go to the top screen only. MENU and its hold are handled by the
    device host, and ⏮, ⏭ and their holds by `:app`, and no screen changes what they do, except
    that a screen in a mode of its own takes MENU to leave the mode (rule 16). ⏯ plays the
-   highlighted row when that row can be played, and is handled by `:app` everywhere else.
+   highlighted row when that row can be played, and is handled by `:app` everywhere else. A screen
+   in a mode of its own is told of a playback button, to leave the mode, and doesn't take it.
 6. `[convention]` What turn and center do depends on the screen. What ⏮ and ⏭ do depends on
    whether an item is loaded. The table in Decision is the reference for every control.
 7. `[convention]` A list's highlight is saved state of its entry, and is restored when the user
@@ -499,8 +520,8 @@ as ADR-017's rule 10 requires.
    device host nor a screen handles the system's back. On a full screen, back is ADR-012's.
    Enforced for the handling: that back leaves the app is tested on a device.
 10. `[convention]` Playback state belongs to the playback area and is observed as `Flow`s, and
-    whether the loaded item is playing is part of it. A paused item is loaded. Only ⏯ and playing a
-    row change whether it is playing. No entry's ViewModel owns playback state.
+    whether the loaded item is playing is part of it, and so is each start of an item, the loaded one
+    again included. A paused item is loaded. Only ⏯ and playing a row change whether it is playing. No entry's ViewModel owns playback state.
 11. `[enforced]` A screen that needs touch or the keyboard is a full screen on the app stack, not
     a device screen. No screen mixes the two. The device's settings are device screens. The account
     and everything under it are full screens, opened from the Settings menu's Account row, and
@@ -521,8 +542,9 @@ as ADR-017's rule 10 requires.
 16. `[convention]` On Now Playing, center selects scrub and no selection means volume. A turn moves
     a marker in scrub mode, without seeking, and changes the volume otherwise. Center in scrub, or
     3 s without a turn, seeks to the marker and leaves scrub. MENU in scrub leaves it without
-    seeking, and the screen stays. Scrub ends without seeking when another song is loaded, ⏮
-    restarts the song, the queue ends or the app goes to the background. The volume bar returns to the time after 2 s. The Now Playing row of the main menu
+    seeking, and the screen stays. Scrub ends without seeking when ⏮, ⏭ or ⏯ is pressed or ⏮ or ⏭
+    is held, whatever the button then does, when an item starts, the loaded one again included,
+    when the queue ends or the app goes to the background. The volume bar returns to the time after 2 s. The Now Playing row of the main menu
     is hidden until an item is loaded.
 17. `[convention]` Playing a row queues the whole list it was selected from, in the order it is
     shown, and starts from that row. ⏮ restarts the loaded item at 0:00 when its position is past
@@ -565,6 +587,9 @@ are reviewed. What rules 10, 14, 17 and 19 say of playing and paused, the one-li
 header is behavior, with no syntax for a build check to read. It is covered by the unit tests of the
 tickets that build it, named under Target state. Rule 10's playing and paused, the clock and the
 holds are covered by `InMemoryPlayerTest`, ⏯ by `WheelEventRouterTest` and `DeviceViewModelTest`,
-and the end of the queue on Now Playing by `DeviceNavigationTest`, which runs on a device. Rule 19's
+and the end of the queue on Now Playing by `DeviceNavigationTest`, which runs on a device. Rule 17's
+⏮ and its threshold are covered by `InMemoryPlayerTest`. Rule 16's buttons in scrub are covered by
+`WheelEventRouterTest`, for who is told and in what order, and by `NowPlayingViewModelTest`, for
+scrub ending on a button and on a restart. Rule 19's
 title and record are covered by `ScreenTitlesTest`, and the header's look by the goldens of
 `DeviceHeaderPreview`.

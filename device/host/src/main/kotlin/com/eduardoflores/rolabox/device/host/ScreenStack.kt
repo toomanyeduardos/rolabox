@@ -53,12 +53,16 @@ fun rememberScreenStack(startKey: NavKey): ScreenStack {
  * Where the screens receive the wheel events that are theirs. A screen registers for its own key
  * while it is composed, so a screen that is still animating out never gets an event meant for the
  * one on top. A screen registers for MENU apart, and only while it is in a mode of its own, and for ⏯
- * apart, and only while its highlighted row can be played.
+ * apart, and only while its highlighted row can be played. A screen in a mode of its own also registers to
+ * be told of the playback buttons, which it never takes.
  */
+// A register, an unregister and a dispatch for each of the four ways a screen receives input.
+@Suppress("TooManyFunctions")
 internal class ScreenInputs {
     private val handlers = mutableMapOf<NavKey, (WheelEvent) -> Unit>()
     private val menuHandlers = mutableMapOf<NavKey, () -> Unit>()
     private val playPauseHandlers = mutableMapOf<NavKey, () -> Unit>()
+    private val playbackButtonObservers = mutableMapOf<NavKey, () -> Unit>()
 
     fun register(key: NavKey, handler: (WheelEvent) -> Unit) {
         handlers[key] = handler
@@ -101,6 +105,19 @@ internal class ScreenInputs {
         handler()
         return true
     }
+
+    fun registerPlaybackButtons(key: NavKey, observer: () -> Unit) {
+        playbackButtonObservers[key] = observer
+    }
+
+    fun unregisterPlaybackButtons(key: NavKey) {
+        playbackButtonObservers -= key
+    }
+
+    /** Tells the screen of [key] that a playback button was pressed, when it asked to be told. It doesn't take it. */
+    fun notifyPlaybackButton(key: NavKey) {
+        playbackButtonObservers[key]?.invoke()
+    }
 }
 
 /**
@@ -129,7 +146,8 @@ internal class ScreenTitles {
  * Decides where each wheel event goes (ADR-018, rule 5). The screens never see hold MENU, ⏮, ⏭ or
  * their holds, so none of them can change what those do. They see MENU only while they are in a mode of
  * their own, and ⏯ only while their highlighted row can be played (ADR-019, rule 6). The playback buttons
- * go to [onPlaybackEvent], so the host doesn't depend on the playback area (ADR-019).
+ * go to [onPlaybackEvent], so the host doesn't depend on the playback area (ADR-019). A top screen in a mode
+ * of its own is told of them first, so the mode ends before the button does what it does (ADR-018, rule 16).
  */
 internal class WheelEventRouter(
     private val stack: ScreenStack,
@@ -144,13 +162,18 @@ internal class WheelEventRouter(
 
             WheelEvent.HoldMenu -> stack.popToRoot()
 
-            WheelEvent.PlayPause -> if (!inputs.dispatchPlayPause(stack.top)) onPlaybackEvent(event)
+            WheelEvent.PlayPause -> if (!inputs.dispatchPlayPause(stack.top)) playbackButton(event)
 
             WheelEvent.Previous,
             WheelEvent.Next,
             is WheelEvent.HoldPrevious,
             is WheelEvent.HoldNext,
-            -> onPlaybackEvent(event)
+            -> playbackButton(event)
         }
+    }
+
+    private fun playbackButton(event: WheelEvent) {
+        inputs.notifyPlaybackButton(stack.top)
+        onPlaybackEvent(event)
     }
 }

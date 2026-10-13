@@ -26,6 +26,10 @@ internal class ScreenInput(
 
     fun unregisterPlayPause() = inputs.unregisterPlayPause(key)
 
+    fun registerPlaybackButtons(observer: () -> Unit) = inputs.registerPlaybackButtons(key, observer)
+
+    fun unregisterPlaybackButtons() = inputs.unregisterPlaybackButtons(key)
+
     fun setTitle(title: String?) = titles.set(key, title)
 }
 
@@ -74,6 +78,23 @@ fun HandlePlayPause(enabled: Boolean, onPlayPause: () -> Unit) {
     DisposableEffect(input, enabled) {
         if (enabled) input.registerPlayPause { currentOnPlayPause() }
         onDispose { input.unregisterPlayPause() }
+    }
+}
+
+/**
+ * While [enabled], [onPlaybackButton] is called when ⏮, ⏭ or ⏯ is pressed, or ⏮ or ⏭ is held or released,
+ * before the device's handler of the playback buttons receives it. It is for a device screen that is in a
+ * mode of its own, such as scrub on Now Playing, to leave that mode: the button wins over the mode (ADR-018,
+ * rule 16, and ADR-019, rule 6). The screen doesn't take the button and isn't told which one it was, so it
+ * can't change what the button does.
+ */
+@Composable
+fun ObservePlaybackButtons(enabled: Boolean, onPlaybackButton: () -> Unit) {
+    val input = LocalScreenInput.current ?: return
+    val currentOnPlaybackButton by rememberUpdatedState(onPlaybackButton)
+    DisposableEffect(input, enabled) {
+        if (enabled) input.registerPlaybackButtons { currentOnPlaybackButton() }
+        onDispose { input.unregisterPlaybackButtons() }
     }
 }
 

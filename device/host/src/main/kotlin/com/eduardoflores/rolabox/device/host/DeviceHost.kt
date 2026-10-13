@@ -21,7 +21,8 @@ import com.eduardoflores.rolabox.common.designsystem.wheel.WheelEvent
  *
  * The caller gives it the screens as [entryProvider], and pushes on [stack] in response to the exits
  * they report. The host pops. [onPlaybackEvent] receives ⏮, ⏭ and their holds, which are the same on
- * every screen, and ⏯ unless the top screen plays its highlighted row with it (ADR-018, rule 5).
+ * every screen, and ⏯ unless the top screen plays its highlighted row with it (ADR-018, rule 5). A top
+ * screen in a mode of its own is told of them first, with [ObservePlaybackButtons].
  *
  * The header shows the title that the top screen gives with [ScreenTitle], and none until it has. Its
  * record is playback state, which the host can't see, so the caller says whether an item is loaded,

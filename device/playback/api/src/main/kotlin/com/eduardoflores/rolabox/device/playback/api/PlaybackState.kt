@@ -29,6 +29,13 @@ interface PlaybackState {
     /** Where [currentSong] is in [queue], or `null` when nothing is loaded. */
     val queueIndex: Flow<Int?>
 
+    /**
+     * How many times a song has started at 0:00: when a row is played, when ⏮ or ⏭ starts a song, and when a
+     * song ends and the next one starts. ⏮ can start the loaded song again, so [currentSong] alone doesn't
+     * say that a song started. What belongs to one start of a song, such as a scrub, ends when this changes.
+     */
+    val startCount: Flow<Int>
+
     /** The volume, from 0 to 100. */
     val volume: Flow<Int>
 }

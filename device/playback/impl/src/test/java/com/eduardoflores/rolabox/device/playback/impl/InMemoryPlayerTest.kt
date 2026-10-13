@@ -150,14 +150,81 @@ class InMemoryPlayerTest {
     }
 
     @Test
-    fun previous_inTheMiddleMovesBackAndResetsThePosition() = scope.runTest {
+    fun previous_pastTheThresholdStartsTheSongAgain_andTheQueueIndexStays() = scope.runTest {
         player.play(PlaybackSource.ByAlbum(album.id), SongId(3))
-        player.seekTo(40.seconds)
+        after(RestartThreshold + Tick)
+
+        player.previous()
+
+        assertEquals(SongId(3), player.currentSong.first()?.id)
+        assertEquals(2, player.queueIndex.first())
+        assertEquals(Duration.ZERO, player.position.first())
+    }
+
+    @Test
+    fun previous_atTheThresholdStartsThePreviousSong() = scope.runTest {
+        player.play(PlaybackSource.ByAlbum(album.id), SongId(3))
+        after(RestartThreshold)
 
         player.previous()
 
         assertEquals(SongId(2), player.currentSong.first()?.id)
         assertEquals(1, player.queueIndex.first())
+        assertEquals(Duration.ZERO, player.position.first())
+    }
+
+    @Test
+    fun previous_atTheStartOfASongStartsThePreviousSong() = scope.runTest {
+        player.play(PlaybackSource.ByAlbum(album.id), SongId(3))
+
+        player.previous()
+
+        assertEquals(SongId(2), player.currentSong.first()?.id)
+        assertEquals(Duration.ZERO, player.position.first())
+    }
+
+    @Test
+    fun previous_twiceInARow_startsTheSongAgainAndThenThePreviousOne() = scope.runTest {
+        player.play(PlaybackSource.ByAlbum(album.id), SongId(3))
+        after(40.seconds)
+
+        player.previous()
+        after(1.seconds)
+        assertEquals(SongId(3), player.currentSong.first()?.id)
+        assertEquals(1.seconds, player.position.first())
+        player.previous()
+
+        assertEquals(SongId(2), player.currentSong.first()?.id)
+        assertEquals(Duration.ZERO, player.position.first())
+    }
+
+    @Test
+    fun previous_onAPausedSong_startsItAgainAndThenThePreviousOne_andBothStayPaused() = scope.runTest {
+        player.play(PlaybackSource.ByAlbum(album.id), SongId(3))
+        after(40.seconds)
+        player.pause()
+
+        player.previous()
+        after(10.seconds)
+        assertEquals(SongId(3), player.currentSong.first()?.id)
+        assertEquals(Duration.ZERO, player.position.first())
+        assertFalse(player.isPlaying.first())
+        player.previous()
+        after(10.seconds)
+
+        assertEquals(SongId(2), player.currentSong.first()?.id)
+        assertEquals(Duration.ZERO, player.position.first())
+        assertFalse(player.isPlaying.first())
+    }
+
+    @Test
+    fun previous_afterASeekPastTheThresholdStartsTheSongAgain() = scope.runTest {
+        player.play(PlaybackSource.ByAlbum(album.id), SongId(3))
+        player.seekTo(40.seconds)
+
+        player.previous()
+
+        assertEquals(SongId(3), player.currentSong.first()?.id)
         assertEquals(Duration.ZERO, player.position.first())
     }
 
@@ -173,14 +240,60 @@ class InMemoryPlayerTest {
     }
 
     @Test
-    fun previous_onTheFirstSongDoesNothing() = scope.runTest {
+    fun previous_onTheFirstSongStartsItAgain_pastTheThreshold() = scope.runTest {
         player.play(PlaybackSource.ByAlbum(album.id), SongId(1))
-        player.seekTo(40.seconds)
+        after(40.seconds)
 
         player.previous()
 
         assertEquals(SongId(1), player.currentSong.first()?.id)
-        assertEquals(40.seconds, player.position.first())
+        assertEquals(0, player.queueIndex.first())
+        assertEquals(Duration.ZERO, player.position.first())
+    }
+
+    @Test
+    fun previous_onTheFirstSongStartsItAgain_belowTheThreshold() = scope.runTest {
+        player.play(PlaybackSource.ByAlbum(album.id), SongId(1))
+        after(2.seconds)
+
+        player.previous()
+
+        assertEquals(SongId(1), player.currentSong.first()?.id)
+        assertEquals(Duration.ZERO, player.position.first())
+    }
+
+    @Test
+    fun theStartCount_changesWithEveryStartOfASong_theSameOneIncluded() = scope.runTest {
+        val before = player.startCount.first()
+
+        player.play(PlaybackSource.ByAlbum(album.id), SongId(3))
+        val played = player.startCount.first()
+        player.next()
+        val next = player.startCount.first()
+        after(40.seconds)
+        player.previous()
+        val restarted = player.startCount.first()
+        player.previous()
+        val previous = player.startCount.first()
+        after(103.seconds)
+        val ended = player.startCount.first()
+
+        assertEquals(SongId(4), player.currentSong.first()?.id)
+        assertEquals(listOf(1, 2, 3, 4, 5), listOf(played, next, restarted, previous, ended).map { it - before })
+    }
+
+    @Test
+    fun theStartCount_staysWhenNothingStarts() = scope.runTest {
+        player.play(PlaybackSource.ByAlbum(album.id), SongId(5))
+        val started = player.startCount.first()
+
+        player.next()
+        player.seekTo(40.seconds)
+        player.pause()
+        player.resume()
+        after(10.seconds)
+
+        assertEquals(started, player.startCount.first())
     }
 
     @Test

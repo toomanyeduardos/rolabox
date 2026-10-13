@@ -203,6 +203,72 @@ class WheelEventRouterTest {
     }
 
     @Test
+    fun playbackButtons_tellTheTopScreenThatAskedFirst_andStillGoToTheirHandler() {
+        stack.push(Second)
+        val order = mutableListOf<String>()
+        val router = WheelEventRouter(stack, inputs) { order += "handler" }
+        inputs.registerPlaybackButtons(Second) { order += "screen" }
+
+        playbackEvents.forEach(router::route)
+
+        assertEquals(playbackEvents.flatMap { listOf("screen", "handler") }, order)
+        assertEquals(emptyList<WheelEvent>(), firstReceived + secondReceived)
+        assertEquals(listOf<NavKey>(First, Second), stack.keys)
+    }
+
+    @Test
+    fun playbackButtons_stopTellingTheScreen_onceItStopsAsking() {
+        stack.push(Second)
+        var told = 0
+        inputs.registerPlaybackButtons(Second) { told++ }
+        inputs.unregisterPlaybackButtons(Second)
+
+        playbackEvents.forEach(router::route)
+
+        assertEquals(0, told)
+        assertEquals(playbackEvents, playbackReceived)
+    }
+
+    @Test
+    fun playbackButtons_neverTellAScreenBelowTheTop() {
+        var told = 0
+        inputs.registerPlaybackButtons(First) { told++ }
+        stack.push(Second)
+
+        playbackEvents.forEach(router::route)
+
+        assertEquals(0, told)
+        assertEquals(playbackEvents, playbackReceived)
+    }
+
+    @Test
+    fun playPause_thatTheTopScreenTook_isNotToldAsAPlaybackButton() {
+        stack.push(Second)
+        var told = 0
+        inputs.registerPlayPause(Second) {}
+        inputs.registerPlaybackButtons(Second) { told++ }
+
+        router.route(WheelEvent.PlayPause)
+
+        assertEquals(0, told)
+        assertEquals(emptyList<WheelEvent>(), playbackReceived)
+    }
+
+    @Test
+    fun turnCenterAndMenu_neverTellOfAPlaybackButton() {
+        stack.push(Second)
+        var told = 0
+        inputs.registerPlaybackButtons(Second) { told++ }
+
+        router.route(WheelEvent.Turn(1))
+        router.route(WheelEvent.Center)
+        router.route(WheelEvent.Menu)
+        router.route(WheelEvent.HoldMenu)
+
+        assertEquals(0, told)
+    }
+
+    @Test
     fun turnCenterAndMenu_neverReachThePlaybackHandler() {
         stack.push(Second)
 
