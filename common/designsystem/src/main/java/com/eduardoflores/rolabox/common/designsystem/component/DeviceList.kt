@@ -48,18 +48,22 @@ private const val CHEVRON_ALPHA = 0.75f
 private const val SELECTION_UPPER_STOP = 0.48f
 private const val SELECTION_LOWER_STOP = 0.52f
 
-/** A row of a [DeviceList]: its [label], and whether it [opensSubmenu], which draws a `›` after it. */
+/**
+ * A row of a [DeviceList]: its [label], whether it [opensSubmenu], which draws a `›` after it, and an
+ * optional [value], such as a setting's "Off", drawn at the end of the row in place of the `›`.
+ */
 @Immutable
-data class DeviceListRow(val label: String, val opensSubmenu: Boolean = false)
+data class DeviceListRow(val label: String, val opensSubmenu: Boolean = false, val value: String? = null)
 
 /**
  * The list of a device's display (ADR-018): one row per item, the row at [highlightedIndex] in the
- * selection color, a `›` on the rows that open a submenu, and a thin scrollbar on the right when the
- * list doesn't fit. Put it in the content of a [DeviceDisplay].
+ * selection color, a `›` on the rows that open a submenu, a row's value on the right, and a thin
+ * scrollbar on the right when the list doesn't fit. Put it in the content of a [DeviceDisplay].
  *
  * The list doesn't take taps, drags or scrolls: the highlight is the screen's state, moved by the
  * wheel, and the list scrolls only to keep it in view. A row is as tall as its text needs and wraps
- * the text, so at large font scales fewer rows fit and the highlight still reaches every one.
+ * the text, so at large font scales fewer rows fit and the highlight still reaches every one. A value
+ * keeps its space, and a long label gives way to it.
  */
 @Composable
 fun DeviceList(rows: List<DeviceListRow>, highlightedIndex: Int, modifier: Modifier = Modifier) {
@@ -114,7 +118,9 @@ private fun DeviceListItem(row: DeviceListRow, selected: Boolean) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(row.label, style = styles.displayRow.copy(color = ink), modifier = Modifier.weight(1f))
-        if (row.opensSubmenu) {
+        if (row.value != null) {
+            Text(row.value, style = styles.displayRowValue.copy(color = ink), maxLines = 1)
+        } else if (row.opensSubmenu) {
             // Decorative: the row opens something whether or not the arrow is read out.
             Text(
                 "›",
@@ -195,6 +201,14 @@ private val Artists = listOf(
     "Juno Vale", "Kite Theory", "Maren Holt", "Northbound", "Otis Ray", "Pale Lanterns", "Quiet Fleet",
 ).map { DeviceListRow(it, opensSubmenu = true) }
 
+private val Settings = listOf(
+    DeviceListRow("Shuffle", value = "Off"),
+    DeviceListRow("Repeat", value = "All"),
+    DeviceListRow("Clicker", value = "On"),
+    DeviceListRow("Sound Check and Volume Limit for Every Song", value = "Off"),
+    DeviceListRow("Account", opensSubmenu = true),
+)
+
 @Composable
 private fun DeviceListPreview(title: String, rows: List<DeviceListRow>, highlightedIndex: Int) {
     RolaboxTheme {
@@ -221,3 +235,7 @@ private fun DeviceListLongMiddlePreview() = DeviceListPreview("Artists", Artists
 @PreviewLightDark
 @Composable
 private fun DeviceListLongLastPreview() = DeviceListPreview("Artists", Artists, highlightedIndex = Artists.lastIndex)
+
+@PreviewLightDark
+@Composable
+private fun DeviceListValuesPreview() = DeviceListPreview("Settings", Settings, highlightedIndex = 2)

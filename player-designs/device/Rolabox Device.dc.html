@@ -20,7 +20,7 @@
 <div style="margin:0 0 40px">
 <div style="font:700 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;color:#6a6a6a;margin:0 0 14px">{{ th.name }}</div>
 <div style="display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start">
-<sc-for list="{{ th.screens }}" as="s" hint-placeholder-count="9">
+<sc-for list="{{ th.screens }}" as="s" hint-placeholder-count="10">
 <div style="display:flex;flex-direction:column;gap:6px;width:360px">
 <div style="display:flex;align-items:baseline;gap:8px;font-size:12px;color:#1a1a1a"><span style="font:600 10.5px ui-monospace,Menlo,monospace;padding:2px 6px;background:rgba(0,0,0,.08);border-radius:4px">{{ s.num }}</span><span style="font-weight:600">{{ s.label }}</span></div>
 <div style="font-size:11.5px;line-height:1.4;color:rgba(0,0,0,.55);min-height:32px;text-wrap:pretty">{{ s.how }}</div>
@@ -40,6 +40,7 @@
 <div style="height:32px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 {{ s.padR }} 0 12px;font-size:16px;letter-spacing:-.01em;font-weight:{{ r.fw }};background:{{ r.bg }};color:{{ r.fg }}">
 <span style="display:flex;align-items:center;gap:8px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="display:{{ r.dotD }};flex:none;width:7px;height:7px;border-radius:50%;background:{{ r.dotC }}"></span>{{ r.t }}</span>
 <span style="display:{{ r.chevD }};font-size:18px;line-height:1;margin-top:-2px;opacity:.75">›</span>
+<span style="display:{{ r.valD }};flex:none;font-weight:400;white-space:nowrap">{{ r.v }}</span>
 </div>
 </sc-for>
 <div style="display:{{ s.sbD }};position:absolute;right:3px;top:4px;bottom:4px;width:4px;border-radius:2px;background:{{ th.t.sRule }}"><div style="position:absolute;left:0;right:0;top:{{ s.thumbTop }};height:{{ s.thumbH }};border-radius:2px;background:{{ th.t.sMuted }}"></div></div>
@@ -110,13 +111,14 @@ class Component extends DCLogic {
     const disc = (size, bg, spin) => React.createElement('span', { style: { position: 'relative', display: 'inline-block', width: size, height: size, borderRadius: '50%',
       background: `radial-gradient(circle, ${bg} 0 6%, transparent 6.5%), radial-gradient(circle, #E4572E 0 33%, transparent 33.5%), conic-gradient(from 10deg, rgba(255,255,255,0) 0deg, rgba(255,255,255,.3) 28deg, rgba(255,255,255,0) 56deg, rgba(255,255,255,0) 180deg, rgba(255,255,255,.22) 208deg, rgba(255,255,255,0) 236deg), repeating-radial-gradient(circle, #1b1b1b 0 1px, #090909 1px 2px)`,
       boxShadow: '0 0 0 1px rgba(0,0,0,.25)', animation: spin ? 'rbspin 1.8s linear infinite' : 'none' } });
-    const I = (t, o = {}) => ({ t, chev: !!o.c, dot: !!o.d });
+    const I = (t, o = {}) => ({ t, chev: !!o.c, dot: !!o.d, v: o.v || '' });
     const main = [I('Music', { c: 1 }), I('Podcasts', { c: 1 }), I('Audiobooks', { c: 1 }), I('Shuffle Songs'), I('Settings', { c: 1 })];
     const music = ['Artists', 'Albums', 'Songs', 'Genres', 'Playlists'].map(x => I(x, { c: 1 }));
     const artists = ['Adeline Park', 'Blue Harbor', 'Cass Monroe', 'Dune Collective', 'Ellis Grey', 'Fern & Iron', 'Hollow Pines', 'Juno Vale', 'Kite Theory', 'Maren Holt', 'Northbound', 'Otis Ray', 'Pale Lanterns', 'Quiet Fleet'].map(x => I(x, { c: 1 }));
     const albums = ['All Songs', 'Low Tide Radio', 'Paper Satellites', 'North of Here'].map(x => I(x, { c: 1 }));
     const songs = ['Dial Tone', 'Every Other Window', 'Glasshouse', 'Tin Can Summer', 'Weather Report', 'Satellite Hymn', 'Coastline', 'Halfway Houses', 'Night Bus', 'Paper Satellites'].map(x => I(x));
     const pods = [I('The Long Signal', { c: 1, d: 1 }), I('Field Notes', { c: 1 }), I('Small Rooms', { c: 1, d: 1 }), I('Night Shift Radio', { c: 1 }), I('Weekly Bench', { c: 1 })];
+    const settings = [I('Shuffle', { v: 'Off' }), I('Repeat', { v: 'All' }), I('Clicker', { v: 'On' }), I('Sound Check and Volume Limit', { v: 'Off' }), I('Account', { c: 1 })];
     const P = { song: 'Glasshouse', artist: 'Maren Holt', album: 'Paper Satellites', pos: '3 OF 10' };
     const defs = [
       { num: '01', label: 'Main menu', how: 'The device opens here. Turn to move the highlight.', title: 'rolabox', items: main, hi: 0, play: null, w: 'turn' },
@@ -127,7 +129,8 @@ class Component extends DCLogic {
       { num: '06', label: 'Now Playing', how: 'Center on a song starts playback. MENU goes back to the song list.', player: 1, ...P, lt: '1:12', rt: '-2:29', pct: '33%', mode: 'play', play: true, w: 'center' },
       { num: '07', label: 'Now Playing · volume', how: 'Turn the wheel. The bar switches to volume and returns to time after 2s.', player: 1, ...P, tag: 'VOLUME', lt: 'VOL', rt: '62%', pct: '62%', mode: 'vol', play: true, w: 'turn' },
       { num: '08', label: 'Now Playing · scrub', how: 'Press center, then turn to scrub. Returns to volume after 3s idle.', player: 1, ...P, tag: 'SCRUB', lt: '1:48', rt: '-1:53', pct: '49%', mode: 'scrub', play: true, w: 'center' },
-      { num: '09', label: 'Podcasts (still playing)', how: 'MENU back to the main menu, then Podcasts. The spinning vinyl shows music is still playing. Dots mark unplayed episodes.', title: 'Podcasts', items: pods, hi: 0, play: true, w: 'menu' }
+      { num: '09', label: 'Podcasts (still playing)', how: 'MENU back to the main menu, then Podcasts. The spinning vinyl shows music is still playing. Dots mark unplayed episodes.', title: 'Podcasts', items: pods, hi: 0, play: true, w: 'menu' },
+      { num: '10', label: 'Settings · values', how: 'A setting shows its value on the right, in place of the ›. Center changes it in place. A long label gives way to the value.', title: 'Settings', items: settings, hi: 2, play: null, w: 'center' }
     ];
     const V = 8;
     const build = (t, bg) => defs.map(d => {
@@ -142,7 +145,7 @@ class Component extends DCLogic {
       const top = d.top || 0, n = d.items.length, scroll = n > V;
       const rows = d.items.slice(top, top + V).map((it, i) => {
         const on = top + i === d.hi;
-        return { t: it.t, chevD: it.chev ? 'block' : 'none', dotD: it.dot ? 'block' : 'none', dotC: on ? '#fff' : '#E4572E',
+        return { t: it.t, chevD: it.chev && !it.v ? 'block' : 'none', valD: it.v ? 'block' : 'none', v: it.v, dotD: it.dot ? 'block' : 'none', dotC: on ? '#fff' : '#E4572E',
           bg: on ? 'linear-gradient(180deg,#5AA6EE 0%,#2F86DB 48%,#1F6FC4 52%,#1A62B0 100%)' : 'transparent', fg: on ? '#fff' : t.sInk, fw: 700 };
       });
       return { ...s, isList: true, isPlayer: false, title: d.title, rows, padR: scroll ? '16px' : '12px', sbD: scroll ? 'block' : 'none',
