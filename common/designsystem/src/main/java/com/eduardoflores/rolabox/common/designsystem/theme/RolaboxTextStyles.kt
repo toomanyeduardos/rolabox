@@ -64,6 +64,9 @@ class RolaboxTextStyles internal constructor(
     /** The `›` on a row that opens a submenu. */
     internal val displayChevron = typography.displayChevron.copy(color = colors.displayInk)
 
+    /** The value at the end of a row, such as a setting's "Off". The selected row's is [MetalColors.onSelection]. */
+    internal val displayRowValue = typography.displayRowValue.copy(color = colors.displayInk)
+
     /** Small monospaced text on the display, such as the position and the times. It's the display's secondary ink. */
     val displayMeta = typography.displayMeta.copy(color = colors.displayMuted)
 
@@ -104,6 +107,7 @@ class RolaboxTextStyles internal constructor(
             "displayTitle" to displayTitle,
             "displayRow" to displayRow,
             "displayChevron" to displayChevron,
+            "displayRowValue" to displayRowValue,
             "displayMeta" to displayMeta,
             "displayHeadline" to displayHeadline,
             "displayBody" to displayBody,

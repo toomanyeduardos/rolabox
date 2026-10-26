@@ -49,6 +49,7 @@ class RolaboxTypography internal constructor(
     internal val displayTitle: TextStyle,
     internal val displayRow: TextStyle,
     internal val displayChevron: TextStyle,
+    internal val displayRowValue: TextStyle,
     internal val displayMeta: TextStyle,
     internal val displayHeadline: TextStyle,
     internal val displayBody: TextStyle,
@@ -130,6 +131,8 @@ internal fun rolaboxTypography(
         displayTitle = body.copy(fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.01).em),
         displayRow = body.copy(fontSize = 16.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.01).em),
         displayChevron = body.copy(fontSize = 18.sp),
+        // A setting's value, such as "Off": the row's size in the regular weight, so it reads apart from the label.
+        displayRowValue = body.copy(fontSize = 16.sp, fontWeight = FontWeight.Normal, letterSpacing = (-0.01).em),
         // Small monospaced text on the display: the position, the mode tag and the times. Tabular digits, so
         // the times don't jitter as they change.
         displayMeta = body.copy(
