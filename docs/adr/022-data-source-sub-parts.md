@@ -7,6 +7,10 @@
 - **Supersedes:** [ADR-010](010-firestore-security-rules.md) (rule 7) and
   [ADR-011](011-preferences-sync.md) (rule 5, and where the `Syncer` and the Firestore mapping
   live)
+- **Revised 2026-10-26:** The migration is done (39.05a). Rules 1, 3 and 4 are `[enforced]`, with
+  their checks named under Conformance, and Target state and Consequences say so. The `Syncer`'s
+  errors include `RemoteError`, which each `:network:impl` maps its SDK's exceptions to, so a
+  `:network:api` and the runner share it through `:common:sync:api`. The decision is unchanged.
 
 ## Context
 
@@ -33,9 +37,9 @@ doesn't own the whole of their path:
 The settings are the second set of synced fields, and favorites will be the first data that
 `:common` can't own. The layout is decided now, before the fields are written in the old places.
 
-**Target state.** The code has the old layout until
-[39.05a](https://trello.com/c/zFqeUhYB). Until then ADR-010's rule 7 and
-ADR-011's rule 5 describe the code as it is, and rules 1, 3 and 4 below are `[planned]`.
+**Target state.** The code has this layout since [39.05a](https://trello.com/c/zFqeUhYB), and
+rules 1, 3 and 4 below are `[enforced]`. Until then ADR-010's rule 7 and ADR-011's rule 5
+described the code as it was.
 
 ## Decision
 
@@ -153,17 +157,17 @@ Each step leaves the build green.
   and where that is shared is decided with the second.
 - **Two layouts live side by side.** `:auth:data:impl` still calls its SDK itself, and nothing says
   when that changes.
-- Until 39.05a, two rules of other ADRs are superseded on paper and still true of the code.
+- Until 39.05a, two rules of other ADRs were superseded on paper and still true of the code.
 
 ## Rules
 
-1. `[planned]` (39.05a) A data part's local data source is `:<part>:local:{api,impl}` and its
+1. `[enforced]` A data part's local data source is `:<part>:local:{api,impl}` and its
    remote one is `:<part>:network:{api,impl}`. A sub-part's `:api` is depended on only by the
    `:impl` and the `:testing` of its part, and by its own `:impl`.
 2. `[convention]` A part has a `:local` or a `:network` only when it has that side. Its
    repositories read and write the local side only, and only its `Syncer` uses both.
-3. `[planned]` (39.05a) Firestore is a dependency of `:network:impl` modules only.
-4. `[planned]` (39.05a) No `:common:sync` module depends on a `:common:userdata` module, or on any
+3. `[enforced]` Firestore is a dependency of `:network:impl` modules only.
+4. `[enforced]` No `:common:sync` module depends on a `:common:userdata` module, or on any
    other part whose data it syncs.
 5. `[convention]` Each kind of synced data is synced by a `Syncer` in the `:impl` of the part that
    owns it, added to the set that `:common:sync:impl` declares. Sync runs only through WorkManager
@@ -175,8 +179,12 @@ Each step leaves the build green.
 8. `[convention]` `:app`'s test of the assembled graph asserts every `Syncer` that should be
    present (ADR-020, rule 20).
 
-**Conformance.** None of it is in the code yet. 39.05a moves the code and adds the checks of rules
-1, 3 and 4 to `ModuleRules.kt`: rules 1 and 4 on project dependencies, and rule 3 on the Firestore
-artifact, each with a violating and a passing case in `ModuleRulesTest`. Rule 4 is checked for
-`:common:userdata`; ADR-020's rule 1 already keeps sync from every part outside `:common`. Rules 2,
-5, 6 and 7 are reviewed, and rule 8 is `AssembledGraphTest` in `:app`.
+**Conformance.** Rules 1, 3 and 4 are checked by `ModuleRules.kt` when the build is configured:
+rules 1 and 4 on project dependencies, and rule 3 on the Firestore artifact, each with a violating
+and a passing case in `ModuleRulesTest` in `build-logic`. Rule 1 is checked by the path: a
+dependency on `:<part>:local:api` or `:<part>:network:api` is allowed only from `:<part>:impl`,
+`:<part>:testing` and the sub-part's own `:impl`. Rule 4 is checked for `:common:userdata`; ADR-020's
+rule 1 already keeps sync from every part outside `:common`. Rules 2, 5, 6 and 7 are reviewed, and
+rule 8 is `AssembledGraphTest` in `:app`, which checks that the set has the `Syncer` of the
+preferences and no other. That Firestore is created only when it is called is
+`FirestorePreferencesNetworkDataSourceTest` in `:common:userdata:network:impl`.

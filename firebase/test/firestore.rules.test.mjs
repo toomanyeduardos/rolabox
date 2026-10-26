@@ -290,6 +290,58 @@ describe('users/{uid}/settings/preferences last-write-wins', () => {
   });
 });
 
+// The device's settings (ADR-011, revised 2026-10-12): each field is checked like the theme.
+const DEVICE_SETTINGS = {
+  clicker: { values: ['ON', 'OFF'], unknown: 'LOUD' },
+  mainMenuMusic: { values: ['SHOWN', 'HIDDEN'], unknown: 'GONE' },
+  mainMenuPodcasts: { values: ['SHOWN', 'HIDDEN'], unknown: 'GONE' },
+  mainMenuAudiobooks: { values: ['SHOWN', 'HIDDEN'], unknown: 'GONE' },
+  mainMenuShuffleSongs: { values: ['SHOWN', 'HIDDEN'], unknown: 'GONE' },
+};
+
+for (const [field, { values, unknown }] of Object.entries(DEVICE_SETTINGS)) {
+  describe(`users/{uid}/settings/preferences ${field}`, () => {
+    const write = (data) => setDoc(preferencesDoc(firestoreAs(ALICE), ALICE), data);
+    const update = (data) => setDoc(preferencesDoc(firestoreAs(ALICE), ALICE), data, { merge: true });
+
+    it('accepts every allowed value', async () => {
+      for (const value of values) {
+        await testEnv.clearFirestore();
+        await assertSucceeds(write({ [field]: synced(value, OLDER) }));
+      }
+    });
+
+    it('rejects an unknown value', async () => {
+      await assertFails(write({ [field]: synced(unknown, OLDER) }));
+    });
+
+    it('rejects an updatedAt more than a day ahead of the server clock', async () => {
+      await assertFails(write({ [field]: synced(values[0], hoursFromNow(25)) }));
+    });
+
+    it('accepts a newer value, and rejects moving it back in time', async () => {
+      await seedPreferences(ALICE, { [field]: synced(values[0], OLDER) });
+      await assertSucceeds(update({ [field]: synced(values[1], NEWER) }));
+      await assertFails(update({ [field]: synced(values[0], OLDER) }));
+    });
+
+    it('rejects removing it', async () => {
+      await seedPreferences(ALICE, { [field]: synced(values[0], OLDER), darkThemeConfig: synced('DARK', OLDER) });
+      await assertFails(write({ darkThemeConfig: synced('DARK', NEWER) }));
+    });
+  });
+}
+
+describe('users/{uid}/settings/preferences with every field', () => {
+  it('accepts all the fields together, and still rejects an unknown one', async () => {
+    const all = { darkThemeConfig: synced('DARK', OLDER), accentColor: synced('PINK', OLDER) };
+    for (const [field, { values }] of Object.entries(DEVICE_SETTINGS)) all[field] = synced(values[1], OLDER);
+    const db = firestoreAs(ALICE);
+    await assertSucceeds(setDoc(preferencesDoc(db, ALICE), all));
+    await assertFails(setDoc(preferencesDoc(db, ALICE), { ...all, mainMenuSettings: synced('HIDDEN', NEWER) }));
+  });
+});
+
 describe('deny by default', () => {
   it('denies subcollections under the owner document', async () => {
     const db = firestoreAs(ALICE);

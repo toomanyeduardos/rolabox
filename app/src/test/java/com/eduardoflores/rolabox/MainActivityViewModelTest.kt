@@ -3,7 +3,10 @@ package com.eduardoflores.rolabox
 import com.eduardoflores.rolabox.common.storage.api.StorageError
 import com.eduardoflores.rolabox.common.testing.MainDispatcherRule
 import com.eduardoflores.rolabox.common.userdata.api.AccentColor
+import com.eduardoflores.rolabox.common.userdata.api.Clicker
 import com.eduardoflores.rolabox.common.userdata.api.DarkThemeConfig
+import com.eduardoflores.rolabox.common.userdata.api.MainMenuRow
+import com.eduardoflores.rolabox.common.userdata.api.MainMenuRowVisibility
 import com.eduardoflores.rolabox.common.userdata.api.UserData
 import com.eduardoflores.rolabox.common.userdata.testing.FakeUserDataRepository
 import kotlinx.coroutines.flow.collect
@@ -29,7 +32,12 @@ class MainActivityViewModelTest {
 
         assertEquals(
             MainActivityUiState.Success(
-                UserData(darkThemeConfig = DarkThemeConfig.DARK, accentColor = AccentColor.PINK),
+                UserData(
+                    darkThemeConfig = DarkThemeConfig.DARK,
+                    accentColor = AccentColor.PINK,
+                    clicker = Clicker.ON,
+                    mainMenuRows = MainMenuRow.entries.associateWith { MainMenuRowVisibility.SHOWN },
+                ),
             ),
             viewModel.uiState.value,
         )

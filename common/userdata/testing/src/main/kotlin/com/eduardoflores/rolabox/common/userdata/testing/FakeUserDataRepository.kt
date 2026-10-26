@@ -4,12 +4,11 @@ import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
 import com.eduardoflores.rolabox.common.storage.api.StorageError
-import com.eduardoflores.rolabox.common.sync.api.SyncTimestamp
-import com.eduardoflores.rolabox.common.sync.api.SyncedValue
 import com.eduardoflores.rolabox.common.userdata.api.AccentColor
+import com.eduardoflores.rolabox.common.userdata.api.Clicker
 import com.eduardoflores.rolabox.common.userdata.api.DarkThemeConfig
-import com.eduardoflores.rolabox.common.userdata.api.SyncedPreferences
-import com.eduardoflores.rolabox.common.userdata.api.SyncedPreferencesRepository
+import com.eduardoflores.rolabox.common.userdata.api.MainMenuRow
+import com.eduardoflores.rolabox.common.userdata.api.MainMenuRowVisibility
 import com.eduardoflores.rolabox.common.userdata.api.UserData
 import com.eduardoflores.rolabox.common.userdata.api.UserDataRepository
 import javax.inject.Inject
@@ -17,85 +16,58 @@ import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.transformWhile
 import kotlinx.coroutines.flow.update
 
-/** Both views of the same preferences, so a change through one is seen through the other. */
 @Singleton
-class FakeUserDataRepository @Inject constructor() :
-    UserDataRepository,
-    SyncedPreferencesRepository {
-    private val preferences = MutableStateFlow(SyncedPreferences())
+class FakeUserDataRepository @Inject constructor() : UserDataRepository {
+    private val userData = MutableStateFlow(
+        UserData(
+            darkThemeConfig = DarkThemeConfig.FOLLOW_SYSTEM,
+            accentColor = AccentColor.BLUE,
+            clicker = Clicker.ON,
+            mainMenuRows = MainMenuRow.entries.associateWith { MainMenuRowVisibility.SHOWN },
+        ),
+    )
     private val readError = MutableStateFlow<StorageError?>(null)
     private val offlineModeChosen = MutableStateFlow(false)
 
     /** When set, writes fail with this error and leave the data unchanged. */
     var writeError: StorageError? = null
 
-    /** The time the next set is stamped with. */
-    var now = SyncTimestamp(1)
-
-    override fun observeUserData(): Flow<Either<StorageError, UserData>> = observeSyncedPreferences()
-        .map { result ->
-            result.map {
-                UserData(
-                    darkThemeConfig = it.darkThemeConfig?.value ?: DarkThemeConfig.FOLLOW_SYSTEM,
-                    accentColor = it.accentColor?.value ?: AccentColor.BLUE,
-                )
-            }
-        }
-        .distinctUntilChanged()
+    // Like a real repository, a Left ends the flow.
+    override fun observeUserData(): Flow<Either<StorageError, UserData>> =
+        combine(userData, readError) { stored, error -> error?.left() ?: stored.right() }.untilLeft()
 
     override suspend fun setDarkThemeConfig(config: DarkThemeConfig): Either<StorageError, Unit> =
-        write { it.copy(darkThemeConfig = SyncedValue(config, now)) }
+        write { it.copy(darkThemeConfig = config) }
 
     override suspend fun setAccentColor(color: AccentColor): Either<StorageError, Unit> =
-        write { it.copy(accentColor = SyncedValue(color, now)) }
+        write { it.copy(accentColor = color) }
+
+    override suspend fun setClicker(clicker: Clicker): Either<StorageError, Unit> = write { it.copy(clicker = clicker) }
+
+    override suspend fun setMainMenuRowVisibility(
+        row: MainMenuRow,
+        visibility: MainMenuRowVisibility,
+    ): Either<StorageError, Unit> = write { it.copy(mainMenuRows = it.mainMenuRows + (row to visibility)) }
 
     override fun observeOfflineModeChosen(): Flow<Either<StorageError, Boolean>> =
-        combine(offlineModeChosen, readError) { chosen, error -> error?.left() ?: chosen.right() }
-            .transformWhile {
-                emit(it)
-                it.isRight()
-            }
+        combine(offlineModeChosen, readError) { chosen, error -> error?.left() ?: chosen.right() }.untilLeft()
 
     override suspend fun setOfflineModeChosen(chosen: Boolean): Either<StorageError, Unit> =
         writeError?.left() ?: offlineModeChosen.update { chosen }.right()
-
-    // Like a real repository, a Left ends the flow.
-    override fun observeSyncedPreferences(): Flow<Either<StorageError, SyncedPreferences>> =
-        combine(preferences, readError) { stored, error -> error?.left() ?: stored.right() }
-            .transformWhile {
-                emit(it)
-                it.isRight()
-            }
-
-    override suspend fun getSyncedPreferences(): Either<StorageError, SyncedPreferences> =
-        observeSyncedPreferences().first()
-
-    override suspend fun applySyncedPreferences(preferences: SyncedPreferences): Either<StorageError, Unit> = write {
-        it.copy(
-            darkThemeConfig = newer(it.darkThemeConfig, preferences.darkThemeConfig),
-            accentColor = newer(it.accentColor, preferences.accentColor),
-        )
-    }
 
     /** Makes the observed flows emit [error] and end. */
     fun setReadError(error: StorageError) {
         readError.value = error
     }
 
-    // Like the real repository, a field is replaced only by a change that isn't older, and a field that
-    // was never set never replaces one that was.
-    private fun <T> newer(stored: SyncedValue<T>?, applied: SyncedValue<T>?): SyncedValue<T>? = when {
-        applied == null -> stored
-        stored == null || applied.updatedAt >= stored.updatedAt -> applied
-        else -> stored
-    }
+    private fun write(transform: (UserData) -> UserData): Either<StorageError, Unit> =
+        writeError?.left() ?: userData.update(transform).right()
 
-    private fun write(transform: (SyncedPreferences) -> SyncedPreferences): Either<StorageError, Unit> =
-        writeError?.left() ?: preferences.update(transform).right()
+    private fun <T> Flow<Either<StorageError, T>>.untilLeft() = transformWhile {
+        emit(it)
+        it.isRight()
+    }
 }

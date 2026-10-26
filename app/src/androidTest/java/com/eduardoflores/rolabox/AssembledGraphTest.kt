@@ -6,6 +6,7 @@ import com.eduardoflores.rolabox.auth.data.testing.FakeAuthRepository
 import com.eduardoflores.rolabox.auth.ui.api.AuthUiEntries
 import com.eduardoflores.rolabox.auth.ui.api.SignInKey
 import com.eduardoflores.rolabox.auth.ui.api.SignOutKey
+import com.eduardoflores.rolabox.common.sync.api.Syncer
 import com.eduardoflores.rolabox.device.settings.api.SettingsSection
 import com.eduardoflores.rolabox.device.settings.api.SettingsSlot
 import com.eduardoflores.rolabox.device.ui.api.DeviceUiEntries
@@ -29,6 +30,8 @@ class AssembledGraphTest {
     val hiltRule = HiltAndroidRule(this)
 
     @Inject lateinit var settingsSections: Set<@JvmSuppressWildcards SettingsSection>
+
+    @Inject lateinit var syncers: Set<@JvmSuppressWildcards Syncer>
 
     @Inject lateinit var authRepository: FakeAuthRepository
 
@@ -56,6 +59,13 @@ class AssembledGraphTest {
         authRepository.setAuthState(AuthState.SignedIn(AuthUser(id = "1", displayName = "Eduardo", photoUrl = null)))
 
         assertEquals(SignOutKey, accountRow().opens)
+    }
+
+    // Each part with synced data adds its own Syncer (ADR-022, rule 8). The classes are internal to the
+    // parts, so they are told apart by name.
+    @Test
+    fun sync_runsThePreferencesSyncerAndNoOther() {
+        assertEquals(listOf("PreferencesSyncer"), syncers.map { it::class.simpleName })
     }
 
     private fun accountRow() = runBlocking {

@@ -1,12 +1,17 @@
-package com.eduardoflores.rolabox.common.sync.impl
+package com.eduardoflores.rolabox.common.userdata.testing
 
 import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
+import com.eduardoflores.rolabox.common.sync.api.RemoteError
 import com.eduardoflores.rolabox.common.userdata.api.SyncedPreferences
+import com.eduardoflores.rolabox.common.userdata.network.api.PreferencesNetworkDataSource
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /** Remote preferences for many users, in memory, merged the way the Firestore transaction merges them. */
-internal class FakeRemotePreferences : RemotePreferences {
+@Singleton
+class FakePreferencesNetworkDataSource @Inject constructor() : PreferencesNetworkDataSource {
     val byUser = mutableMapOf<String, SyncedPreferences>()
 
     /** When set, [merge] fails with this error and changes nothing. */

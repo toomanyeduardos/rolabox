@@ -11,6 +11,10 @@
 - **Revised 2026-10-06:** Module names updated for the layout of
   [ADR-020](020-modules-by-product-area.md), now that the code has moved (37.07b). Sync is
   `:common:sync:impl` (Decision, rule 7). The decision is unchanged.
+- **Revised 2026-10-26:** Conformance says what replaced rule 7 in the code: the preferences'
+  Firestore mapping moved to `:common:userdata:network:impl` (39.05a), and ADR-022's rule 3 is
+  checked by the build. Rule 7 and the Decision are left as they were written. The decision is
+  unchanged.
 
 ## Context
 
@@ -128,4 +132,6 @@ kept in the repo and tested against the emulator in CI.
    DataStore for preferences) stays the single source of truth on the device (ADR-002).
 
 **Conformance.** Rules 1 and 2 are checked by `firebase/test/firestore.rules.test.mjs`, which the
-`firestore-rules` job in [CI](../../.github/workflows/ci.yml) runs against the emulator.
+`firestore-rules` job in [CI](../../.github/workflows/ci.yml) runs against the emulator. Rule 7 is
+superseded by [ADR-022](022-data-source-sub-parts.md)'s rule 3, which `ModuleRules.kt` checks: only a
+`:network:impl` module depends on Firestore, and today that is `:common:userdata:network:impl`.
