@@ -11,6 +11,13 @@ interface UserDataRepository {
 
     suspend fun setAccentColor(color: AccentColor): Either<StorageError, Unit>
 
+    suspend fun setClicker(clicker: Clicker): Either<StorageError, Unit>
+
+    suspend fun setMainMenuRowVisibility(
+        row: MainMenuRow,
+        visibility: MainMenuRowVisibility,
+    ): Either<StorageError, Unit>
+
     /**
      * Emits whether the user chose to use the app without an account, and again when it changes.
      * The choice belongs to this device, so it isn't part of [UserData] and never syncs.

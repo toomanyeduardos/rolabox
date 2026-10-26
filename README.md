@@ -178,6 +178,7 @@ and the rules that follow. Most rules are enforced by the build or by tests, not
 | [019](docs/adr/019-device-host-module.md) | The device is a host module, `:core:device`, that receives its screens from `:app` |
 | [020](docs/adr/020-modules-by-product-area.md) | Modules grouped by product area, with the device assembling its own screens |
 | [021](docs/adr/021-data-flow-through-layers.md) | Every layer is reached through an abstraction, from the screen to the data source |
+| [022](docs/adr/022-data-source-sub-parts.md) | A data part's local and network sides are sub-parts, and the part that owns synced data syncs it |
 
 ### Modules
 
@@ -213,12 +214,16 @@ there is something to fake, a `:testing` module.
 | `:common:storage:api` | Local storage API: `PreferencesStore` (key-value settings), `StorageError` |
 | `:common:storage:impl` | `PreferencesStore` backed by DataStore |
 | `:common:storage:testing` | `FakePreferencesStore` |
-| `:common:sync:api` | Sync API: `SyncRepository`, `SyncUserProvider`, `SyncedValue`, `LastWriteWins` |
-| `:common:sync:impl` | Sync: preferences through Firestore and WorkManager, never in offline mode |
-| `:common:sync:testing` | `FakeSyncRepository`, `FakeSyncUserProvider` |
-| `:common:userdata:api` | User preferences API: `UserDataRepository`, `UserData`, `SyncedPreferencesRepository` |
-| `:common:userdata:impl` | User preferences, stored through `PreferencesStore` |
-| `:common:userdata:testing` | `FakeUserDataRepository` |
+| `:common:sync:api` | Sync API: `SyncRepository`, `SyncUserProvider`, `Syncer`, `SyncError`, `SyncedValue`, `LastWriteWins` |
+| `:common:sync:impl` | Sync's mechanism: triggers, WorkManager and the runner of every `Syncer`, never in offline mode |
+| `:common:sync:testing` | `FakeSyncRepository`, `FakeSyncUserProvider`, `FakeLastWriteWins` |
+| `:common:userdata:api` | User preferences API: `UserDataRepository`, `UserData`, `SyncedPreferences` |
+| `:common:userdata:impl` | User preferences, read from the local side, and the `Syncer` of the preferences |
+| `:common:userdata:testing` | `FakeUserDataRepository`, `FakePreferencesLocalDataSource`, `FakePreferencesNetworkDataSource` |
+| `:common:userdata:local:api` | The preferences as stored on the device: `PreferencesLocalDataSource` ([ADR-022](docs/adr/022-data-source-sub-parts.md)) |
+| `:common:userdata:local:impl` | The stored format over `PreferencesStore`: keys, timestamps, the atomic apply |
+| `:common:userdata:network:api` | The preferences in the cloud: `PreferencesNetworkDataSource` |
+| `:common:userdata:network:impl` | The preferences' Firestore mapping and transaction |
 
 ### Dependency rules
 
@@ -233,6 +238,9 @@ The full set of rules, and the reasoning behind them, is in [ADR-020](docs/adr/0
 - Testing modules (`:common:testing` and every `:testing`) are only used from test configurations.
 - `:device:host` depends only on `:common:designsystem` and `:common:util`, and only `:device` `:impl` modules depend on it.
 - `:app`'s code uses only `:auth:data:api`, `:auth:ui:api`, `:device:ui:api` and `:common` modules, besides listing every `:impl`. Its tests may also name the `:api` of a part whose assembly they assert.
+- A part's `:local:api` and `:network:api` are used only by the part's `:impl` and `:testing`, and by the sub-part's own `:impl` ([ADR-022](docs/adr/022-data-source-sub-parts.md)).
+- Firestore is a dependency of `:network:impl` modules only.
+- No `:common:sync` module depends on a `:common:userdata` module.
 
 Every step from a screen to a data source depends on an abstraction ([ADR-021](docs/adr/021-data-flow-through-layers.md)), and detekt checks two parts of that: an `:api` module declares no class whose name ends in `UseCase` or `Repository`, since those are interfaces there, and no composable function takes or creates a `…ViewModelImpl`.
 
@@ -265,6 +273,10 @@ graph TD
     common_testing[":common:testing"]
     common_userdata_api[":common:userdata:api"]
     common_userdata_impl[":common:userdata:impl"]
+    common_userdata_local_api[":common:userdata:local:api"]
+    common_userdata_local_impl[":common:userdata:local:impl"]
+    common_userdata_network_api[":common:userdata:network:api"]
+    common_userdata_network_impl[":common:userdata:network:impl"]
     common_userdata_testing[":common:userdata:testing"]
     common_util[":common:util"]
     device_host[":device:host"]
@@ -294,6 +306,8 @@ graph TD
     app --> common_sync_impl
     app --> common_userdata_api
     app --> common_userdata_impl
+    app --> common_userdata_local_impl
+    app --> common_userdata_network_impl
     app --> device_library_impl
     app --> device_music_ui_impl
     app --> device_playback_impl
@@ -321,9 +335,9 @@ graph TD
     common_storage_impl --> common_storage_api
     common_storage_impl --> common_util
     common_storage_testing --> common_storage_api
+    common_sync_api --> common_storage_api
     common_sync_impl --> common_storage_api
     common_sync_impl --> common_sync_api
-    common_sync_impl --> common_userdata_api
     common_sync_impl --> common_util
     common_sync_testing --> common_sync_api
     common_userdata_api --> common_storage_api
@@ -331,9 +345,26 @@ graph TD
     common_userdata_impl --> common_storage_api
     common_userdata_impl --> common_sync_api
     common_userdata_impl --> common_userdata_api
+    common_userdata_impl --> common_userdata_local_api
+    common_userdata_impl --> common_userdata_network_api
+    common_userdata_local_api --> common_storage_api
+    common_userdata_local_api --> common_sync_api
+    common_userdata_local_api --> common_userdata_api
+    common_userdata_local_impl --> common_storage_api
+    common_userdata_local_impl --> common_sync_api
+    common_userdata_local_impl --> common_userdata_api
+    common_userdata_local_impl --> common_userdata_local_api
+    common_userdata_network_api --> common_sync_api
+    common_userdata_network_api --> common_userdata_api
+    common_userdata_network_impl --> common_sync_api
+    common_userdata_network_impl --> common_userdata_api
+    common_userdata_network_impl --> common_userdata_network_api
+    common_userdata_network_impl --> common_util
     common_userdata_testing --> common_storage_api
     common_userdata_testing --> common_sync_api
     common_userdata_testing --> common_userdata_api
+    common_userdata_testing --> common_userdata_local_api
+    common_userdata_testing --> common_userdata_network_api
     device_host --> common_designsystem
     device_library_api --> common_storage_api
     device_library_impl --> device_library_api

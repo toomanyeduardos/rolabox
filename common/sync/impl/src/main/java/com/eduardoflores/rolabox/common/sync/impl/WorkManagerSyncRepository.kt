@@ -11,6 +11,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.eduardoflores.rolabox.common.sync.api.SyncRepository
 import com.eduardoflores.rolabox.common.sync.api.SyncUserProvider
+import com.eduardoflores.rolabox.common.sync.api.Syncer
 import com.eduardoflores.rolabox.common.util.ApplicationScope
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject

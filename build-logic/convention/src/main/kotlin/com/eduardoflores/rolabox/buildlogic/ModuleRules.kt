@@ -32,6 +32,18 @@ private const val PLAYBACK_UI_PREFIX = ":device:playback:ui:"
 private const val PLAYBACK_IMPL_PATH = ":device:playback:impl"
 private const val PLAYBACK_TESTING_PATH = ":device:playback:testing"
 
+// A data part's local and network sides are sub-parts, seen only from inside the part (ADR-022 rule 1).
+private val SUB_PART_API = Regex("^(.+):(local|network):api$")
+private const val NETWORK_IMPL_SUFFIX = ":network:impl"
+
+// Sync is a mechanism that names no data: the part that owns the data syncs it (ADR-022 rule 4).
+private const val SYNC_PREFIX = ":common:sync:"
+private const val USERDATA_PREFIX = ":common:userdata:"
+
+// Firestore is a dependency of :network:impl modules only (ADR-022 rule 3).
+private const val FIREBASE_GROUP = "com.google.firebase"
+private const val FIRESTORE_NAME_PREFIX = "firebase-firestore"
+
 // What :app's own code uses from the product areas (ADR-020 rule 13). It also uses :common, and lists every :impl.
 private val APP_ALLOWED_API_PATHS = setOf(":auth:data:api", ":auth:ui:api", ":device:ui:api")
 
@@ -43,7 +55,7 @@ private const val DAGGER_GROUP = "com.google.dagger"
 private const val PAPARAZZI_GROUP = "app.cash.paparazzi"
 private const val PAPARAZZI_PLUGIN = "app.cash.paparazzi"
 
-/** Checks the `[enforced]` dependency rules of ADR-020, ADR-005 and ADR-016 while the build is configured. */
+/** Checks the `[enforced]` dependency rules of ADR-020, ADR-022, ADR-005 and ADR-016 while the build is configured. */
 internal fun Project.enforceModuleRules() {
     val modulePath = path
 
@@ -78,7 +90,12 @@ internal fun Project.enforceModuleRules() {
 private fun Project.enforceExternalDependencyRules() = afterEvaluate {
     configurations.forEach { configuration ->
         configuration.dependencies.withType(ExternalModuleDependency::class.java).forEach { dependency ->
-            val violation = externalDependencyViolation(path, dependency.group, pluginManager.hasPlugin(PAPARAZZI_PLUGIN))
+            val violation = externalDependencyViolation(
+                path,
+                dependency.group,
+                dependency.name,
+                pluginManager.hasPlugin(PAPARAZZI_PLUGIN),
+            )
             if (violation != null) {
                 throw GradleException(
                     "Module rule violated: $path -> ${dependency.group}:${dependency.name} (${configuration.name}). " +
@@ -89,10 +106,19 @@ private fun Project.enforceExternalDependencyRules() = afterEvaluate {
     }
 }
 
-internal fun externalDependencyViolation(modulePath: String, group: String?, appliesPaparazzi: Boolean): String? =
+internal fun externalDependencyViolation(
+    modulePath: String,
+    group: String?,
+    name: String,
+    appliesPaparazzi: Boolean,
+): String? =
     when {
         modulePath.isApi() && group == DAGGER_GROUP ->
             "ADR-005 rule 3: :api modules use only javax.inject and contain no Hilt modules"
+
+        group == FIREBASE_GROUP && name.startsWith(FIRESTORE_NAME_PREFIX) && !modulePath.endsWith(NETWORK_IMPL_SUFFIX) ->
+            "ADR-022 rule 3: Firestore is a dependency of :network:impl modules only. Map the data in the " +
+                "part's :network:impl, and reach it through its :network:api"
 
         group == PAPARAZZI_GROUP && !appliesPaparazzi ->
             "ADR-016 rule 1: Paparazzi comes only from the rolabox.android.paparazzi plugin, which the module doesn't apply"
@@ -113,10 +139,11 @@ internal fun CommonExtension.enforceNoProductFlavors(modulePath: String) {
     }
 }
 
-/** ADR-020 rules 1 to 8 and 13, and ADR-018 rule 15, in the order a violation is most useful to read. Null when the dependency is allowed. */
+/** ADR-020 rules 1 to 8 and 13, ADR-022 rules 1 and 4, and ADR-018 rule 15, in the order a violation is most useful to read. Null when the dependency is allowed. */
 @Suppress("CyclomaticComplexMethod") // One branch per rule, which is what makes it readable.
-internal fun projectDependencyViolation(modulePath: String, dependencyPath: String, configurationName: String): String? =
-    when {
+internal fun projectDependencyViolation(modulePath: String, dependencyPath: String, configurationName: String): String? {
+    val subPartApiViolation = subPartApiViolation(modulePath, dependencyPath)
+    return when {
         // A module's own test fixtures.
         dependencyPath == modulePath -> null
 
@@ -127,6 +154,11 @@ internal fun projectDependencyViolation(modulePath: String, dependencyPath: Stri
             "ADR-018 rule 15: the playback screens ($PLAYBACK_UI_PREFIX*) depend on the playback state only " +
                 "through :device:playback:api, never on $PLAYBACK_IMPL_PATH, and on $PLAYBACK_TESTING_PATH " +
                 "only from test configurations"
+
+        // ADR-020 rule 1 allows it, since both are :common. Every other part is already kept from sync by that rule.
+        modulePath.startsWith(SYNC_PREFIX) && dependencyPath.startsWith(USERDATA_PREFIX) ->
+            "ADR-022 rule 4: no :common:sync module depends on a :common:userdata module. The part that owns " +
+                "synced data implements the Syncer of :common:sync:api and adds it to the set"
 
         dependencyPath.isTesting() && !configurationName.isTestConfiguration() ->
             "ADR-020 rule 7: testing modules (:common:testing and every :testing) may only be used from test " +
@@ -146,6 +178,8 @@ internal fun projectDependencyViolation(modulePath: String, dependencyPath: Stri
 
         modulePath != APP_PATH && dependencyPath.isImpl() ->
             "ADR-020 rule 4: only $APP_PATH may depend on :impl modules; depend on the part's :api instead"
+
+        subPartApiViolation != null -> subPartApiViolation
 
         dependencyPath == DEVICE_HOST_PATH && !(modulePath.startsWith(DEVICE_PREFIX) && modulePath.isImpl()) ->
             "ADR-020 rule 8: only :device :impl modules may depend on $DEVICE_HOST_PATH"
@@ -170,6 +204,19 @@ internal fun projectDependencyViolation(modulePath: String, dependencyPath: Stri
 
         else -> null
     }
+}
+
+// A :local:api or :network:api is seen by its part's :impl and :testing, and by its own :impl.
+private fun subPartApiViolation(modulePath: String, dependencyPath: String): String? {
+    val (part, side) = SUB_PART_API.matchEntire(dependencyPath)?.destructured ?: return null
+    val allowed = setOf("$part$IMPL_SUFFIX", "$part$TESTING_SUFFIX", "$part:$side$IMPL_SUFFIX")
+    return if (modulePath in allowed) {
+        null
+    } else {
+        "ADR-022 rule 1: $dependencyPath belongs to $part, and is seen only by ${allowed.joinToString()}. " +
+            "Depend on $part$API_SUFFIX instead"
+    }
+}
 
 private fun String.isApi() = endsWith(API_SUFFIX)
 

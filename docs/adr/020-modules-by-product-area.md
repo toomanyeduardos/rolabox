@@ -54,6 +54,10 @@
   `:device:settings:impl` uses `:device:host`, as rules 5 and 8 already allow, the main menu's
   Settings row is an ordinary exit, and the generic exit is left to the rows of contributed
   sections. The slots, the Hilt set and who depends on whom are unchanged (39.07).
+- **Revised 2026-10-26:** `:common:userdata` has a local and a network sub-part,
+  `:common:userdata:{local,network}:{api,impl}` (The layout), as
+  [ADR-022](022-data-source-sub-parts.md) decides (39.05a). A sub-part is a part, so the rules here
+  hold as they are written. The decision is unchanged.
 
 ## Context
 
@@ -106,6 +110,8 @@ We will group modules **by product area**, let each area **assemble its own part
 :common:storage:{api,impl,testing}
 :common:sync:{api,impl,testing}
 :common:userdata:{api,impl,testing}
+:common:userdata:local:{api,impl}     the preferences as stored on the device (ADR-022)
+:common:userdata:network:{api,impl}   the preferences in Firestore (ADR-022)
 ```
 
 An area is made of **parts**. A part is split the same way everywhere:

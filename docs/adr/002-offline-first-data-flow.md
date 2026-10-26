@@ -24,6 +24,9 @@
   unchanged.
 - **Revised 2026-10-06:** Conformance notes that `:device:library:impl` serves hard-coded data in
   memory, with no database, until the real library is designed. The decision is unchanged.
+- **Revised 2026-10-26:** Conformance names where the preferences are stored and synced, now that
+  `:common:userdata` has a local and a network side ([ADR-022](022-data-source-sub-parts.md),
+  39.05a). The decision is unchanged.
 
 ## Context
 
@@ -137,7 +140,10 @@ detailed conflict rules for each type of data.
 data in memory so the device can be built, and has no database: a temporary gap in these rules,
 to be replaced when the real library is designed. `SyncRepository` syncs preferences from
 DataStore while the user is signed in and hasn't chosen offline mode
-([ADR-011](011-preferences-sync.md)). Nothing in Room syncs yet. `AuthRepository` observes the
+([ADR-011](011-preferences-sync.md)). The repository of the preferences reads and writes only
+their local side, `:common:userdata:local`, and only their `Syncer` uses the network side,
+`:common:userdata:network` (rules 1 and 2, [ADR-022](022-data-source-sub-parts.md)). Nothing in Room
+syncs yet. `AuthRepository` observes the
 Firebase user, and users can sign in with an email and password
 ([ADR-008](008-one-app-with-offline-mode.md)). This
 ADR sets the constraints those implementations must meet.

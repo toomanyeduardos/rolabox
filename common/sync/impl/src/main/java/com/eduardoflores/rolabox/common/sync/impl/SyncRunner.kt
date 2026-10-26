@@ -1,6 +1,10 @@
 package com.eduardoflores.rolabox.common.sync.impl
 
+import com.eduardoflores.rolabox.common.storage.api.StorageError
+import com.eduardoflores.rolabox.common.sync.api.RemoteError
+import com.eduardoflores.rolabox.common.sync.api.SyncError
 import com.eduardoflores.rolabox.common.sync.api.SyncUserProvider
+import com.eduardoflores.rolabox.common.sync.api.Syncer
 import javax.inject.Inject
 import kotlinx.coroutines.flow.first
 
@@ -35,3 +39,10 @@ internal enum class SyncOutcome {
     /** Something failed in a way that trying again won't fix. */
     Failed,
 }
+
+/** Whether WorkManager should try the sync again later, instead of giving up until the next trigger. */
+internal val SyncError.isRetryable: Boolean
+    get() = when (this) {
+        is SyncError.Local -> cause == StorageError.Unavailable
+        is SyncError.Remote -> cause == RemoteError.Unavailable
+    }

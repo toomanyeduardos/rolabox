@@ -54,6 +54,10 @@
   sync no longer reads the auth state or the offline-mode choice itself: `:auth:data:impl` tells it
   who to sync for. The decision is unchanged.
 
+- **Revised 2026-10-26:** Conformance names where the tests of rules 6 and 8 are, now that the
+  Firestore mapping of the preferences is in `:common:userdata:network:impl` and their `Syncer` in
+  `:common:userdata:impl` ([ADR-022](022-data-source-sub-parts.md), 39.05a). The decision is
+  unchanged.
 ## Context
 
 Rolabox is one product. A user can sign in, so their preferences follow them across devices
@@ -306,7 +310,10 @@ is covered in two places, since auth decides who sync runs for ([ADR-020](020-mo
 rule 18): `AuthSyncUserProviderTest` in `:auth:data:impl` covers that nobody is synced for while
 signed out or in offline mode, and `SyncTriggersTest` and `SyncRunnerTest` in `:common:sync:impl`
 cover that sync then requests and runs nothing. Rule 8 is covered by
-`SyncRunnerTest.nobodyToSyncFor_neverCreatesFirestore`. They check the sync path, which is the only code
-that calls Firebase today. A new Firebase call elsewhere isn't covered by any test. Rule 7 is
+`FirestorePreferencesNetworkDataSourceTest` in `:common:userdata:network:impl`: Firestore is created
+by the data source's first call and not before, and only the `Syncer` that the runner runs calls it
+([ADR-022](022-data-source-sub-parts.md), rule 6). Firestore is a dependency of `:network:impl`
+modules only, which `ModuleRules.kt` checks (ADR-022, rule 3). They check the sync path, which is the
+only code that calls Firestore today. A new Firebase call elsewhere isn't covered by any test. Rule 7 is
 covered by `SignInUseCaseTest` and `SignUpUseCaseTest` in `:auth:data:impl`, which every sign-in goes
 through. Offline mode is chosen only from the Sign in screen, which is shown only while signed out.

@@ -49,10 +49,20 @@ service cloud.firestore {
           && data[field].updatedAt <= request.time + duration.value(1, 'd'));
     }
 
+    // The device's settings are preferences too (ADR-011): Clicker, and each row of the main menu
+    // that can be hidden, as a field of its own.
     function isValidPreferences(data) {
-      return data.keys().hasOnly(['darkThemeConfig', 'accentColor'])
+      return data.keys().hasOnly([
+          'darkThemeConfig', 'accentColor', 'clicker',
+          'mainMenuMusic', 'mainMenuPodcasts', 'mainMenuAudiobooks', 'mainMenuShuffleSongs'
+        ])
         && isValidSyncedField(data, 'darkThemeConfig', ['FOLLOW_SYSTEM', 'LIGHT', 'DARK'])
-        && isValidSyncedField(data, 'accentColor', ['BLUE', 'GREEN', 'PURPLE', 'PINK']);
+        && isValidSyncedField(data, 'accentColor', ['BLUE', 'GREEN', 'PURPLE', 'PINK'])
+        && isValidSyncedField(data, 'clicker', ['ON', 'OFF'])
+        && isValidSyncedField(data, 'mainMenuMusic', ['SHOWN', 'HIDDEN'])
+        && isValidSyncedField(data, 'mainMenuPodcasts', ['SHOWN', 'HIDDEN'])
+        && isValidSyncedField(data, 'mainMenuAudiobooks', ['SHOWN', 'HIDDEN'])
+        && isValidSyncedField(data, 'mainMenuShuffleSongs', ['SHOWN', 'HIDDEN']);
     }
 
     function isNotOlder(field) {
@@ -67,7 +77,12 @@ service cloud.firestore {
       allow update: if isOwner(uid)
         && isValidPreferences(request.resource.data)
         && isNotOlder('darkThemeConfig')
-        && isNotOlder('accentColor');
+        && isNotOlder('accentColor')
+        && isNotOlder('clicker')
+        && isNotOlder('mainMenuMusic')
+        && isNotOlder('mainMenuPodcasts')
+        && isNotOlder('mainMenuAudiobooks')
+        && isNotOlder('mainMenuShuffleSongs');
     }
   }
 }

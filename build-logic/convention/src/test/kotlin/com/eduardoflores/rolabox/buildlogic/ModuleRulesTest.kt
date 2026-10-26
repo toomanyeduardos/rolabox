@@ -10,7 +10,7 @@ class ModuleRulesTest {
     fun `rule 1 - common depends only on common`() {
         assertViolates("rule 1", ":common:sync:impl", ":auth:data:api")
         assertViolates("rule 1", ":common:designsystem", ":device:host")
-        assertAllowed(":common:sync:impl", ":common:userdata:api")
+        assertAllowed(":common:sync:impl", ":common:storage:api")
         assertAllowed(":common:userdata:api", ":common:storage:api")
     }
 
@@ -101,21 +101,57 @@ class ModuleRulesTest {
     }
 
     @Test
+    fun `ADR-022 rule 1 - a sub-part's api is seen only from inside its part`() {
+        assertViolatesRule("ADR-022 rule 1", ":device:settings:impl", ":common:userdata:local:api")
+        assertViolatesRule("ADR-022 rule 1", ":auth:data:impl", ":common:userdata:network:api")
+        assertViolatesRule("ADR-022 rule 1", ":common:userdata:network:impl", ":common:userdata:local:api")
+        assertViolatesRule("ADR-022 rule 1", ":common:userdata:api", ":common:userdata:local:api")
+        assertViolatesRule("ADR-022 rule 1", ":app", ":common:userdata:network:api", ANDROID_TEST)
+        assertAllowed(":common:userdata:impl", ":common:userdata:local:api")
+        assertAllowed(":common:userdata:impl", ":common:userdata:network:api")
+        assertAllowed(":common:userdata:testing", ":common:userdata:local:api")
+        assertAllowed(":common:userdata:local:impl", ":common:userdata:local:api")
+        assertAllowed(":common:userdata:network:impl", ":common:userdata:network:api")
+        assertAllowed(":device:library:impl", ":device:library:local:api")
+        assertAllowed(":app", ":common:userdata:local:impl")
+    }
+
+    @Test
+    fun `ADR-022 rule 3 - Firestore only in a network impl`() {
+        assertTrue(firestoreViolation(":common:sync:impl")!!.contains("ADR-022 rule 3"))
+        assertTrue(firestoreViolation(":common:userdata:impl")!!.contains("ADR-022 rule 3"))
+        assertTrue(firestoreViolation(":app")!!.contains("ADR-022 rule 3"))
+        assertNull(firestoreViolation(":common:userdata:network:impl"))
+        assertNull(externalDependencyViolation(":auth:data:impl", "com.google.firebase", "firebase-auth", false))
+        assertNull(externalDependencyViolation(":common:sync:impl", "com.google.firebase", "firebase-bom", false))
+    }
+
+    @Test
+    fun `ADR-022 rule 4 - sync depends on no userdata module`() {
+        assertViolatesRule("ADR-022 rule 4", ":common:sync:impl", ":common:userdata:api")
+        assertViolatesRule("ADR-022 rule 4", ":common:sync:api", ":common:userdata:api")
+        assertViolatesRule("ADR-022 rule 4", ":common:sync:impl", ":common:userdata:network:api")
+        assertViolatesRule("ADR-022 rule 4", ":common:sync:impl", ":common:userdata:testing", TEST)
+        assertAllowed(":common:userdata:impl", ":common:sync:api")
+        assertAllowed(":common:sync:impl", ":common:storage:api")
+    }
+
+    @Test
     fun `a module may use its own test fixtures`() {
         assertAllowed(":common:designsystem", ":common:designsystem", TEST)
     }
 
     @Test
     fun `ADR-005 rule 3 - an api has no Hilt`() {
-        assertTrue(externalDependencyViolation(":auth:data:api", "com.google.dagger", false)!!.contains("ADR-005 rule 3"))
-        assertNull(externalDependencyViolation(":auth:data:impl", "com.google.dagger", false))
-        assertNull(externalDependencyViolation(":auth:data:api", "javax.inject", false))
+        assertTrue(externalDependencyViolation(":auth:data:api", "com.google.dagger", "hilt-android", false)!!.contains("ADR-005 rule 3"))
+        assertNull(externalDependencyViolation(":auth:data:impl", "com.google.dagger", "hilt-android", false))
+        assertNull(externalDependencyViolation(":auth:data:api", "javax.inject", "javax.inject", false))
     }
 
     @Test
     fun `ADR-016 rule 1 - Paparazzi only with its plugin`() {
-        assertTrue(externalDependencyViolation(":auth:ui:impl", "app.cash.paparazzi", false)!!.contains("ADR-016 rule 1"))
-        assertNull(externalDependencyViolation(":auth:ui:impl", "app.cash.paparazzi", true))
+        assertTrue(externalDependencyViolation(":auth:ui:impl", "app.cash.paparazzi", "paparazzi", false)!!.contains("ADR-016 rule 1"))
+        assertNull(externalDependencyViolation(":auth:ui:impl", "app.cash.paparazzi", "paparazzi", true))
     }
 
     private fun assertViolates(rule: String, module: String, dependency: String, configuration: String = MAIN) {
@@ -123,10 +159,16 @@ class ModuleRulesTest {
         assertTrue("$module -> $dependency should violate $rule, but was: $violation", violation?.contains("ADR-020 $rule:") == true)
     }
 
-    private fun assertViolatesAdr018Rule15(module: String, dependency: String, configuration: String = MAIN) {
+    private fun assertViolatesAdr018Rule15(module: String, dependency: String, configuration: String = MAIN) =
+        assertViolatesRule("ADR-018 rule 15", module, dependency, configuration)
+
+    private fun assertViolatesRule(rule: String, module: String, dependency: String, configuration: String = MAIN) {
         val violation = projectDependencyViolation(module, dependency, configuration)
-        assertTrue("$module -> $dependency should violate ADR-018 rule 15, but was: $violation", violation?.contains("ADR-018 rule 15:") == true)
+        assertTrue("$module -> $dependency should violate $rule, but was: $violation", violation?.contains("$rule:") == true)
     }
+
+    private fun firestoreViolation(module: String) =
+        externalDependencyViolation(module, "com.google.firebase", "firebase-firestore", false)
 
     private fun assertAllowed(module: String, dependency: String, configuration: String = MAIN) {
         assertNull("$module -> $dependency", projectDependencyViolation(module, dependency, configuration))

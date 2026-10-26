@@ -2,7 +2,10 @@ package com.eduardoflores.rolabox
 
 import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxAccent
 import com.eduardoflores.rolabox.common.userdata.api.AccentColor
+import com.eduardoflores.rolabox.common.userdata.api.Clicker
 import com.eduardoflores.rolabox.common.userdata.api.DarkThemeConfig
+import com.eduardoflores.rolabox.common.userdata.api.MainMenuRow
+import com.eduardoflores.rolabox.common.userdata.api.MainMenuRowVisibility
 import com.eduardoflores.rolabox.common.userdata.api.UserData
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -59,5 +62,12 @@ class MainActivityUiStateTest {
     private fun success(
         config: DarkThemeConfig = DarkThemeConfig.FOLLOW_SYSTEM,
         accentColor: AccentColor = AccentColor.BLUE,
-    ) = MainActivityUiState.Success(UserData(darkThemeConfig = config, accentColor = accentColor))
+    ) = MainActivityUiState.Success(
+        UserData(
+            darkThemeConfig = config,
+            accentColor = accentColor,
+            clicker = Clicker.ON,
+            mainMenuRows = MainMenuRow.entries.associateWith { MainMenuRowVisibility.SHOWN },
+        ),
+    )
 }

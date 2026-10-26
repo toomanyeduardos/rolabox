@@ -6,7 +6,6 @@ import com.eduardoflores.rolabox.auth.data.testing.FakeAuthRepository
 import com.eduardoflores.rolabox.common.sync.api.SyncRepository
 import com.eduardoflores.rolabox.common.sync.impl.di.SyncModule
 import com.eduardoflores.rolabox.common.sync.testing.FakeSyncRepository
-import com.eduardoflores.rolabox.common.userdata.api.SyncedPreferencesRepository
 import com.eduardoflores.rolabox.common.userdata.api.UserDataRepository
 import com.eduardoflores.rolabox.common.userdata.impl.di.UserDataModule
 import com.eduardoflores.rolabox.common.userdata.testing.FakeUserDataRepository
@@ -64,9 +63,6 @@ object TestTimeSourceModule {
 abstract class TestUserDataModule {
     @Binds
     abstract fun bindsUserDataRepository(fake: FakeUserDataRepository): UserDataRepository
-
-    @Binds
-    abstract fun bindsSyncedPreferencesRepository(fake: FakeUserDataRepository): SyncedPreferencesRepository
 }
 
 @Module

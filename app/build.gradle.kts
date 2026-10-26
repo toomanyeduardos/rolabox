@@ -34,6 +34,8 @@ dependencies {
     implementation(project(":common:storage:impl"))
     implementation(project(":common:sync:impl"))
     implementation(project(":common:userdata:impl"))
+    implementation(project(":common:userdata:local:impl"))
+    implementation(project(":common:userdata:network:impl"))
     implementation(project(":device:library:impl"))
     implementation(project(":device:music:ui:impl"))
     implementation(project(":device:playback:impl"))

@@ -29,6 +29,19 @@
   39.05b. Which module holds the `Syncer` and the Firestore mapping changed on the same date, in
   [ADR-022](022-data-source-sub-parts.md): the text below is left as it was written.
 
+- **Revised 2026-10-26:** The code has ADR-022's layout (39.05a): the `Syncer` contract is in
+  `:common:sync:api`, the `Syncer` of the preferences in `:common:userdata:impl`, their Firestore
+  mapping in `:common:userdata:network:impl` and their stored format in
+  `:common:userdata:local:impl`. `SyncedPreferencesRepository` is gone. Target state and
+  Conformance say so. The text of Decision and rule 5 is left as it was written, and is read through
+  [ADR-022](022-data-source-sub-parts.md). The mechanism is unchanged.
+- **Revised 2026-10-26:** Rule 11 is in the code (39.05b): Clicker and the four main menu rows
+  are stored and synced as fields of the preferences, with the names and values of the table in
+  Decision, and `firebase/firestore.rules` allows them. Rule 11 is no longer `[planned]`, and Target
+  state and Conformance say so. In the app's models a row is a `MainMenuRow` and its value a
+  `MainMenuRowVisibility`; the stored and synced names are written out field by field, so renaming
+  a row in code never moves its value (rule 7). No rule changes.
+
 ## Context
 
 [ADR-002](002-offline-first-data-flow.md) left three things to later ADRs: the sync schedule and
@@ -277,21 +290,26 @@ same user or another one, merges them with that user's cloud copy.
 10. `[convention]` A preference syncs unless it describes this installation and not the user's
     choice, as offline mode does. A value that doesn't sync has no timestamp and isn't part of what
     sync reads.
-11. `[planned]` (39.05b) The device's settings are preferences: `:common:userdata` stores them, and
+11. `[convention]` The device's settings are preferences: `:common:userdata` stores them, and
     they sync as fields of `users/{uid}/settings/preferences`, with the names and values of the
     table in Decision. No `:device` module stores a setting. The rules tests cover each field as
     rule 6 says.
 
-**Target state.** Since the revision of 2026-10-12, rule 11 is ahead of the code until
-[39.05b](https://trello.com/c/gjuKXyIz): only
-the theme and the accent color are stored and synced. Rule 5, and the modules this ADR names for
-the `Syncer` and the Firestore mapping, describe the code until
-[39.05a](https://trello.com/c/zFqeUhYB) moves it
-([ADR-022](022-data-source-sub-parts.md)).
+**Target state.** Rule 11 was ahead of the code from the revision of 2026-10-12 until
+[39.05b](https://trello.com/c/gjuKXyIz), which stores and syncs the device's settings. Since
+[39.05a](https://trello.com/c/zFqeUhYB), the code has the layout of
+[ADR-022](022-data-source-sub-parts.md), and rule 5 and the modules this ADR names for the `Syncer`
+and the Firestore mapping are read through it.
 
-**Conformance.** Preferences (theme and accent color) sync. Collections have the merge function and
+**Conformance.** Preferences (theme, accent color, Clicker and the main menu's rows) sync. Rule 11's
+fields are covered by the same tests, and by `PreferencesSyncerTest`'s case of two rows hidden on
+two devices, which is rule 9. Rules 1 to 3 are covered by
+`PreferencesSyncerTest` in `:common:userdata:impl` and `DefaultPreferencesLocalDataSourceTest` in
+`:common:userdata:local:impl`. Rule 4 is reviewed: the transaction is in
+`FirestorePreferencesNetworkDataSource`, and runs only against Firestore. Collections have the merge function and
 its tests, but no data uses it until favorite artists arrive with the library area. Rule 6 is
 checked by `firebase/test/firestore.rules.test.mjs` in CI. Rule 8 is covered by `SyncTriggersTest`
-and `SyncRunnerTest`, which obey the `SyncUserProvider` of `:common:sync:api`, and by
+and `SyncRunnerTest` in `:common:sync:impl`, which obey the `SyncUserProvider` of
+`:common:sync:api`, and by
 `AuthSyncUserProviderTest` in `:auth:data:impl`, which implements it. That is the one place that
 decides whether sync may run ([ADR-020](020-modules-by-product-area.md), rule 18).

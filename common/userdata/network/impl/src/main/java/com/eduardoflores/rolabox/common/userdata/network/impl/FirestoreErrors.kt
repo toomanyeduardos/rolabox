@@ -1,5 +1,6 @@
-package com.eduardoflores.rolabox.common.sync.impl
+package com.eduardoflores.rolabox.common.userdata.network.impl
 
+import com.eduardoflores.rolabox.common.sync.api.RemoteError
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.FirebaseFirestoreException.Code
 

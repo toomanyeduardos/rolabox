@@ -4,23 +4,22 @@ import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
 import com.eduardoflores.rolabox.common.storage.api.StorageError
+import com.eduardoflores.rolabox.common.sync.api.RemoteError
+import com.eduardoflores.rolabox.common.sync.api.SyncError
+import com.eduardoflores.rolabox.common.sync.api.Syncer
 import com.eduardoflores.rolabox.common.sync.testing.FakeSyncUserProvider
-import com.eduardoflores.rolabox.common.userdata.testing.FakeUserDataRepository
-import com.google.firebase.firestore.FirebaseFirestore
-import dagger.Lazy
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Test
 
 class SyncRunnerTest {
     private val syncUserProvider = FakeSyncUserProvider()
-    private val userDataRepository = FakeUserDataRepository()
 
     // Who there is to sync for, and so whether offline mode is on, is the provider's answer
     // (ADR-020, rule 18). What sync owns of ADR-008 rule 6 is obeying it, which these tests cover.
+    // That Firestore isn't created before a sync calls it (rule 8) is tested in :common:userdata:network:impl.
     @Test
     fun nobodyToSyncFor_syncsNothing() = runTest {
         val syncer = RecordingSyncer()
@@ -80,23 +79,6 @@ class SyncRunnerTest {
 
         assertEquals(SyncOutcome.Done, runner(syncer).sync())
         assertEquals(emptyList<String>(), syncer.userIds)
-    }
-
-    // ADR-008 rules 6 and 8: the real preferences syncer, with the Firestore remote, never gets as
-    // far as creating Firestore while there is nobody to sync for, which is what offline mode is to sync.
-    @Test
-    fun nobodyToSyncFor_neverCreatesFirestore() = runTest {
-        var created = false
-        val firestore = Lazy<FirebaseFirestore> {
-            created = true
-            error("Firestore was created with nobody to sync for")
-        }
-        val syncer =
-            PreferencesSyncer(userDataRepository, FirestoreRemotePreferences(firestore), DefaultLastWriteWins())
-
-        runner(syncer).sync()
-
-        assertFalse(created)
     }
 
     private fun runner(vararg syncers: Syncer) = SyncRunner(syncUserProvider, syncers.toSet())
