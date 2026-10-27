@@ -21,5 +21,6 @@ internal fun ArtistsRoute(viewModel: ArtistsViewModel, onArtistClick: (artistId:
         state = rows,
         emptyText = stringResource(R.string.music_no_artists),
         onCenter = { index -> (state as? ListUiState.Loaded)?.items?.get(index)?.let { onArtistClick(it.id.value) } },
+        sortedByName = true,
     )
 }

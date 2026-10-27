@@ -67,6 +67,9 @@ data class MetalColors(
     /** The aluminum tile of the default cover art, top to bottom: the same as the launcher icon's. */
     val displayArt: Color = Color(0xFFE9EAEC),
     val displayArtEnd: Color = Color(0xFFC3C6CA),
+    /** The see-through square of the letter over a list that turns fast, and the letter on it. */
+    val displayOverlay: Color = Color(0xBD1C1C1E),
+    val onDisplayOverlay: Color = Color.White,
     /** The strength meter's color for levels 1 to 4. */
     val strength: List<Color> = listOf(Color(0xFFC8322B), Color(0xFFE0A21B), Color(0xFF6FBF5A), Color(0xFF2E9E57)),
 )

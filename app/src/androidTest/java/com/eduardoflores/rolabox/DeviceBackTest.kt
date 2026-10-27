@@ -93,7 +93,7 @@ class DeviceBackTest {
 
     @Test
     fun backOnADeepScreen_leavesTheApp_andDoesNotGoBackOneScreen() {
-        val artist = library.observeArtists().rows()[ARTIST_INDEX]
+        val artist = library.observeArtists().rows()[artistIndex()]
         val albums = library.observeAlbumsByArtist(artist.id).rows()
         openTheAlbumsOfTheArtist()
         assertHighlighted(albums[0].title)
@@ -130,7 +130,7 @@ class DeviceBackTest {
     private fun openTheAlbumsOfTheArtist() {
         wheel().pressCenter()
         wheel().pressCenter()
-        wheel().turn(ARTIST_INDEX)
+        wheel().turn(artistIndex())
         wheel().pressCenter()
         wheel().turn(1)
     }
@@ -149,7 +149,16 @@ class DeviceBackTest {
         assertEquals(Duration.ZERO, position())
     }
 
-    private fun songsOfTheFirstAlbum() = library.observeArtists().rows()[ARTIST_INDEX]
+    /**
+     * The index of the first artist whose first album has a song at [SONG_INDEX]. Which artist that is
+     * depends on the library, which is read here.
+     */
+    private fun artistIndex(): Int = library.observeArtists().rows().indexOfFirst { artist ->
+        val albums = library.observeAlbumsByArtist(artist.id).rows()
+        albums.isNotEmpty() && library.observeSongsByAlbum(albums[0].id).rows().size > SONG_INDEX
+    }
+
+    private fun songsOfTheFirstAlbum() = library.observeArtists().rows()[artistIndex()]
         .let { artist -> library.observeAlbumsByArtist(artist.id).rows() }
         .let { albums -> library.observeSongsByAlbum(albums[0].id).rows() }
 
@@ -183,7 +192,6 @@ class DeviceBackTest {
     }
 }
 
-private const val ARTIST_INDEX = 2
 private const val SONG_INDEX = 1
 private const val SCRUB_STEPS = 5
 private const val LEAVE_TIMEOUT_MILLIS = 5_000L
