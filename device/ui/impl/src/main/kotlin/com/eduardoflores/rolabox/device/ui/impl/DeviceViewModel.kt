@@ -1,6 +1,8 @@
 package com.eduardoflores.rolabox.device.ui.impl
 
 import androidx.lifecycle.ViewModel
+import com.eduardoflores.rolabox.common.userdata.api.MainMenuRow
+import com.eduardoflores.rolabox.common.userdata.api.MainMenuRowVisibility
 import com.eduardoflores.rolabox.device.library.api.SongId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
 import com.eduardoflores.rolabox.device.playback.api.SeekDirection
@@ -26,6 +28,12 @@ internal abstract class DeviceViewModel : ViewModel() {
 
     /** Whether the loaded song is playing, so the header's record spins. */
     abstract val isPlaying: StateFlow<Boolean>
+
+    /**
+     * Whether each row of the main menu that can be hidden is shown, a preference (ADR-020, rule 15). Every
+     * row is shown until the preferences have loaded, and if they can't be read.
+     */
+    abstract val mainMenuRows: StateFlow<Map<MainMenuRow, MainMenuRowVisibility>>
 
     /** Why the last song click couldn't play, until [onPlayFailureShown]. `null` when there is nothing to show. */
     abstract val playFailure: StateFlow<PlayFailure?>

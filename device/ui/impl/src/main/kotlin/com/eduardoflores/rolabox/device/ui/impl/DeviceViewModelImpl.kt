@@ -1,6 +1,9 @@
 package com.eduardoflores.rolabox.device.ui.impl
 
 import androidx.lifecycle.viewModelScope
+import com.eduardoflores.rolabox.common.userdata.api.MainMenuRow
+import com.eduardoflores.rolabox.common.userdata.api.MainMenuRowVisibility
+import com.eduardoflores.rolabox.common.userdata.api.UserDataRepository
 import com.eduardoflores.rolabox.device.library.api.SongId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackController
 import com.eduardoflores.rolabox.device.playback.api.PlaybackError
@@ -26,6 +29,7 @@ import kotlinx.coroutines.launch
 internal class DeviceViewModelImpl @Inject constructor(
     private val playbackState: PlaybackState,
     private val playbackController: PlaybackController,
+    userDataRepository: UserDataRepository,
 ) : DeviceViewModel() {
     override val hasLoadedSong: StateFlow<Boolean> = playbackState.currentSong
         .map { it != null }
@@ -33,6 +37,10 @@ internal class DeviceViewModelImpl @Inject constructor(
 
     override val isPlaying: StateFlow<Boolean> = playbackState.isPlaying
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), false)
+
+    override val mainMenuRows: StateFlow<Map<MainMenuRow, MainMenuRowVisibility>> = userDataRepository.observeUserData()
+        .map { result -> result.getOrNull()?.mainMenuRows ?: AllShown }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), AllShown)
 
     private val playFailureState = MutableStateFlow<PlayFailure?>(null)
     override val playFailure: StateFlow<PlayFailure?> = playFailureState.asStateFlow()
@@ -76,6 +84,8 @@ internal class DeviceViewModelImpl @Inject constructor(
         const val STOP_TIMEOUT_MILLIS = 5_000L
     }
 }
+
+private val AllShown = MainMenuRow.entries.associateWith { MainMenuRowVisibility.SHOWN }
 
 private fun PlaybackError.toPlayFailure(): PlayFailure = when (this) {
     is PlaybackError.Library -> PlayFailure.LibraryUnavailable

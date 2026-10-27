@@ -63,7 +63,8 @@ data class DeviceListRow(val label: String, val opensSubmenu: Boolean = false, v
  * The list doesn't take taps, drags or scrolls: the highlight is the screen's state, moved by the
  * wheel, and the list scrolls only to keep it in view. A row is as tall as its text needs and wraps
  * the text, so at large font scales fewer rows fit and the highlight still reaches every one. A value
- * keeps its space, and a long label gives way to it.
+ * keeps its space, and a long label gives way to it. A [highlightedIndex] below 0 highlights no
+ * row, for a screen that has nothing to open or change, such as About.
  */
 @Composable
 fun DeviceList(rows: List<DeviceListRow>, highlightedIndex: Int, modifier: Modifier = Modifier) {
@@ -139,6 +140,8 @@ private fun DeviceListItem(row: DeviceListRow, selected: Boolean) {
 @Composable
 private fun KeepInView(state: LazyListState, index: Int) {
     LaunchedEffect(state, index) {
+        // Nothing is highlighted, so there is nothing to keep in view.
+        if (index < 0) return@LaunchedEffect
         val cameFromAbove = index > state.firstVisibleItemIndex
         var item = state.visibleRow(index)
         if (item == null) {

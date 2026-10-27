@@ -14,6 +14,9 @@ data object CreateAccountKey : NavKey
 @Serializable
 data class ResetPasswordKey(val email: String = "") : NavKey
 
-/** Asks the signed-in user to confirm signing out. It's opened from Settings, over the device. */
+/**
+ * Asks the signed-in user to confirm signing out. It's opened from the Account row of the device's
+ * Settings, over the device.
+ */
 @Serializable
 data object SignOutKey : NavKey

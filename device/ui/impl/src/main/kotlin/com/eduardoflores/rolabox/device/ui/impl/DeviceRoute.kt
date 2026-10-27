@@ -27,6 +27,9 @@ import com.eduardoflores.rolabox.device.music.ui.api.MusicMenuKey
 import com.eduardoflores.rolabox.device.playback.api.SeekDirection
 import com.eduardoflores.rolabox.device.playback.ui.api.NowPlayingKey
 import com.eduardoflores.rolabox.device.playback.ui.api.PlaybackEntries
+import com.eduardoflores.rolabox.device.settings.api.AboutKey
+import com.eduardoflores.rolabox.device.settings.api.MainMenuSettingsKey
+import com.eduardoflores.rolabox.device.settings.api.SettingsEntries
 import com.eduardoflores.rolabox.device.settings.api.SettingsKey
 import com.eduardoflores.rolabox.device.ui.api.MainMenuKey
 
@@ -40,13 +43,16 @@ import com.eduardoflores.rolabox.device.ui.api.MainMenuKey
  * [playbackEntries] adds Now Playing, which a song click and the main menu's row push. [viewModel] acts on
  * playback for them and for the playback buttons, and gives the host the state of the header's record. A song
  * click that couldn't play is told in a toast.
- * [onOpenFullScreen] is the generic exit, which leaves the display for a full screen on the app stack.
+ * [settingsEntries] adds the settings screens, which the main menu's Settings row and their own rows push.
+ * [onOpenFullScreen] is the generic exit, which leaves the display for a full screen on the app stack. Only a
+ * contributed settings section's row uses it (ADR-020, rule 17).
  */
 @Composable
 internal fun DeviceRoute(
     viewModel: DeviceViewModel,
     musicEntries: MusicEntries,
     playbackEntries: PlaybackEntries,
+    settingsEntries: SettingsEntries,
     onOpenFullScreen: (NavKey) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -54,6 +60,7 @@ internal fun DeviceRoute(
     val nowPlayingShown by viewModel.hasLoadedSong.collectAsStateWithLifecycle()
     val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
     val playFailure by viewModel.playFailure.collectAsStateWithLifecycle()
+    val mainMenuRows by viewModel.mainMenuRows.collectAsStateWithLifecycle()
     val context = LocalContext.current
     // A song click that couldn't play says why (ADR-007, rule 7), once for each failure.
     LaunchedEffect(playFailure) {
@@ -74,10 +81,10 @@ internal fun DeviceRoute(
         isItemPlaying = isPlaying,
         entryProvider = entryProvider {
             mainMenuEntry(
-                nowPlayingShown = nowPlayingShown,
+                shownRows = shownMenuRows(nowPlayingShown, mainMenuRows),
                 onNowPlayingClick = { stack.push(NowPlayingKey) },
                 onMusicClick = { stack.push(MusicMenuKey) },
-                onSettingsClick = { onOpenFullScreen(SettingsKey) },
+                onSettingsClick = { stack.push(SettingsKey) },
             )
             musicEntries.screenStackEntries(
                 scope = this,
@@ -92,6 +99,12 @@ internal fun DeviceRoute(
                 },
             )
             playbackEntries.screenStackEntries(scope = this)
+            settingsEntries.screenStackEntries(
+                scope = this,
+                onMainMenuClick = { stack.push(MainMenuSettingsKey) },
+                onAboutClick = { stack.push(AboutKey) },
+                onOpenFullScreen = onOpenFullScreen,
+            )
         },
         onPlaybackEvent = { event -> viewModel.onPlaybackEvent(event) },
         modifier = modifier,

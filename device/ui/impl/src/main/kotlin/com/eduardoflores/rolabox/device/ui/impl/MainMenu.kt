@@ -18,22 +18,15 @@ import com.eduardoflores.rolabox.device.host.HandleWheelEvents
 import com.eduardoflores.rolabox.device.host.ScreenTitle
 import com.eduardoflores.rolabox.device.ui.api.MainMenuKey
 
-/**
- * The main menu's rows, in the order they are shown. This fixed list is what the product has
- * (ADR-020, rule 15): the menu takes no contributions, and hiding a row is a preference. Now Playing is
- * shown only while a song is loaded (ADR-018).
- */
-private enum class MainMenuRow { NowPlaying, Music, Podcasts, Audiobooks, ShuffleSongs, Settings }
-
 internal fun EntryProviderScope<NavKey>.mainMenuEntry(
-    nowPlayingShown: Boolean,
+    shownRows: List<MenuRow>,
     onNowPlayingClick: () -> Unit,
     onMusicClick: () -> Unit,
     onSettingsClick: () -> Unit,
 ) {
     entry<MainMenuKey> {
         MainMenu(
-            nowPlayingShown = nowPlayingShown,
+            shown = shownRows,
             onNowPlayingClick = onNowPlayingClick,
             onMusicClick = onMusicClick,
             onSettingsClick = onSettingsClick,
@@ -42,24 +35,26 @@ internal fun EntryProviderScope<NavKey>.mainMenuEntry(
 }
 
 /**
- * Turning moves the highlight, which stops at the first and last rows. Center on Now Playing reports
- * [onNowPlayingClick], on Music [onMusicClick] and on Settings [onSettingsClick]; the other rows do
- * nothing until their screens exist.
+ * Turning moves the highlight, which stops at the first and last of the [shown] rows. Center on Now
+ * Playing reports [onNowPlayingClick], on Music [onMusicClick] and on Settings [onSettingsClick]; the
+ * other rows do nothing until their screens exist.
  *
  * The highlight is the row, not its place: when Now Playing appears above it, the highlight stays on the
  * row it was on. It is saved with the entry like every list's (ADR-018, rule 7).
  */
 @Composable
 private fun MainMenu(
-    nowPlayingShown: Boolean,
+    shown: List<MenuRow>,
     onNowPlayingClick: () -> Unit,
     onMusicClick: () -> Unit,
     onSettingsClick: () -> Unit,
 ) {
-    val shown = MainMenuRow.entries.filter { it != MainMenuRow.NowPlaying || nowPlayingShown }
-    var highlightedOrdinal by rememberSaveable { mutableIntStateOf(MainMenuRow.Music.ordinal) }
-    // A highlighted row that is gone leaves the highlight on Music.
-    val highlighted = MainMenuRow.entries[highlightedOrdinal].takeIf { it in shown } ?: MainMenuRow.Music
+    var highlightedOrdinal by rememberSaveable { mutableIntStateOf(MenuRow.Music.ordinal) }
+    // A highlighted row that is gone, such as one just hidden, leaves the highlight on Music, or on the
+    // first row when Music is hidden too. Settings is always shown, so there is one.
+    val highlighted = MenuRow.entries[highlightedOrdinal].takeIf { it in shown }
+        ?: MenuRow.Music.takeIf { it in shown }
+        ?: shown.first()
     // The app's name is this screen's title, and no other's (ADR-018, rule 19).
     ScreenTitle(stringResource(R.string.device_title))
     HandleWheelEvents { event ->
@@ -70,10 +65,10 @@ private fun MainMenu(
             }
 
             WheelEvent.Center -> when (highlighted) {
-                MainMenuRow.NowPlaying -> onNowPlayingClick()
-                MainMenuRow.Music -> onMusicClick()
-                MainMenuRow.Settings -> onSettingsClick()
-                MainMenuRow.Podcasts, MainMenuRow.Audiobooks, MainMenuRow.ShuffleSongs -> Unit
+                MenuRow.NowPlaying -> onNowPlayingClick()
+                MenuRow.Music -> onMusicClick()
+                MenuRow.Settings -> onSettingsClick()
+                MenuRow.Podcasts, MenuRow.Audiobooks, MenuRow.ShuffleSongs -> Unit
             }
 
             else -> Unit
@@ -83,15 +78,15 @@ private fun MainMenu(
 }
 
 @Composable
-private fun MainMenuList(rows: List<MainMenuRow>, highlightedIndex: Int) {
+private fun MainMenuList(rows: List<MenuRow>, highlightedIndex: Int) {
     val listRows = rows.map { row ->
         when (row) {
-            MainMenuRow.NowPlaying -> DeviceListRow(stringResource(R.string.device_now_playing))
-            MainMenuRow.Music -> DeviceListRow(stringResource(R.string.device_music), opensSubmenu = true)
-            MainMenuRow.Podcasts -> DeviceListRow(stringResource(R.string.device_podcasts), opensSubmenu = true)
-            MainMenuRow.Audiobooks -> DeviceListRow(stringResource(R.string.device_audiobooks), opensSubmenu = true)
-            MainMenuRow.ShuffleSongs -> DeviceListRow(stringResource(R.string.device_shuffle_songs))
-            MainMenuRow.Settings -> DeviceListRow(stringResource(R.string.device_settings), opensSubmenu = true)
+            MenuRow.NowPlaying -> DeviceListRow(stringResource(R.string.device_now_playing))
+            MenuRow.Music -> DeviceListRow(stringResource(R.string.device_music), opensSubmenu = true)
+            MenuRow.Podcasts -> DeviceListRow(stringResource(R.string.device_podcasts), opensSubmenu = true)
+            MenuRow.Audiobooks -> DeviceListRow(stringResource(R.string.device_audiobooks), opensSubmenu = true)
+            MenuRow.ShuffleSongs -> DeviceListRow(stringResource(R.string.device_shuffle_songs))
+            MenuRow.Settings -> DeviceListRow(stringResource(R.string.device_settings), opensSubmenu = true)
         }
     }
     DeviceList(rows = listRows, highlightedIndex = highlightedIndex)
@@ -102,7 +97,7 @@ private fun MainMenuList(rows: List<MainMenuRow>, highlightedIndex: Int) {
 private fun MainMenuPreview() {
     RolaboxTheme {
         DeviceScreen(title = stringResource(R.string.device_title), batteryLevel = 0.7f, onWheelEvent = {}) {
-            MainMenuList(rows = MainMenuRow.entries - MainMenuRow.NowPlaying, highlightedIndex = 0)
+            MainMenuList(rows = MenuRow.entries - MenuRow.NowPlaying, highlightedIndex = 0)
         }
     }
 }
@@ -113,7 +108,18 @@ private fun MainMenuPreview() {
 private fun MainMenuNowPlayingPreview() {
     RolaboxTheme {
         DeviceScreen(title = stringResource(R.string.device_title), batteryLevel = 0.7f, onWheelEvent = {}) {
-            MainMenuList(rows = MainMenuRow.entries, highlightedIndex = 1)
+            MainMenuList(rows = MenuRow.entries, highlightedIndex = 1)
+        }
+    }
+}
+
+/** Podcasts and Audiobooks were hidden in Settings, so the main menu doesn't show them. */
+@PreviewLightDark
+@Composable
+private fun MainMenuHiddenRowsPreview() {
+    RolaboxTheme {
+        DeviceScreen(title = stringResource(R.string.device_title), batteryLevel = 0.7f, onWheelEvent = {}) {
+            MainMenuList(rows = listOf(MenuRow.Music, MenuRow.ShuffleSongs, MenuRow.Settings), highlightedIndex = 0)
         }
     }
 }

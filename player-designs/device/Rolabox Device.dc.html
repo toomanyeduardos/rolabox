@@ -20,7 +20,7 @@
 <div style="margin:0 0 40px">
 <div style="font:700 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;color:#6a6a6a;margin:0 0 14px">{{ th.name }}</div>
 <div style="display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start">
-<sc-for list="{{ th.screens }}" as="s" hint-placeholder-count="10">
+<sc-for list="{{ th.screens }}" as="s" hint-placeholder-count="13">
 <div style="display:flex;flex-direction:column;gap:6px;width:360px">
 <div style="display:flex;align-items:baseline;gap:8px;font-size:12px;color:#1a1a1a"><span style="font:600 10.5px ui-monospace,Menlo,monospace;padding:2px 6px;background:rgba(0,0,0,.08);border-radius:4px">{{ s.num }}</span><span style="font-weight:600">{{ s.label }}</span></div>
 <div style="font-size:11.5px;line-height:1.4;color:rgba(0,0,0,.55);min-height:32px;text-wrap:pretty">{{ s.how }}</div>
@@ -119,6 +119,9 @@ class Component extends DCLogic {
     const songs = ['Dial Tone', 'Every Other Window', 'Glasshouse', 'Tin Can Summer', 'Weather Report', 'Satellite Hymn', 'Coastline', 'Halfway Houses', 'Night Bus', 'Paper Satellites'].map(x => I(x));
     const pods = [I('The Long Signal', { c: 1, d: 1 }), I('Field Notes', { c: 1 }), I('Small Rooms', { c: 1, d: 1 }), I('Night Shift Radio', { c: 1 }), I('Weekly Bench', { c: 1 })];
     const settings = [I('Shuffle', { v: 'Off' }), I('Repeat', { v: 'All' }), I('Clicker', { v: 'On' }), I('Sound Check and Volume Limit', { v: 'Off' }), I('Account', { c: 1 })];
+    const deviceSettings = [I('Clicker', { v: 'On' }), I('Theme', { v: 'System' }), I('Main Menu', { c: 1 }), I('About', { c: 1 }), I('Account', { c: 1 })];
+    const mainMenuRows = [I('Music', { v: 'On' }), I('Podcasts', { v: 'On' }), I('Audiobooks', { v: 'Off' }), I('Shuffle Songs', { v: 'On' })];
+    const about = [I('Rolabox'), I('Version', { v: '1.0' }), I('Songs', { v: '42' })];
     const P = { song: 'Glasshouse', artist: 'Maren Holt', album: 'Paper Satellites', pos: '3 OF 10' };
     const defs = [
       { num: '01', label: 'Main menu', how: 'The device opens here. Turn to move the highlight.', title: 'rolabox', items: main, hi: 0, play: null, w: 'turn' },
@@ -130,7 +133,10 @@ class Component extends DCLogic {
       { num: '07', label: 'Now Playing · volume', how: 'Turn the wheel. The bar switches to volume and returns to time after 2s.', player: 1, ...P, tag: 'VOLUME', lt: 'VOL', rt: '62%', pct: '62%', mode: 'vol', play: true, w: 'turn' },
       { num: '08', label: 'Now Playing · scrub', how: 'Press center, then turn to scrub. Returns to volume after 3s idle.', player: 1, ...P, tag: 'SCRUB', lt: '1:48', rt: '-1:53', pct: '49%', mode: 'scrub', play: true, w: 'center' },
       { num: '09', label: 'Podcasts (still playing)', how: 'MENU back to the main menu, then Podcasts. The spinning vinyl shows music is still playing. Dots mark unplayed episodes.', title: 'Podcasts', items: pods, hi: 0, play: true, w: 'menu' },
-      { num: '10', label: 'Settings · values', how: 'A setting shows its value on the right, in place of the ›. Center changes it in place. A long label gives way to the value.', title: 'Settings', items: settings, hi: 2, play: null, w: 'center' }
+      { num: '10', label: 'Settings · values', how: 'A setting shows its value on the right, in place of the ›. Center changes it in place. A long label gives way to the value.', title: 'Settings', items: settings, hi: 2, play: null, w: 'center' },
+      { num: '11', label: 'Settings', how: 'Center on Settings in the main menu. Clicker and Theme change in place with center: Theme steps through System, Light and Dark. Main Menu and About open a list. Account leaves the device for the full screen, and back returns here.', title: 'Settings', items: deviceSettings, hi: 0, play: null, w: 'center' },
+      { num: '12', label: 'Settings · Main Menu', how: 'Center on Main Menu. Each row that can be hidden, with On or Off. Center changes it in place, and the main menu shows only the rows that are On. Settings and Now Playing are always shown, so they are not listed.', title: 'Main Menu', items: mainMenuRows, hi: 2, play: null, w: 'center' },
+      { num: '13', label: 'Settings · About', how: 'Center on About. The app, its version and the number of songs in the library. Nothing is highlighted: there is nothing to open or change, and MENU goes back.', title: 'About', items: about, hi: -1, play: null, w: 'menu' }
     ];
     const V = 8;
     const build = (t, bg) => defs.map(d => {

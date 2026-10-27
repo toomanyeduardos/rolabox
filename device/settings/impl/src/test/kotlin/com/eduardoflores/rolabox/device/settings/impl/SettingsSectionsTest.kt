@@ -2,6 +2,8 @@ package com.eduardoflores.rolabox.device.settings.impl
 
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
+import com.eduardoflores.rolabox.device.settings.api.AboutKey
+import com.eduardoflores.rolabox.device.settings.api.MainMenuSettingsKey
 import com.eduardoflores.rolabox.device.settings.api.SettingsKey
 import com.eduardoflores.rolabox.device.settings.api.SettingsSection
 import com.eduardoflores.rolabox.device.settings.api.SettingsSlot
@@ -37,16 +39,29 @@ class SettingsSectionsTest {
         assertTrue(error.message, error.message!!.contains("ADR-020 rule 16"))
     }
 
+    // The settings screens are in the display, and only a section's own screens are full screens
+    // (ADR-018, rule 11, and ADR-020, rule 17). A key with no entry throws.
     @Test
-    fun entries_areTheSettingsListAndEachSectionsOwn() {
+    fun screenStackEntries_areTheSettingsScreens() {
         val settingsEntries = DefaultSettingsEntries(setOf(FakeSection(SettingsSlot.Account)))
 
         val provider = entryProvider<NavKey> {
-            settingsEntries.appStackEntries(this, onOpenFullScreen = {}, onBack = {})
+            settingsEntries.screenStackEntries(this, onMainMenuClick = {}, onAboutClick = {}, onOpenFullScreen = {})
         }
 
-        // A key with no entry throws.
         provider(SettingsKey)
+        provider(MainMenuSettingsKey)
+        provider(AboutKey)
+        assertThrows(IllegalStateException::class.java) { provider(FakeKey) }
+    }
+
+    @Test
+    fun appStackEntries_areEachSectionsOwn() {
+        val settingsEntries = DefaultSettingsEntries(setOf(FakeSection(SettingsSlot.Account)))
+
+        val provider = entryProvider<NavKey> { settingsEntries.appStackEntries(this, onBack = {}) }
+
         provider(FakeKey)
+        assertThrows(IllegalStateException::class.java) { provider(SettingsKey) }
     }
 }

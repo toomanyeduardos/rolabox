@@ -44,8 +44,8 @@ import org.junit.Test
  * The system's back on the device as it is assembled (ADR-018, rule 9): from any depth it leaves the
  * app, and it never pops the screen stack or accepts scrub. The device is the first screen of the app
  * stack here, as it is after sign-in, so a back that nothing handles reaches the activity.
- * MENU, the only way back inside the display, is in [DeviceNavigationTest], and back in Settings in
- * [SettingsNavigationTest].
+ * MENU, the only way back inside the display, is in [DeviceNavigationTest], and back from the account,
+ * a full screen opened from Settings, in [SettingsNavigationTest].
  */
 @HiltAndroidTest
 class DeviceBackTest {

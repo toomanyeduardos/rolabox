@@ -206,8 +206,8 @@ there is something to fake, a `:testing` module.
 | `:device:library:testing` | `FakeLibraryRepository` |
 | `:device:music:ui:api` | The keys and entry contract of the music screens: Music, Artists, an artist's albums, songs |
 | `:device:music:ui:impl` | The music screens and their ViewModels, on the library's data |
-| `:device:settings:api` | The settings key, the slots of the settings list, and the contract of a contributed section |
-| `:device:settings:impl` | The settings list |
+| `:device:settings:api` | The keys of the settings screens, the slots of the settings list, and the contract of a contributed section |
+| `:device:settings:impl` | The settings screens in the display: Settings, Main Menu and About |
 | `:common:util` | Coroutine dispatchers and scopes, helpers that turn exceptions into typed errors |
 | `:common:designsystem` | The visual language: theme, shared composables, the device's parts |
 | `:common:testing` | Test-only: Hilt test runner, `MainDispatcherRule` |
@@ -388,8 +388,12 @@ graph TD
     device_settings_impl --> common_designsystem
     device_settings_impl --> common_storage_api
     device_settings_impl --> common_userdata_api
+    device_settings_impl --> device_host
+    device_settings_impl --> device_library_api
     device_settings_impl --> device_settings_api
     device_ui_impl --> common_designsystem
+    device_ui_impl --> common_storage_api
+    device_ui_impl --> common_userdata_api
     device_ui_impl --> device_host
     device_ui_impl --> device_library_api
     device_ui_impl --> device_music_ui_api
