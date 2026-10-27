@@ -33,10 +33,11 @@ internal class DefaultDeviceUiEntries @Inject constructor(
                 viewModel = hiltViewModel<DeviceViewModelImpl>(),
                 musicEntries = musicEntries,
                 playbackEntries = playbackEntries,
+                settingsEntries = settingsEntries,
                 onOpenFullScreen = onOpenFullScreen,
                 modifier = Modifier.fillMaxSize(),
             )
         }
-        settingsEntries.appStackEntries(scope, onOpenFullScreen, onBack)
+        settingsEntries.appStackEntries(scope, onBack)
     }
 }

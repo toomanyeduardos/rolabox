@@ -23,8 +23,8 @@ interface SettingsSection {
     val slot: SettingsSlot
 
     /**
-     * The section's row in the settings list, and again whenever it changes: the account's row
-     * depends on whether the user is signed in. It never fails, so it isn't an `Either` (ADR-007).
+     * The section's row in the settings list, and again whenever it changes: what the account's row
+     * opens depends on whether the user is signed in. It never fails, so it isn't an `Either` (ADR-007).
      */
     fun observeRow(): Flow<SettingsRow>
 
@@ -36,16 +36,11 @@ interface SettingsSection {
 }
 
 /**
- * A row of the settings list. The settings list draws it, so every row looks the same.
+ * A row of the settings list. The settings list draws it as a row of the display, one line with a `›`,
+ * so every row looks the same (ADR-020).
  *
  * @param title read where the row is shown, so it can come from the contributor's string resources.
- * @param detail what the row says under its title, such as the state it stands for. Read where the
- * row is shown, like [title].
- * @param opens the full screen the row opens, through the generic exit, or null when the row only
- * shows a state. It is a key of the contributor's own area (ADR-020, rule 17).
+ * @param opens the full screen center on the row opens, through the generic exit, or null when the
+ * row opens nothing. It is a key of the contributor's own area (ADR-020, rule 17).
  */
-class SettingsRow(
-    val title: @Composable () -> String,
-    val detail: (@Composable () -> String)? = null,
-    val opens: NavKey? = null,
-)
+class SettingsRow(val title: @Composable () -> String, val opens: NavKey? = null)

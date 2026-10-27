@@ -4,7 +4,11 @@ import arrow.core.left
 import arrow.core.right
 import com.eduardoflores.rolabox.common.designsystem.wheel.HoldState
 import com.eduardoflores.rolabox.common.designsystem.wheel.WheelEvent
+import com.eduardoflores.rolabox.common.storage.api.StorageError
 import com.eduardoflores.rolabox.common.testing.MainDispatcherRule
+import com.eduardoflores.rolabox.common.userdata.api.MainMenuRow
+import com.eduardoflores.rolabox.common.userdata.api.MainMenuRowVisibility
+import com.eduardoflores.rolabox.common.userdata.testing.FakeUserDataRepository
 import com.eduardoflores.rolabox.device.library.api.AlbumId
 import com.eduardoflores.rolabox.device.library.api.LibraryError
 import com.eduardoflores.rolabox.device.library.api.SongId
@@ -30,10 +34,35 @@ class DeviceViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val playback = FakePlayback()
+    private val userData = FakeUserDataRepository()
 
-    private fun TestScope.observedViewModel() = DeviceViewModelImpl(playback, playback).also { viewModel ->
+    private fun TestScope.observedViewModel() = DeviceViewModelImpl(playback, playback, userData).also { viewModel ->
         backgroundScope.launch(mainDispatcherRule.testDispatcher) { viewModel.hasLoadedSong.collect() }
         backgroundScope.launch(mainDispatcherRule.testDispatcher) { viewModel.isPlaying.collect() }
+        backgroundScope.launch(mainDispatcherRule.testDispatcher) { viewModel.mainMenuRows.collect() }
+    }
+
+    @Test
+    fun theMainMenu_followsTheMainMenuSettings() = runTest {
+        val viewModel = observedViewModel()
+        assertEquals(AllShown, viewModel.mainMenuRows.value)
+
+        userData.setMainMenuRowVisibility(MainMenuRow.PODCASTS, MainMenuRowVisibility.HIDDEN)
+        assertEquals(AllShown + (MainMenuRow.PODCASTS to MainMenuRowVisibility.HIDDEN), viewModel.mainMenuRows.value)
+        assertEquals(
+            listOf(MenuRow.Music, MenuRow.Audiobooks, MenuRow.ShuffleSongs, MenuRow.Settings),
+            shownMenuRows(nowPlayingShown = false, visibility = viewModel.mainMenuRows.value),
+        )
+
+        userData.setMainMenuRowVisibility(MainMenuRow.PODCASTS, MainMenuRowVisibility.SHOWN)
+        assertEquals(AllShown, viewModel.mainMenuRows.value)
+    }
+
+    @Test
+    fun mainMenuPreferencesThatCannotBeRead_showEveryRow() = runTest {
+        userData.setReadError(StorageError.Corrupted)
+
+        assertEquals(AllShown, observedViewModel().mainMenuRows.value)
     }
 
     @Test
@@ -244,3 +273,5 @@ class DeviceViewModelTest {
 private val Queue = (1L..3L).map {
     PlaybackSong(SongId(it), "Song $it", "Artist", "Album", duration = 3.minutes)
 }
+
+private val AllShown = MainMenuRow.entries.associateWith { MainMenuRowVisibility.SHOWN }

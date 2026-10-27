@@ -12,11 +12,11 @@ import androidx.navigation3.runtime.NavKey
  */
 interface DeviceUiEntries {
     /**
-     * Adds [DeviceKey]'s entry, and the full screens of the device's parts, such as Settings.
+     * Adds [DeviceKey]'s entry, and the full screens of the device's parts, such as those of the
+     * contributed settings sections.
      *
-     * [onOpenFullScreen] is the generic exit: "open this key as a full screen". Only the main menu's
-     * Settings row and the contributed settings sections use it (ADR-020, rule 17). [onBack] leaves
-     * a full screen.
+     * [onOpenFullScreen] is the generic exit: "open this key as a full screen". Only the rows of the
+     * contributed settings sections use it (ADR-020, rule 17). [onBack] leaves a full screen.
      */
     fun appStackEntries(scope: EntryProviderScope<NavKey>, onOpenFullScreen: (NavKey) -> Unit, onBack: () -> Unit)
 }

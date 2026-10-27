@@ -15,32 +15,23 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 /**
- * The account section of the device's settings (ADR-020). Signed out, which includes using the app
- * without an account (ADR-008), its row says "Sign in" and opens Sign in, a key of auth's own area.
- * Signed in, the row says who is signed in and opens Sign out, where the user confirms leaving.
- * Both keys are of auth's own area.
+ * The account section of the device's settings (ADR-020): the Account row, which leaves the display
+ * for a full screen of auth's own area (ADR-018, rule 11). Signed out, which includes using the app
+ * without an account (ADR-008), it opens Sign in. Signed in, it opens Sign out, where the user
+ * confirms leaving.
  */
 internal class AccountSettingsSection @Inject constructor(private val authRepository: AuthRepository) :
     SettingsSection {
     override val slot = SettingsSlot.Account
 
     override fun observeRow(): Flow<SettingsRow> = authRepository.observeAuthState().map { state ->
-        when (state) {
-            AuthState.SignedOut -> SettingsRow(
-                title = { stringResource(R.string.auth_settings_account) },
-                detail = { stringResource(R.string.auth_settings_sign_in) },
-                opens = SignInKey,
-            )
-
-            is AuthState.SignedIn -> SettingsRow(
-                title = { stringResource(R.string.auth_settings_account) },
-                detail = {
-                    state.user.displayName?.let { stringResource(R.string.auth_settings_signed_in_as, it) }
-                        ?: stringResource(R.string.auth_settings_signed_in)
-                },
-                opens = SignOutKey,
-            )
-        }
+        SettingsRow(
+            title = { stringResource(R.string.auth_settings_account) },
+            opens = when (state) {
+                AuthState.SignedOut -> SignInKey
+                is AuthState.SignedIn -> SignOutKey
+            },
+        )
     }
 
     // The entries of Sign in and Sign out are added by the auth screens' own contract, so there is nothing to add here.

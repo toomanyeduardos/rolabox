@@ -110,6 +110,13 @@
   doesn't take them: `:app` still handles them the same way on every screen.
 - **Revised 2026-10-12:** ⏮ of rule 17 is in the code (Target state, Conformance). 39.04 built it,
   with the buttons in scrub of the revision above. No rule changes.
+- **Revised 2026-10-26:** A setting's value changes in place: center on its row steps to the next
+  value and the list stays where it is, with the value shown on the right of the row (Full screens,
+  Alternatives, rule 11). The Decision said a setting with choices opens a list of them. Designing the
+  value row (39.06) and building the settings (39.07) chose what the player the device is drawn
+  after does, where Clicker and Shuffle change without leaving the list. A setting whose values don't
+  fit that, such as a long list, can still open one. The settings in the display are in the code
+  (Target state, Conformance). Rule 11 is unchanged.
 
 ## Context
 
@@ -143,10 +150,9 @@ and the display is small.
 
 **Target state.** The device was written after this ADR, and the rules apply to code as it is
 written. Rules 3, 9, 11, 12 and 15 have a build check (see Conformance under Rules). The rest are
-`[convention]` and are checked in review. Since the revisions of 2026-10-12, two rules are ahead of
-the code, each until its ticket: the settings in the display in rule 11 (39.07) and one-line rows in
-rule 14 (39.09). The header in rule 19 and ⏮ in rule 17 were the others, until 39.03 and 39.04 built
-them.
+`[convention]` and are checked in review. Since the revisions of 2026-10-12, one rule is ahead of
+the code until its ticket: one-line rows in rule 14 (39.09). The header in rule 19, ⏮ in rule 17 and
+the settings in the display in rule 11 were the others, until 39.03, 39.04 and 39.07 built them.
 
 ## Decision
 
@@ -339,8 +345,9 @@ touch, and the device's body, display and wheel are not drawn. It is an entry on
 pushed on top of the device.
 
 **The device's settings are device screens.** Settings is a menu in the display, like Music: its
-rows are the display's rows, the wheel moves through them, and a setting with choices opens a list
-of them. None of it needs touch or the keyboard, so none of it is a full screen. Where the settings
+rows are the display's rows, the wheel moves through them, and center on a setting steps its value in
+place, shown on the right of the row. A row that groups settings, such as Main Menu, opens a list of
+them. None of it needs touch or the keyboard, so none of it is a full screen. Where the settings
 are stored is decided on its own (39.05).
 
 **Account is the way out of the device.** The Settings menu has an Account row, which opens the
@@ -442,6 +449,10 @@ as ADR-017's rule 10 requires.
 - **Settings as a full screen, with the account inside it.** The decision until 2026-10-12, made
   because the account needs the keyboard. But the device's settings need neither touch nor the
   keyboard, and opening them replaced the device with a Material screen.
+- **A setting with choices opens a list of its values,** with the chosen one marked. Every value is
+  visible before it's picked, and it was the text until 2026-10-26. But a two-value setting like
+  Clicker takes three presses instead of one, and it isn't what the player the device is drawn after
+  does.
 - **The account in the display too,** with its email and password entered by a letter picker on the
   wheel. Nothing would leave the device. But text input on the device isn't decided, and a password
   entered one letter at a time is slow and easy to watch.
@@ -592,4 +603,6 @@ and the end of the queue on Now Playing by `DeviceNavigationTest`, which runs on
 `WheelEventRouterTest`, for who is told and in what order, and by `NowPlayingViewModelTest`, for
 scrub ending on a button and on a restart. Rule 19's
 title and record are covered by `ScreenTitlesTest`, and the header's look by the goldens of
-`DeviceHeaderPreview`.
+`DeviceHeaderPreview`. Rule 11's settings in the display are covered by `SettingsNavigationTest`, which
+runs on a device, for the round trip to the account and back, and by the ViewModel tests of
+`:device:settings:impl`, for the values that change in place.

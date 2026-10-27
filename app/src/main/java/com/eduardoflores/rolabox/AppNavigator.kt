@@ -54,7 +54,7 @@ internal class AppNavigator(
     /**
      * Auth reports that access is granted: the user signed in or signed up, or chose offline mode.
      * From the auth flow, that shows the device and forgets the auth screens. From an auth screen
-     * that was opened over the device, such as from Settings, it goes back to the device.
+     * that was opened over the device, from Settings' Account row, it goes back to the device.
      */
     fun accessGranted() {
         when (flow) {
