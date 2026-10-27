@@ -1,0 +1,10 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>DestructuringDeclarationWithTooManyEntries:DeviceNavigationTest.kt:DeviceNavigationTest$val (artistIndex, _, albums, songs) = path()</ID>
+    <ID>DestructuringDeclarationWithTooManyEntries:DeviceNavigationTest.kt:DeviceNavigationTest$val (artistIndex, artists, albums, songs) = path()</ID>
+    <ID>UnusedVariable:DeviceNavigationTest.kt:DeviceNavigationTest$albums</ID>
+    <ID>UnusedVariable:DeviceNavigationTest.kt:DeviceNavigationTest$val artist = artists[artistIndex]</ID>
+  </CurrentIssues>
+</SmellBaseline>

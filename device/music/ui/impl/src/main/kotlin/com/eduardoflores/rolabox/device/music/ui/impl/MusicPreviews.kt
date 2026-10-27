@@ -44,6 +44,17 @@ private fun ArtistsPreview() = DevicePreview(title = "Artists") {
 
 @PreviewLightDark
 @Composable
+private fun ArtistsFastTurningPreview() = DevicePreview(title = "Artists") {
+    MusicList(
+        ListUiState.Loaded(Artists),
+        highlightedIndex = 9,
+        emptyText = stringResource(R.string.music_no_artists),
+        letter = "M",
+    )
+}
+
+@PreviewLightDark
+@Composable
 private fun ArtistAlbumsPreview() = DevicePreview(title = "Maren Holt") {
     val rows = listOf("Low Tide Radio", "Paper Satellites", "North of Here").map { DeviceListRow(it, true) }
     val allSongs = DeviceListRow(stringResource(R.string.music_all_songs), opensSubmenu = true)

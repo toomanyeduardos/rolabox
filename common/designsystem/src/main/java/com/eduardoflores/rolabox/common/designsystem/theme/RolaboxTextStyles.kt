@@ -79,6 +79,9 @@ class RolaboxTextStyles internal constructor(
     /** The album on Now Playing. It's the display's secondary ink. */
     val displayCaption = typography.displayCaption.copy(color = colors.displayMuted)
 
+    /** The letter over a list that turns fast, on [MetalColors.displayOverlay]. */
+    internal val displayOverlayLetter = typography.displayOverlayLetter.copy(color = colors.onDisplayOverlay)
+
     /** Every role with its name, for the type specimen. */
     internal val all: List<Pair<String, TextStyle>>
         get() = listOf(
@@ -112,6 +115,7 @@ class RolaboxTextStyles internal constructor(
             "displayHeadline" to displayHeadline,
             "displayBody" to displayBody,
             "displayCaption" to displayCaption,
+            "displayOverlayLetter" to displayOverlayLetter,
         )
 }
 

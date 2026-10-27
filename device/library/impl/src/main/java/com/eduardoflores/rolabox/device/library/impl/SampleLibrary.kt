@@ -14,8 +14,9 @@ import kotlin.time.Duration.Companion.seconds
  * TEMPORARY: this stands in for the real library so the device can be built. It has no local database,
  * which ADR-002 expects, and it is replaced when the real library is designed.
  *
- * The data is made up, and shaped to exercise the device: several artists, one with several albums, and
- * more songs than fit on a screen. Ids follow the order of the seeds below.
+ * The data is made up, and shaped to exercise the device: a few featured artists, one with several albums,
+ * more songs than fit on a screen, and a long roster of artists to spin through fast. Ids follow the
+ * order of the seeds below.
  */
 internal class SampleLibrary private constructor(
     val artists: List<Artist>,
@@ -23,7 +24,7 @@ internal class SampleLibrary private constructor(
     val songs: List<Song>,
 ) {
     companion object {
-        val Default: SampleLibrary = build(SEEDS)
+        val Default: SampleLibrary = build(FEATURED + ROSTER)
 
         private fun build(seeds: List<ArtistSeed>): SampleLibrary {
             val artists = mutableListOf<Artist>()
@@ -61,7 +62,51 @@ private class ArtistSeed(val name: String, val albums: List<AlbumSeed>)
 
 private class AlbumSeed(val title: String, val year: Int, val songs: List<String>)
 
-private val SEEDS = listOf(
+// A long tail of artists, so the Artists list is long enough to spin through fast. Every letter is there,
+// and names that start with a digit, a symbol or "The". Each has one short album.
+private val ROSTER_NAMES = listOf(
+    "!Static", "10,000 Lakes", "2 Hour Drive", "4th Avenue", "99 Lanterns",
+    "Adeline Park", "Amber Coast", "Atlas Rowe", "Blue Harbor", "Bramble Kings", "Brightwater",
+    "Cass Monroe", "Cinder Hill", "Copper Lane", "Dune Collective", "Delta Nine", "Dover Grey",
+    "Ellis Grey", "Echo Parlor", "Emberly", "Fern & Iron", "Foxglove", "Fable Street",
+    "Glass Arcade", "Golden Hour Club", "Hollow Pines", "Harbor Lights", "Halcyon Drive",
+    "Isla Moreno", "Ivory Coastline", "Juno Vale", "Jetty Wren", "Kite Theory", "Kestrel",
+    "Lantern Bay", "Late Arrivals", "Lowland Choir", "Lucid Mile", "Lyra Banks",
+    "Mabel Quinn", "Maple Static", "Maren Holt", "Mason Reed", "Meadowlark", "Midnight Arcade", "Mira Sol",
+    "Moth & Flame", "Nadia Frost", "Northbound", "Neon Willow", "Otis Ray", "Orchid Lane",
+    "Pale Lanterns", "Pine & Pewter", "Quiet Fleet", "Quill & Quarry", "Rosa Lind", "Rust Belt Radio",
+    "Silver Tide", "Slow Meridian", "Sundial", "The Atlas Club", "The Blue Hours", "The Low Fields",
+    "The Weather Station", "Tidal Mile", "Umber", "Union Pier", "Violet Hour", "Vesper Lane",
+    "Willa Marsh", "Wolf & Willow", "Xavier Lune", "Yellow Kite", "Yara Bell", "Zephyr Lane", "Zinnia",
+)
+
+private val ROSTER_SONGS = listOf(
+    "Open Road",
+    "Low Light",
+    "Paper Moon",
+    "Northern Line",
+    "Second Wind",
+    "Static Bloom",
+    "Long Way Round",
+)
+
+private val ROSTER = ROSTER_NAMES.mapIndexed { index, name ->
+    ArtistSeed(
+        name,
+        listOf(
+            AlbumSeed(
+                "$name EP",
+                ROSTER_FIRST_YEAR + index % ROSTER_YEARS,
+                listOf(ROSTER_SONGS[index % ROSTER_SONGS.size], ROSTER_SONGS[(index + 3) % ROSTER_SONGS.size]),
+            ),
+        ),
+    )
+}
+
+private const val ROSTER_FIRST_YEAR = 2001
+private const val ROSTER_YEARS = 24
+
+private val FEATURED = listOf(
     ArtistSeed(
         "The Paper Lanterns",
         listOf(

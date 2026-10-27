@@ -44,6 +44,7 @@
 </div>
 </sc-for>
 <div style="display:{{ s.sbD }};position:absolute;right:3px;top:4px;bottom:4px;width:4px;border-radius:2px;background:{{ th.t.sRule }}"><div style="position:absolute;left:0;right:0;top:{{ s.thumbTop }};height:{{ s.thumbH }};border-radius:2px;background:{{ th.t.sMuted }}"></div></div>
+<div style="display:{{ s.ovD }};position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:104px;height:104px;border-radius:18px;align-items:center;justify-content:center;background:rgba(28,28,30,.74);box-shadow:0 8px 20px -8px rgba(0,0,0,.5);color:#fff;font-size:68px;font-weight:700;line-height:1;letter-spacing:-.02em">{{ s.ov }}</div>
 </div>
 </sc-if>
 <sc-if value="{{ s.isPlayer }}" hint-placeholder-val="{{ false }}">
@@ -115,6 +116,7 @@ class Component extends DCLogic {
     const main = [I('Music', { c: 1 }), I('Podcasts', { c: 1 }), I('Audiobooks', { c: 1 }), I('Shuffle Songs'), I('Settings', { c: 1 })];
     const music = ['Artists', 'Albums', 'Songs', 'Genres', 'Playlists'].map(x => I(x, { c: 1 }));
     const artists = ['Adeline Park', 'Blue Harbor', 'Cass Monroe', 'Dune Collective', 'Ellis Grey', 'Fern & Iron', 'Hollow Pines', 'Juno Vale', 'Kite Theory', 'Maren Holt', 'Northbound', 'Otis Ray', 'Pale Lanterns', 'Quiet Fleet'].map(x => I(x, { c: 1 }));
+    const manyArtists = ['Lantern Bay', 'Late Arrivals', 'Lowland Choir', 'Lucid Mile', 'Lyra Banks', 'Mabel Quinn', 'Maple Static', 'Maren Holt', 'Marlow', 'Mason Reed', 'Meadowlark', 'Midnight Arcade', 'Mira Sol', 'Moth & Flame', 'Muir Street', 'Nadia Frost', 'Northbound'].map(x => I(x, { c: 1 }));
     const albums = ['All Songs', 'Low Tide Radio', 'Paper Satellites', 'North of Here'].map(x => I(x, { c: 1 }));
     const songs = ['Dial Tone', 'Every Other Window', 'Glasshouse', 'Tin Can Summer', 'Weather Report', 'Satellite Hymn', 'Coastline', 'Halfway Houses', 'Night Bus', 'Paper Satellites'].map(x => I(x));
     const pods = [I('The Long Signal', { c: 1, d: 1 }), I('Field Notes', { c: 1 }), I('Small Rooms', { c: 1, d: 1 }), I('Night Shift Radio', { c: 1 }), I('Weekly Bench', { c: 1 })];
@@ -136,7 +138,8 @@ class Component extends DCLogic {
       { num: '10', label: 'Settings · values', how: 'A setting shows its value on the right, in place of the ›. Center changes it in place. A long label gives way to the value.', title: 'Settings', items: settings, hi: 2, play: null, w: 'center' },
       { num: '11', label: 'Settings', how: 'Center on Settings in the main menu. Clicker and Theme change in place with center: Theme steps through System, Light and Dark. Main Menu and About open a list. Account leaves the device for the full screen, and back returns here.', title: 'Settings', items: deviceSettings, hi: 0, play: null, w: 'center' },
       { num: '12', label: 'Settings · Main Menu', how: 'Center on Main Menu. Each row that can be hidden, with On or Off. Center changes it in place, and the main menu shows only the rows that are On. Settings and Now Playing are always shown, so they are not listed.', title: 'Main Menu', items: mainMenuRows, hi: 2, play: null, w: 'center' },
-      { num: '13', label: 'Settings · About', how: 'Center on About. The app, its version and the number of songs in the library. Nothing is highlighted: there is nothing to open or change, and MENU goes back.', title: 'About', items: about, hi: -1, play: null, w: 'menu' }
+      { num: '13', label: 'Settings · About', how: 'Center on About. The app, its version and the number of songs in the library. Nothing is highlighted: there is nothing to open or change, and MENU goes back.', title: 'About', items: about, hi: -1, play: null, w: 'menu' },
+      { num: '14', label: 'Artists · fast turning', how: 'Spin fast through a long list sorted by name. The first letter of the highlighted row shows over the list and fades out shortly after the turning slows. A name that starts with a digit or a symbol shows #. "The Beatles" shows T, as the list sorts it. Menus and an album\'s songs never show it.', title: 'Artists', items: manyArtists, hi: 9, top: 6, total: 240, overlay: 'M', play: null, w: 'turn' }
     ];
     const V = 8;
     const build = (t, bg) => defs.map(d => {
@@ -148,14 +151,17 @@ class Component extends DCLogic {
           tag: d.tag || '', tagC: scrub ? '#E4572E' : t.sMuted, lt: d.lt, rt: d.rt, pct: d.pct,
           barH: scrub ? '8px' : '6px', fillC: scrub ? '#E4572E' : vol ? t.sInk : t.fill, knobD: scrub ? 'block' : 'none' };
       }
-      const top = d.top || 0, n = d.items.length, scroll = n > V;
+      // total stands for a list longer than the rows drawn, so the scrollbar reads as a long one.
+      const top = d.top || 0, n = d.total || d.items.length, scroll = n > V;
+      const thumbStart = d.total ? 0.5 : top / n;
       const rows = d.items.slice(top, top + V).map((it, i) => {
         const on = top + i === d.hi;
         return { t: it.t, chevD: it.chev && !it.v ? 'block' : 'none', valD: it.v ? 'block' : 'none', v: it.v, dotD: it.dot ? 'block' : 'none', dotC: on ? '#fff' : '#E4572E',
           bg: on ? 'linear-gradient(180deg,#5AA6EE 0%,#2F86DB 48%,#1F6FC4 52%,#1A62B0 100%)' : 'transparent', fg: on ? '#fff' : t.sInk, fw: 700 };
       });
       return { ...s, isList: true, isPlayer: false, title: d.title, rows, padR: scroll ? '16px' : '12px', sbD: scroll ? 'block' : 'none',
-        thumbTop: (top / n * 100).toFixed(1) + '%', thumbH: (V / n * 100).toFixed(1) + '%' };
+        thumbTop: (thumbStart * 100).toFixed(1) + '%', thumbH: (V / n * 100).toFixed(1) + '%',
+        ovD: d.overlay ? 'flex' : 'none', ov: d.overlay || '' };
     });
     return { themes: [
       { name: 'Light · anodized aluminum', key: 'light', t: L, screens: build(L, L.hdrSolid) },

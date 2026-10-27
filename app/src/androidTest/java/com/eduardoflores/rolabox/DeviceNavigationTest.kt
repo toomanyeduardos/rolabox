@@ -18,8 +18,11 @@ import arrow.core.Either
 import arrow.core.getOrElse
 import com.eduardoflores.rolabox.common.designsystem.component.WHEEL_TEST_TAG
 import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxTheme
+import com.eduardoflores.rolabox.device.library.api.Album
+import com.eduardoflores.rolabox.device.library.api.Artist
 import com.eduardoflores.rolabox.device.library.api.LibraryError
 import com.eduardoflores.rolabox.device.library.api.LibraryRepository
+import com.eduardoflores.rolabox.device.library.api.Song
 import com.eduardoflores.rolabox.device.ui.api.DeviceKey
 import com.eduardoflores.rolabox.device.ui.api.DeviceUiEntries
 import dagger.hilt.android.testing.HiltAndroidRule
@@ -88,10 +91,10 @@ class DeviceNavigationTest {
 
     @Test
     fun fromTheMainMenuDownToSongsAndBack_everyLevelComesBackOnItsRow() {
-        val artists = library.observeArtists().rows()
-        val artist = artists[ARTIST_INDEX]
-        val albums = library.observeAlbumsByArtist(artist.id).rows()
-        val songs = library.observeSongsByAlbum(albums[0].id).rows()
+        val path = path()
+        val artist = path.artist
+        val albums = path.albums
+        val songs = path.songs
 
         // Main menu, then Music, then Artists.
         assertHighlighted("Music")
@@ -100,8 +103,8 @@ class DeviceNavigationTest {
         wheel().pressCenter()
 
         // An artist, turned to, and its albums: "All Songs" first, then the first album.
-        assertHighlighted(artists[0].name)
-        wheel().turn(ARTIST_INDEX)
+        assertHighlighted(path.artists[0].name)
+        wheel().turn(path.artistIndex)
         assertHighlighted(artist.name)
         wheel().pressCenter()
         assertHighlighted("All Songs")
@@ -127,16 +130,16 @@ class DeviceNavigationTest {
 
     @Test
     fun aSongPlaysItsListAndOpensNowPlaying_nextAndPreviousMoveTheQueue_andMenuComesBackOnEveryRow() {
-        val artists = library.observeArtists().rows()
-        val artist = artists[ARTIST_INDEX]
-        val albums = library.observeAlbumsByArtist(artist.id).rows()
-        val songs = library.observeSongsByAlbum(albums[0].id).rows()
+        val path = path()
+        val artist = path.artist
+        val albums = path.albums
+        val songs = path.songs
 
         // Nothing is loaded yet, so the main menu has no Now Playing row.
         assertNoRow("Now Playing")
         wheel().pressCenter()
         wheel().pressCenter()
-        wheel().turn(ARTIST_INDEX)
+        wheel().turn(path.artistIndex)
         wheel().pressCenter()
         wheel().turn(1)
         wheel().pressCenter()
@@ -176,16 +179,16 @@ class DeviceNavigationTest {
 
     @Test
     fun playPause_playsTheHighlightedSong_andPausesFromNowPlayingAndFromAListThatIsNotPlayable() {
-        val artists = library.observeArtists().rows()
-        val albums = library.observeAlbumsByArtist(artists[ARTIST_INDEX].id).rows()
-        val songs = library.observeSongsByAlbum(albums[0].id).rows()
+        val path = path()
+        val albums = path.albums
+        val songs = path.songs
 
         // Nothing is loaded: ⏯ on the main menu does nothing.
         wheel().pressPlayPause()
         assertNoRow("Now Playing")
         wheel().pressCenter()
         wheel().pressCenter()
-        wheel().turn(ARTIST_INDEX)
+        wheel().turn(path.artistIndex)
         wheel().pressCenter()
         wheel().turn(1)
         wheel().pressCenter()
@@ -221,13 +224,11 @@ class DeviceNavigationTest {
 
     @Test
     fun theQueueEndsOnNowPlaying_theDisplayGoesBackToTheListUnderIt_andTheMainMenuLosesItsRow() {
-        val artists = library.observeArtists().rows()
-        val artist = artists[ARTIST_INDEX]
-        val albums = library.observeAlbumsByArtist(artist.id).rows()
-        val songs = library.observeSongsByAlbum(albums[0].id).rows()
+        val path = path()
+        val songs = path.songs
         wheel().pressCenter()
         wheel().pressCenter()
-        wheel().turn(ARTIST_INDEX)
+        wheel().turn(path.artistIndex)
         wheel().pressCenter()
         wheel().turn(1)
         wheel().pressCenter()
@@ -253,12 +254,12 @@ class DeviceNavigationTest {
 
     @Test
     fun theHighlights_surviveTheActivityBeingRecreated() {
-        val artists = library.observeArtists().rows()
-        val artist = artists[ARTIST_INDEX]
-        val albums = library.observeAlbumsByArtist(artist.id).rows()
+        val path = path()
+        val artist = path.artist
+        val albums = path.albums
         wheel().pressCenter()
         wheel().pressCenter()
-        wheel().turn(ARTIST_INDEX)
+        wheel().turn(path.artistIndex)
         wheel().pressCenter()
         wheel().turn(1)
 
@@ -269,6 +270,19 @@ class DeviceNavigationTest {
         assertHighlighted(albums[0].title)
         wheel().pressMenu()
         assertHighlighted(artist.name)
+    }
+
+    /**
+     * The first artist whose first album has a song after the one at [SONG_INDEX], so a test can turn to
+     * that song and go to the next. Which artist that is depends on the library, which is read here.
+     */
+    private fun path(): Path {
+        val artists = library.observeArtists().rows()
+        return artists.indices.firstNotNullOf { index ->
+            val albums = library.observeAlbumsByArtist(artists[index].id).rows()
+            val songs = albums.firstOrNull()?.let { library.observeSongsByAlbum(it.id).rows() }.orEmpty()
+            Path(index, artists, albums, songs).takeIf { songs.size > SONG_INDEX + 1 }
+        }
     }
 
     /** The rows the library has. A library that fails is a failed test, not an empty list (ADR-007, rule 7). */
@@ -299,5 +313,9 @@ class DeviceNavigationTest {
     }
 }
 
-private const val ARTIST_INDEX = 2
+/** The artists, the index of the one a test opens, its albums and the songs of its first album. */
+private class Path(val artistIndex: Int, val artists: List<Artist>, val albums: List<Album>, val songs: List<Song>) {
+    val artist: Artist get() = artists[artistIndex]
+}
+
 private const val SONG_INDEX = 2

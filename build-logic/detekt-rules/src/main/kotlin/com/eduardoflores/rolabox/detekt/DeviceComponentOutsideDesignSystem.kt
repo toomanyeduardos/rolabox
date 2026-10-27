@@ -57,6 +57,7 @@ class DeviceComponentOutsideDesignSystem(config: Config) :
             "DeviceProgressBar",
             "ProgressBarMode",
             "DeviceCoverArtPlaceholder",
+            "DeviceLetterOverlay",
         )
     }
 }

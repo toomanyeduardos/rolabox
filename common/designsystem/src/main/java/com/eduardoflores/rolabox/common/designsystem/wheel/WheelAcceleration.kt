@@ -14,10 +14,16 @@ internal object WheelAcceleration {
 
     fun multiplier(stepsPerSecond: Double): Int = tiers.lastOrNull { (from, _) -> stepsPerSecond >= from }?.second ?: 1
 
+    /**
+     * The fewest steps of a turn from the faster tier on, where the rows go by too fast to be read. A
+     * list tells a fast turn from its steps alone, so the wheel's vocabulary doesn't change (ADR-018, rule 4).
+     */
+    const val FAST_TURN_STEPS = 4
+
     private const val TIER_FAST_STEPS_PER_SECOND = 12.0
     private const val TIER_FASTER_STEPS_PER_SECOND = 24.0
     private const val TIER_FASTEST_STEPS_PER_SECOND = 48.0
     private const val MULTIPLIER_FAST = 2
-    private const val MULTIPLIER_FASTER = 4
+    private const val MULTIPLIER_FASTER = FAST_TURN_STEPS
     private const val MULTIPLIER_FASTEST = 8
 }

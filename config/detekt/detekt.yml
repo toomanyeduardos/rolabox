@@ -141,6 +141,7 @@ rolabox:
       - 'DeviceProgressBar'
       - 'ProgressBarMode'
       - 'DeviceCoverArtPlaceholder'
+      - 'DeviceLetterOverlay'
   DeviceDisplayOutsideHost:
     # ADR-019 rule 9: only the device host draws the display and its header. The design system declares
     # and previews the two, and is left out with the host.
@@ -179,6 +180,7 @@ rolabox:
       - 'DeviceDisplay'
       - 'DeviceHeader'
       - 'DeviceMessage'
+      - 'DeviceLetterOverlay'
       - 'DeviceProgressBar'
       - 'DeviceScreen'
       - 'DeviceHost'
