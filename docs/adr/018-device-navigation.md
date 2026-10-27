@@ -117,6 +117,11 @@
   after does, where Clicker and Shuffle change without leaving the list. A setting whose values don't
   fit that, such as a long list, can still open one. The settings in the display are in the code
   (Target state, Conformance). Rule 11 is unchanged.
+- **Revised 2026-10-27:** The one-line rows of rule 14 are in the code (Target state,
+  Conformance). 39.09 built them: the highlighted row rests 1.5 s, scrolls its text to its end,
+  rests 1.5 s, and starts again from its start. Now Playing's title, artist and album don't scroll,
+  since the exception of ADR-017's rule 12 covers the list's rows only. No rule changes, and no rule
+  is ahead of the code.
 
 ## Context
 
@@ -150,9 +155,9 @@ and the display is small.
 
 **Target state.** The device was written after this ADR, and the rules apply to code as it is
 written. Rules 3, 9, 11, 12 and 15 have a build check (see Conformance under Rules). The rest are
-`[convention]` and are checked in review. Since the revisions of 2026-10-12, one rule is ahead of
-the code until its ticket: one-line rows in rule 14 (39.09). The header in rule 19, ⏮ in rule 17 and
-the settings in the display in rule 11 were the others, until 39.03, 39.04 and 39.07 built them.
+`[convention]` and are checked in review. No rule is ahead of the code. The revisions of
+2026-10-12 put four ahead of it: the header in rule 19, ⏮ in rule 17, the settings in the display in
+rule 11 and the one-line rows in rule 14, until 39.03, 39.04, 39.07 and 39.09 built them.
 
 ## Decision
 
@@ -605,4 +610,7 @@ scrub ending on a button and on a restart. Rule 19's
 title and record are covered by `ScreenTitlesTest`, and the header's look by the goldens of
 `DeviceHeaderPreview`. Rule 11's settings in the display are covered by `SettingsNavigationTest`, which
 runs on a device, for the round trip to the account and back, and by the ViewModel tests of
-`:device:settings:impl`, for the values that change in place.
+`:device:settings:impl`, for the values that change in place. Rule 14's one-line row is covered by
+`RowTextScrollTest`, for when the highlighted row's text starts and stops scrolling, and by the
+goldens of the `DeviceListLongRows` previews, for the ellipsis, the `›` and the value that keep their
+place, and the highlighted row that wraps where the system's animations are off.
