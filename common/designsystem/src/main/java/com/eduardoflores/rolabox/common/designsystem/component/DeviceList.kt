@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
@@ -61,13 +62,17 @@ data class DeviceListRow(val label: String, val opensSubmenu: Boolean = false, v
  * scrollbar on the right when the list doesn't fit. Put it in the content of a [DeviceDisplay].
  *
  * The list doesn't take taps, drags or scrolls: the highlight is the screen's state, moved by the
- * wheel, and the list scrolls only to keep it in view. A row is as tall as its text needs and wraps
- * the text, so at large font scales fewer rows fit and the highlight still reaches every one. A value
- * keeps its space, and a long label gives way to it. A [highlightedIndex] below 0 highlights no
- * row, for a screen that has nothing to open or change, such as About.
+ * wheel, and the list scrolls only to keep it in view. A row is one line at every font scale, so at
+ * large font scales fewer rows fit and the highlight still reaches every one (ADR-018, rule 14). A
+ * label that doesn't fit ends in an ellipsis, and on the highlighted row it scrolls sideways after a
+ * moment, to its end and around again, so its full text can be read. Where the system's animations
+ * are off, the highlighted row wraps its label instead. A value or a `›` keeps its place, and a long
+ * label gives way to it. A [highlightedIndex] below 0 highlights no row, for a screen that has
+ * nothing to open or change, such as About.
  */
 @Composable
 fun DeviceList(rows: List<DeviceListRow>, highlightedIndex: Int, modifier: Modifier = Modifier) {
+    val animationsOff = rememberAnimationsOff()
     val colors = RolaboxMetal.colors
     val state =
         rememberLazyListState(
@@ -76,7 +81,9 @@ fun DeviceList(rows: List<DeviceListRow>, highlightedIndex: Int, modifier: Modif
     KeepInView(state, highlightedIndex)
     Box(modifier.fillMaxSize()) {
         LazyColumn(state = state, userScrollEnabled = false, modifier = Modifier.fillMaxSize()) {
-            itemsIndexed(rows) { index, row -> DeviceListItem(row, selected = index == highlightedIndex) }
+            itemsIndexed(rows) { index, row ->
+                DeviceListItem(row, selected = index == highlightedIndex, animationsOff = animationsOff)
+            }
         }
         Box(
             Modifier.fillMaxSize().drawBehind {
@@ -87,7 +94,7 @@ fun DeviceList(rows: List<DeviceListRow>, highlightedIndex: Int, modifier: Modif
 }
 
 @Composable
-private fun DeviceListItem(row: DeviceListRow, selected: Boolean) {
+private fun DeviceListItem(row: DeviceListRow, selected: Boolean, animationsOff: Boolean) {
     val colors = RolaboxMetal.colors
     val styles = RolaboxType.styles
     val background = if (selected) {
@@ -118,7 +125,13 @@ private fun DeviceListItem(row: DeviceListRow, selected: Boolean) {
         horizontalArrangement = Arrangement.spacedBy(RowGap),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(row.label, style = styles.displayRow.copy(color = ink), modifier = Modifier.weight(1f))
+        RowLabel(
+            row.label,
+            style = styles.displayRow.copy(color = ink),
+            highlighted = selected,
+            animationsOff = animationsOff,
+            modifier = Modifier.weight(1f),
+        )
         if (row.value != null) {
             Text(row.value, style = styles.displayRowValue.copy(color = ink), maxLines = 1)
         } else if (row.opensSubmenu) {
@@ -212,12 +225,20 @@ private val Settings = listOf(
     DeviceListRow("Account", opensSubmenu = true),
 )
 
+/** A [DeviceList] in a display, for the previews of the list and of its rows' labels. */
 @Composable
-private fun DeviceListPreview(title: String, rows: List<DeviceListRow>, highlightedIndex: Int) {
+internal fun DeviceListPreview(
+    title: String,
+    rows: List<DeviceListRow>,
+    highlightedIndex: Int,
+    animationsOff: Boolean = false,
+) {
     RolaboxTheme {
-        Box(Modifier.padding(16.dp)) {
-            DeviceDisplay(title, batteryLevel = 0.7f, modifier = Modifier.heightIn(max = DisplayPreviewHeight)) {
-                DeviceList(rows, highlightedIndex)
+        CompositionLocalProvider(LocalAnimationsOff provides animationsOff) {
+            Box(Modifier.padding(16.dp)) {
+                DeviceDisplay(title, batteryLevel = 0.7f, modifier = Modifier.heightIn(max = DisplayPreviewHeight)) {
+                    DeviceList(rows, highlightedIndex)
+                }
             }
         }
     }

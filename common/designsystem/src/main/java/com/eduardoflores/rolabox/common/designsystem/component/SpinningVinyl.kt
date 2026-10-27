@@ -1,6 +1,5 @@
 package com.eduardoflores.rolabox.common.designsystem.component
 
-import android.provider.Settings
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -15,7 +14,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -36,10 +34,7 @@ private const val NANOS_PER_MILLI = 1_000_000f
  */
 @Composable
 fun SpinningVinyl(isPlaying: Boolean, modifier: Modifier = Modifier, size: Dp = 16.dp) {
-    val context = LocalContext.current
-    val reduceMotion = remember {
-        Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
-    }
+    val reduceMotion = rememberAnimationsOff()
     val rotation = remember { Animatable(0f) }
     var hasPlayed by remember { mutableStateOf(false) }
 

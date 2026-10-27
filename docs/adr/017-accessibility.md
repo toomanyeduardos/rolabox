@@ -19,6 +19,8 @@
   bar is unchanged: every row's text can still be read in full at 1.5x, by highlighting the row,
   which scrolls its text sideways, or wraps it where the system's animations are off. The rules had
   no place for a text that is reached by an input and not by layout (39.09).
+- **Revised 2026-10-27:** Rule 12 is in the code (Conformance). 39.09 built it, with a golden for
+  each of its three cases and a unit test of the scrolling. No rule changes.
 
 ## Context
 
@@ -245,5 +247,7 @@ The Google sign-in button is, within Google's branding rules.
 of the CI `build` job. The rule's own unit tests run in `./gradlew check` and `unitTest`. Rules 4 to
 6 are reviewed against the 1.5x goldens that ADR-016's `screenshots` job verifies. Rule 12 has no
 build check: one line, an ellipsis and a scrolling text are properties of one design-system
-component, the device's list, and not a pattern in the code of its callers. It is ahead of the code
-until 39.09, which brings a test of that component for each of its three cases.
+component, the device's list, and not a pattern in the code of its callers. Its three cases are in
+the goldens of the `DeviceListLongRows` previews: the rows that end in an ellipsis, the highlighted
+row at rest before it scrolls, and the highlighted row that wraps where the system's animations are
+off. When the scrolling starts and stops is covered by `RowTextScrollTest`.
