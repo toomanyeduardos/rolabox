@@ -17,6 +17,7 @@ dependencies {
     api(libs.androidx.compose.material3)
 
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
 
     testFixturesApi(libs.paparazzi)
     testFixturesApi(libs.junit)

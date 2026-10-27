@@ -61,6 +61,7 @@ internal fun DeviceRoute(
     val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
     val playFailure by viewModel.playFailure.collectAsStateWithLifecycle()
     val mainMenuRows by viewModel.mainMenuRows.collectAsStateWithLifecycle()
+    val clicks by viewModel.clicks.collectAsStateWithLifecycle()
     val context = LocalContext.current
     // A song click that couldn't play says why (ADR-007, rule 7), once for each failure.
     LaunchedEffect(playFailure) {
@@ -79,6 +80,7 @@ internal fun DeviceRoute(
         stack = stack,
         isItemLoaded = nowPlayingShown,
         isItemPlaying = isPlaying,
+        clicks = clicks,
         entryProvider = entryProvider {
             mainMenuEntry(
                 shownRows = shownMenuRows(nowPlayingShown, mainMenuRows),

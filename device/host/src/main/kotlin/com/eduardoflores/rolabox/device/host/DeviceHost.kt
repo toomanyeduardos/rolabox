@@ -26,13 +26,15 @@ import com.eduardoflores.rolabox.common.designsystem.wheel.WheelEvent
  *
  * The header shows the title that the top screen gives with [ScreenTitle], and none until it has. Its
  * record is playback state, which the host can't see, so the caller says whether an item is loaded,
- * [isItemLoaded], and whether it is playing, [isItemPlaying] (ADR-019, rule 9).
+ * [isItemLoaded], and whether it is playing, [isItemPlaying] (ADR-019, rule 9). Whether the wheel clicks,
+ * [clicks], is a setting, which the caller reads for it too.
  */
 @Composable
 fun DeviceHost(
     stack: ScreenStack,
     isItemLoaded: Boolean,
     isItemPlaying: Boolean,
+    clicks: Boolean,
     entryProvider: (NavKey) -> NavEntry<NavKey>,
     onPlaybackEvent: (WheelEvent) -> Unit,
     modifier: Modifier = Modifier,
@@ -49,6 +51,7 @@ fun DeviceHost(
         onWheelEvent = router::route,
         modifier = modifier,
         record = recordOf(isItemLoaded, isItemPlaying),
+        clicks = clicks,
     ) {
         ScreenStackDisplay(stack, inputs, titles, entryProvider, Modifier.fillMaxSize())
     }
@@ -63,7 +66,8 @@ internal fun recordOf(isItemLoaded: Boolean, isItemPlaying: Boolean): DeviceReco
 
 /**
  * The assembled device. Stateless, so it can be previewed and snapshotted: the display shows what [content]
- * draws, and the header the [title] and the [record] it is given.
+ * draws, and the header the [title] and the [record] it is given. The wheel clicks when [clicks], and is silent
+ * in previews.
  */
 @Composable
 fun DeviceScreen(
@@ -72,9 +76,10 @@ fun DeviceScreen(
     onWheelEvent: (WheelEvent) -> Unit,
     modifier: Modifier = Modifier,
     record: DeviceRecord = DeviceRecord.Hidden,
+    clicks: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    DeviceBody(wheel = { Wheel(onEvent = onWheelEvent) }, modifier = modifier) {
+    DeviceBody(wheel = { Wheel(onEvent = onWheelEvent, clicks = clicks) }, modifier = modifier) {
         DeviceDisplay(
             title = title,
             batteryLevel = batteryLevel,

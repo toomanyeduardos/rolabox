@@ -35,6 +35,12 @@ internal abstract class DeviceViewModel : ViewModel() {
      */
     abstract val mainMenuRows: StateFlow<Map<MainMenuRow, MainMenuRowVisibility>>
 
+    /**
+     * Whether the wheel clicks, the Clicker preference (ADR-011). It clicks until the preferences have loaded,
+     * and if they can't be read, as Clicker's default is On.
+     */
+    abstract val clicks: StateFlow<Boolean>
+
     /** Why the last song click couldn't play, until [onPlayFailureShown]. `null` when there is nothing to show. */
     abstract val playFailure: StateFlow<PlayFailure?>
 
