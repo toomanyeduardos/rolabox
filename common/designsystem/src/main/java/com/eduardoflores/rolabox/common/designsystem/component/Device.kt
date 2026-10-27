@@ -240,7 +240,7 @@ private fun DeviceBodyPreview() {
     RolaboxTheme {
         // A phone's height, so the display has what the wheel leaves. The preview has no screen to fill.
         Box(Modifier.heightIn(min = 760.dp)) {
-            DeviceBody(wheel = { Wheel(onEvent = {}) }) {
+            DeviceBody(wheel = { Wheel(onEvent = {}, clicks = false) }) {
                 DeviceDisplay(title = "rolabox", batteryLevel = 0.7f, modifier = Modifier.weight(1f)) { PreviewRows() }
             }
         }

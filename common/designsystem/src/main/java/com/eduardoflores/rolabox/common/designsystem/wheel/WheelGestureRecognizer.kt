@@ -137,7 +137,7 @@ internal class WheelGestureRecognizer(private val centerRadius: Float, private v
     }
 }
 
-/** How strong a vibration an event gets. */
+/** How strong a vibration an event gets, and which click. */
 internal enum class WheelHaptic { Tick, Press }
 
 /** How many ticks an event gets: one per step of a turn, so a fast flick buzzes several times. */

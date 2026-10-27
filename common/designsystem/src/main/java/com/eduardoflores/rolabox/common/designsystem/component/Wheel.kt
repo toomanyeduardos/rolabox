@@ -44,14 +44,10 @@ import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxMetal
 import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxTheme
 import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxType
 import com.eduardoflores.rolabox.common.designsystem.wheel.WheelEvent
+import com.eduardoflores.rolabox.common.designsystem.wheel.WheelFeedback
 import com.eduardoflores.rolabox.common.designsystem.wheel.WheelGestureRecognizer
-import com.eduardoflores.rolabox.common.designsystem.wheel.WheelHaptic
 import com.eduardoflores.rolabox.common.designsystem.wheel.WheelVibrator
-import com.eduardoflores.rolabox.common.designsystem.wheel.haptic
-import com.eduardoflores.rolabox.common.designsystem.wheel.tickCount
-import kotlin.time.Duration.Companion.milliseconds
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import com.eduardoflores.rolabox.common.designsystem.wheel.rememberWheelClicker
 
 // the Wheel itself doesnt change size on larger or smaller fonts.
 // this is to simulate the actual physical wheel of some old music players
@@ -76,6 +72,8 @@ private const val CENTER_HIGHLIGHT_Y = 0.7f
  * reports the button under the finger, and MENU, ⏮ and ⏭ also report a hold: MENU's once, and ⏮ and ⏭
  * from the moment it is recognized until the finger lifts. A turn gets a light tick per step and a
  * press a stronger one, on devices that can vibrate, whatever the system's touch feedback setting.
+ * When [clicks], each of them also clicks. Whether it clicks is the caller's to say, from a setting the wheel
+ * knows nothing about (ADR-018, rule 4).
  *
  * The MENU label and the icons keep their size at any font scale, because the wheel's shape is fixed
  * (ADR-018, ADR-017 rule 2 exception).
@@ -83,27 +81,25 @@ private const val CENTER_HIGHLIGHT_Y = 0.7f
 // ADR-017 rule 3, rule 10: the wheel has a fixed size, and its MENU label sits inside it.
 @Suppress("FixedHeightAroundText")
 @Composable
-fun Wheel(onEvent: (WheelEvent) -> Unit, modifier: Modifier = Modifier) {
+fun Wheel(onEvent: (WheelEvent) -> Unit, clicks: Boolean, modifier: Modifier = Modifier) {
     val colors = RolaboxMetal.colors
     val currentOnEvent by rememberUpdatedState(onEvent)
     val context = LocalContext.current
     val vibrator = remember(context) { WheelVibrator(context) }
+    val currentClicker by rememberUpdatedState(rememberWheelClicker(enabled = clicks))
     val scope = rememberCoroutineScope()
     val holdTimeoutMillis = LocalViewConfiguration.current.longPressTimeoutMillis
-    val emit = remember(vibrator, scope) {
+    val feedback = remember(vibrator, scope) {
+        WheelFeedback(
+            scope = scope,
+            clicks = { currentClicker != null },
+            vibrate = vibrator::perform,
+            click = { currentClicker?.play(it) },
+        )
+    }
+    val emit = remember(feedback) {
         { event: WheelEvent ->
-            val ticks = event.tickCount()
-            if (ticks > 0) {
-                // Spaced out, since the system folds ticks that arrive together into one.
-                scope.launch {
-                    repeat(ticks) {
-                        vibrator.perform(WheelHaptic.Tick)
-                        delay(TickSpacing)
-                    }
-                }
-            } else {
-                vibrator.perform(event.haptic())
-            }
+            feedback.perform(event)
             currentOnEvent(event)
         }
     }
@@ -142,7 +138,6 @@ fun Wheel(onEvent: (WheelEvent) -> Unit, modifier: Modifier = Modifier) {
 /** The tag a UI test finds the wheel by, to turn and press it with touches. */
 const val WHEEL_TEST_TAG = "wheel"
 
-private val TickSpacing = 12.milliseconds
 private const val MENU_LABEL = "MENU"
 
 private fun Modifier.wheelGestures(holdTimeoutMillis: Long, emit: (WheelEvent) -> Unit): Modifier =
@@ -271,6 +266,6 @@ private fun DrawScope.drawTriangle(color: Color, baseX: Float, midY: Float, h: F
 @Composable
 private fun WheelPreview() {
     RolaboxTheme {
-        Box(Modifier.brushedMetal().padding(24.dp)) { Wheel(onEvent = {}) }
+        Box(Modifier.brushedMetal().padding(24.dp)) { Wheel(onEvent = {}, clicks = false) }
     }
 }

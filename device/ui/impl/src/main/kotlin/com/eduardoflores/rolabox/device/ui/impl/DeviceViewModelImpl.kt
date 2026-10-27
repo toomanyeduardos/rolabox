@@ -1,6 +1,7 @@
 package com.eduardoflores.rolabox.device.ui.impl
 
 import androidx.lifecycle.viewModelScope
+import com.eduardoflores.rolabox.common.userdata.api.Clicker
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRow
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRowVisibility
 import com.eduardoflores.rolabox.common.userdata.api.UserDataRepository
@@ -31,6 +32,8 @@ internal class DeviceViewModelImpl @Inject constructor(
     private val playbackController: PlaybackController,
     userDataRepository: UserDataRepository,
 ) : DeviceViewModel() {
+    private val userData = userDataRepository.observeUserData().map { it.getOrNull() }
+
     override val hasLoadedSong: StateFlow<Boolean> = playbackState.currentSong
         .map { it != null }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), false)
@@ -38,9 +41,13 @@ internal class DeviceViewModelImpl @Inject constructor(
     override val isPlaying: StateFlow<Boolean> = playbackState.isPlaying
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), false)
 
-    override val mainMenuRows: StateFlow<Map<MainMenuRow, MainMenuRowVisibility>> = userDataRepository.observeUserData()
-        .map { result -> result.getOrNull()?.mainMenuRows ?: AllShown }
+    override val mainMenuRows: StateFlow<Map<MainMenuRow, MainMenuRowVisibility>> = userData
+        .map { it?.mainMenuRows ?: AllShown }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), AllShown)
+
+    override val clicks: StateFlow<Boolean> = userData
+        .map { it?.clicker != Clicker.OFF }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), true)
 
     private val playFailureState = MutableStateFlow<PlayFailure?>(null)
     override val playFailure: StateFlow<PlayFailure?> = playFailureState.asStateFlow()

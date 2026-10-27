@@ -6,6 +6,7 @@ import com.eduardoflores.rolabox.common.designsystem.wheel.HoldState
 import com.eduardoflores.rolabox.common.designsystem.wheel.WheelEvent
 import com.eduardoflores.rolabox.common.storage.api.StorageError
 import com.eduardoflores.rolabox.common.testing.MainDispatcherRule
+import com.eduardoflores.rolabox.common.userdata.api.Clicker
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRow
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRowVisibility
 import com.eduardoflores.rolabox.common.userdata.testing.FakeUserDataRepository
@@ -40,6 +41,26 @@ class DeviceViewModelTest {
         backgroundScope.launch(mainDispatcherRule.testDispatcher) { viewModel.hasLoadedSong.collect() }
         backgroundScope.launch(mainDispatcherRule.testDispatcher) { viewModel.isPlaying.collect() }
         backgroundScope.launch(mainDispatcherRule.testDispatcher) { viewModel.mainMenuRows.collect() }
+        backgroundScope.launch(mainDispatcherRule.testDispatcher) { viewModel.clicks.collect() }
+    }
+
+    @Test
+    fun theWheel_followsTheClickerSetting() = runTest {
+        val viewModel = observedViewModel()
+        assertTrue(viewModel.clicks.value)
+
+        userData.setClicker(Clicker.OFF)
+        assertFalse(viewModel.clicks.value)
+
+        userData.setClicker(Clicker.ON)
+        assertTrue(viewModel.clicks.value)
+    }
+
+    @Test
+    fun aClickerThatCannotBeRead_clicks() = runTest {
+        userData.setReadError(StorageError.Corrupted)
+
+        assertTrue(observedViewModel().clicks.value)
     }
 
     @Test
