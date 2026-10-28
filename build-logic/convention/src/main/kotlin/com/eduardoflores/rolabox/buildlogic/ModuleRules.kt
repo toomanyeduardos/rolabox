@@ -44,6 +44,9 @@ private const val USERDATA_PREFIX = ":common:userdata:"
 private const val FIREBASE_GROUP = "com.google.firebase"
 private const val FIRESTORE_NAME_PREFIX = "firebase-firestore"
 
+// Media3 is a dependency of the playback engine's module only (ADR-023 rule 9).
+private const val MEDIA3_GROUP = "androidx.media3"
+
 // What :app's own code uses from the product areas (ADR-020 rule 13). It also uses :common, and lists every :impl.
 private val APP_ALLOWED_API_PATHS = setOf(":auth:data:api", ":auth:ui:api", ":device:ui:api")
 
@@ -55,7 +58,7 @@ private const val DAGGER_GROUP = "com.google.dagger"
 private const val PAPARAZZI_GROUP = "app.cash.paparazzi"
 private const val PAPARAZZI_PLUGIN = "app.cash.paparazzi"
 
-/** Checks the `[enforced]` dependency rules of ADR-020, ADR-022, ADR-005 and ADR-016 while the build is configured. */
+/** Checks the `[enforced]` dependency rules of ADR-020, ADR-022, ADR-023, ADR-005 and ADR-016 while the build is configured. */
 internal fun Project.enforceModuleRules() {
     val modulePath = path
 
@@ -119,6 +122,10 @@ internal fun externalDependencyViolation(
         group == FIREBASE_GROUP && name.startsWith(FIRESTORE_NAME_PREFIX) && !modulePath.endsWith(NETWORK_IMPL_SUFFIX) ->
             "ADR-022 rule 3: Firestore is a dependency of :network:impl modules only. Map the data in the " +
                 "part's :network:impl, and reach it through its :network:api"
+
+        group == MEDIA3_GROUP && modulePath != PLAYBACK_IMPL_PATH ->
+            "ADR-023 rule 9: Media3 is a dependency of $PLAYBACK_IMPL_PATH only. Reach playback through " +
+                "PlaybackController and PlaybackState in :device:playback:api"
 
         group == PAPARAZZI_GROUP && !appliesPaparazzi ->
             "ADR-016 rule 1: Paparazzi comes only from the rolabox.android.paparazzi plugin, which the module doesn't apply"

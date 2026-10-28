@@ -31,3 +31,4 @@ New ADR: copy [`template.md`](template.md), take the next number, and add it to 
 | [020](020-modules-by-product-area.md) | Modules grouped by product area, with the device assembling its own screens | Accepted |
 | [021](021-data-flow-through-layers.md) | Every layer is reached through an abstraction, from the screen to the data source | Accepted |
 | [022](022-data-source-sub-parts.md) | A data part's local and network sides are sub-parts, and the part that owns synced data syncs it | Accepted |
+| [023](023-playback-engine.md) | Playback with Media3, in a session service that the playback area owns | Accepted |

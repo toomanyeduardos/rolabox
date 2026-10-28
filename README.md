@@ -73,6 +73,7 @@ wordmark. Think of a hardware player, not a streaming app.
 | **Dependency injection** | Hilt ([ADR-005](docs/adr/005-hilt-dependency-injection.md)) |
 | **Errors** | Arrow `Either` with typed errors ([ADR-007](docs/adr/007-error-handling.md)) |
 | **Storage** | DataStore |
+| **Playback** | Media3: ExoPlayer and `MediaSession`, in a `MediaSessionService` ([ADR-023](docs/adr/023-playback-engine.md)) |
 | **Accounts and sync** | Firebase Auth, Cloud Firestore, Credential Manager, WorkManager |
 | **Build** | Gradle with convention plugins in `build-logic` ([ADR-004](docs/adr/004-convention-plugins.md)) |
 | **Quality** | ktlint (with Compose rules), detekt, Android Lint, Paparazzi screenshot tests |
