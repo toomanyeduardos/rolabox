@@ -127,6 +127,16 @@ class ModuleRulesTest {
     }
 
     @Test
+    fun `ADR-023 rule 9 - Media3 only in the playback impl`() {
+        assertTrue(media3Violation(":app")!!.contains("ADR-023 rule 9"))
+        assertTrue(media3Violation(":device:playback:api")!!.contains("ADR-023 rule 9"))
+        assertTrue(media3Violation(":device:playback:ui:impl")!!.contains("ADR-023 rule 9"))
+        assertTrue(media3Violation(":device:playback:testing")!!.contains("ADR-023 rule 9"))
+        assertNull(media3Violation(":device:playback:impl"))
+        assertNull(externalDependencyViolation(":device:playback:impl", "androidx.media3", "media3-test-utils", false))
+    }
+
+    @Test
     fun `ADR-022 rule 4 - sync depends on no userdata module`() {
         assertViolatesRule("ADR-022 rule 4", ":common:sync:impl", ":common:userdata:api")
         assertViolatesRule("ADR-022 rule 4", ":common:sync:api", ":common:userdata:api")
@@ -169,6 +179,9 @@ class ModuleRulesTest {
 
     private fun firestoreViolation(module: String) =
         externalDependencyViolation(module, "com.google.firebase", "firebase-firestore", false)
+
+    private fun media3Violation(module: String) =
+        externalDependencyViolation(module, "androidx.media3", "media3-exoplayer", false)
 
     private fun assertAllowed(module: String, dependency: String, configuration: String = MAIN) {
         assertNull("$module -> $dependency", projectDependencyViolation(module, dependency, configuration))

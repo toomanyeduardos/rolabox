@@ -122,6 +122,13 @@
   rests 1.5 s, and starts again from its start. Now Playing's title, artist and album don't scroll,
   since the exception of ADR-017's rule 12 covers the list's rows only. No rule changes, and no rule
   is ahead of the code.
+- **Revised 2026-10-28:** The playback engine, its service and the media session are decided by
+  [ADR-023](023-playback-engine.md) (Playback state, What each control does, What was not decided):
+  Media3, in `:device:playback:impl`. The volume is the system's media volume, as it was, and one
+  step of the wheel is now one step of it, since the phone has 15 to 25 steps and a step of 1 out of
+  100 would often not move it. Shuffle and repeat, left to the playback ADR, are left by ADR-023 to
+  their own decision. The in-memory implementation stays until the engine replaces it. No rule
+  changes.
 
 ## Context
 
@@ -296,7 +303,8 @@ An item is **loaded** from the moment it starts until its queue ends. A loaded i
   the main menu's Now Playing row. When the queue ends, nothing is loaded: `:app` pops Now Playing
   if it is showing, and the main menu's row goes away.
 - **The volume is the system's media volume.** The wheel and the hardware keys change the same
-  value, and each shows the other's change.
+  value, and each shows the other's change. One step of the wheel is one step of that volume
+  ([ADR-023](023-playback-engine.md)).
 
 ### The system's back
 
@@ -321,14 +329,15 @@ the background, so the screen stack and its highlights are as they were, as afte
 What is loaded, whether it is playing, its position and its queue belong to the playback area, and
 are exposed as `Flow`s ([ADR-006](006-async-api-shape.md)). The playback state in the `:api` is a
 set of them: the current song, whether it is playing, its position, the queue with its index, and
-the volume. Until the playback ADR there is no engine: the implementation in `:device:playback:impl`
-is temporary and keeps the state in memory, with a clock in place of the audio. While the item
-plays its position advances, at its end the next item starts, and after the last one nothing is
-loaded. While it is paused the position stays. It is replaced when the engine is chosen. The fake in
+the volume. The engine is Media3, in a session service in `:device:playback:impl`
+([ADR-023](023-playback-engine.md)). Until it is built, the implementation there is temporary and
+keeps the state in memory, with a clock in place of the audio. While the item plays its position
+advances, at its end the next item starts, and after the last one nothing is loaded. While it is
+paused the position stays. The engine replaces it and keeps that behavior. The fake in
 `:device:playback:testing` is what tests use. `:app` observes them for the header's
 record, the Now Playing row and the ⏮ ⏭ ⏯ buttons, and the Now Playing screen observes them for its
 content. No entry's ViewModel owns playback state, since every entry can be popped while the music
-continues. The playback engine, its service and the media session are left to their own ADR.
+continues. The playback engine, its service and the media session are ADR-023's.
 
 ### When playing fails
 
@@ -415,8 +424,11 @@ as ADR-017's rule 10 requires.
   ticket, as a revision of this ADR.
 - **Screen readers.** A display that isn't touched and a wheel that is a custom gesture both need a
   TalkBack design. It comes as a section of ADR-017, and may add rules here.
-- **Queue rules** beyond the whole list, started from the selected row: shuffle and repeat. They
-  belong to the playback ADR.
+- **Queue rules** beyond the whole list, started from the selected row: shuffle and repeat. The
+  playback ADR, [ADR-023](023-playback-engine.md), leaves them open too, to their own decision
+  (playback/07).
+- **The playback engine, its service and the media session** were left here, and are decided by
+  [ADR-023](023-playback-engine.md).
 
 ## Alternatives considered
 
