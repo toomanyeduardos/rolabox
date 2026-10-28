@@ -137,6 +137,19 @@ class ModuleRulesTest {
     }
 
     @Test
+    fun `ADR-024 rule 4 - Room and SQLite only in a local impl`() {
+        assertTrue(databaseViolation(":device:library:impl", "androidx.room", "room-runtime")!!.contains("ADR-024 rule 4"))
+        assertTrue(databaseViolation(":device:library:local:api", "androidx.room", "room-common")!!.contains("ADR-024 rule 4"))
+        assertTrue(databaseViolation(":device:library:testing", "androidx.room", "room-testing")!!.contains("ADR-024 rule 4"))
+        assertTrue(databaseViolation(":common:storage:impl", "androidx.sqlite", "sqlite-bundled")!!.contains("ADR-024 rule 4"))
+        assertTrue(databaseViolation(":app", "androidx.room", "room-runtime")!!.contains("ADR-024 rule 4"))
+        assertNull(databaseViolation(":device:library:local:impl", "androidx.room", "room-runtime"))
+        assertNull(databaseViolation(":device:library:local:impl", "androidx.room", "room-compiler"))
+        assertNull(databaseViolation(":device:library:local:impl", "androidx.sqlite", "sqlite-bundled"))
+        assertNull(databaseViolation(":device:playback:local:impl", "androidx.room", "room-runtime"))
+    }
+
+    @Test
     fun `ADR-022 rule 4 - sync depends on no userdata module`() {
         assertViolatesRule("ADR-022 rule 4", ":common:sync:impl", ":common:userdata:api")
         assertViolatesRule("ADR-022 rule 4", ":common:sync:api", ":common:userdata:api")
@@ -182,6 +195,9 @@ class ModuleRulesTest {
 
     private fun media3Violation(module: String) =
         externalDependencyViolation(module, "androidx.media3", "media3-exoplayer", false)
+
+    private fun databaseViolation(module: String, group: String, name: String) =
+        externalDependencyViolation(module, group, name, false)
 
     private fun assertAllowed(module: String, dependency: String, configuration: String = MAIN) {
         assertNull("$module -> $dependency", projectDependencyViolation(module, dependency, configuration))

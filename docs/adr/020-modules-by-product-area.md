@@ -63,6 +63,10 @@
   `:device:playback:impl`, so `:app` declares nothing for playback and no module is added. The
   restore of playback/05 adds a local sub-part, `:device:playback:local:{api,impl}`, as ADR-022
   allows. The rules here hold as they are written. The decision is unchanged.
+- **Revised 2026-10-28:** Where Room's database, entities and DAOs live is decided by
+  [ADR-024](024-library-index.md) (The layout, Left open): in the library's local sub-part,
+  `:device:library:local:{api,impl}`, with one database per part that keeps relational data. A
+  sub-part is a part, so the rules here hold as they are written. The decision is unchanged.
 
 ## Context
 
@@ -106,6 +110,7 @@ We will group modules **by product area**, let each area **assemble its own part
 :device:ui:{api,impl}             the device's assembly: its entries, the main menu, the exits
 :device:settings:{api,impl}       the settings list and its slots
 :device:library:{api,impl,testing}  the music library's data: artists, albums, songs
+:device:library:local:{api,impl}  the index in Room, MediaStore and the tags (ADR-024)
 :device:music:ui:{api,impl}       the music screens: Music, Artists, albums, songs
 :device:playback:{api,impl,testing}  playback state, and the engine and its service (ADR-023)
 :device:playback:ui:{api,impl}    the playback screens: Now Playing
@@ -306,9 +311,10 @@ This ADR doesn't decide, and its module list isn't complete for:
 - **Playback's engine** is no longer open: [ADR-023](023-playback-engine.md) puts it, its service
   and the media session in `:device:playback:impl`. The in-memory implementation stays until
   playback/02 replaces it.
-- **Where Room's database, entities and DAOs live,** now that `:device:library` exists. Its
-  `:impl` serves hard-coded data in memory until the real library is designed, and is replaced
-  then.
+- **Where Room's database, entities and DAOs live** is no longer open:
+  [ADR-024](024-library-index.md) puts the library's in `:device:library:local:impl`, and gives
+  each part that keeps relational data a database of its own. The in-memory library stays until
+  library/03 replaces it.
 - **`:device:data`,** which doesn't exist until the device has data of its own.
 - **Search and podcasts.**
 

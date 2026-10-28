@@ -27,6 +27,11 @@
 - **Revised 2026-10-26:** Conformance names where the preferences are stored and synced, now that
   `:common:userdata` has a local and a network side ([ADR-022](022-data-source-sub-parts.md),
   39.05a). The decision is unchanged.
+- **Revised 2026-10-28:** "A Room database holds the music library and all user data" becomes one
+  Room database per part that keeps relational data, in that part's local sub-part (Decision,
+  Conformance), as [ADR-024](024-library-index.md) decides for the library index (library/01). A
+  single database would have to know every part's tables. The decision is unchanged: the local
+  database is the source of truth.
 
 ## Context
 
@@ -47,8 +52,9 @@ Two technical facts shape the decision:
 
 ## Decision
 
-**The local database is the single source of truth.** A Room database (in a future module, whose
-layout gets its own ADR) holds the music library and all user data. The UI only observes data from
+**The local database is the single source of truth.** Room holds the music library and all user
+data, in one database per part that keeps relational data, inside that part's local sub-part
+([ADR-024](024-library-index.md)). The library's index is the first. The UI only observes data from
 it through `Flow`s exposed by repositories, and never waits on the network to render.
 
 ```
@@ -136,9 +142,9 @@ detailed conflict rules for each type of data.
 8. `[convention]` Play history is stored as append-only events, and aggregates are derived from them.
 9. `[convention]` Every feature works while the user is signed out.
 
-**Conformance.** Room and the library scan don't exist yet. `:device:library:impl` serves hard-coded
-data in memory so the device can be built, and has no database: a temporary gap in these rules,
-to be replaced when the real library is designed. `SyncRepository` syncs preferences from
+**Conformance.** Room and the library scan don't exist yet. [ADR-024](024-library-index.md)
+designs them, and library/03 builds them. Until then `:device:library:impl` serves hard-coded data
+in memory so the device can be built, and has no database: a temporary gap in these rules. `SyncRepository` syncs preferences from
 DataStore while the user is signed in and hasn't chosen offline mode
 ([ADR-011](011-preferences-sync.md)). The repository of the preferences reads and writes only
 their local side, `:common:userdata:local`, and only their `Syncer` uses the network side,

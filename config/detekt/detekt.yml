@@ -44,6 +44,7 @@ style:
   ForbiddenMethodCall:
     # ADR-015 rules 2 and 3: colors, fonts, text styles and shapes are defined only in the design system.
     # ADR-017 rule 2: no Density is built to override the font scale.
+    # ADR-024 rule 11: no Room database is built with a destructive fallback.
     active: true
     excludes: ['**/common/designsystem/**']
     methods:
@@ -61,6 +62,8 @@ style:
         reason: 'ADR-015 rule 3: shapes are defined only in :common:designsystem. Use MaterialTheme.shapes.'
       - value: 'androidx.compose.ui.unit.Density'
         reason: 'ADR-017 rule 2: text follows the system font scale. Do not build a Density to override or cap it.'
+      - value: 'androidx.room.RoomDatabase.Builder.fallbackToDestructiveMigration'
+        reason: 'ADR-024 rule 11: a migration drops only cache tables. Write a Migration instead.'
   MagicNumber:
     # Color literals and dimensions in the design system are the definitions themselves.
     ignorePropertyDeclaration: true
@@ -147,6 +150,10 @@ rolabox:
     # and previews the two, and is left out with the host.
     active: true
     excludes: ['**/device/host/**', '**/common/designsystem/**']
+  MediaStoreOutsideLibrary:
+    # ADR-024 rule 2: only the library's local side finds the music on the phone.
+    active: true
+    excludes: ['**/device/library/local/impl/**']
   FixedHeightAroundText:
     # ADR-017 rule 3: a container of text grows with it.
     active: true

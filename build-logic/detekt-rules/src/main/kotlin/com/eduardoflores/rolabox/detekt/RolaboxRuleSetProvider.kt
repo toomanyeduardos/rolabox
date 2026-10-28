@@ -26,6 +26,7 @@ class RolaboxRuleSetProvider : RuleSetProvider {
             ::SystemBackInDevice,
             ::DeviceComponentOutsideDesignSystem,
             ::DeviceDisplayOutsideHost,
+            ::MediaStoreOutsideLibrary,
         ),
     )
 }

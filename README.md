@@ -72,7 +72,7 @@ wordmark. Think of a hardware player, not a streaming app.
 | **Navigation** | Jetpack Navigation 3 ([ADR-012](docs/adr/012-navigation.md)) |
 | **Dependency injection** | Hilt ([ADR-005](docs/adr/005-hilt-dependency-injection.md)) |
 | **Errors** | Arrow `Either` with typed errors ([ADR-007](docs/adr/007-error-handling.md)) |
-| **Storage** | DataStore |
+| **Storage** | DataStore for preferences, Room for the library index, found through MediaStore ([ADR-024](docs/adr/024-library-index.md)) |
 | **Playback** | Media3: ExoPlayer and `MediaSession`, in a `MediaSessionService` ([ADR-023](docs/adr/023-playback-engine.md)) |
 | **Accounts and sync** | Firebase Auth, Cloud Firestore, Credential Manager, WorkManager |
 | **Build** | Gradle with convention plugins in `build-logic` ([ADR-004](docs/adr/004-convention-plugins.md)) |
@@ -180,6 +180,8 @@ and the rules that follow. Most rules are enforced by the build or by tests, not
 | [020](docs/adr/020-modules-by-product-area.md) | Modules grouped by product area, with the device assembling its own screens |
 | [021](docs/adr/021-data-flow-through-layers.md) | Every layer is reached through an abstraction, from the screen to the data source |
 | [022](docs/adr/022-data-source-sub-parts.md) | A data part's local and network sides are sub-parts, and the part that owns synced data syncs it |
+| [023](docs/adr/023-playback-engine.md) | Playback with Media3, in a session service that the playback area owns |
+| [024](docs/adr/024-library-index.md) | The library index: MediaStore finds the files, and Rolabox's own database is what the device reads |
 
 ### Modules
 
@@ -241,9 +243,11 @@ The full set of rules, and the reasoning behind them, is in [ADR-020](docs/adr/0
 - `:app`'s code uses only `:auth:data:api`, `:auth:ui:api`, `:device:ui:api` and `:common` modules, besides listing every `:impl`. Its tests may also name the `:api` of a part whose assembly they assert.
 - A part's `:local:api` and `:network:api` are used only by the part's `:impl` and `:testing`, and by the sub-part's own `:impl` ([ADR-022](docs/adr/022-data-source-sub-parts.md)).
 - Firestore is a dependency of `:network:impl` modules only.
+- Media3 is a dependency of `:device:playback:impl` only ([ADR-023](docs/adr/023-playback-engine.md)).
+- Room and SQLite are dependencies of `:local:impl` modules only ([ADR-024](docs/adr/024-library-index.md)).
 - No `:common:sync` module depends on a `:common:userdata` module.
 
-Every step from a screen to a data source depends on an abstraction ([ADR-021](docs/adr/021-data-flow-through-layers.md)), and detekt checks two parts of that: an `:api` module declares no class whose name ends in `UseCase` or `Repository`, since those are interfaces there, and no composable function takes or creates a `…ViewModelImpl`.
+Every step from a screen to a data source depends on an abstraction ([ADR-021](docs/adr/021-data-flow-through-layers.md)), and detekt checks two parts of that: an `:api` module declares no class whose name ends in `UseCase` or `Repository`, since those are interfaces there, and no composable function takes or creates a `…ViewModelImpl`. detekt also keeps MediaStore inside `:device:library:local:impl`, the only module that finds the music on the phone ([ADR-024](docs/adr/024-library-index.md)).
 
 There is no shared model module: each type lives in the `:api` of the part that owns it.
 
