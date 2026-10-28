@@ -11,6 +11,11 @@
   their checks named under Conformance, and Target state and Consequences say so. The `Syncer`'s
   errors include `RemoteError`, which each `:network:impl` maps its SDK's exceptions to, so a
   `:network:api` and the runner share it through `:common:sync:api`. The decision is unchanged.
+- **Revised 2026-10-28:** Where Room's database, entities and DAOs live is decided by
+  [ADR-024](024-library-index.md): in the `:local:impl` of the part they belong to (The layout). A
+  sub-part's `:api` may also declare plain models of its own, for what the part's `:api` doesn't
+  show (The layout, rule 7). The library's local side returns files, tags and the source of each
+  field, which no screen sees. The decision is unchanged.
 
 ## Context
 
@@ -63,15 +68,16 @@ data.
   module with an interface, its `:impl` implements and binds it, and only `:app` depends on the
   `:impl`. ADR-020's rules 4, 5 and 6 hold as they are written, and there is no new kind of module.
 - **`:local` knows how the data is stored on the device.** For the preferences that is a format on
-  top of `PreferencesStore`. `:common:storage` stays the one place that uses DataStore. Where Room's
-  database, entities and DAOs live is still open (ADR-020, Left open).
+  top of `PreferencesStore`. `:common:storage` stays the one place that uses DataStore. A part's
+  Room database, with its entities and DAOs, is in its `:local:impl` ([ADR-024](024-library-index.md)).
 - **`:network` knows the remote SDK:** the paths, the document's fields and the transaction.
 - **The part's `:impl` combines the two.** Its repositories read and write the local side only
   ([ADR-002](002-offline-first-data-flow.md), rules 1 and 2). Its `Syncer` uses both.
 - **A sub-part's `:api` belongs to its part.** It is seen by the part's `:impl` and `:testing`, and
   by the sub-part's own `:impl`. Screens and other parts see the part's `:api` and nothing under it.
-- **Types.** A sub-part's `:api` uses the models of the part's `:api`. SDK and storage types stay
-  in the sub-part's `:impl` and are mapped at its boundary (ADR-021).
+- **Types.** A sub-part's `:api` uses the models of the part's `:api`, and declares plain models of
+  its own only for what the part's `:api` doesn't show. SDK and storage types stay in the sub-part's
+  `:impl` and are mapped at its boundary (ADR-021).
 - **Only when there is such a side.** A part gets a `:local` or a `:network` when it has that side,
   and has no empty module (ADR-020, rule 9). `:common:userdata` is split now. `:auth:data:impl`
   calls Firebase Auth itself, and `:device:library:impl` is in memory: each is split by the ticket
@@ -174,8 +180,9 @@ Each step leaves the build green.
    work, requested by `SyncRepository`.
 6. `[convention]` A `:network:api` of synced data is called only by its part's `Syncer`. An SDK
    object that can open a connection is injected through `Provider` or `Lazy` (ADR-008, rule 8).
-7. `[convention]` A sub-part's `:api` uses the models of its part's `:api`. SDK and storage types
-   stay in the sub-part's `:impl`.
+7. `[convention]` A sub-part's `:api` uses the models of its part's `:api`, and declares plain
+   models of its own only for what the part's `:api` doesn't show. SDK and storage types stay in the
+   sub-part's `:impl`.
 8. `[convention]` `:app`'s test of the assembled graph asserts every `Syncer` that should be
    present (ADR-020, rule 20).
 
