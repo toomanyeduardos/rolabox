@@ -206,7 +206,7 @@ there is something to fake, a `:testing` module.
 | `:device:ui:impl` | The device's assembly: its entries, the main menu, what each exit opens, the playback handlers |
 | `:device:library:api` | The music library's API: `LibraryRepository`, `Artist`, `Album`, `Song`, `LibraryError` |
 | `:device:library:impl` | The library, hard-coded and in memory for now (no database yet, ADR-002) |
-| `:device:library:testing` | `FakeLibraryRepository` |
+| `:device:library:testing` | `FakeLibraryRepository`, and the generated audio fixtures (see [Test audio](#test-audio)) |
 | `:device:music:ui:api` | The keys and entry contract of the music screens: Music, Artists, an artist's albums, songs |
 | `:device:music:ui:impl` | The music screens and their ViewModels, on the library's data |
 | `:device:settings:api` | The keys of the settings screens, the slots of the settings list, and the contract of a contributed section |
@@ -422,7 +422,7 @@ Every module gets [ktlint](https://pinterest.github.io/ktlint/) (with the [Compo
 
 | Command | What it does |
 | --- | --- |
-| `./gradlew check` | Everything: ktlint, detekt (including type-resolved rules), Android Lint and unit tests |
+| `./gradlew check` | Everything: ktlint, detekt (including type-resolved rules), Android Lint, unit tests, and the [release audio check](#test-audio) |
 | `./gradlew unitTest` | Unit tests of every module (including screenshot tests): the debug variant of Android modules, and the pure Kotlin modules. Add `-Prolabox.skipScreenshotTests` to leave the screenshot tests out |
 | `./gradlew test` | Unit tests of every variant of every module (debug and release) |
 | `./gradlew ktlintCheck detekt` | Static analysis only (fast) |
@@ -455,11 +455,54 @@ Prefix a task with a module path to run it for one module, for example `./gradle
 - **A module with `@Preview` composables applies `rolabox.android.paparazzi`** and has a `PreviewSnapshotTest` (see [`auth/ui/impl`](auth/ui/impl/src/test/kotlin/com/eduardoflores/rolabox/auth/ui/impl/PreviewSnapshotTest.kt)). The build fails if it doesn't. The shared harness is in the design system's test fixtures.
 - **Commit the goldens with the change** that caused them, in the same pull request. CI only verifies.
 
+### Test audio
+
+The library and the player are tested against real MP3 and M4A files, but none is committed and
+none ships in the app. `:device:library:testing` generates them: valid files of silence, with
+their tags written byte by byte, so they need no encoder and no licence. Every artist, album and
+title is made up.
+
+| Set | What's in it |
+| --- | --- |
+| `clean` | Full tags and cover art, laid out as `Artist/Album/NN - Title.ext`, with an album on two discs |
+| `broken` | One case per file: no tags, ID3v1 only, ID3v2.3 and v2.4, Latin-1, Windows-1252 and UTF-16 text, missing albums, wrong track numbers, genres as `(17)`, `17` and several, a compilation, two albums with one title, the same song twice, files dumped in one folder or named only by their file name, a text file named `.mp3`, and truncated files |
+| `formats` | CBR and VBR, MPEG-1 and MPEG-2, mono, 32 to 48 kHz, a 4-minute song, and M4A with its index first and last |
+
+**In a unit test**, depend on the module from a test configuration
+(`testImplementation(project(":device:library:testing"))`) and write a set to a temporary folder,
+or take one file's bytes:
+
+```kotlin
+val files = AudioFixtures.broken.writeTo(temporaryFolder.root)
+val bytes = AudioFixtures.clean.fixtures.first().bytes()
+```
+
+Each `AudioFixture` also carries the tags it was written with and the `case` it tests, so a test
+can compare what it reads with what was written.
+
+**On a phone or emulator**, put a set in `/Music`, where MediaStore finds it as it would real music:
+
+```bash
+./gradlew :device:library:testing:pushAudioFixtures -Pset=broken
+```
+
+`-Pset` is `clean`, `broken`, `formats` or `all`, or the path of a folder of your own music to push
+instead. Each set goes to `/sdcard/Music/RolaboxFixtures/<set>` and replaces an earlier push of it.
+MediaStore then scans the folder, which takes up to half a minute after the task returns. With
+several devices connected, set `ANDROID_SERIAL`. The audio is silent, so to hear playback, push a
+folder of real music.
+
+**No audio but the UI sounds ships.** After `assembleRelease` and `bundleRelease`, and in
+`./gradlew check`, the build inspects the packaged release and fails if it holds any audio other
+than the design system's wheel sounds (`ds_wheel_press.wav` and `ds_wheel_tick.wav`), naming each
+file it found. A release build renames resources, so the allowed sounds are recognised by their
+bytes, and the list lives in [`ReleaseAudio.kt`](build-logic/convention/src/main/kotlin/com/eduardoflores/rolabox/buildlogic/ReleaseAudio.kt).
+
 ### CI
 
 [GitHub Actions](.github/workflows/ci.yml) runs three jobs in parallel on every pull request and every push to `main`:
 
-- **`build`** (built the way a fresh clone is, with the placeholder Firebase config): a check that no `google-services.json` is committed, ktlint, detekt, `assembleDebug`, unit tests (without the screenshot tests) and Android Lint. It needs no secrets, because nothing talks to Firebase.
+- **`build`** (built the way a fresh clone is, with the placeholder Firebase config): a check that no `google-services.json` is committed, ktlint, detekt, `assembleDebug`, the [release audio check](#test-audio), unit tests (without the screenshot tests) and Android Lint. It needs no secrets, because nothing talks to Firebase.
 - **`screenshots`**: verifies every screenshot golden (`verifyPaparazziDebug`). When it fails, the actual and diff images are uploaded as the `screenshot-diffs` artifact. It needs no secrets either.
 - **`firestore-rules`**: runs the Firestore security rules tests against the emulator (`npm test` in `firebase/`). It also needs no secrets.
 
