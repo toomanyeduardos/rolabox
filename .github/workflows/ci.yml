@@ -54,6 +54,11 @@ jobs:
       - name: Assemble debug
         run: ./gradlew assembleDebug
 
+      # Builds the release APK and fails if it holds any audio but the UI sounds, such as a test
+      # fixture that reached the app (see build-logic's ReleaseAudio.kt).
+      - name: No audio in release
+        run: ./gradlew :app:checkReleaseApkAudio
+
       # Every module's unitTest task: debug tests for Android modules, `test` for JVM ones. The
       # screenshot tests have their own job (ADR-016).
       - name: Unit tests
