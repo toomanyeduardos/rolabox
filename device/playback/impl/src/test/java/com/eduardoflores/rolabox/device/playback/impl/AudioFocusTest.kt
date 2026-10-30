@@ -122,6 +122,17 @@ class AudioFocusTest {
     }
 
     @Test
+    fun losingTheFocusForAWhile_stillPlaysOnWithoutTheApp_soItResumesAfterACall() = scope.runTest {
+        playing()
+
+        focusChanges(AudioManager.AUDIOFOCUS_LOSS_TRANSIENT)
+        RobolectricUtil.runMainLooperUntil { player.isSuppressed() }
+
+        assertFalse(player.isPlaying)
+        assertTrue(player.playsOn())
+    }
+
+    @Test
     fun losingTheFocusForGood_pausesTheItem_andNothingResumesIt() = scope.runTest {
         playing()
 
@@ -129,6 +140,7 @@ class AudioFocusTest {
         RobolectricUtil.runMainLooperUntil { !player.playWhenReady }
         tick()
         assertFalse(playback.isPlaying.first())
+        assertFalse(player.playsOn())
 
         focusChanges(AudioManager.AUDIOFOCUS_GAIN)
         TestPlayerRunHelper.runUntilPendingCommandsAreFullyHandled(player)

@@ -22,6 +22,9 @@ android {
 dependencies {
     // The application scope the clock runs in.
     implementation(project(":common:util"))
+    // The notification's small icon, a brand asset (ADR-015, rule 1).
+    implementation(project(":common:designsystem"))
+    implementation(platform(libs.androidx.compose.bom)) // required by the design system's Compose, with no version
     implementation(project(":device:library:api"))
     implementation(project(":device:playback:api"))
     // The engine, its session and the service (ADR-023). Only this module may depend on Media3 (rule 9).
