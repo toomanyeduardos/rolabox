@@ -67,6 +67,11 @@
   [ADR-024](024-library-index.md) (The layout, Left open): in the library's local sub-part,
   `:device:library:local:{api,impl}`, with one database per part that keeps relational data. A
   sub-part is a part, so the rules here hold as they are written. The decision is unchanged.
+- **Revised 2026-10-30:** `:app`'s tests may also use a part's fake and name the Hilt module of its
+  `:impl` that they replace (Who may depend on whom, rule 13). Rule 13 allowed only an `:api`, and
+  read strictly it contradicted ADR-005 rule 4, which puts the `@TestInstallIn` modules in `:app`'s
+  test sources, where they have to name what they replace. Binding playback and the library's fakes
+  (playback/02) showed it. The decision is unchanged.
 
 ## Context
 
@@ -188,7 +193,7 @@ screens, `:auth:ui:impl`.
 
 | Module | May depend on |
 | --- | --- |
-| `:app` | Every `:impl`, so Hilt can assemble the graph. In code, only `:auth:data:api`, `:auth:ui:api`, `:device:ui:api` and `:common`. Its tests, also the `:api` of a part whose assembly they assert |
+| `:app` | Every `:impl`, so Hilt can assemble the graph. In code, only `:auth:data:api`, `:auth:ui:api`, `:device:ui:api` and `:common`. Its tests, also what rule 13 lists |
 | An `:api` | Other `:api` modules it is allowed to see (below), `:common:util` |
 | An `:impl` | `:api` modules it is allowed to see, `:common:util`, and `:common:designsystem` when it has screens |
 | A `:device` `:impl` with device screens | The above, and `:device:host` |
@@ -422,9 +427,10 @@ The Music menu is built after step 3, so the first feature with device screens i
     part's exits. It never names a sibling's keys, except through the generic exit.
 13. `[enforced]` `:app` declares no navigation key, entry, menu or list of features. In code it
     uses only `:auth:data:api`, `:auth:ui:api`, `:device:ui:api` and `:common` modules. Its test
-    sources may also name the `:api` of a part whose assembly they assert (rule 20), and nothing
-    else of that part. Enforced for the modules `:app`'s code depends on: what it declares, and
-    which `:api` a test names, are checked in review.
+    sources may also name the `:api` of a part whose assembly they assert (rule 20) or whose fake
+    they use, that part's `:testing`, and, only to replace a binding (ADR-005, rule 4), the Hilt
+    module of its `:impl`. They name nothing else of an `:impl`. Enforced for the modules `:app`'s
+    code depends on: what it declares, and what a test names, are checked in review.
 14. `[convention]` `:app` owns the app stack, and only `:app` pushes, pops or replaces its entries.
     On the screen stack inside the display, only `:device:ui:impl` pushes, and the host pops. The
     one pop `:device:ui:impl` asks the host for is Now Playing when the queue ends.

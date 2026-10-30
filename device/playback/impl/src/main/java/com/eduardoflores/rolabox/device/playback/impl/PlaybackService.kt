@@ -1,12 +1,15 @@
 package com.eduardoflores.rolabox.device.playback.impl
 
+import android.app.NotificationManager
 import android.content.Context
+import android.content.Intent
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import com.google.common.util.concurrent.Futures
@@ -30,6 +33,20 @@ internal class PlaybackService : MediaSessionService() {
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = session
+
+    // Dismissed with nothing playing, the service stops and its notification goes with it (ADR-023). Media3 only stops
+    // it, and the system kills the process right after, before onDestroy, so what Media3 posts while it stops stays
+    // on screen. So the session is removed first, which keeps Media3 from posting, and the notification is cancelled.
+    @OptIn(UnstableApi::class)
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        session?.takeUnless { it.player.isPlaying }?.let { idle ->
+            removeSession(idle)
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            getSystemService(NotificationManager::class.java)
+                .cancel(DefaultMediaNotificationProvider.DEFAULT_NOTIFICATION_ID)
+        }
+        super.onTaskRemoved(rootIntent)
+    }
 
     override fun onDestroy() {
         session?.run {

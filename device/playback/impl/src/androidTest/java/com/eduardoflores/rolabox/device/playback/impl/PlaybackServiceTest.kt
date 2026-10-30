@@ -1,5 +1,6 @@
 package com.eduardoflores.rolabox.device.playback.impl
 
+import android.app.ActivityManager
 import android.content.ComponentName
 import android.content.Context
 import android.media.AudioManager
@@ -43,6 +44,9 @@ import org.junit.runner.RunWith
  *
  * The volume goes through [MediaPlayback] itself: a controller can't set the volume of a local player, and the
  * JVM tests, with no controller, can't see that.
+ *
+ * That the service stops isn't here: it stops when the app is dismissed from recents while nothing plays, and a test
+ * of this module has no task to dismiss. That is checked by hand on a device (playback/03).
  */
 // ADR-005 rule 5 lets tests replace a dispatcher. This test has nothing to replace it with: Media3 runs on the
 // device's real main thread here.
@@ -90,6 +94,21 @@ class PlaybackServiceTest {
     }
 
     @Test
+    fun whileItPlays_theServiceIsInTheForeground() = runBlocking(Dispatchers.Main) {
+        val item = MediaItem.Builder()
+            .setRequestMetadata(MediaItem.RequestMetadata.Builder().setMediaUri(Uri.fromFile(file)).build())
+            .build()
+
+        controller.setMediaItem(item)
+        controller.prepare()
+        controller.play()
+
+        withTimeout(10.seconds) {
+            while (serviceInfo()?.foreground != true) delay(POLL_MS)
+        }
+    }
+
+    @Test
     fun theSessionsPlayer_restartsWithPreviousPastThreeSeconds() = runBlocking(Dispatchers.Main) {
         val item = MediaItem.Builder()
             .setRequestMetadata(MediaItem.RequestMetadata.Builder().setMediaUri(Uri.fromFile(file)).build())
@@ -126,6 +145,13 @@ class PlaybackServiceTest {
         }
         scope.cancel()
     }
+
+    // Deprecated for other apps' services, and what it is still for: an app's own.
+    @Suppress("DEPRECATION")
+    private fun serviceInfo(): ActivityManager.RunningServiceInfo? =
+        context.getSystemService(ActivityManager::class.java)
+            .getRunningServices(Int.MAX_VALUE)
+            .firstOrNull { it.service.className == PlaybackService::class.java.name }
 
     private companion object {
         const val PLAYED_MS = 500L

@@ -202,7 +202,7 @@ class DeviceViewModelTest {
     }
 
     // The ends of the queue and nothing being loaded are the controller's: the handlers ask in every case,
-    // and InMemoryPlayerTest covers what it does then.
+    // and MediaPlaybackTest covers what it does then.
     @Test
     fun nextAndPrevious_atBothEndsAndWithNothingLoaded_stillAskThePlayback() = runTest {
         val viewModel = observedViewModel()
@@ -243,7 +243,7 @@ class DeviceViewModelTest {
     }
 
     // Nothing is playing, so the handler asks to resume, and with nothing loaded that is the controller's to
-    // ignore: InMemoryPlayerTest covers it. What the handler never does is load something.
+    // ignore: MediaPlaybackTest covers it. What the handler never does is load something.
     @Test
     fun playPause_withNothingLoaded_neitherPausesNorLoadsAnything() = runTest {
         val viewModel = observedViewModel()

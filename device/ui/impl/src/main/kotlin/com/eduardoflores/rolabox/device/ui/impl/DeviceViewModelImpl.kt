@@ -33,6 +33,8 @@ internal class DeviceViewModelImpl @Inject constructor(
     private val playbackController: PlaybackController,
     userDataRepository: UserDataRepository,
 ) : DeviceViewModel() {
+    // User data that can't be read leaves the defaults below: the device still works, so nothing is told (ADR-007,
+    // rule 7).
     private val userData = userDataRepository.observeUserData().map { it.getOrNull() }
 
     override val hasLoadedSong: StateFlow<Boolean> = playbackState.currentItem
