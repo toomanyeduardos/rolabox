@@ -7,6 +7,9 @@ import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 
+/**
+ * For release builds
+ */
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class LibraryModule {

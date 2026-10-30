@@ -67,6 +67,9 @@ dependencies {
     androidTestImplementation(project(":common:sync:testing"))
     androidTestImplementation(project(":common:testing"))
     androidTestImplementation(project(":common:userdata:testing"))
+    // The device's tests bring their own library, and check what the wheel asks of playback.
+    androidTestImplementation(project(":device:library:testing"))
+    androidTestImplementation(project(":device:playback:testing"))
     androidTestImplementation(project(":common:util"))
     // Tests may also name the :api of a part whose assembly they assert (ADR-020, rule 13).
     // The navigation test reads the rows it expects from the library the app is built with.

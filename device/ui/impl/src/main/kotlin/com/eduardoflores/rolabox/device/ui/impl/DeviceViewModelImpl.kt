@@ -8,6 +8,7 @@ import com.eduardoflores.rolabox.common.userdata.api.UserDataRepository
 import com.eduardoflores.rolabox.device.library.api.SongId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackController
 import com.eduardoflores.rolabox.device.playback.api.PlaybackError
+import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
 import com.eduardoflores.rolabox.device.playback.api.PlaybackState
 import com.eduardoflores.rolabox.device.playback.api.SeekDirection
@@ -34,7 +35,7 @@ internal class DeviceViewModelImpl @Inject constructor(
 ) : DeviceViewModel() {
     private val userData = userDataRepository.observeUserData().map { it.getOrNull() }
 
-    override val hasLoadedSong: StateFlow<Boolean> = playbackState.currentSong
+    override val hasLoadedSong: StateFlow<Boolean> = playbackState.currentItem
         .map { it != null }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), false)
 
@@ -54,7 +55,7 @@ internal class DeviceViewModelImpl @Inject constructor(
 
     override fun onSongClick(source: PlaybackSource, songId: SongId, onPlaying: () -> Unit) {
         viewModelScope.launch {
-            playbackController.play(source, songId).fold(
+            playbackController.play(source, PlaybackItemId.Song(songId)).fold(
                 ifLeft = { error -> playFailureState.value = error.toPlayFailure() },
                 ifRight = { onPlaying() },
             )
@@ -96,5 +97,5 @@ private val AllShown = MainMenuRow.entries.associateWith { MainMenuRowVisibility
 
 private fun PlaybackError.toPlayFailure(): PlayFailure = when (this) {
     is PlaybackError.Library -> PlayFailure.LibraryUnavailable
-    is PlaybackError.SongNotInSource -> PlayFailure.SongNotInList
+    is PlaybackError.ItemNotInSource -> PlayFailure.SongNotInList
 }

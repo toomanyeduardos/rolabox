@@ -5,9 +5,17 @@ import com.eduardoflores.rolabox.device.library.api.ArtistId
 import com.eduardoflores.rolabox.device.library.api.SongId
 import kotlin.time.Duration
 
-/** A song in the queue, with what Now Playing shows: the names of its artist and album, not their ids. */
-data class PlaybackSong(
-    val id: SongId,
+/** Which item of which kind: one case per kind of item the queue can hold (ADR-023, rule 4). */
+sealed interface PlaybackItemId {
+    data class Song(val id: SongId) : PlaybackItemId
+}
+
+/**
+ * An item in the queue, with what Now Playing shows: the names of its artist and album, not their ids. Where
+ * its audio is doesn't belong here, since the screens see it (ADR-023, rule 4).
+ */
+data class PlaybackItem(
+    val id: PlaybackItemId,
     val title: String,
     val artist: String,
     val album: String,
@@ -17,7 +25,7 @@ data class PlaybackSong(
 /** Which way [PlaybackController.startSeeking] moves the position. */
 enum class SeekDirection { Backward, Forward }
 
-/** The list a song was selected from. Playing a song queues the whole list, in the order it is shown. */
+/** The list an item was selected from. Playing an item queues the whole list, in the order it is shown. */
 sealed interface PlaybackSource {
     /** Every song of the library. */
     data object AllSongs : PlaybackSource

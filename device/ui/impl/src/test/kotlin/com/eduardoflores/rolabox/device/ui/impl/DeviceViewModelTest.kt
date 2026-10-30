@@ -14,7 +14,8 @@ import com.eduardoflores.rolabox.device.library.api.AlbumId
 import com.eduardoflores.rolabox.device.library.api.LibraryError
 import com.eduardoflores.rolabox.device.library.api.SongId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackError
-import com.eduardoflores.rolabox.device.playback.api.PlaybackSong
+import com.eduardoflores.rolabox.device.playback.api.PlaybackItem
+import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
 import com.eduardoflores.rolabox.device.playback.api.SeekDirection
 import com.eduardoflores.rolabox.device.playback.testing.FakePlayback
@@ -123,7 +124,7 @@ class DeviceViewModelTest {
         viewModel.onSongClick(PlaybackSource.ByAlbum(AlbumId(7)), SongId(3)) { playing++ }
 
         assertEquals(
-            listOf(FakePlayback.PlayCall(PlaybackSource.ByAlbum(AlbumId(7)), SongId(3))),
+            listOf(FakePlayback.PlayCall(PlaybackSource.ByAlbum(AlbumId(7)), PlaybackItemId.Song(SongId(3)))),
             playback.playCalls,
         )
         assertEquals(1, playing)
@@ -133,7 +134,7 @@ class DeviceViewModelTest {
     fun aSongClickThatFails_doesNotReportPlaying_andSaysTheSongIsNotInTheList() = runTest {
         val viewModel = observedViewModel()
         val source = PlaybackSource.ByAlbum(AlbumId(7))
-        playback.playResult = PlaybackError.SongNotInSource(SongId(3), source).left()
+        playback.playResult = PlaybackError.ItemNotInSource(PlaybackItemId.Song(SongId(3)), source).left()
         var playing = 0
 
         viewModel.onSongClick(source, SongId(3)) { playing++ }
@@ -157,7 +158,7 @@ class DeviceViewModelTest {
     fun aFailureThatWasShown_isNotShownAgain_andASongThatPlaysHasNone() = runTest {
         val viewModel = observedViewModel()
         val source = PlaybackSource.ByAlbum(AlbumId(7))
-        playback.playResult = PlaybackError.SongNotInSource(SongId(3), source).left()
+        playback.playResult = PlaybackError.ItemNotInSource(PlaybackItemId.Song(SongId(3)), source).left()
         viewModel.onSongClick(source, SongId(3)) {}
 
         viewModel.onPlayFailureShown()
@@ -292,7 +293,7 @@ class DeviceViewModelTest {
 }
 
 private val Queue = (1L..3L).map {
-    PlaybackSong(SongId(it), "Song $it", "Artist", "Album", duration = 3.minutes)
+    PlaybackItem(PlaybackItemId.Song(SongId(it)), "Song $it", "Artist", "Album", duration = 3.minutes)
 }
 
 private val AllShown = MainMenuRow.entries.associateWith { MainMenuRowVisibility.SHOWN }

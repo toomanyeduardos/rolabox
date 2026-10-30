@@ -4,6 +4,11 @@
 - **Date:** 2026-10-28
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review
+- **Revised 2026-10-29:** The wheel changes the volume with `AudioManager`, and the state still reads
+  it through the session ("Volume is the phone's media volume"). A `MediaController` hides the
+  commands that set the device volume of a local player, and Media3 asks apps to use `AudioManager`
+  for that instead. Its opt-in flag is experimental and due to be removed. playback/02 found it on a
+  device.
 
 ## Context
 
@@ -176,8 +181,12 @@ phone's music stream.
   step on a 0 to 100 scale would often not move the volume at all. `setVolume(level)` becomes
   `changeVolume(steps)`, which moves it by whole steps and stops at the ends. `volume` stays a
   percentage from 0 to 100, for the bar. playback/02 changes the `:api` and Now Playing.
-- **It's done through Media3's device volume** (`increaseDeviceVolume`, `decreaseDeviceVolume` and
-  `deviceVolume`), without the flag that shows the system's panel: the device draws its own bar.
+- **It's changed with `AudioManager`, and read through the session.** The wheel's steps set the
+  music stream's volume, between its minimum and its maximum, without the flag that shows the
+  system's panel: the device draws its own bar. The state reads `deviceVolume` and `deviceInfo`
+  from its `MediaController`, which follows every change, the phone's keys included. A controller
+  of a local player can read the device volume but not set it: Media3 hides those commands, and
+  says that an app changes its own device's volume with `AudioManager`.
 - **The player's own volume stays at full.** It is never a second volume.
 
 ### Audio focus, noise and buttons
@@ -255,6 +264,10 @@ phone's music stream.
 - **The player's own volume for the wheel.** The wheel would move smoothly from 0 to 100. But the
   phone's keys would move another volume, two volumes would multiply, and a quiet song at full wheel
   could not be told from a quiet phone. The player the device is drawn after had one volume.
+- **Set the volume through the `MediaController`** (`setDeviceVolume`, or `increaseDeviceVolume` and
+  `decreaseDeviceVolume`). One path for every command. But a controller hides these commands for a
+  local player unless it is built with `setAllowDeviceVolumeCommandsForLocalPlayback`, which Media3
+  marks experimental and will remove, so an upgrade would leave the wheel silently doing nothing.
 - **`setVolume(level)` on the phone's volume, unchanged.** No change to the `:api`. But with 15 steps
   a wheel step of 1 rounds back to where it was, and the wheel would seem dead.
 - **Ask for `POST_NOTIFICATIONS` on the first play.** What playback/03 expected. But media
@@ -297,8 +310,9 @@ phone's music stream.
    case per kind of item. The `:api` has no URI, path or Media3 type.
 5. `[convention]` The location of an item's audio is a URI given by the `:api` of the data part that
    owns the item. Playback never queries MediaStore or the file system to find it.
-6. `[convention]` The volume is the phone's media volume, changed in its own steps, and shown as a
-   percentage. The player's own volume stays at full.
+6. `[convention]` The volume is the phone's media volume, changed in its own steps with `AudioManager`
+   in `:device:playback:impl`, read through the session, and shown as a percentage. The player's own
+   volume stays at full.
 7. `[convention]` ⏮'s restart threshold is the player's `maxSeekToPreviousPosition`, so the wheel
    and the media buttons share it (ADR-018, rule 17).
 8. `[convention]` `POST_NOTIFICATIONS` is not requested for playback.

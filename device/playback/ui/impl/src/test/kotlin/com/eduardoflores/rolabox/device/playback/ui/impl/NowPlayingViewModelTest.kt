@@ -2,7 +2,8 @@ package com.eduardoflores.rolabox.device.playback.ui.impl
 
 import com.eduardoflores.rolabox.common.testing.MainDispatcherRule
 import com.eduardoflores.rolabox.device.library.api.SongId
-import com.eduardoflores.rolabox.device.playback.api.PlaybackSong
+import com.eduardoflores.rolabox.device.playback.api.PlaybackItem
+import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
 import com.eduardoflores.rolabox.device.playback.testing.FakePlayback
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -149,7 +150,7 @@ class NowPlayingViewModelTest {
 
         assertEquals(1.minutes + ScrubStep * 3, viewModel.playing().position)
         assertEquals(emptyList<Duration>(), playback.seekCalls)
-        assertEquals(emptyList<Int>(), playback.volumeCalls)
+        assertEquals(emptyList<Int>(), playback.volumeStepCalls)
         assertEquals(NowPlayingMode.Scrub, viewModel.playing().mode)
     }
 
@@ -413,29 +414,28 @@ class NowPlayingViewModelTest {
     }
 
     @Test
-    fun outsideScrub_aTurnChangesTheVolumeAndShowsIt() = runTest {
+    fun outsideScrub_aTurnChangesTheVolumeByItsStepsAndShowsIt() = runTest {
         val viewModel = observedViewModel()
         playback.load(Queue, index = 0)
 
-        viewModel.onTurn(12)
-        playback.volumeAt(playback.volumeCalls.last())
+        viewModel.onTurn(3)
+        playback.volumeAt(62)
 
-        assertEquals(listOf(50 + VOLUME_STEP * 12), playback.volumeCalls)
+        assertEquals(listOf(3), playback.volumeStepCalls)
         assertEquals(emptyList<Duration>(), playback.seekCalls)
         assertEquals(NowPlayingMode.Volume, viewModel.playing().mode)
         assertEquals(62, viewModel.playing().volume)
     }
 
     @Test
-    fun theVolume_stopsAtBothEnds() = runTest {
+    fun outsideScrub_eachTurnAsksForItsOwnSteps_downIncluded() = runTest {
         val viewModel = observedViewModel()
         playback.load(Queue, index = 0)
 
-        viewModel.onTurn(500)
-        playback.volumeAt(0)
-        viewModel.onTurn(-500)
+        viewModel.onTurn(2)
+        viewModel.onTurn(-5)
 
-        assertEquals(listOf(100, 0), playback.volumeCalls)
+        assertEquals(listOf(2, -5), playback.volumeStepCalls)
     }
 
     @Test
@@ -444,7 +444,7 @@ class NowPlayingViewModelTest {
 
         viewModel.onTurn(1)
 
-        assertEquals(emptyList<Int>(), playback.volumeCalls)
+        assertEquals(emptyList<Int>(), playback.volumeStepCalls)
         assertEquals(NowPlayingUiState.NothingLoaded, viewModel.uiState.value)
     }
 
@@ -498,7 +498,7 @@ class NowPlayingViewModelTest {
         const val LONG_TITLE = "The Unreasonably Long Name of a Song That Will Never Fit on a Small Display"
 
         fun song(id: Long, title: String, duration: Duration = 3.minutes + 41.seconds) =
-            PlaybackSong(SongId(id), title, "Maren Holt", "Paper Satellites", duration)
+            PlaybackItem(PlaybackItemId.Song(SongId(id)), title, "Maren Holt", "Paper Satellites", duration)
 
         val Queue = listOf(song(1, "Dial Tone"), song(2, "Coastline"), song(3, "Glasshouse"))
     }

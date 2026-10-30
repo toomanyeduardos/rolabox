@@ -8,6 +8,11 @@ import kotlin.system.exitProcess
 private const val DEVICE_FOLDER = "/sdcard/Music/RolaboxFixtures"
 private const val ALL_SETS = "all"
 private const val SCAN_FILE_ACTION = "android.intent.action.MEDIA_SCANNER_SCAN_FILE"
+private const val APP_PACKAGE = "com.eduardoflores.rolabox"
+
+// The audio permission from API 33, and the storage permission before it.
+private val AUDIO_PERMISSIONS =
+    listOf("android.permission.READ_MEDIA_AUDIO", "android.permission.READ_EXTERNAL_STORAGE")
 
 /**
  * Puts a fixture set on the connected phone or emulator, as real music would be: copied into
@@ -19,6 +24,9 @@ private const val SCAN_FILE_ACTION = "android.intent.action.MEDIA_SCANNER_SCAN_F
  *
  * `set` is `clean`, `broken`, `formats` or `all`, or the path of a folder of your own music. Each
  * set replaces what an earlier push of it left. With several devices, set `ANDROID_SERIAL`.
+ *
+ * When the app is installed, it is also granted the audio permission, which the debug build's stand-in
+ * library needs to read MediaStore and which nothing asks for until library/04.
  *
  * Arguments: the set, and the root of the project, whose `local.properties` may name the SDK.
  */
@@ -51,6 +59,16 @@ fun main(args: Array<String>) {
         adb.run("shell", "am", "broadcast", "-a", SCAN_FILE_ACTION, "-d", "file://$target")
         println("Pushed $name to $target")
     }
+    grantAudioPermission(adb)
+}
+
+private fun grantAudioPermission(adb: Adb) {
+    // Only one of the two exists on a given API level, and neither while the app isn't installed.
+    if (AUDIO_PERMISSIONS.any { adb.succeeds("shell", "pm", "grant", APP_PACKAGE, it) }) {
+        println("Granted $APP_PACKAGE the audio permission")
+    } else {
+        println("Install the debug app and push again to grant it the audio permission")
+    }
 }
 
 private fun AudioFixtureSet.writeToTemporaryFolder(): File =
@@ -73,6 +91,13 @@ private class Adb(private val path: String) {
         val exit = process.waitFor()
         if (exit != 0) fail("adb ${args.joinToString(" ")} failed ($exit). Is a device connected? (adb devices)")
     }
+
+    /** Runs adb without its output, and says whether it succeeded. */
+    fun succeeds(vararg args: String): Boolean = ProcessBuilder(listOf(path) + args)
+        .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+        .redirectError(ProcessBuilder.Redirect.DISCARD)
+        .start()
+        .waitFor() == 0
 }
 
 private fun fail(message: String): Nothing {

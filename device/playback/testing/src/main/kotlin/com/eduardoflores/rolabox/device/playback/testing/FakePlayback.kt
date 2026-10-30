@@ -2,10 +2,10 @@ package com.eduardoflores.rolabox.device.playback.testing
 
 import arrow.core.Either
 import arrow.core.right
-import com.eduardoflores.rolabox.device.library.api.SongId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackController
 import com.eduardoflores.rolabox.device.playback.api.PlaybackError
-import com.eduardoflores.rolabox.device.playback.api.PlaybackSong
+import com.eduardoflores.rolabox.device.playback.api.PlaybackItem
+import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
 import com.eduardoflores.rolabox.device.playback.api.PlaybackState
 import com.eduardoflores.rolabox.device.playback.api.SeekDirection
@@ -27,7 +27,7 @@ import kotlinx.coroutines.flow.combine
 class FakePlayback @Inject constructor() :
     PlaybackState,
     PlaybackController {
-    private val queueState = MutableStateFlow<List<PlaybackSong>>(emptyList())
+    private val queueState = MutableStateFlow<List<PlaybackItem>>(emptyList())
     private val queueIndexState = MutableStateFlow<Int?>(null)
     private val playingState = MutableStateFlow(false)
     private val positionState = MutableStateFlow(Duration.ZERO)
@@ -37,12 +37,14 @@ class FakePlayback @Inject constructor() :
     /** What [play] answers with. */
     var playResult: Either<PlaybackError, Unit> = Unit.right()
 
-    data class PlayCall(val source: PlaybackSource, val from: SongId)
+    data class PlayCall(val source: PlaybackSource, val from: PlaybackItemId)
 
     val playCalls = mutableListOf<PlayCall>()
     val seekCalls = mutableListOf<Duration>()
     val startSeekingCalls = mutableListOf<SeekDirection>()
-    val volumeCalls = mutableListOf<Int>()
+
+    /** The steps of each [changeVolume]. */
+    val volumeStepCalls = mutableListOf<Int>()
     var nextCalls = 0
         private set
     var previousCalls = 0
@@ -54,17 +56,17 @@ class FakePlayback @Inject constructor() :
     var stopSeekingCalls = 0
         private set
 
-    override val currentSong: Flow<PlaybackSong?> =
+    override val currentItem: Flow<PlaybackItem?> =
         combine(queueState, queueIndexState) { queue, index -> index?.let(queue::getOrNull) }
     override val isPlaying: Flow<Boolean> = playingState
     override val position: Flow<Duration> = positionState
-    override val queue: Flow<List<PlaybackSong>> = queueState
+    override val queue: Flow<List<PlaybackItem>> = queueState
     override val queueIndex: Flow<Int?> = queueIndexState
     override val startCount: Flow<Int> = startCountState
     override val volume: Flow<Int> = volumeState
 
-    /** Loads [queue] with the song at [index] current, playing at 0:00. */
-    fun load(queue: List<PlaybackSong>, index: Int) {
+    /** Loads [queue] with the item at [index] current, playing at 0:00. */
+    fun load(queue: List<PlaybackItem>, index: Int) {
         queueState.value = queue
         queueIndexState.value = index
         playingState.value = true
@@ -72,7 +74,7 @@ class FakePlayback @Inject constructor() :
         startCountState.value++
     }
 
-    /** The loaded song starts again at 0:00, as ⏮ does past the first seconds of a song. */
+    /** The loaded item starts again at 0:00, as ⏮ does past the first seconds of an item. */
     fun restarted() {
         positionState.value = Duration.ZERO
         startCountState.value++
@@ -86,7 +88,7 @@ class FakePlayback @Inject constructor() :
         positionState.value = Duration.ZERO
     }
 
-    /** Whether the loaded song is playing, or paused. */
+    /** Whether the loaded item is playing, or paused. */
     fun playing(isPlaying: Boolean) {
         playingState.value = isPlaying
     }
@@ -99,7 +101,7 @@ class FakePlayback @Inject constructor() :
         volumeState.value = level
     }
 
-    override suspend fun play(source: PlaybackSource, from: SongId): Either<PlaybackError, Unit> {
+    override suspend fun play(source: PlaybackSource, from: PlaybackItemId): Either<PlaybackError, Unit> {
         playCalls += PlayCall(source, from)
         return playResult
     }
@@ -132,8 +134,8 @@ class FakePlayback @Inject constructor() :
         previousCalls++
     }
 
-    override suspend fun setVolume(level: Int) {
-        volumeCalls += level
+    override suspend fun changeVolume(steps: Int) {
+        volumeStepCalls += steps
     }
 }
 

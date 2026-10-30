@@ -21,7 +21,7 @@ val DialTone = song(102, LowTideRadio, "Dial Tone", trackNumber = 1)
 val Lighthouse = song(200, Harborlight, "Lighthouse", trackNumber = 1)
 
 private fun song(id: Long, album: Album, title: String, trackNumber: Int) =
-    Song(SongId(id), album.id, album.artistId, title, trackNumber, duration = 3.minutes)
+    Song(SongId(id), album.id, album.artistId, title, trackNumber, duration = 3.minutes, uri = "content://songs/$id")
 
 /** A library with two artists, three albums, and songs on each. */
 fun filledLibrary() = FakeLibraryRepository().apply {
