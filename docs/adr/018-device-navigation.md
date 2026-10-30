@@ -129,6 +129,9 @@
   100 would often not move it. Shuffle and repeat, left to the playback ADR, are left by ADR-023 to
   their own decision. The in-memory implementation stays until the engine replaces it. No rule
   changes.
+- **Revised 2026-10-30:** Conformance names `MediaPlaybackTest`, not `InMemoryPlayerTest`. The real
+  player replaced the in-memory one (ADR-023), and its tests took over the same behavior. The
+  decision is unchanged.
 
 ## Context
 
@@ -614,9 +617,9 @@ why in the playback area's terms. No other rule moves: rules 1, 2, 4 to 8, 10, 1
 are reviewed. What rules 10, 14, 17 and 19 say of playing and paused, the one-line row, ⏮ and the
 header is behavior, with no syntax for a build check to read. It is covered by the unit tests of the
 tickets that build it, named under Target state. Rule 10's playing and paused, the clock and the
-holds are covered by `InMemoryPlayerTest`, ⏯ by `WheelEventRouterTest` and `DeviceViewModelTest`,
+holds are covered by `MediaPlaybackTest`, ⏯ by `WheelEventRouterTest` and `DeviceViewModelTest`,
 and the end of the queue on Now Playing by `DeviceNavigationTest`, which runs on a device. Rule 17's
-⏮ and its threshold are covered by `InMemoryPlayerTest`. Rule 16's buttons in scrub are covered by
+⏮ and its threshold are covered by `MediaPlaybackTest`. Rule 16's buttons in scrub are covered by
 `WheelEventRouterTest`, for who is told and in what order, and by `NowPlayingViewModelTest`, for
 scrub ending on a button and on a restart. Rule 19's
 title and record are covered by `ScreenTitlesTest`, and the header's look by the goldens of

@@ -37,14 +37,16 @@ internal class SampleLibrary private constructor(
                     val album = Album(AlbumId(albums.size + 1L), artist.id, albumSeed.title, albumSeed.year)
                     albums += album
                     albumSeed.songs.forEachIndexed { index, title ->
+                        val id = SongId(songs.size + 1L)
                         songs += Song(
-                            id = SongId(songs.size + 1L),
+                            id = id,
                             albumId = album.id,
                             artistId = artist.id,
                             title = title,
                             trackNumber = index + 1,
                             // Between 2:30 and 5:29, spread so that no two neighbours match.
                             duration = (MIN_SECONDS + (songs.size * STEP_SECONDS) % RANGE_SECONDS).seconds,
+                            uri = "$NO_AUDIO_URI/${id.value}",
                         )
                     }
                 }
@@ -53,6 +55,12 @@ internal class SampleLibrary private constructor(
         }
     }
 }
+
+/**
+ * The made-up songs have no audio: a URI that no provider answers, so playing one loads it and plays nothing
+ * (the failure is playback/04's). The debug build lists the files on the phone instead.
+ */
+private const val NO_AUDIO_URI = "content://com.eduardoflores.rolabox.sample/no-audio"
 
 private const val MIN_SECONDS = 150
 private const val RANGE_SECONDS = 180

@@ -3,6 +3,7 @@ package com.eduardoflores.rolabox.common.util.di
 import com.eduardoflores.rolabox.common.util.Dispatcher
 import com.eduardoflores.rolabox.common.util.RolaboxDispatchers.Default
 import com.eduardoflores.rolabox.common.util.RolaboxDispatchers.IO
+import com.eduardoflores.rolabox.common.util.RolaboxDispatchers.Main
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -20,4 +21,8 @@ object DispatchersModule {
     @Provides
     @Dispatcher(Default)
     fun providesDefaultDispatcher(): CoroutineDispatcher = Dispatchers.Default
+
+    @Provides
+    @Dispatcher(Main)
+    fun providesMainDispatcher(): CoroutineDispatcher = Dispatchers.Main.immediate
 }

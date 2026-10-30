@@ -23,7 +23,9 @@ import com.eduardoflores.rolabox.common.designsystem.component.WHEEL_TEST_TAG
 import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxTheme
 import com.eduardoflores.rolabox.device.library.api.LibraryError
 import com.eduardoflores.rolabox.device.library.api.LibraryRepository
-import com.eduardoflores.rolabox.device.playback.api.PlaybackState
+import com.eduardoflores.rolabox.device.playback.api.PlaybackItem
+import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
+import com.eduardoflores.rolabox.device.playback.testing.FakePlayback
 import com.eduardoflores.rolabox.device.ui.api.DeviceKey
 import com.eduardoflores.rolabox.device.ui.api.DeviceUiEntries
 import dagger.hilt.android.testing.HiltAndroidRule
@@ -61,7 +63,7 @@ class DeviceBackTest {
 
     @Inject lateinit var library: LibraryRepository
 
-    @Inject lateinit var playbackState: PlaybackState
+    @Inject lateinit var playback: FakePlayback
 
     @Before
     fun setUp() {
@@ -142,11 +144,18 @@ class DeviceBackTest {
         wheel().pressCenter()
         wheel().turn(SONG_INDEX)
         wheel().pressCenter()
+        composeRule.waitForIdle()
+        playback.load(
+            songs.map {
+                PlaybackItem(PlaybackItemId.Song(it.id), it.title, "Artist", "Album", it.duration)
+            },
+            SONG_INDEX,
+        )
         composeRule.onNodeWithText(positionOf(SONG_INDEX + 1, songs.size)).assertExists()
         wheel().pressCenter()
         wheel().turn(SCRUB_STEPS)
         composeRule.waitForIdle()
-        assertEquals(Duration.ZERO, position())
+        assertEquals(emptyList<Duration>(), playback.seekCalls)
     }
 
     /**
@@ -171,13 +180,12 @@ class DeviceBackTest {
         assertFalse("The activity is still shown", scenario.state.isAtLeast(Lifecycle.State.STARTED))
     }
 
-    /** The in-memory player only moves when it is sought, so the song is still at 0:00 after scrub's 3 s. */
+    /** Scrub's own wait of 3 s passes, and still nothing was sought. */
     private fun assertNothingIsSoughtAfterScrubsWait() {
         Thread.sleep(AFTER_SCRUB_IDLE_MILLIS)
-        assertEquals(Duration.ZERO, position())
+        composeRule.waitForIdle()
+        assertEquals(emptyList<Duration>(), playback.seekCalls)
     }
-
-    private fun position() = runBlocking { playbackState.position.first() }
 
     /** The rows the library has. A library that fails is a failed test, not an empty list (ADR-007, rule 7). */
     private fun <T> Flow<Either<LibraryError, List<T>>>.rows(): List<T> =

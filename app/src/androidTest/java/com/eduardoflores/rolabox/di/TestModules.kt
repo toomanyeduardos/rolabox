@@ -12,15 +12,21 @@ import com.eduardoflores.rolabox.common.userdata.testing.FakeUserDataRepository
 import com.eduardoflores.rolabox.common.util.Dispatcher
 import com.eduardoflores.rolabox.common.util.RolaboxDispatchers.Default
 import com.eduardoflores.rolabox.common.util.RolaboxDispatchers.IO
+import com.eduardoflores.rolabox.common.util.RolaboxDispatchers.Main
 import com.eduardoflores.rolabox.common.util.di.DispatchersModule
-import com.eduardoflores.rolabox.common.util.di.TimeSourceModule
+import com.eduardoflores.rolabox.device.library.api.LibraryRepository
+import com.eduardoflores.rolabox.device.library.impl.di.LibraryModule
+import com.eduardoflores.rolabox.device.library.testing.FakeLibraryRepository
+import com.eduardoflores.rolabox.device.playback.api.PlaybackController
+import com.eduardoflores.rolabox.device.playback.api.PlaybackState
+import com.eduardoflores.rolabox.device.playback.impl.di.PlaybackModule
+import com.eduardoflores.rolabox.device.playback.testing.FakePlayback
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.components.SingletonComponent
 import dagger.hilt.testing.TestInstallIn
 import javax.inject.Singleton
-import kotlin.time.TimeSource
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestDispatcher
@@ -46,16 +52,35 @@ object TestDispatchersModule {
     @Provides
     @Dispatcher(Default)
     fun providesDefaultDispatcher(testDispatcher: TestDispatcher): CoroutineDispatcher = testDispatcher
+
+    @Provides
+    @Dispatcher(Main)
+    fun providesMainDispatcher(testDispatcher: TestDispatcher): CoroutineDispatcher = testDispatcher
 }
 
-// The time that has passed is the scheduler's, like the delays of the test dispatcher: a test that advances
-// it moves the playback's clock, and nothing plays on its own in the others.
+// The device's tests check what the wheel asks of playback, and set what playback reports. The real player
+// plays in real time, and is tested in :device:playback:impl, on the JVM and on a device (ADR-023).
 @Module
-@TestInstallIn(components = [SingletonComponent::class], replaces = [TimeSourceModule::class])
-object TestTimeSourceModule {
+@TestInstallIn(components = [SingletonComponent::class], replaces = [PlaybackModule::class])
+abstract class TestPlaybackModule {
+    @Binds
+    abstract fun bindsPlaybackState(fake: FakePlayback): PlaybackState
+
+    @Binds
+    abstract fun bindsPlaybackController(fake: FakePlayback): PlaybackController
+}
+
+// The debug build's library reads the files on the phone, so the tests bring their own.
+@Module
+@TestInstallIn(components = [SingletonComponent::class], replaces = [LibraryModule::class])
+object TestLibraryModule {
     @Provides
-    fun providesTimeSource(testDispatcher: TestDispatcher): TimeSource.WithComparableMarks =
-        testDispatcher.scheduler.timeSource
+    @Singleton
+    fun providesLibraryRepository(fake: FakeLibraryRepository): LibraryRepository = fake.apply {
+        artists = TestLibrary.artists
+        albums = TestLibrary.albums
+        songs = TestLibrary.songs
+    }
 }
 
 @Module

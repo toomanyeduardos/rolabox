@@ -9,4 +9,5 @@ annotation class Dispatcher(val dispatcher: RolaboxDispatchers)
 enum class RolaboxDispatchers {
     Default,
     IO,
+    Main,
 }

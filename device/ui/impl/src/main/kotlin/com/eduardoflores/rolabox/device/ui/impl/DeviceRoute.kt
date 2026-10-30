@@ -139,4 +139,5 @@ private val PlayFailure.message: Int
     get() = when (this) {
         PlayFailure.LibraryUnavailable -> R.string.device_play_failed_library
         PlayFailure.SongNotInList -> R.string.device_play_failed_song
+        PlayFailure.PlayerUnavailable -> R.string.device_play_failed_player
     }

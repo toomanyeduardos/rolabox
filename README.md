@@ -76,7 +76,7 @@ wordmark. Think of a hardware player, not a streaming app.
 | **Playback** | Media3: ExoPlayer and `MediaSession`, in a `MediaSessionService` ([ADR-023](docs/adr/023-playback-engine.md)) |
 | **Accounts and sync** | Firebase Auth, Cloud Firestore, Credential Manager, WorkManager |
 | **Build** | Gradle with convention plugins in `build-logic` ([ADR-004](docs/adr/004-convention-plugins.md)) |
-| **Quality** | ktlint (with Compose rules), detekt, Android Lint, Paparazzi screenshot tests |
+| **Quality** | ktlint (with Compose rules), detekt, Android Lint, Paparazzi screenshot tests, Robolectric for the player on the JVM |
 | **Targets** | minSdk 29, targetSdk 37 |
 
 ## Getting started
@@ -491,6 +491,12 @@ instead. Each set goes to `/sdcard/Music/RolaboxFixtures/<set>` and replaces an 
 MediaStore then scans the folder, which takes up to half a minute after the task returns. With
 several devices connected, set `ANDROID_SERIAL`. The audio is silent, so to hear playback, push a
 folder of real music.
+
+The debug build's library is what was pushed: until the library's index exists (library/03), the
+task also copies each set into the installed debug app's own files, and the debug build lists them
+there, so they play. It needs no permission to read its own files. Install the debug app before
+pushing, and push again after uninstalling it, which deletes that copy. The release build keeps the
+made-up sample library, which plays nothing.
 
 **No audio but the UI sounds ships.** After `assembleRelease` and `bundleRelease`, and in
 `./gradlew check`, the build inspects the packaged release and fails if it holds any audio other

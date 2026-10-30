@@ -23,18 +23,21 @@ import com.eduardoflores.rolabox.device.library.api.Artist
 import com.eduardoflores.rolabox.device.library.api.LibraryError
 import com.eduardoflores.rolabox.device.library.api.LibraryRepository
 import com.eduardoflores.rolabox.device.library.api.Song
+import com.eduardoflores.rolabox.device.playback.api.PlaybackItem
+import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
+import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
+import com.eduardoflores.rolabox.device.playback.testing.FakePlayback
 import com.eduardoflores.rolabox.device.ui.api.DeviceKey
 import com.eduardoflores.rolabox.device.ui.api.DeviceUiEntries
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import javax.inject.Inject
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.TestDispatcher
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -43,8 +46,8 @@ import org.junit.Test
  * The device as it is assembled, with the wheel as the only input (ADR-018): from the main menu down
  * to a list of songs and back with MENU, checking that each level comes back on the row the user left,
  * and playing a song, Now Playing and the playback buttons.
- * The library is the in-memory one, so the rows are read from it and not repeated here. The playback's
- * clock is the test dispatcher's scheduler, so a song only moves when a test lets time pass.
+ * The library is the tests' own, so the rows are read from it and not repeated here. Playback is
+ * [FakePlayback]: a test checks what the wheel asked of it, and then sets what a player would report.
  */
 @HiltAndroidTest
 class DeviceNavigationTest {
@@ -60,7 +63,7 @@ class DeviceNavigationTest {
 
     @Inject lateinit var library: LibraryRepository
 
-    @Inject lateinit var testDispatcher: TestDispatcher
+    @Inject lateinit var playback: FakePlayback
 
     @Before
     fun setUp() {
@@ -148,13 +151,25 @@ class DeviceNavigationTest {
 
         // Center plays the album from that song, and Now Playing shows its place in the queue.
         wheel().pressCenter()
+        composeRule.waitForIdle()
+        assertEquals(
+            listOf(FakePlayback.PlayCall(PlaybackSource.ByAlbum(albums[0].id), itemOf(songs[SONG_INDEX]))),
+            playback.playCalls,
+        )
+        playback.load(queueOf(songs), SONG_INDEX)
         composeRule.onNodeWithText(positionOf(SONG_INDEX + 1, songs.size)).assertExists()
 
-        // Next and previous load the neighbour at its place, and never move in the screen stack.
+        // Next and previous ask for the neighbour, which shows at its place, and never move in the screen stack.
         wheel().pressNext()
+        composeRule.waitForIdle()
+        assertEquals(1, playback.nextCalls)
+        playback.load(queueOf(songs), SONG_INDEX + 1)
         composeRule.onNodeWithText(positionOf(SONG_INDEX + 2, songs.size)).assertExists()
         wheel().pressPrevious()
         wheel().pressPrevious()
+        composeRule.waitForIdle()
+        assertEquals(2, playback.previousCalls)
+        playback.load(queueOf(songs), SONG_INDEX - 1)
         composeRule.onNodeWithText(positionOf(SONG_INDEX, songs.size)).assertExists()
 
         // MENU leaves Now Playing, and every level is on the row it was left on.
@@ -183,8 +198,10 @@ class DeviceNavigationTest {
         val albums = path.albums
         val songs = path.songs
 
-        // Nothing is loaded: ⏯ on the main menu does nothing.
+        // Nothing is loaded: ⏯ on the main menu only asks to resume, which plays nothing.
         wheel().pressPlayPause()
+        composeRule.waitForIdle()
+        assertEquals(1, playback.resumeCalls)
         assertNoRow("Now Playing")
         wheel().pressCenter()
         wheel().pressCenter()
@@ -196,24 +213,36 @@ class DeviceNavigationTest {
 
         // On a song ⏯ does what center does: it plays the album from that song, and Now Playing is pushed.
         wheel().pressPlayPause()
+        composeRule.waitForIdle()
+        assertEquals(
+            listOf(FakePlayback.PlayCall(PlaybackSource.ByAlbum(albums[0].id), itemOf(songs[SONG_INDEX]))),
+            playback.playCalls,
+        )
+        playback.load(queueOf(songs), SONG_INDEX)
         composeRule.onNodeWithText(positionOf(SONG_INDEX + 1, songs.size)).assertExists()
-        after(5.seconds)
+        playback.positionAt(5.seconds)
         composeRule.onNodeWithText("0:05").assertExists()
 
-        // On Now Playing ⏯ pauses, and the time stays. A second ⏯ plays from where it was.
+        // On Now Playing ⏯ pauses what plays, and a second ⏯ plays what is paused.
         wheel().pressPlayPause()
-        after(5.seconds)
-        composeRule.onNodeWithText("0:05").assertExists()
+        composeRule.waitForIdle()
+        assertEquals(1, playback.pauseCalls)
+        playback.playing(false)
+        val resumes = playback.resumeCalls
         wheel().pressPlayPause()
-        after(5.seconds)
-        composeRule.onNodeWithText("0:10").assertExists()
+        composeRule.waitForIdle()
+        assertEquals(resumes + 1, playback.resumeCalls)
+        playback.playing(true)
 
         // The albums are not playable rows, so ⏯ pauses there too, and nothing is pushed.
         wheel().pressMenu()
         wheel().pressMenu()
         wheel().pressPlayPause()
         assertHighlighted(albums[0].title)
-        after(5.seconds)
+        assertEquals(2, playback.pauseCalls)
+        assertEquals(1, playback.playCalls.size)
+        playback.playing(false)
+        playback.positionAt(10.seconds)
         wheel().pressMenu()
         wheel().pressMenu()
         wheel().pressMenu()
@@ -236,10 +265,12 @@ class DeviceNavigationTest {
 
         // The last song of the album plays, so the queue has nothing after it.
         wheel().pressCenter()
+        composeRule.waitForIdle()
+        playback.load(queueOf(songs), songs.lastIndex)
         composeRule.onNodeWithText(positionOf(songs.size, songs.size)).assertExists()
 
         // It ends: nothing is loaded, and Now Playing leaves the display for the list it was played from.
-        after(songs.last().duration + 1.seconds)
+        playback.unload()
         composeRule.onNodeWithText(positionOf(songs.size, songs.size)).assertDoesNotExist()
         assertHighlighted(songs.last().title)
 
@@ -289,12 +320,11 @@ class DeviceNavigationTest {
     private fun <T> Flow<Either<LibraryError, List<T>>>.rows(): List<T> =
         runBlocking { first().getOrElse { error -> throw AssertionError("The library failed: $error") } }
 
-    /** Lets [duration] pass on the playback's clock. */
-    private fun after(duration: Duration) {
-        testDispatcher.scheduler.advanceTimeBy(duration)
-        testDispatcher.scheduler.runCurrent()
-        composeRule.waitForIdle()
-    }
+    private fun itemOf(song: Song) = PlaybackItemId.Song(song.id)
+
+    /** The queue a player loads when [songs] are played. */
+    private fun queueOf(songs: List<Song>) =
+        songs.map { PlaybackItem(itemOf(it), it.title, "Artist", "Album", it.duration) }
 
     private fun wheel() = composeRule.onNodeWithTag(WHEEL_TEST_TAG)
 

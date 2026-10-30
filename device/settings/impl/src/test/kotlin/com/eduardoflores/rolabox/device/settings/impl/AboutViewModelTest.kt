@@ -54,5 +54,6 @@ class AboutViewModelTest {
         title = "Song $id",
         trackNumber = id.toInt(),
         duration = 3.minutes,
+        uri = "content://songs/$id",
     )
 }
