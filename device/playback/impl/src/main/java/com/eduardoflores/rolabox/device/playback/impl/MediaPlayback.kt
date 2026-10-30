@@ -134,7 +134,7 @@ internal class MediaPlayback @Inject constructor(
             player.play()
             state.update { it.copy(startCount = it.startCount + 1) }
             refresh(player)
-        }
+        }.bind()
     }
 
     override suspend fun pause() = onLoaded { player ->
@@ -182,25 +182,45 @@ internal class MediaPlayback @Inject constructor(
     }
 
     // The state follows when the session reports the new volume, as it does for the phone's keys.
-    override suspend fun changeVolume(steps: Int) = onPlayer { phoneVolume.change(steps) }
+    override suspend fun changeVolume(steps: Int) {
+        onPlayer { phoneVolume.change(steps) }
+    }
 
     /** Runs [action] on the player when something is loaded, and then brings the state up to date. */
-    private suspend fun onLoaded(action: (Player) -> Unit) = onPlayer { player ->
-        if (items.isNotEmpty()) {
-            action(player)
-            refresh(player)
+    private suspend fun onLoaded(action: (Player) -> Unit) {
+        onPlayer { player ->
+            if (items.isNotEmpty()) {
+                action(player)
+                refresh(player)
+            }
         }
     }
 
-    private suspend fun <T> onPlayer(action: (Player) -> T): T = withContext(connection.dispatcher) {
-        val player = connection.player()
-        if (player !== listenedTo) {
-            listenedTo?.removeListener(listener)
-            player.addListener(listener)
-            listenedTo = player
-            refresh(player)
+    /**
+     * Runs [action] on the player. When it can't be reached nothing is loaded, so that is what the state says, and
+     * only [play] has to tell: every other action does nothing when nothing is loaded.
+     */
+    private suspend fun onPlayer(action: (Player) -> Unit): Either<PlaybackError, Unit> =
+        withContext(connection.dispatcher) {
+            connection.player()
+                .onLeft { forgetPlayer() }
+                .map { player ->
+                    if (player !== listenedTo) {
+                        listenedTo?.removeListener(listener)
+                        player.addListener(listener)
+                        listenedTo = player
+                        refresh(player)
+                    }
+                    action(player)
+                }
         }
-        action(player)
+
+    private fun forgetPlayer() {
+        listenedTo?.removeListener(listener)
+        listenedTo = null
+        items = emptyList()
+        hold = null
+        state.update { Snapshot(startCount = it.startCount, volume = it.volume) }
     }
 
     /** Moves a held item by the time since [held] last moved it, between 0:00 and its end. */
@@ -216,6 +236,13 @@ internal class MediaPlayback @Inject constructor(
         val known = duration.takeIf { it != C.TIME_UNSET }?.milliseconds
         return known ?: items.getOrNull(currentMediaItemIndex)?.duration ?: Duration.ZERO
     }
+
+    /**
+     * Whether it plays, buffering included. Losing the focus for a while leaves `playWhenReady` on, so that it
+     * resumes when the focus returns, but it is paused until then (ADR-023).
+     */
+    private fun Player.playsOrIsAboutTo(): Boolean =
+        playWhenReady && playbackSuppressionReason != Player.PLAYBACK_SUPPRESSION_REASON_TRANSIENT_AUDIO_FOCUS_LOSS
 
     /** The queue ended (ADR-018): nothing is loaded. */
     private fun unload(player: Player) {
@@ -234,7 +261,7 @@ internal class MediaPlayback @Inject constructor(
                 queue = if (loaded) items else emptyList(),
                 queueIndex = if (loaded) player.currentMediaItemIndex else null,
                 position = if (loaded) player.currentPosition.coerceAtLeast(0).milliseconds else Duration.ZERO,
-                isPlaying = loaded && (hold?.wasPlaying ?: player.playWhenReady),
+                isPlaying = loaded && (hold?.wasPlaying ?: player.playsOrIsAboutTo()),
                 isSeeking = loaded && hold != null,
                 volume = if (range > 0) (player.deviceVolume - device.minVolume) * MAX_VOLUME / range else 0,
             )

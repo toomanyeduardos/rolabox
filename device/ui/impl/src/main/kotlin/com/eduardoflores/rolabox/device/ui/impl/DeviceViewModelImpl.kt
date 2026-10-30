@@ -98,4 +98,5 @@ private val AllShown = MainMenuRow.entries.associateWith { MainMenuRowVisibility
 private fun PlaybackError.toPlayFailure(): PlayFailure = when (this) {
     is PlaybackError.Library -> PlayFailure.LibraryUnavailable
     is PlaybackError.ItemNotInSource -> PlayFailure.SongNotInList
+    PlaybackError.PlayerUnavailable -> PlayFailure.PlayerUnavailable
 }

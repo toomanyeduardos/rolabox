@@ -2,6 +2,8 @@ package com.eduardoflores.rolabox.device.playback.impl
 
 import android.content.Context
 import androidx.annotation.OptIn
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
@@ -41,16 +43,25 @@ internal class PlaybackService : MediaSessionService() {
 
 /**
  * The player of the service, with the threshold of ⏮ (ADR-023, rule 7) and the phone's media volume as the
- * volume (rule 6). [configure] is for the tests, which set Media3's fake clock.
+ * volume (rule 6). It handles audio focus as music, and pauses when the headphones go (ADR-023, "Audio focus, noise
+ * and buttons"). [configure] is for the tests, which set Media3's fake clock.
  */
-// Both settings are what ADR-023 decides, and Media3 marks them unstable: an upgrade may change them.
+// The threshold and the device volume are what ADR-023 decides, and Media3 marks them unstable: an upgrade may
+// change them.
 @OptIn(UnstableApi::class)
 internal fun buildPlayer(context: Context, configure: ExoPlayer.Builder.() -> Unit = {}): ExoPlayer =
     ExoPlayer.Builder(context)
         .setMaxSeekToPreviousPositionMs(RestartThreshold.inWholeMilliseconds)
         .setDeviceVolumeControlEnabled(true)
+        .setAudioAttributes(MusicAttributes, true)
+        .setHandleAudioBecomingNoisy(true)
         .apply(configure)
         .build()
+
+private val MusicAttributes = AudioAttributes.Builder()
+    .setUsage(C.USAGE_MEDIA)
+    .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
+    .build()
 
 /**
  * A controller sends its items to the session without where their audio is, unless it's in the same process.

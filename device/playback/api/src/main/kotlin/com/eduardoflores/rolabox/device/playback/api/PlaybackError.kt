@@ -8,4 +8,7 @@ sealed interface PlaybackError {
 
     /** The item to start from isn't in the list it was supposed to be selected from. */
     data class ItemNotInSource(val itemId: PlaybackItemId, val source: PlaybackSource) : PlaybackError
+
+    /** The player couldn't be reached. Nothing is loaded after it. */
+    data object PlayerUnavailable : PlaybackError
 }

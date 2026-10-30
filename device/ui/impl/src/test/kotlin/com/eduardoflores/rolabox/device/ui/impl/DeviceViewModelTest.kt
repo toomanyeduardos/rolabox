@@ -155,6 +155,16 @@ class DeviceViewModelTest {
     }
 
     @Test
+    fun aSongClickThatCannotReachThePlayer_saysThePlayerIsUnavailable() = runTest {
+        val viewModel = observedViewModel()
+        playback.playResult = PlaybackError.PlayerUnavailable.left()
+
+        viewModel.onSongClick(PlaybackSource.ByAlbum(AlbumId(7)), SongId(3)) {}
+
+        assertEquals(PlayFailure.PlayerUnavailable, viewModel.playFailure.value)
+    }
+
+    @Test
     fun aFailureThatWasShown_isNotShownAgain_andASongThatPlaysHasNone() = runTest {
         val viewModel = observedViewModel()
         val source = PlaybackSource.ByAlbum(AlbumId(7))

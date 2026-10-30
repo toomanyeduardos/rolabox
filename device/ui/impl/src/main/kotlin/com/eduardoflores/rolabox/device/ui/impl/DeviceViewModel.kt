@@ -15,6 +15,9 @@ internal enum class PlayFailure {
 
     /** The song is no longer in the list it was clicked on. */
     SongNotInList,
+
+    /** The player couldn't be reached. */
+    PlayerUnavailable,
 }
 
 /**
