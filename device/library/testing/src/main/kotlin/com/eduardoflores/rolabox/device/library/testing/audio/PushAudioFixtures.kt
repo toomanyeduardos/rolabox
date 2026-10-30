@@ -8,11 +8,11 @@ import kotlin.system.exitProcess
 private const val DEVICE_FOLDER = "/sdcard/Music/RolaboxFixtures"
 private const val ALL_SETS = "all"
 private const val SCAN_FILE_ACTION = "android.intent.action.MEDIA_SCANNER_SCAN_FILE"
-private const val APP_PACKAGE = "com.eduardoflores.rolabox"
 
-// The audio permission from API 33, and the storage permission before it.
-private val AUDIO_PERMISSIONS =
-    listOf("android.permission.READ_MEDIA_AUDIO", "android.permission.READ_EXTERNAL_STORAGE")
+// The debug build's stand-in library reads the app's own files, with no permission. library/03 removes these.
+private const val APP_PACKAGE = "com.eduardoflores.rolabox"
+private const val APP_FOLDER = "files/RolaboxFixtures"
+private const val TEMPORARY_FOLDER = "/data/local/tmp/RolaboxFixtures"
 
 /**
  * Puts a fixture set on the connected phone or emulator, as real music would be: copied into
@@ -25,8 +25,8 @@ private val AUDIO_PERMISSIONS =
  * `set` is `clean`, `broken`, `formats` or `all`, or the path of a folder of your own music. Each
  * set replaces what an earlier push of it left. With several devices, set `ANDROID_SERIAL`.
  *
- * When the app is installed, it is also granted the audio permission, which the debug build's stand-in
- * library needs to read MediaStore and which nothing asks for until library/04.
+ * Each set is also copied into the installed debug app's own files, which is what its stand-in library lists until
+ * library/03. Uninstalling the app deletes that copy.
  *
  * Arguments: the set, and the root of the project, whose `local.properties` may name the SDK.
  */
@@ -51,24 +51,33 @@ fun main(args: Array<String>) {
 
     sources.forEach { (name, source) ->
         val target = "$DEVICE_FOLDER/$name"
-        adb.run("shell", "rm", "-rf", target)
-        adb.run("shell", "mkdir", "-p", target)
-        // The folder's contents, not the folder, so a folder of any name lands at target.
-        source.listFiles().orEmpty().sortedBy { it.name }.forEach { adb.run("push", it.path, target) }
-        // MediaStore scans a folder recursively, and forgets the files that the rm above removed.
+        adb.pushContents(source, target)
+        // MediaStore scans a folder recursively, and forgets the files that the rm in pushContents removed.
         adb.run("shell", "am", "broadcast", "-a", SCAN_FILE_ACTION, "-d", "file://$target")
         println("Pushed $name to $target")
+        adb.copyIntoApp(source, name)
     }
-    grantAudioPermission(adb)
 }
 
-private fun grantAudioPermission(adb: Adb) {
-    // Only one of the two exists on a given API level, and neither while the app isn't installed.
-    if (AUDIO_PERMISSIONS.any { adb.succeeds("shell", "pm", "grant", APP_PACKAGE, it) }) {
-        println("Granted $APP_PACKAGE the audio permission")
-    } else {
-        println("Install the debug app and push again to grant it the audio permission")
-    }
+// adb can't write an app's files, but a debug build's own user can, through run-as. So the set goes through a
+// folder both can read.
+private fun Adb.copyIntoApp(source: File, name: String) {
+    val temporary = "$TEMPORARY_FOLDER/$name"
+    val target = "$APP_FOLDER/$name"
+    pushContents(source, temporary)
+    val copied = succeeds(
+        "shell",
+        "run-as $APP_PACKAGE sh -c 'rm -rf \"$target\" && mkdir -p \"$target\" && cp -r \"$temporary/.\" \"$target/\"'",
+    )
+    run("shell", "rm", "-rf", TEMPORARY_FOLDER)
+    println(if (copied) "Copied $name into the app" else "Install the debug app and push again to play $name")
+}
+
+// The folder's contents, not the folder, so a folder of any name lands at target.
+private fun Adb.pushContents(source: File, target: String) {
+    run("shell", "rm", "-rf", target)
+    run("shell", "mkdir", "-p", target)
+    source.listFiles().orEmpty().sortedBy { it.name }.forEach { run("push", it.path, target) }
 }
 
 private fun AudioFixtureSet.writeToTemporaryFolder(): File =

@@ -44,6 +44,9 @@ import org.junit.runner.RunWith
  * The volume goes through [MediaPlayback] itself: a controller can't set the volume of a local player, and the
  * JVM tests, with no controller, can't see that.
  */
+// ADR-005 rule 5 lets tests replace a dispatcher. This test has nothing to replace it with: Media3 runs on the
+// device's real main thread here.
+@Suppress("InjectDispatcher")
 @HiltAndroidTest
 @RunWith(AndroidJUnit4::class)
 class PlaybackServiceTest {
@@ -109,7 +112,7 @@ class PlaybackServiceTest {
         val playback =
             MediaPlayback(
                 FakeLibraryRepository(),
-                SessionConnection(context),
+                SessionConnection(context, Dispatchers.Main.immediate),
                 PhoneVolume(context),
                 scope,
                 TimeSource.Monotonic,

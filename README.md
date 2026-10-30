@@ -492,11 +492,11 @@ MediaStore then scans the folder, which takes up to half a minute after the task
 several devices connected, set `ANDROID_SERIAL`. The audio is silent, so to hear playback, push a
 folder of real music.
 
-The debug build's library is what was pushed: until the library's index exists (library/03), it
-lists the files under `/sdcard/Music/RolaboxFixtures` with their MediaStore URIs, so they play. It
-needs the audio permission, which nothing in the app asks for yet, so the task also grants it to the
-installed app. Install the debug app before pushing, or push again after installing it. The release
-build keeps the made-up sample library, which plays nothing.
+The debug build's library is what was pushed: until the library's index exists (library/03), the
+task also copies each set into the installed debug app's own files, and the debug build lists them
+there, so they play. It needs no permission to read its own files. Install the debug app before
+pushing, and push again after uninstalling it, which deletes that copy. The release build keeps the
+made-up sample library, which plays nothing.
 
 **No audio but the UI sounds ships.** After `assembleRelease` and `bundleRelease`, and in
 `./gradlew check`, the build inspects the packaged release and fails if it holds any audio other

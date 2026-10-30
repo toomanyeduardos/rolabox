@@ -22,6 +22,8 @@ coroutines:
   InjectDispatcher:
     # Hilt @Provides functions are where dispatchers get injected from.
     ignoreAnnotated: ['Provides']
+    # Main isn't in the rule's default list, and ADR-005 rule 5 covers every dispatcher.
+    dispatcherNames: ['IO', 'Default', 'Unconfined', 'Main']
   SuspendFunSwallowedCancellation:
     # ADR-007 rule 5: CancellationException is never swallowed.
     active: true

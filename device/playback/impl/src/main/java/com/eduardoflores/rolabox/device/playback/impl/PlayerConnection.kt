@@ -5,10 +5,11 @@ import android.content.Context
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
+import com.eduardoflores.rolabox.common.util.Dispatcher
+import com.eduardoflores.rolabox.common.util.RolaboxDispatchers.Main
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.guava.await
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -26,12 +27,12 @@ internal interface PlayerConnection {
  * A `MediaController` connected to [PlaybackService]'s session (ADR-023, rule 3). Connecting starts the service,
  * and a controller that lost its connection is made again.
  */
-internal class SessionConnection @Inject constructor(@ApplicationContext private val context: Context) :
-    PlayerConnection {
+internal class SessionConnection @Inject constructor(
+    @ApplicationContext private val context: Context,
+    @Dispatcher(Main) override val dispatcher: CoroutineDispatcher,
+) : PlayerConnection {
     private val mutex = Mutex()
     private var controller: MediaController? = null
-
-    override val dispatcher: CoroutineDispatcher = Dispatchers.Main.immediate
 
     override suspend fun player(): Player = mutex.withLock {
         controller?.takeIf { it.isConnected } ?: run {

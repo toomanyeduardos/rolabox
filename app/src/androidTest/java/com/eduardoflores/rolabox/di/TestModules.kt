@@ -12,6 +12,7 @@ import com.eduardoflores.rolabox.common.userdata.testing.FakeUserDataRepository
 import com.eduardoflores.rolabox.common.util.Dispatcher
 import com.eduardoflores.rolabox.common.util.RolaboxDispatchers.Default
 import com.eduardoflores.rolabox.common.util.RolaboxDispatchers.IO
+import com.eduardoflores.rolabox.common.util.RolaboxDispatchers.Main
 import com.eduardoflores.rolabox.common.util.di.DispatchersModule
 import com.eduardoflores.rolabox.device.library.api.LibraryRepository
 import com.eduardoflores.rolabox.device.library.impl.di.LibraryModule
@@ -51,6 +52,10 @@ object TestDispatchersModule {
     @Provides
     @Dispatcher(Default)
     fun providesDefaultDispatcher(testDispatcher: TestDispatcher): CoroutineDispatcher = testDispatcher
+
+    @Provides
+    @Dispatcher(Main)
+    fun providesMainDispatcher(testDispatcher: TestDispatcher): CoroutineDispatcher = testDispatcher
 }
 
 // The device's tests check what the wheel asks of playback, and set what playback reports. The real player

@@ -9,7 +9,7 @@ android {
 
 dependencies {
     implementation(project(":device:library:api"))
-    // The debug stand-in library reads MediaStore on the IO dispatcher.
+    // The debug stand-in library reads its files on the IO dispatcher.
     debugImplementation(project(":common:util"))
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
