@@ -321,6 +321,42 @@ class MediaPlaybackTest {
     }
 
     @Test
+    fun aMediaButtonsNext_startsTheNextItem() = scope.runTest {
+        playback.play(PlaybackSource.ByAlbum(album.id), item(3))
+        val before = playback.startCount.first()
+
+        player.seekToNext()
+        tick()
+
+        assertEquals(item(4), playback.currentItem.first()?.id)
+        assertEquals(before + 1, playback.startCount.first())
+    }
+
+    @Test
+    fun scrubbingTo0_doesNotStartTheItem() = scope.runTest {
+        playback.play(PlaybackSource.ByAlbum(album.id), item(3))
+        playTo(2.seconds)
+        val before = playback.startCount.first()
+
+        playback.seekTo(Duration.ZERO)
+        tick()
+
+        assertEquals(before, playback.startCount.first())
+    }
+
+    @Test
+    fun withoutTheApp_itPlaysOnOnlyWhilePlaying() = scope.runTest {
+        assertFalse(player.playsOn())
+
+        playback.play(PlaybackSource.ByAlbum(album.id), item(3))
+        ready()
+        assertTrue(player.playsOn())
+
+        playback.pause()
+        assertFalse(player.playsOn())
+    }
+
+    @Test
     fun previous_pastTheThresholdStartsTheItemAgain_andTheQueueIndexStays() = scope.runTest {
         playback.play(PlaybackSource.ByAlbum(album.id), item(3))
         playTo(RestartThreshold + Tick)
