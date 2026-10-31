@@ -10,7 +10,7 @@ class ArtistAlbumsRowsTest {
 
     @Test
     fun allSongs_comesFirst_thenTheAlbumsInOrder() {
-        val rows = ListUiState.Loaded(listOf(LowTideRadio, PaperSatellites)).withAllSongs("All Songs")
+        val rows = ListUiState.Loaded(listOf(LowTideRadio, PaperSatellites)).withAllSongs("All Songs", "Unknown album")
 
         assertEquals(
             ListUiState.Loaded(
@@ -28,13 +28,13 @@ class ArtistAlbumsRowsTest {
     fun anArtistWithoutAlbums_stillHasAllSongs() {
         assertEquals(
             ListUiState.Loaded(listOf(allSongs)),
-            ListUiState.Loaded(emptyList<Album>()).withAllSongs("All Songs"),
+            ListUiState.Loaded(emptyList<Album>()).withAllSongs("All Songs", "Unknown album"),
         )
     }
 
     @Test
     fun loadingAndFailed_areKept() {
-        assertEquals(ListUiState.Loading, ListUiState.Loading.withAllSongs("All Songs"))
-        assertEquals(ListUiState.Failed, ListUiState.Failed.withAllSongs("All Songs"))
+        assertEquals(ListUiState.Loading, ListUiState.Loading.withAllSongs("All Songs", "Unknown album"))
+        assertEquals(ListUiState.Failed, ListUiState.Failed.withAllSongs("All Songs", "Unknown album"))
     }
 }

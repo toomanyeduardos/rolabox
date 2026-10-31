@@ -10,6 +10,7 @@ import com.eduardoflores.rolabox.device.library.api.Artist
 import com.eduardoflores.rolabox.device.library.api.ArtistId
 import com.eduardoflores.rolabox.device.library.api.LibraryError
 import com.eduardoflores.rolabox.device.library.api.LibraryRepository
+import com.eduardoflores.rolabox.device.library.api.LibraryStatus
 import com.eduardoflores.rolabox.device.library.api.Song
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -23,13 +24,20 @@ import kotlinx.coroutines.flow.transformWhile
  * Like any repository, a `Left` ends its flow: a lookup of something that isn't there, or a read error
  * set with [setReadError].
  */
+@Suppress("TooManyFunctions") // One for each function of the repository.
 @Singleton
 class FakeLibraryRepository @Inject constructor() : LibraryRepository {
     private val artistsState = MutableStateFlow<List<Artist>>(emptyList())
     private val albumsState = MutableStateFlow<List<Album>>(emptyList())
     private val songsState = MutableStateFlow<List<Song>>(emptyList())
 
+    private val statusState = MutableStateFlow<LibraryStatus>(LibraryStatus.Ready(readingTags = null))
+
     private val readError = MutableStateFlow<StorageError?>(null)
+
+    /** How many times [checkPermission] was called. */
+    var permissionChecks = 0
+        private set
 
     var artists: List<Artist>
         get() = artistsState.value
@@ -47,6 +55,12 @@ class FakeLibraryRepository @Inject constructor() : LibraryRepository {
         get() = songsState.value
         set(value) {
             songsState.value = value
+        }
+
+    var status: LibraryStatus
+        get() = statusState.value
+        set(value) {
+            statusState.value = value
         }
 
     /** Makes every read fail with [error], and the observed flows emit it and end. */
@@ -72,7 +86,7 @@ class FakeLibraryRepository @Inject constructor() : LibraryRepository {
     override fun observeSongsByArtist(artistId: ArtistId): Flow<Either<LibraryError, List<Song>>> =
         artistsState.read { artists ->
             if (artists.any { it.id == artistId }) {
-                songs.filter { it.artistId == artistId }.sortedBy { it.title }.right()
+                songs.filter { it.artistId == artistId }.sortedBy { it.title.orEmpty() }.right()
             } else {
                 LibraryError.ArtistNotFound(artistId).left()
             }
@@ -81,7 +95,7 @@ class FakeLibraryRepository @Inject constructor() : LibraryRepository {
     override fun observeSongsByAlbum(albumId: AlbumId): Flow<Either<LibraryError, List<Song>>> =
         albumsState.read { albums ->
             if (albums.any { it.id == albumId }) {
-                songs.filter { it.albumId == albumId }.sortedBy { it.trackNumber }.right()
+                songs.filter { it.albumId == albumId }.sortedBy { it.trackNumber ?: Int.MAX_VALUE }.right()
             } else {
                 LibraryError.AlbumNotFound(albumId).left()
             }
@@ -92,6 +106,12 @@ class FakeLibraryRepository @Inject constructor() : LibraryRepository {
 
     override suspend fun getAlbum(id: AlbumId): Either<LibraryError, Album> = readError.value?.storageError()
         ?: (albums.firstOrNull { it.id == id }?.right() ?: LibraryError.AlbumNotFound(id).left())
+
+    override fun observeStatus(): Flow<Either<LibraryError, LibraryStatus>> = statusState.read { it.right() }
+
+    override fun checkPermission() {
+        permissionChecks++
+    }
 
     private fun <S, T> Flow<S>.read(transform: (S) -> Either<LibraryError, T>): Flow<Either<LibraryError, T>> =
         combine(this, readError) { state, error -> error?.storageError() ?: transform(state) }.endingAtFirstLeft()

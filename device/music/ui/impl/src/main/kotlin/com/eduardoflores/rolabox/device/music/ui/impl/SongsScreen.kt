@@ -17,8 +17,9 @@ import com.eduardoflores.rolabox.device.host.ScreenTitle
 internal fun SongsRoute(viewModel: SongsViewModel, onSongClick: (songId: Long) -> Unit) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val title by viewModel.title.collectAsStateWithLifecycle()
-    val rows = remember(state) { state.map { DeviceListRow(it.title) } }
-    ScreenTitle(title)
+    val unknownSong = stringResource(R.string.music_unknown_song)
+    val rows = remember(state, unknownSong) { state.map { DeviceListRow(it.title ?: unknownSong) } }
+    ScreenTitle(title.label())
     val onSongRow: (Int) -> Unit = { index ->
         (state as? ListUiState.Loaded)?.items?.get(index)?.let { onSongClick(it.id.value) }
     }

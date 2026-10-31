@@ -9,5 +9,8 @@
     <string name="now_playing_volume_label">VOL</string>
     <string name="now_playing_volume_level">%1$d%%</string>
     <string name="now_playing_volume_description">Volume</string>
+    <string name="now_playing_unknown_title">Unknown song</string>
+    <string name="now_playing_unknown_artist">Unknown artist</string>
+    <string name="now_playing_unknown_album">Unknown album</string>
     <string name="now_playing_nothing_loaded">Nothing is playing</string>
 </resources>

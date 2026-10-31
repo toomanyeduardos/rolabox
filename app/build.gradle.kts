@@ -37,6 +37,7 @@ dependencies {
     implementation(project(":common:userdata:local:impl"))
     implementation(project(":common:userdata:network:impl"))
     implementation(project(":device:library:impl"))
+    implementation(project(":device:library:local:impl"))
     implementation(project(":device:music:ui:impl"))
     implementation(project(":device:playback:impl"))
     implementation(project(":device:playback:ui:impl"))
@@ -50,6 +51,7 @@ dependencies {
     implementation(project(":common:storage:api"))
     implementation(project(":common:sync:api"))
     implementation(project(":common:userdata:api"))
+    implementation(project(":common:util"))
     implementation(project(":device:ui:api"))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.ktx)
@@ -69,11 +71,10 @@ dependencies {
     androidTestImplementation(project(":common:userdata:testing"))
     // The device's tests bring their own library, and check what the wheel asks of playback.
     androidTestImplementation(project(":device:library:testing"))
-    androidTestImplementation(project(":device:playback:testing"))
-    androidTestImplementation(project(":common:util"))
-    // Tests may also name the :api of a part whose assembly they assert or whose fake they use (ADR-020, rule 13).
     // The navigation test reads the rows it expects from the tests' own library.
     androidTestImplementation(project(":device:library:api"))
+    androidTestImplementation(project(":device:playback:testing"))
+    // Tests may also name the :api of a part whose assembly they assert or whose fake they use (ADR-020, rule 13).
     // The back test loads items into the fake playback, and checks on it that nothing was sought.
     androidTestImplementation(project(":device:playback:api"))
     // The test of the assembled graph names the contract a section is contributed through (ADR-020, rule 20).

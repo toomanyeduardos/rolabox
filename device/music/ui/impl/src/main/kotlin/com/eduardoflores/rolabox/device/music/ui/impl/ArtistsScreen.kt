@@ -15,7 +15,10 @@ import com.eduardoflores.rolabox.device.host.ScreenTitle
 @Composable
 internal fun ArtistsRoute(viewModel: ArtistsViewModel, onArtistClick: (artistId: Long) -> Unit) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val rows = remember(state) { state.map { DeviceListRow(it.name, opensSubmenu = true) } }
+    val unknownArtist = stringResource(R.string.music_unknown_artist)
+    val rows = remember(state, unknownArtist) {
+        state.map { DeviceListRow(it.name ?: unknownArtist, opensSubmenu = true) }
+    }
     ScreenTitle(stringResource(R.string.music_artists_title))
     WheelList(
         state = rows,

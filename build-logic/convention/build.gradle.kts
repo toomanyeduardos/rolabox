@@ -11,6 +11,7 @@ dependencies {
     implementation(libs.kotlin.serialization.gradlePlugin)
     implementation(libs.hilt.gradlePlugin)
     implementation(libs.ksp.gradlePlugin)
+    implementation(libs.room.gradlePlugin)
     implementation(libs.ktlint.gradlePlugin)
     implementation(libs.detekt.gradlePlugin)
     implementation(libs.googleServices.gradlePlugin)
@@ -52,6 +53,10 @@ gradlePlugin {
         register("hilt") {
             id = "rolabox.hilt"
             implementationClass = "RolaboxHiltConventionPlugin"
+        }
+        register("room") {
+            id = "rolabox.room"
+            implementationClass = "RolaboxRoomConventionPlugin"
         }
         register("moduleGraph") {
             id = "rolabox.module.graph"

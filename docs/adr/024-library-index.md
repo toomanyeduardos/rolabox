@@ -4,6 +4,10 @@
 - **Date:** 2026-10-28
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review
+- **Revised 2026-10-30:** library/03 saw detekt report `fallbackToDestructiveMigration`, so rule 11 is
+  `[enforced]`. Until library/06, a song's artist is its own, and missing values are `null` through
+  the part's `:api`. The start of the process reaches the library through ADR-025. The scan state is
+  kept per volume, since MediaStore's generations are.
 
 ## Context
 
@@ -38,10 +42,8 @@ What the decision has to fit:
 - **minSdk is 29.** The audio permission is `READ_MEDIA_AUDIO` from API 33 and
   `READ_EXTERNAL_STORAGE` before it. On API 29, MediaStore has no generation numbers.
 
-**Target state.** This ADR is ahead of the code. Rules 2 and 4 are `[enforced]` from now on, and
-rule 4 holds trivially until library/03 adds Room. `InMemoryLibraryRepository` serves the sample
-until library/03 binds the index. The tickets that build the rest are listed under "What each
-ticket builds".
+**Target state.** This ADR is ahead of the code. Pass 1 is built (library/03). The tickets that build
+the rest are listed under "What each ticket builds".
 
 ## Decision
 
@@ -118,7 +120,7 @@ files ──tags──────┘     pass 1, pass 2      (Room)   └─ So
   | Songs | One row per file: the index's own id, the MediaStore id, the URI, the relative path, the file name, the size, the date modified; the title, artist, album artist, album, track and disc numbers, year, compilation flag and duration, each with its source; whether the file has an embedded picture; and the date modified at which its tags were last read | Cache |
   | Albums | One row per album, found by its grouping key: title, artist, year | Cache |
   | Artists | One row per artist, found by its grouping key: name | Cache |
-  | Scan state | MediaStore's version and generation at the last scan | Cache |
+  | Scan state | MediaStore's version and generation at the last scan, for each volume | Cache |
 
   Genre is not stored yet. music/02 adds it as a change to cache tables.
 - **Artwork is a reference, not an image.** The index records whether a file has an embedded
@@ -148,7 +150,9 @@ Each field of a song takes its value from the first of these that has one:
 - **Which source a field can come from, and how the folder and the name are read,** are library/05's
   details. **How songs become albums and artists** (album artist, compilations, discs, songs with no
   album) are library/06's grouping rules. Until library/06, songs are grouped by album title and
-  album artist, or artist when there is none.
+  album artist, or artist when there is none. A song keeps its own artist, and a name is never split,
+  so "U2 & Coldplay" is an artist of its own. An artist's albums include those of others they have a
+  song on, and an album artist's songs include those of their albums.
 
 ### Reading the tags: our own parser
 
@@ -200,7 +204,7 @@ A scan has **two passes**, so the device is usable within seconds of the first o
   Pass 2 picks up where it stopped, since the songs it hadn't read are still marked unread.
 - **What starts a scan:**
   - The permission found granted when it wasn't: the first full scan.
-  - The start of the app's process. From API 30, MediaStore's version and generation say whether
+  - The start of the app's process ([ADR-025](025-process-start-tasks.md)). From API 30, MediaStore's version and generation say whether
     anything changed, and only changed items are read. On API 29, pass 1 compares every row, which
     is one query.
   - A `ContentObserver` on MediaStore's audio collection while the process lives, debounced, so a
@@ -400,15 +404,15 @@ misses.
 10. `[convention]` Every table is cache or the user's data. A change to cache tables drops and
     recreates them, and a change to a table of the user's data has a migration tested against the
     exported schema, which is in Git.
-11. `[planned]` `fallbackToDestructiveMigration` is never called. It is in detekt's
-    `ForbiddenMethodCall`, and library/03, which adds Room, checks that it reports a call.
+11. `[enforced]` `fallbackToDestructiveMigration` is never called. It is in detekt's
+    `ForbiddenMethodCall`.
 
 **Conformance.** Rule 2 is the detekt rule `MediaStoreOutsideLibrary` in `build-logic/detekt-rules`,
 with a violating and a passing case, which reports an import of `android.provider.MediaStore` or a
 qualified use of it. That it runs everywhere but `:device:library:local:impl` is its `excludes` in
 `config/detekt/detekt.yml`. Rule 4 is checked by `ModuleRules.kt` when the build is configured, on
 the `androidx.room` and `androidx.sqlite` groups, with a violating and a passing case in
-`ModuleRulesTest`, and holds trivially until library/03. Rule 11 is configured and becomes
-`[enforced]` when library/03 sees it report. The rest are reviewed. Rules 7 and 8 are behavior,
+`ModuleRulesTest`. Rule 11 runs with type resolution, in `detektMain`, which `check` runs, and
+library/03 saw it report a call. The rest are reviewed. Rules 7 and 8 are behavior,
 covered by the tests of the scanner in `:device:library:impl` (library/03, library/05 and library/06),
 and rule 10 by Room's migration tests once there is a table of the user's data.

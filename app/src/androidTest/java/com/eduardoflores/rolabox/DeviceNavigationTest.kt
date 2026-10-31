@@ -338,7 +338,8 @@ class DeviceNavigationTest {
         composeRule.onNode(hasText(text), useUnmergedTree = true).assertDoesNotExist()
     }
 
-    private fun assertHighlighted(text: String) {
+    private fun assertHighlighted(name: String?) {
+        val text = checkNotNull(name) { "The tests' library names everything" }
         composeRule.onNode(isSelected() and hasAnyDescendant(hasText(text)), useUnmergedTree = true).assertExists()
     }
 }

@@ -312,8 +312,8 @@ private suspend fun LibraryRepository.queueOf(source: PlaybackSource): Either<Pl
             is PlaybackSource.ByArtist -> observeSongsByArtist(source.artistId)
             is PlaybackSource.ByAlbum -> observeSongsByAlbum(source.albumId)
         }.first().mapLeft(PlaybackError::Library).bind()
-        val artists = mutableMapOf<ArtistId, String>()
-        val albums = mutableMapOf<AlbumId, String>()
+        val artists = mutableMapOf<ArtistId, String?>()
+        val albums = mutableMapOf<AlbumId, String?>()
         songs.map { song ->
             if (song.artistId !in artists) {
                 artists[song.artistId] = getArtist(song.artistId).mapLeft(PlaybackError::Library).bind().name

@@ -9,8 +9,12 @@ android {
 
 dependencies {
     implementation(project(":device:library:api"))
-    // The debug stand-in library reads its files on the IO dispatcher.
-    debugImplementation(project(":common:util"))
+    implementation(project(":device:library:local:api"))
+    // The scanner runs in the application scope, on the IO dispatcher (ADR-024).
+    implementation(project(":common:util"))
+
+    testImplementation(project(":common:storage:api"))
+    testImplementation(project(":device:library:testing"))
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
 }
