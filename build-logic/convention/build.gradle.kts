@@ -58,6 +58,10 @@ gradlePlugin {
             id = "rolabox.room"
             implementationClass = "RolaboxRoomConventionPlugin"
         }
+        register("androidRobolectric") {
+            id = "rolabox.android.robolectric"
+            implementationClass = "RolaboxAndroidRobolectricConventionPlugin"
+        }
         register("moduleGraph") {
             id = "rolabox.module.graph"
             implementationClass = "RolaboxModuleGraphConventionPlugin"

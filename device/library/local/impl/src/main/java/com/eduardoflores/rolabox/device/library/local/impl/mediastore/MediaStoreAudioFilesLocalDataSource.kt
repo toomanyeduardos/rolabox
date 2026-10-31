@@ -32,10 +32,11 @@ internal class MediaStoreAudioFilesLocalDataSource @Inject constructor(
     @param:ApplicationContext private val context: Context,
     @param:Dispatcher(IO) private val ioDispatcher: CoroutineDispatcher,
 ) : AudioFilesLocalDataSource {
-    override fun hasPermission(): Boolean =
+    override suspend fun getPermissionGranted(): Boolean = withContext(ioDispatcher) {
         context.checkSelfPermission(audioPermission(Build.VERSION.SDK_INT)) == PackageManager.PERMISSION_GRANTED
+    }
 
-    override suspend fun list(): Either<LibraryError, AudioFileListing> = catchNamed(::toLibraryError) {
+    override suspend fun getAudioFiles(): Either<LibraryError, AudioFileListing> = catchNamed(::toLibraryError) {
         withContext(ioDispatcher) {
             // The volumes first: a change during the query is then seen as a change by the next comparison.
             val volumes = volumeStates()

@@ -20,9 +20,9 @@ class FakeAudioFilesLocalDataSource : AudioFilesLocalDataSource {
     var listCount = 0
         private set
 
-    override fun hasPermission(): Boolean = permissionGranted
+    override suspend fun getPermissionGranted(): Boolean = permissionGranted
 
-    override suspend fun list(): Either<LibraryError, AudioFileListing> {
+    override suspend fun getAudioFiles(): Either<LibraryError, AudioFileListing> {
         listCount++
         holdList?.await()
         return listError?.left() ?: AudioFileListing(files, volumes).right()

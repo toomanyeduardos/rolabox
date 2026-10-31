@@ -2,6 +2,7 @@ package com.eduardoflores.rolabox.device.library.impl
 
 import arrow.core.left
 import arrow.core.right
+import com.eduardoflores.rolabox.common.storage.api.StorageError
 import com.eduardoflores.rolabox.device.library.api.AlbumId
 import com.eduardoflores.rolabox.device.library.api.ArtistId
 import com.eduardoflores.rolabox.device.library.api.LibraryError
@@ -12,6 +13,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
@@ -24,11 +26,44 @@ class IndexLibraryRepositoryTest {
     private val files = FakeAudioFilesLocalDataSource()
     private val index = FakeLibraryIndexLocalDataSource()
 
-    private fun TestScope.repository() = IndexLibraryRepository(
-        index,
-        files,
-        LibraryScanner(files, index, backgroundScope, StandardTestDispatcher(testScheduler)),
-    )
+    private fun TestScope.repository(): IndexLibraryRepository {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        return IndexLibraryRepository(
+            index,
+            files,
+            LibraryScanner(files, index, backgroundScope, dispatcher),
+            backgroundScope,
+            dispatcher,
+        )
+    }
+
+    @Test
+    fun beforeTheFirstCheckEnds_theStatusEmitsNothing() = runTest {
+        val repository = repository()
+        var emitted = 0
+        backgroundScope.launch { repository.observeStatus().collect { emitted++ } }
+
+        runCurrent()
+        assertEquals(0, emitted)
+
+        repository.checkPermission()
+        runCurrent()
+        assertEquals(LibraryStatus.Empty.right(), repository.observeStatus().first())
+        assertEquals(true, emitted > 0)
+    }
+
+    @Test
+    fun checkingThePermission_returnsBeforeTheCheckHasRun() = runTest {
+        val repository = repository()
+        var emitted = 0
+        backgroundScope.launch { repository.observeStatus().collect { emitted++ } }
+        runCurrent()
+
+        repository.checkPermission()
+
+        assertEquals(0, emitted)
+        assertEquals(0, files.listCount)
+    }
 
     @Test
     fun withoutThePermission_thePermissionIsMissing_andNothingScans() = runTest {
@@ -79,6 +114,7 @@ class IndexLibraryRepositoryTest {
         files.permissionGranted = false
         val repository = repository()
         repository.checkPermission()
+        runCurrent()
         files.permissionGranted = true
 
         repository.checkPermission()
@@ -98,9 +134,40 @@ class IndexLibraryRepositoryTest {
 
         files.permissionGranted = false
         repository.checkPermission()
+        runCurrent()
 
         assertEquals(LibraryStatus.PermissionMissing.right(), repository.observeStatus().first())
         assertEquals(1, index.songs.size)
+    }
+
+    @Test
+    fun aFailedScanOfAnEmptyIndex_emitsTheError_andEndsTheFlow() = runTest {
+        val error = LibraryError.Storage(StorageError.Unavailable)
+        files.listError = error
+        val repository = repository()
+
+        repository.checkPermission()
+        runCurrent()
+
+        assertEquals(listOf(error.left()), repository.observeStatus().toList())
+    }
+
+    @Test
+    fun aFailedScanWithSongsInTheIndex_isStillReady() = runTest {
+        files.files = listOf(audioFile(1))
+        val repository = repository()
+        repository.checkPermission()
+        runCurrent()
+
+        files.permissionGranted = false
+        repository.checkPermission()
+        runCurrent()
+        files.permissionGranted = true
+        files.listError = LibraryError.Storage(StorageError.Unavailable)
+        repository.checkPermission()
+        runCurrent()
+
+        assertEquals(LibraryStatus.Ready(readingTags = null).right(), repository.observeStatus().first())
     }
 
     @Test

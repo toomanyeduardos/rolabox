@@ -63,8 +63,8 @@ internal class RoomLibraryIndexLocalDataSource @Inject constructor(
     override suspend fun getAlbum(id: AlbumId): Either<LibraryError, Album?> =
         catchNamed(::toLibraryError) { dao.getAlbum(id.value)?.toAlbum() }
 
-    override suspend fun indexedSongs(): Either<LibraryError, List<IndexedSong>> = catchNamed(::toLibraryError) {
-        withContext(ioDispatcher) { dao.indexedSongs().map(IndexedSongRow::toIndexedSong) }
+    override suspend fun getIndexedSongs(): Either<LibraryError, List<IndexedSong>> = catchNamed(::toLibraryError) {
+        withContext(ioDispatcher) { dao.getIndexedSongs().map(IndexedSongRow::toIndexedSong) }
     }
 
     override suspend fun write(batch: IndexBatch): Either<LibraryError, Unit> =

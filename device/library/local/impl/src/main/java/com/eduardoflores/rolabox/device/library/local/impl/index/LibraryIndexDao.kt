@@ -68,7 +68,7 @@ internal interface LibraryIndexDao {
         "SELECT s.*, ar.groupKey AS artistKey, al.groupKey AS albumKey FROM songs s " +
             "JOIN artists ar ON ar.id = s.artistId JOIN albums al ON al.id = s.albumId ORDER BY s.id",
     )
-    suspend fun indexedSongs(): List<IndexedSongRow>
+    suspend fun getIndexedSongs(): List<IndexedSongRow>
 
     @Query("SELECT * FROM scan_state ORDER BY volume")
     suspend fun scanState(): List<ScanStateEntity>

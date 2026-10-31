@@ -39,7 +39,7 @@ interface LibraryIndexLocalDataSource {
     suspend fun getAlbum(id: AlbumId): Either<LibraryError, Album?>
 
     /** Every song as indexed, for a scan to compare with what it found. */
-    suspend fun indexedSongs(): Either<LibraryError, List<IndexedSong>>
+    suspend fun getIndexedSongs(): Either<LibraryError, List<IndexedSong>>
 
     /** Writes [batch] in one transaction, so the lists change once and a killed process leaves a consistent index. */
     suspend fun write(batch: IndexBatch): Either<LibraryError, Unit>

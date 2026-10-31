@@ -239,7 +239,7 @@ class LibraryScannerTest {
     }
 
     @Test
-    fun aFailedListing_writesNothing_andIsNotFinished() = runTest {
+    fun aFailedListing_writesNothing_andSaysWhy() = runTest {
         files.files = listOf(audioFile(1))
         files.listError = LibraryError.Storage(StorageError.Unavailable)
         val scanner = scanner()
@@ -249,7 +249,7 @@ class LibraryScannerTest {
 
         assertTrue(index.indexed.isEmpty())
         assertNull(index.savedScanState)
-        assertEquals(ScanPhase.NotFinished, scanner.phase.value)
+        assertEquals(ScanPhase.Failed(LibraryError.Storage(StorageError.Unavailable)), scanner.phase.value)
     }
 
     @Test

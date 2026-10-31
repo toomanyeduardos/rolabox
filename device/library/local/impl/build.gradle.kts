@@ -1,18 +1,12 @@
 plugins {
     id("rolabox.android.library")
+    id("rolabox.android.robolectric")
     id("rolabox.hilt")
     id("rolabox.room")
 }
 
 android {
     namespace = "com.eduardoflores.rolabox.device.library.local.impl"
-
-    testOptions {
-        // Robolectric reads the module's merged manifest and resources.
-        unitTests.isIncludeAndroidResources = true
-        // Robolectric reads the internals of a FileDescriptor, which the JDK no longer exports.
-        unitTests.all { it.jvmArgs("--add-exports", "java.base/jdk.internal.access=ALL-UNNAMED") }
-    }
 }
 
 dependencies {

@@ -37,11 +37,13 @@ interface LibraryRepository {
 
     suspend fun getAlbum(id: AlbumId): Either<LibraryError, Album>
 
+    /** Emits the error and ends when a scan failed and the index is empty, since there is then nothing to show. */
     fun observeStatus(): Flow<Either<LibraryError, LibraryStatus>>
 
     /**
      * Checks the audio permission again, and starts a scan if it is now granted and wasn't before. The first call
-     * of a process is the scan of that process's start.
+     * of a process is the scan of that process's start. It returns without waiting: [observeStatus] emits once the
+     * first check has ended.
      */
     fun checkPermission()
 }

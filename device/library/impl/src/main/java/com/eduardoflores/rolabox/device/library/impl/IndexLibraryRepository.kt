@@ -4,6 +4,9 @@ import arrow.core.Either
 import arrow.core.flatMap
 import arrow.core.left
 import arrow.core.right
+import com.eduardoflores.rolabox.common.util.ApplicationScope
+import com.eduardoflores.rolabox.common.util.Dispatcher
+import com.eduardoflores.rolabox.common.util.RolaboxDispatchers.IO
 import com.eduardoflores.rolabox.device.library.api.Album
 import com.eduardoflores.rolabox.device.library.api.AlbumId
 import com.eduardoflores.rolabox.device.library.api.Artist
@@ -16,12 +19,16 @@ import com.eduardoflores.rolabox.device.library.local.api.AudioFilesLocalDataSou
 import com.eduardoflores.rolabox.device.library.local.api.LibraryIndexLocalDataSource
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.transformWhile
+import kotlinx.coroutines.launch
 
 /** The library as queries on the index. Only the scanner reads the files (ADR-024, rule 6). */
 @Singleton
@@ -29,8 +36,11 @@ internal class IndexLibraryRepository @Inject constructor(
     private val index: LibraryIndexLocalDataSource,
     private val files: AudioFilesLocalDataSource,
     private val scanner: LibraryScanner,
+    @param:ApplicationScope private val scope: CoroutineScope,
+    @param:Dispatcher(IO) private val ioDispatcher: CoroutineDispatcher,
 ) : LibraryRepository {
-    private val permissionGranted = MutableStateFlow(false)
+    /** Null until the first check ends, so the status never says the permission is missing before it knows. */
+    private val permissionGranted = MutableStateFlow<Boolean?>(null)
 
     override fun observeArtists(): Flow<Either<LibraryError, List<Artist>>> = index.observeArtists()
 
@@ -60,25 +70,29 @@ internal class IndexLibraryRepository @Inject constructor(
         index.getAlbum(id).flatMap { it?.right() ?: LibraryError.AlbumNotFound(id).left() }
 
     override fun observeStatus(): Flow<Either<LibraryError, LibraryStatus>> = combine(
-        permissionGranted,
+        permissionGranted.filterNotNull(),
         scanner.phase,
         index.observeSongCount(),
     ) { granted, phase, count ->
-        count.map { songs -> statusOf(granted, phase, songs) }
+        count.flatMap { songs -> statusOf(granted, phase, songs) }
     }.distinctUntilChanged().endingAtFirstLeft()
 
     override fun checkPermission() {
-        val granted = files.hasPermission()
-        val wasGranted = permissionGranted.getAndUpdate { granted }
-        if (granted && !wasGranted) scanner.start()
+        scope.launch(ioDispatcher) {
+            val granted = files.getPermissionGranted()
+            val wasGranted = permissionGranted.getAndUpdate { granted }
+            if (granted && wasGranted != true) scanner.start()
+        }
     }
 }
 
-private fun statusOf(granted: Boolean, phase: ScanPhase, songs: Int): LibraryStatus = when {
-    !granted -> LibraryStatus.PermissionMissing
-    songs > 0 -> LibraryStatus.Ready(readingTags = null)
-    phase == ScanPhase.Finished -> LibraryStatus.Empty
-    else -> LibraryStatus.Scanning
+// A failed scan matters only while the index is empty: with songs, what it holds stays readable.
+private fun statusOf(granted: Boolean, phase: ScanPhase, songs: Int): Either<LibraryError, LibraryStatus> = when {
+    !granted -> LibraryStatus.PermissionMissing.right()
+    songs > 0 -> LibraryStatus.Ready(readingTags = null).right()
+    phase is ScanPhase.Failed -> phase.error.left()
+    phase == ScanPhase.Finished -> LibraryStatus.Empty.right()
+    else -> LibraryStatus.Scanning.right()
 }
 
 /** [this] list for as long as [owner] exists. When it doesn't, emits [notFound] and ends. */

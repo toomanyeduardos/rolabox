@@ -32,6 +32,9 @@
   Conformance), as [ADR-024](024-library-index.md) decides for the library index (library/01). A
   single database would have to know every part's tables. The decision is unchanged: the local
   database is the source of truth.
+- **Revised 2026-10-31:** Conformance now reflects that the library's index and its first pass are
+  built (library/03), so the gap it noted for the hard-coded library is closed. The decision is
+  unchanged.
 
 ## Context
 
@@ -142,9 +145,8 @@ detailed conflict rules for each type of data.
 8. `[convention]` Play history is stored as append-only events, and aggregates are derived from them.
 9. `[convention]` Every feature works while the user is signed out.
 
-**Conformance.** Room and the library scan don't exist yet. [ADR-024](024-library-index.md)
-designs them, and library/03 builds them. Until then `:device:library:impl` serves hard-coded data
-in memory so the device can be built, and has no database: a temporary gap in these rules. `SyncRepository` syncs preferences from
+**Conformance.** The library is indexed from MediaStore into Room, and the device reads only the
+index ([ADR-024](024-library-index.md), library/03). `SyncRepository` syncs preferences from
 DataStore while the user is signed in and hasn't chosen offline mode
 ([ADR-011](011-preferences-sync.md)). The repository of the preferences reads and writes only
 their local side, `:common:userdata:local`, and only their `Syncer` uses the network side,

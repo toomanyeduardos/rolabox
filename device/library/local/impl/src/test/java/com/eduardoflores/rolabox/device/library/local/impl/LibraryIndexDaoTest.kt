@@ -110,7 +110,7 @@ class LibraryIndexDaoTest {
         val written = write(1, title = null, year = 2001)
         fill(written)
 
-        val song = index.indexedSongs().getOrNull().orEmpty().single()
+        val song = index.getIndexedSongs().getOrNull().orEmpty().single()
 
         assertEquals(written.file, song.file)
         assertEquals(written.metadata, song.metadata)
@@ -221,11 +221,11 @@ class LibraryIndexDaoTest {
     @Test
     fun anUpdate_keepsTheSongsId() = runTest {
         fill(write(1, title = "Old"))
-        val id = index.indexedSongs().getOrNull().orEmpty().single().id
+        val id = index.getIndexedSongs().getOrNull().orEmpty().single().id
 
         fill(write(50, id = id, title = "New"))
 
-        val song = index.indexedSongs().getOrNull().orEmpty().single()
+        val song = index.getIndexedSongs().getOrNull().orEmpty().single()
         assertEquals(id, song.id)
         assertEquals(50, song.file.mediaStoreId)
         assertEquals("New", song.metadata.title.value)
@@ -234,21 +234,21 @@ class LibraryIndexDaoTest {
     @Test
     fun twoSongs_canSwapTheirMediaStoreIdsAcrossBatches() = runTest {
         fill(write(1), write(2))
-        val (first, second) = index.indexedSongs().getOrNull().orEmpty().map { it.id }
+        val (first, second) = index.getIndexedSongs().getOrNull().orEmpty().map { it.id }
 
         fill(write(2, id = first))
         fill(write(1, id = second))
 
         assertEquals(
             listOf(first to 2L, second to 1L),
-            index.indexedSongs().getOrNull().orEmpty().map { it.id to it.file.mediaStoreId },
+            index.getIndexedSongs().getOrNull().orEmpty().map { it.id to it.file.mediaStoreId },
         )
     }
 
     @Test
     fun aRemoval_takesAlbumsAndArtistsNothingUsesAnyMore() = runTest {
         fill(write(1, artist = "A", album = "One"), write(2, artist = "B", album = "Two"))
-        val removed = index.indexedSongs().getOrNull().orEmpty().first { it.file.mediaStoreId == 2L }.id
+        val removed = index.getIndexedSongs().getOrNull().orEmpty().first { it.file.mediaStoreId == 2L }.id
 
         index.write(IndexBatch(removals = listOf(removed)))
 

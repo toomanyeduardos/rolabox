@@ -1,5 +1,6 @@
 plugins {
     id("rolabox.android.library")
+    id("rolabox.android.robolectric")
     id("rolabox.hilt")
 }
 
@@ -9,13 +10,6 @@ android {
     defaultConfig {
         // The service is a Hilt entry point, so the instrumented test runs in Hilt's test application.
         testInstrumentationRunner = "com.eduardoflores.rolabox.common.testing.RolaboxTestRunner"
-    }
-
-    testOptions {
-        // Robolectric reads the module's merged manifest and resources.
-        unitTests.isIncludeAndroidResources = true
-        // Robolectric reads the internals of a FileDescriptor, which the JDK no longer exports.
-        unitTests.all { it.jvmArgs("--add-exports", "java.base/jdk.internal.access=ALL-UNNAMED") }
     }
 }
 

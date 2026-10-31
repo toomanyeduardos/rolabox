@@ -23,19 +23,23 @@ import kotlinx.coroutines.launch
 internal const val SCAN_BATCH_SIZE = 300
 
 /** Where the scans of this process have got to. */
-internal enum class ScanPhase {
-    /** No scan has run, or none has finished. */
-    NotFinished,
-    Running,
+internal sealed interface ScanPhase {
+    /** No scan has started. */
+    data object NotStarted : ScanPhase
+
+    data object Running : ScanPhase
 
     /** A scan finished, so an empty index means there's no music. */
-    Finished,
+    data object Finished : ScanPhase
+
+    /** The last scan ended in [error], so an empty index says nothing about the music. */
+    data class Failed(val error: LibraryError) : ScanPhase
 }
 
 /**
  * Fills the index from the audio files: pass 1 of ADR-024. It runs one scan at a time in the application scope, so
- * it finishes whatever the screens do. A scan that fails leaves what it wrote, which is consistent, and the next
- * start of the process tries again.
+ * it finishes whatever the screens do. A scan that fails leaves what it wrote, which is consistent, and says why in
+ * [phase]. The next start of the process tries again.
  */
 @Singleton
 internal class LibraryScanner @Inject constructor(
@@ -44,7 +48,7 @@ internal class LibraryScanner @Inject constructor(
     @param:ApplicationScope private val scope: CoroutineScope,
     @param:Dispatcher(IO) private val ioDispatcher: CoroutineDispatcher,
 ) {
-    private val mutablePhase = MutableStateFlow(ScanPhase.NotFinished)
+    private val mutablePhase = MutableStateFlow<ScanPhase>(ScanPhase.NotStarted)
     val phase: StateFlow<ScanPhase> = mutablePhase.asStateFlow()
 
     /** Starts a scan, unless one is running. Noticing changes during a scan is library/07's. */
@@ -52,13 +56,13 @@ internal class LibraryScanner @Inject constructor(
         val previous = mutablePhase.getAndUpdate { ScanPhase.Running }
         if (previous == ScanPhase.Running) return
         scope.launch(ioDispatcher) {
-            mutablePhase.value = scan().fold(ifLeft = { previous }, ifRight = { ScanPhase.Finished })
+            mutablePhase.value = scan().fold(ifLeft = ScanPhase::Failed, ifRight = { ScanPhase.Finished })
         }
     }
 
     private suspend fun scan(): Either<LibraryError, Unit> = either {
-        val listing = files.list().bind()
-        val plan = planScan(listing.files, index.indexedSongs().bind())
+        val listing = files.getAudioFiles().bind()
+        val plan = planScan(listing.files, index.getIndexedSongs().bind())
         plan.writes.chunked(SCAN_BATCH_SIZE).forEach { index.write(IndexBatch(writes = it)).bind() }
         plan.removals.chunked(SCAN_BATCH_SIZE).forEach { index.write(IndexBatch(removals = it)).bind() }
         index.saveScanState(listing.volumes).bind()

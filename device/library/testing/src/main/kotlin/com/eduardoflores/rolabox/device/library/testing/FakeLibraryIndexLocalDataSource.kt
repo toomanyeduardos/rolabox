@@ -95,7 +95,7 @@ class FakeLibraryIndexLocalDataSource : LibraryIndexLocalDataSource {
     override suspend fun getAlbum(id: AlbumId): Either<LibraryError, Album?> =
         state.value.albums.values.firstOrNull { it.id == id }.right()
 
-    override suspend fun indexedSongs(): Either<LibraryError, List<IndexedSong>> = indexed.right()
+    override suspend fun getIndexedSongs(): Either<LibraryError, List<IndexedSong>> = indexed.right()
 
     override suspend fun write(batch: IndexBatch): Either<LibraryError, Unit> {
         writeError?.let { return it.left() }
