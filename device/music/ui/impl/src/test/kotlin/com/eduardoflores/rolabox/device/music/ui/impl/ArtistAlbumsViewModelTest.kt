@@ -56,7 +56,7 @@ class ArtistAlbumsViewModelTest {
 
     @Test
     fun title_isTheArtistsName() = runTest {
-        assertEquals("Maren Holt", observedViewModel(MarenHolt.id.value).title.value)
+        assertEquals(ListTitle.Artist("Maren Holt"), observedViewModel(MarenHolt.id.value).title.value)
     }
 
     @Test

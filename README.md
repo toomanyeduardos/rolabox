@@ -182,6 +182,7 @@ and the rules that follow. Most rules are enforced by the build or by tests, not
 | [022](docs/adr/022-data-source-sub-parts.md) | A data part's local and network sides are sub-parts, and the part that owns synced data syncs it |
 | [023](docs/adr/023-playback-engine.md) | Playback with Media3, in a session service that the playback area owns |
 | [024](docs/adr/024-library-index.md) | The library index: MediaStore finds the files, and Rolabox's own database is what the device reads |
+| [025](docs/adr/025-process-start-tasks.md) | Parts run work at process start through a set in `:common:util`, which `:app` runs |
 
 ### Modules
 
@@ -204,14 +205,16 @@ there is something to fake, a `:testing` module.
 | `:device:host` | The device's mechanism: the screen stack inside the display, wheel event routing, and the contract device screens use |
 | `:device:ui:api` | The device's keys and entry contract |
 | `:device:ui:impl` | The device's assembly: its entries, the main menu, what each exit opens, the playback handlers |
-| `:device:library:api` | The music library's API: `LibraryRepository`, `Artist`, `Album`, `Song`, `LibraryError` |
-| `:device:library:impl` | The library, hard-coded and in memory for now (no database yet, ADR-002) |
-| `:device:library:testing` | `FakeLibraryRepository`, and the generated audio fixtures (see [Test audio](#test-audio)) |
+| `:device:library:api` | The music library's API: `LibraryRepository`, `LibraryStatus`, `Artist`, `Album`, `Song`, `LibraryError` |
+| `:device:library:impl` | The repository over the index, the scanner and its triggers, and the grouping |
+| `:device:library:testing` | `FakeLibraryRepository`, fakes of the local sources, and the generated audio fixtures (see [Test audio](#test-audio)) |
+| `:device:library:local:api` | The library's local sources as interfaces: the index and the audio files |
+| `:device:library:local:impl` | The index in Room, the MediaStore queries, and the manifest with the audio permission |
 | `:device:music:ui:api` | The keys and entry contract of the music screens: Music, Artists, an artist's albums, songs |
 | `:device:music:ui:impl` | The music screens and their ViewModels, on the library's data |
 | `:device:settings:api` | The keys of the settings screens, the slots of the settings list, and the contract of a contributed section |
 | `:device:settings:impl` | The settings screens in the display: Settings, Main Menu and About |
-| `:common:util` | Coroutine dispatchers and scopes, helpers that turn exceptions into typed errors |
+| `:common:util` | Coroutine dispatchers and scopes, helpers that turn exceptions into typed errors, and `ProcessStartTask` |
 | `:common:designsystem` | The visual language: theme, shared composables, the device's parts |
 | `:common:testing` | Test-only: Hilt test runner, `MainDispatcherRule` |
 | `:common:storage:api` | Local storage API: `PreferencesStore` (key-value settings), `StorageError` |
@@ -287,6 +290,8 @@ graph TD
     device_host[":device:host"]
     device_library_api[":device:library:api"]
     device_library_impl[":device:library:impl"]
+    device_library_local_api[":device:library:local:api"]
+    device_library_local_impl[":device:library:local:impl"]
     device_library_testing[":device:library:testing"]
     device_music_ui_api[":device:music:ui:api"]
     device_music_ui_impl[":device:music:ui:impl"]
@@ -313,7 +318,9 @@ graph TD
     app --> common_userdata_impl
     app --> common_userdata_local_impl
     app --> common_userdata_network_impl
+    app --> common_util
     app --> device_library_impl
+    app --> device_library_local_impl
     app --> device_music_ui_impl
     app --> device_playback_impl
     app --> device_playback_ui_impl
@@ -372,14 +379,23 @@ graph TD
     common_userdata_testing --> common_userdata_network_api
     device_host --> common_designsystem
     device_library_api --> common_storage_api
+    device_library_impl --> common_util
     device_library_impl --> device_library_api
+    device_library_impl --> device_library_local_api
+    device_library_local_api --> device_library_api
+    device_library_local_impl --> common_storage_api
+    device_library_local_impl --> common_util
+    device_library_local_impl --> device_library_api
+    device_library_local_impl --> device_library_local_api
     device_library_testing --> common_storage_api
     device_library_testing --> device_library_api
+    device_library_testing --> device_library_local_api
     device_music_ui_impl --> common_designsystem
     device_music_ui_impl --> device_host
     device_music_ui_impl --> device_library_api
     device_music_ui_impl --> device_music_ui_api
     device_playback_api --> device_library_api
+    device_playback_impl --> common_designsystem
     device_playback_impl --> common_util
     device_playback_impl --> device_library_api
     device_playback_impl --> device_playback_api
@@ -387,7 +403,6 @@ graph TD
     device_playback_testing --> device_playback_api
     device_playback_ui_impl --> common_designsystem
     device_playback_ui_impl --> device_host
-    device_playback_ui_impl --> device_library_api
     device_playback_ui_impl --> device_playback_api
     device_playback_ui_impl --> device_playback_ui_api
     device_settings_impl --> common_designsystem
@@ -467,6 +482,7 @@ title is made up.
 | `clean` | Full tags and cover art, laid out as `Artist/Album/NN - Title.ext`, with an album on two discs |
 | `broken` | One case per file: no tags, ID3v1 only, ID3v2.3 and v2.4, Latin-1, Windows-1252 and UTF-16 text, missing albums, wrong track numbers, genres as `(17)`, `17` and several, a compilation, two albums with one title, the same song twice, files dumped in one folder or named only by their file name, a text file named `.mp3`, and truncated files |
 | `formats` | CBR and VBR, MPEG-1 and MPEG-2, mono, 32 to 48 kHz, a 4-minute song, and M4A with its index first and last |
+| `large` | 10,000 very short files by 200 artists, to time a scan. Only pushed by name, not with `all` |
 
 **In a unit test**, depend on the module from a test configuration
 (`testImplementation(project(":device:library:testing"))`) and write a set to a temporary folder,
@@ -486,17 +502,20 @@ can compare what it reads with what was written.
 ./gradlew :device:library:testing:pushAudioFixtures -Pset=broken
 ```
 
-`-Pset` is `clean`, `broken`, `formats` or `all`, or the path of a folder of your own music to push
+`-Pset` is `clean`, `broken`, `formats`, `large` or `all`, or the path of a folder of your own music to push
 instead. Each set goes to `/sdcard/Music/RolaboxFixtures/<set>` and replaces an earlier push of it.
 MediaStore then scans the folder, which takes up to half a minute after the task returns. With
 several devices connected, set `ANDROID_SERIAL`. The audio is silent, so to hear playback, push a
 folder of real music.
 
-The debug build's library is what was pushed: until the library's index exists (library/03), the
-task also copies each set into the installed debug app's own files, and the debug build lists them
-there, so they play. It needs no permission to read its own files. Install the debug app before
-pushing, and push again after uninstalling it, which deletes that copy. The release build keeps the
-made-up sample library, which plays nothing.
+The app finds what was pushed through MediaStore at its next start. Until the device asks for the
+permission (library/04), grant it in system settings, or with `adb`, and restart the app:
+
+```bash
+adb shell pm grant com.eduardoflores.rolabox android.permission.READ_MEDIA_AUDIO
+```
+
+Below API 33, the permission is `android.permission.READ_EXTERNAL_STORAGE`.
 
 **No audio but the UI sounds ships.** After `assembleRelease` and `bundleRelease`, and in
 `./gradlew check`, the build inspects the packaged release and fails if it holds any audio other

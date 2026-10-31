@@ -70,7 +70,7 @@ abstract class TestPlaybackModule {
     abstract fun bindsPlaybackController(fake: FakePlayback): PlaybackController
 }
 
-// The debug build's library reads the files on the phone, so the tests bring their own.
+// The real library reads the files on the phone, so the tests bring their own.
 @Module
 @TestInstallIn(components = [SingletonComponent::class], replaces = [LibraryModule::class])
 object TestLibraryModule {

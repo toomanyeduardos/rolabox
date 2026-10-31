@@ -72,6 +72,8 @@
   read strictly it contradicted ADR-005 rule 4, which puts the `@TestInstallIn` modules in `:app`'s
   test sources, where they have to name what they replace. Binding playback and the library's fakes
   (playback/02) showed it. The decision is unchanged.
+- **Revised 2026-10-31:** The in-memory library is gone (Left open): library/03 replaced it with the
+  index of [ADR-024](024-library-index.md). The decision is unchanged.
 
 ## Context
 
@@ -318,8 +320,8 @@ This ADR doesn't decide, and its module list isn't complete for:
   playback/02 replaces it.
 - **Where Room's database, entities and DAOs live** is no longer open:
   [ADR-024](024-library-index.md) puts the library's in `:device:library:local:impl`, and gives
-  each part that keeps relational data a database of its own. The in-memory library stays until
-  library/03 replaces it.
+  each part that keeps relational data a database of its own. It replaced the in-memory library in
+  library/03.
 - **`:device:data`,** which doesn't exist until the device has data of its own.
 - **Search and podcasts.**
 

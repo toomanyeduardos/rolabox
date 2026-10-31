@@ -31,9 +31,9 @@ internal sealed interface NowPlayingUiState {
      * the level from 0 to 100 that the bar shows in [NowPlayingMode.Volume].
      */
     data class Playing(
-        val title: String,
-        val artist: String,
-        val album: String,
+        val title: String?,
+        val artist: String?,
+        val album: String?,
         val number: Int,
         val count: Int,
         val position: Duration,

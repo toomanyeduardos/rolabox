@@ -7,6 +7,9 @@
     <string name="music_menu_genres">Genres</string>
     <string name="music_menu_playlists">Playlists</string>
     <string name="music_all_songs">All Songs</string>
+    <string name="music_unknown_artist">Unknown artist</string>
+    <string name="music_unknown_album">Unknown album</string>
+    <string name="music_unknown_song">Unknown song</string>
     <string name="music_no_artists">No artists</string>
     <string name="music_no_albums">No albums</string>
     <string name="music_no_songs">No songs</string>

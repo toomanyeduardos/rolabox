@@ -21,5 +21,5 @@ internal abstract class SongsViewModel : ViewModel() {
      * The screen's title: the album's name, or the artist's for all of their songs. `null` until it is read,
      * and when it can't be.
      */
-    abstract val title: StateFlow<String?>
+    abstract val title: StateFlow<ListTitle?>
 }

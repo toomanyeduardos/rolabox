@@ -73,12 +73,15 @@ class SongsViewModelTest {
 
     @Test
     fun title_ofAnAlbum_isTheAlbumsName() = runTest {
-        assertEquals("Paper Satellites", observedViewModel(SongsSource.Album(PaperSatellites.id)).title.value)
+        assertEquals(
+            ListTitle.Album("Paper Satellites"),
+            observedViewModel(SongsSource.Album(PaperSatellites.id)).title.value,
+        )
     }
 
     @Test
     fun title_ofAllSongsOfAnArtist_isTheArtistsName() = runTest {
-        assertEquals("Maren Holt", observedViewModel(SongsSource.Artist(MarenHolt.id)).title.value)
+        assertEquals(ListTitle.Artist("Maren Holt"), observedViewModel(SongsSource.Artist(MarenHolt.id)).title.value)
     }
 
     @Test

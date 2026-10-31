@@ -154,21 +154,21 @@ private fun SongNames(state: NowPlayingUiState.Playing, modifier: Modifier = Mod
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            state.title,
+            state.title ?: stringResource(R.string.now_playing_unknown_title),
             style = RolaboxType.styles.displayHeadline,
             textAlign = TextAlign.Center,
             maxLines = TITLE_MAX_LINES,
             overflow = TextOverflow.Ellipsis,
         )
         Text(
-            state.artist,
+            state.artist ?: stringResource(R.string.now_playing_unknown_artist),
             style = RolaboxType.styles.displayBody,
             textAlign = TextAlign.Center,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
         Text(
-            state.album,
+            state.album ?: stringResource(R.string.now_playing_unknown_album),
             style = RolaboxType.styles.displayCaption,
             textAlign = TextAlign.Center,
             maxLines = 1,

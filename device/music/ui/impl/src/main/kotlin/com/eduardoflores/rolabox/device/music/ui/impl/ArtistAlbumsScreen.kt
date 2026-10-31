@@ -23,9 +23,10 @@ internal fun ArtistAlbumsRoute(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val title by viewModel.title.collectAsStateWithLifecycle()
     val allSongs = stringResource(R.string.music_all_songs)
-    ScreenTitle(title)
+    val unknownAlbum = stringResource(R.string.music_unknown_album)
+    ScreenTitle(title.label())
     WheelList(
-        state = state.withAllSongs(allSongs),
+        state = state.withAllSongs(allSongs, unknownAlbum),
         emptyText = stringResource(R.string.music_no_albums),
         onCenter = { index ->
             if (index == ALL_SONGS_INDEX) {
@@ -40,12 +41,15 @@ internal fun ArtistAlbumsRoute(
 private const val ALL_SONGS_INDEX = 0
 
 /** The rows of the albums screen: "All Songs", which an artist always has, and then their albums. */
-internal fun ListUiState<Album>.withAllSongs(allSongsLabel: String): ListUiState<DeviceListRow> = when (this) {
+internal fun ListUiState<Album>.withAllSongs(
+    allSongsLabel: String,
+    unknownAlbumLabel: String,
+): ListUiState<DeviceListRow> = when (this) {
     ListUiState.Loading -> ListUiState.Loading
 
     is ListUiState.Loaded -> ListUiState.Loaded(
         listOf(DeviceListRow(allSongsLabel, opensSubmenu = true)) +
-            items.map { DeviceListRow(it.title, opensSubmenu = true) },
+            items.map { DeviceListRow(it.title ?: unknownAlbumLabel, opensSubmenu = true) },
     )
 
     ListUiState.Failed -> ListUiState.Failed

@@ -11,6 +11,8 @@ import com.eduardoflores.rolabox.device.library.testing.audio.FixtureContent.Mp3
  * - [broken]: the tags and layouts real libraries have, one case per file.
  * - [formats]: the same tags over the encodings a phone meets: bitrates, sample rates, VBR, mono, and
  *   M4A with its index first and last.
+ * - [large]: a library of 10,000 small files, to time a scan. It is left out of [sets], since writing it takes a
+ *   while: only asking for it by name does.
  */
 object AudioFixtures {
     val clean: AudioFixtureSet = AudioFixtureSet("clean", cleanFixtures())
@@ -21,7 +23,9 @@ object AudioFixtures {
 
     val sets: List<AudioFixtureSet> = listOf(clean, broken, formats)
 
-    fun named(name: String): AudioFixtureSet? = sets.firstOrNull { it.name == name }
+    val large: AudioFixtureSet by lazy { AudioFixtureSet("large", largeFixtures()) }
+
+    fun named(name: String): AudioFixtureSet? = if (name == "large") large else sets.firstOrNull { it.name == name }
 }
 
 internal const val AURORA_LANE = "Aurora Lane"
@@ -125,6 +129,26 @@ private fun album(
         },
         case = "clean: ${format.extension}, full tags",
     )
+}
+
+private const val LARGE_ARTISTS = 200
+private const val LARGE_ALBUMS_PER_ARTIST = 5
+private const val LARGE_SONGS_PER_ALBUM = 10
+private const val LARGE_SONG_MS = 100
+
+private fun largeFixtures(): List<AudioFixture> {
+    val stream = Mp3Stream(durationMs = LARGE_SONG_MS)
+    return (1..LARGE_ARTISTS).flatMap { artistNumber ->
+        val artist = "Large Artist $artistNumber"
+        (1..LARGE_ALBUMS_PER_ARTIST).flatMap { albumNumber ->
+            val album = "Album $albumNumber of $artist"
+            (1..LARGE_SONGS_PER_ALBUM).map { track ->
+                val title = "Song $track of $album"
+                val tags = Tags(title = title, artist = artist, album = album, albumArtist = artist, track = "$track")
+                AudioFixture("$artist/$album/$track - $title.mp3", id3v24(tags, stream), "large: one of many")
+            }
+        }
+    }
 }
 
 internal fun id3v24(tags: Tags, stream: Mp3Stream = Mp3Stream()) =

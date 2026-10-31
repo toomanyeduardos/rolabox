@@ -33,3 +33,4 @@ New ADR: copy [`template.md`](template.md), take the next number, and add it to 
 | [022](022-data-source-sub-parts.md) | A data part's local and network sides are sub-parts, and the part that owns synced data syncs it | Accepted |
 | [023](023-playback-engine.md) | Playback with Media3, in a session service that the playback area owns | Accepted |
 | [024](024-library-index.md) | The library index: MediaStore finds the files, and Rolabox's own database is what the device reads | Accepted |
+| [025](025-process-start-tasks.md) | Parts run work at process start through a set in `:common:util`, which `:app` runs | Accepted |
