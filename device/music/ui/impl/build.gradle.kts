@@ -13,6 +13,8 @@ dependencies {
     // The data of the screens (ADR-020: a part with screens reaches data through a data part's :api).
     implementation(project(":device:library:api"))
 
+    // Asking for the audio permission needs an Activity (ADR-009).
+    implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
 

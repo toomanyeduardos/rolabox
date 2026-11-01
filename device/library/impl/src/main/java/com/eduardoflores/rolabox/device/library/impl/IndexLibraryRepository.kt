@@ -31,6 +31,7 @@ import kotlinx.coroutines.flow.transformWhile
 import kotlinx.coroutines.launch
 
 /** The library as queries on the index. Only the scanner reads the files (ADR-024, rule 6). */
+@Suppress("TooManyFunctions") // One for each function of the repository.
 @Singleton
 internal class IndexLibraryRepository @Inject constructor(
     private val index: LibraryIndexLocalDataSource,
@@ -84,6 +85,10 @@ internal class IndexLibraryRepository @Inject constructor(
             if (granted && wasGranted != true) scanner.start()
         }
     }
+
+    override fun observePermissionAsked(): Flow<Either<LibraryError, Boolean>> = files.observePermissionAsked()
+
+    override suspend fun setPermissionAsked(): Either<LibraryError, Unit> = files.setPermissionAsked()
 }
 
 // A failed scan matters only while the index is empty: with songs, what it holds stays readable.

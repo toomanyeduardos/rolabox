@@ -53,6 +53,16 @@ class IndexLibraryRepositoryTest {
     }
 
     @Test
+    fun thePermissionAsked_isNotSetUntilTheDeviceSaysSo() = runTest {
+        val repository = repository()
+        assertEquals(false.right(), repository.observePermissionAsked().first())
+
+        repository.setPermissionAsked()
+
+        assertEquals(true.right(), repository.observePermissionAsked().first())
+    }
+
+    @Test
     fun checkingThePermission_returnsBeforeTheCheckHasRun() = runTest {
         val repository = repository()
         var emitted = 0

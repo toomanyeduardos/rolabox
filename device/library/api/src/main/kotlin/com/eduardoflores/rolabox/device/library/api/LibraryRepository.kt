@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.Flow
  *
  * Any read can fail, because the library may be kept anywhere. A `Left` ends the flow.
  */
+@Suppress("TooManyFunctions") // The library's reads, and its one permission flow, stay in one place (ADR-024).
 interface LibraryRepository {
     fun observeArtists(): Flow<Either<LibraryError, List<Artist>>>
 
@@ -46,4 +47,10 @@ interface LibraryRepository {
      * first check has ended.
      */
     fun checkPermission()
+
+    /** Whether the device has asked the user for the audio permission on this install. A `Left` ends the flow. */
+    fun observePermissionAsked(): Flow<Either<LibraryError, Boolean>>
+
+    /** Records that the device has asked for the audio permission. It stays on this phone, and isn't synced. */
+    suspend fun setPermissionAsked(): Either<LibraryError, Unit>
 }

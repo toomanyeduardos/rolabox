@@ -33,6 +33,8 @@ class FakeLibraryRepository @Inject constructor() : LibraryRepository {
 
     private val statusState = MutableStateFlow<LibraryStatus>(LibraryStatus.Ready(readingTags = null))
 
+    private val permissionAskedState = MutableStateFlow(false)
+
     private val readError = MutableStateFlow<StorageError?>(null)
 
     /** How many times [checkPermission] was called. */
@@ -61,6 +63,12 @@ class FakeLibraryRepository @Inject constructor() : LibraryRepository {
         get() = statusState.value
         set(value) {
             statusState.value = value
+        }
+
+    var permissionAsked: Boolean
+        get() = permissionAskedState.value
+        set(value) {
+            permissionAskedState.value = value
         }
 
     /** Makes every read fail with [error], and the observed flows emit it and end. */
@@ -111,6 +119,14 @@ class FakeLibraryRepository @Inject constructor() : LibraryRepository {
 
     override fun checkPermission() {
         permissionChecks++
+    }
+
+    override fun observePermissionAsked(): Flow<Either<LibraryError, Boolean>> =
+        permissionAskedState.read { it.right() }
+
+    override suspend fun setPermissionAsked(): Either<LibraryError, Unit> {
+        permissionAsked = true
+        return Unit.right()
     }
 
     private fun <S, T> Flow<S>.read(transform: (S) -> Either<LibraryError, T>): Flow<Either<LibraryError, T>> =
