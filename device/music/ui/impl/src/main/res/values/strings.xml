@@ -13,5 +13,12 @@
     <string name="music_no_artists">No artists</string>
     <string name="music_no_albums">No albums</string>
     <string name="music_no_songs">No songs</string>
+    <string name="music_permission_denied">Allow music access to browse your songs. Select to ask again.</string>
+    <string name="music_permission_permanently_denied">Allow music access in Settings. Select to open Settings.</string>
+    <string name="music_scanning_title">Looking for music</string>
+    <string name="music_scanning_body">This can take a minute with a large library.</string>
+    <string name="music_empty_title">No music found</string>
+    <string name="music_empty_body">Copy music files onto this phone. Rolabox looks for new music each time it opens.</string>
+    <string name="music_reading_tags">Reading song details</string>
     <string name="music_library_unavailable">Can\'t read the music library</string>
 </resources>

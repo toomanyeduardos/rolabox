@@ -1,3 +1,5 @@
+@file:Suppress("TooManyFunctions") // One for each state of the screens (ADR-016).
+
 package com.eduardoflores.rolabox.device.music.ui.impl
 
 import androidx.compose.foundation.layout.Box
@@ -9,6 +11,7 @@ import com.eduardoflores.rolabox.common.designsystem.component.DeviceListRow
 import com.eduardoflores.rolabox.common.designsystem.component.PreviewLightDark
 import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxTheme
 import com.eduardoflores.rolabox.device.host.DeviceScreen
+import com.eduardoflores.rolabox.device.library.api.Progress
 
 // The screens as the designs show them (player-designs/device), on the assembled device. They call
 // the stateless composables with explicit state (ADR-016, rule 3).
@@ -34,7 +37,39 @@ private fun DevicePreview(title: String, content: @Composable () -> Unit) {
 
 @PreviewLightDark
 @Composable
-private fun MusicMenuPreview() = DevicePreview(title = "Music") { MusicMenu(highlightedIndex = 0) }
+private fun MusicMenuPreview() = DevicePreview(title = "Music") {
+    MusicMenuScreen(MusicMenuUiState.Menu(readingTags = null), highlightedIndex = 0)
+}
+
+@PreviewLightDark
+@Composable
+private fun PermissionDeniedPreview() = DevicePreview(title = "Music") {
+    MusicMenuScreen(MusicMenuUiState.PermissionDenied, highlightedIndex = 0)
+}
+
+@PreviewLightDark
+@Composable
+private fun PermissionPermanentlyDeniedPreview() = DevicePreview(title = "Music") {
+    MusicMenuScreen(MusicMenuUiState.PermissionPermanentlyDenied, highlightedIndex = 0)
+}
+
+@PreviewLightDark
+@Composable
+private fun FirstScanPreview() = DevicePreview(title = "Music") {
+    MusicMenuScreen(MusicMenuUiState.Scanning, highlightedIndex = 0)
+}
+
+@PreviewLightDark
+@Composable
+private fun NoMusicPreview() = DevicePreview(title = "Music") {
+    MusicMenuScreen(MusicMenuUiState.Empty, highlightedIndex = 0)
+}
+
+@PreviewLightDark
+@Composable
+private fun ReadingTagsPreview() = DevicePreview(title = "Music") {
+    MusicMenuScreen(MusicMenuUiState.Menu(readingTags = Progress(done = 40, total = 100)), highlightedIndex = 0)
+}
 
 @PreviewLightDark
 @Composable

@@ -12,6 +12,7 @@ import android.provider.MediaStore
 import android.provider.MediaStore.Audio.AudioColumns
 import androidx.annotation.VisibleForTesting
 import arrow.core.Either
+import com.eduardoflores.rolabox.common.storage.api.PreferencesStore
 import com.eduardoflores.rolabox.common.storage.api.StorageError
 import com.eduardoflores.rolabox.common.util.Dispatcher
 import com.eduardoflores.rolabox.common.util.RolaboxDispatchers.IO
@@ -25,16 +26,27 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.IOException
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 /** MediaStore's audio collection, on every volume at once. Only this module knows its columns (ADR-024, rule 2). */
 internal class MediaStoreAudioFilesLocalDataSource @Inject constructor(
     @param:ApplicationContext private val context: Context,
+    private val preferences: PreferencesStore,
     @param:Dispatcher(IO) private val ioDispatcher: CoroutineDispatcher,
 ) : AudioFilesLocalDataSource {
     override suspend fun getPermissionGranted(): Boolean = withContext(ioDispatcher) {
         context.checkSelfPermission(audioPermission(Build.VERSION.SDK_INT)) == PackageManager.PERMISSION_GRANTED
     }
+
+    override fun observePermissionAsked(): Flow<Either<LibraryError, Boolean>> =
+        preferences.observeString(PERMISSION_ASKED_KEY).map { stored ->
+            stored.mapLeft(LibraryError::Storage).map { it != null }
+        }
+
+    override suspend fun setPermissionAsked(): Either<LibraryError, Unit> =
+        preferences.setString(PERMISSION_ASKED_KEY, "true").mapLeft(LibraryError::Storage)
 
     override suspend fun getAudioFiles(): Either<LibraryError, AudioFileListing> = catchNamed(::toLibraryError) {
         withContext(ioDispatcher) {
@@ -52,6 +64,8 @@ internal class MediaStoreAudioFilesLocalDataSource @Inject constructor(
         }
     }
 }
+
+private const val PERMISSION_ASKED_KEY = "library_audio_permission_asked"
 
 internal fun audioPermission(sdk: Int): String = if (sdk >= Build.VERSION_CODES.TIRAMISU) {
     Manifest.permission.READ_MEDIA_AUDIO

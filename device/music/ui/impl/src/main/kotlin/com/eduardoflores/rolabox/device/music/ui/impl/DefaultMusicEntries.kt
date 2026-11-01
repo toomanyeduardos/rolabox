@@ -27,7 +27,9 @@ internal class DefaultMusicEntries @Inject constructor() : MusicEntries {
         onAlbumClick: (albumId: Long) -> Unit,
         onSongClick: (songId: Long) -> Unit,
     ) = with(scope) {
-        entry<MusicMenuKey> { MusicMenuRoute(onArtistsClick = onArtistsClick) }
+        entry<MusicMenuKey> {
+            MusicMenuRoute(viewModel = hiltViewModel<MusicMenuViewModelImpl>(), onArtistsClick = onArtistsClick)
+        }
         entry<ArtistsKey> {
             ArtistsRoute(viewModel = hiltViewModel<ArtistsViewModelImpl>(), onArtistClick = onArtistClick)
         }

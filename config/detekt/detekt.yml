@@ -145,6 +145,7 @@ rolabox:
       - 'DeviceMessage'
       - 'DeviceProgressBar'
       - 'ProgressBarMode'
+      - 'DeviceThinProgressBar'
       - 'DeviceCoverArtPlaceholder'
       - 'DeviceLetterOverlay'
   DeviceDisplayOutsideHost:

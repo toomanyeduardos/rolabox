@@ -8,6 +8,10 @@
   `[enforced]`. Until library/06, a song's artist is its own, and missing values are `null` through
   the part's `:api`. The start of the process reaches the library through ADR-025. The scan state is
   kept per volume, since MediaStore's generations are.
+- **Revised 2026-10-31:** `LibraryRepository` also keeps whether the device has asked for the permission
+  (What `LibraryRepository` becomes). Building library/04 showed that Android's rationale check is false
+  both before the first ask and after a permanent denial, so the device can't tell them apart without
+  it. Who asks is unchanged. The `LibraryStatus` cases keep their names.
 
 ## Context
 
@@ -239,6 +243,9 @@ A scan has **two passes**, so the device is usable within seconds of the first o
 - **It gains a call that checks the permission again,** for the device to make after its request
   returns and when it comes back to the foreground while the permission is missing. When the
   permission is granted, the call starts a scan.
+- **It keeps whether the device has asked for the permission,** which the audio files' local source
+  stores in `:common:storage`, on this phone and unsynced. Asking stays the UI's. The flag is what tells
+  "not asked yet" from "Android won't ask again", which Android's own check doesn't.
 - **`SampleLibrary` and `InMemoryLibraryRepository` are deleted** when library/03 binds the
   index-backed repository, with playback/02's stand-in library of tones. Tests and previews already
   use `FakeLibraryRepository`, which follows each change of the `:api`.
