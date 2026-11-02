@@ -16,8 +16,12 @@ import com.eduardoflores.rolabox.device.host.ScreenTitle
 internal fun ArtistsRoute(viewModel: ArtistsViewModel, onArtistClick: (artistId: Long) -> Unit) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val unknownArtist = stringResource(R.string.music_unknown_artist)
-    val rows = remember(state, unknownArtist) {
-        state.map { DeviceListRow(it.name ?: unknownArtist, opensSubmenu = true) }
+    val variousArtists = stringResource(R.string.music_various_artists)
+    val rows = remember(state, unknownArtist, variousArtists) {
+        state.map { artist ->
+            val label = artist.name ?: if (artist.isVarious) variousArtists else unknownArtist
+            DeviceListRow(label, opensSubmenu = true)
+        }
     }
     ScreenTitle(stringResource(R.string.music_artists_title))
     WheelList(

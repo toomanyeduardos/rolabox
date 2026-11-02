@@ -1,19 +1,12 @@
 package com.eduardoflores.rolabox.device.library.impl
 
-import com.eduardoflores.rolabox.device.library.api.SongId
-import com.eduardoflores.rolabox.device.library.local.api.AlbumGroup
-import com.eduardoflores.rolabox.device.library.local.api.ArtistGroup
 import com.eduardoflores.rolabox.device.library.local.api.AudioFile
 import com.eduardoflores.rolabox.device.library.local.api.FieldSource
 import com.eduardoflores.rolabox.device.library.local.api.FileTags
 import com.eduardoflores.rolabox.device.library.local.api.IndexedSong
 import com.eduardoflores.rolabox.device.library.local.api.SongFile
 import com.eduardoflores.rolabox.device.library.local.api.SongMetadata
-import com.eduardoflores.rolabox.device.library.local.api.SongWrite
 import com.eduardoflores.rolabox.device.library.local.api.Sourced
-
-/** Between the title and the artist in an album's key. It can't be typed in a tag by accident. */
-private const val KEY_SEPARATOR = '\u001F'
 
 /**
  * Pass 1: each field takes the best value that doesn't need the file opened (ADR-024, rule 7). When a file has no
@@ -97,46 +90,20 @@ private fun <T : Any> Sourced<T>.orStronger(read: Sourced<T>): Sourced<T> =
     if (read.source.ordinal < source.ordinal) read else this
 
 /**
- * The write of [this] file as pass 1 sees it. While [song] was read at the file's current date, what the tags said
- * stays. A file that changed since then is read again by pass 2, and what its old tags said is gone.
+ * [this] file as pass 1 sees it. While [song] was read at the file's current date, what the tags said stays. A file
+ * that changed since then is read again by pass 2, and what its old tags said is gone.
  */
-internal fun AudioFile.toWrite(song: IndexedSong?): SongWrite {
+internal fun AudioFile.toDraft(song: IndexedSong?): SongDraft {
     val read = song?.takeIf { it.tagsReadAt == file.dateModified }
     val metadata = if (read != null) toMetadata().keepingStronger(read.metadata) else toMetadata()
-    return songWrite(song?.id, file, metadata, read?.hasEmbeddedPicture, read?.tagsReadAt)
+    return SongDraft(song?.id, file, metadata, read?.hasEmbeddedPicture, read?.tagsReadAt)
 }
 
-/** The write of [this] song once its tags have been read, or [tags] null when they couldn't be. */
-internal fun IndexedSong.toWriteAfterReading(tags: FileTags?): SongWrite = songWrite(
+/** [this] song once its tags have been read, or [tags] null when they couldn't be. */
+internal fun IndexedSong.toDraftAfterReading(tags: FileTags?) = SongDraft(
     id = id,
     file = file,
     metadata = if (tags != null) metadata.withTags(tags) else metadata,
     hasEmbeddedPicture = tags?.hasEmbeddedPicture,
     tagsReadAt = file.dateModified,
 )
-
-/**
- * Until library/06's grouping rules, an album is its title and its album artist, or its artist when there is none.
- * The song stays with its own artist, and a missing name is a group of its own.
- */
-private fun songWrite(
-    id: SongId?,
-    file: SongFile,
-    metadata: SongMetadata,
-    hasEmbeddedPicture: Boolean?,
-    tagsReadAt: Long?,
-): SongWrite {
-    val albumArtist = artistGroup(metadata.albumArtist.value ?: metadata.artist.value)
-    val albumKey = "${metadata.album.value.orEmpty()}$KEY_SEPARATOR${albumArtist.key}"
-    return SongWrite(
-        id = id,
-        file = file,
-        metadata = metadata,
-        artist = artistGroup(metadata.artist.value),
-        album = AlbumGroup(albumKey, metadata.album.value, metadata.year.value, albumArtist),
-        hasEmbeddedPicture = hasEmbeddedPicture,
-        tagsReadAt = tagsReadAt,
-    )
-}
-
-private fun artistGroup(name: String?) = ArtistGroup(name.orEmpty(), name)

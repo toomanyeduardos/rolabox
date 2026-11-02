@@ -68,8 +68,17 @@ data class SongMetadata(
     val durationMillis: Sourced<Long>,
 )
 
-/** An artist as the index finds it: by [key], which keeps its id across rescans. */
-data class ArtistGroup(val key: String, val name: String?)
+/**
+ * An artist as the index finds it: by [key], which keeps its id across rescans. [sortName] is what the list sorts by,
+ * and is null only for the unknown artist. [isVarious] is the row of Various Artists, whose [name] is null too: the
+ * screens give both names (ADR-024, Grouping).
+ */
+data class ArtistGroup(
+    val key: String,
+    val name: String?,
+    val sortName: String? = name?.lowercase(),
+    val isVarious: Boolean = false,
+)
 
 /** An album as the index finds it: by [key], which keeps its id across rescans. */
 data class AlbumGroup(val key: String, val title: String?, val year: Int?, val artist: ArtistGroup)
@@ -86,9 +95,10 @@ data class IndexedSong(
     val albumKey: String,
     val hasEmbeddedPicture: Boolean? = null,
     val tagsReadAt: Long? = null,
+    val isDuplicate: Boolean = false,
 )
 
-/** A song to add, when [id] is null, or to update. */
+/** A song to add, when [id] is null, or to update. An [isDuplicate] song keeps its row, and no list shows it. */
 data class SongWrite(
     val id: SongId?,
     val file: SongFile,
@@ -97,6 +107,7 @@ data class SongWrite(
     val album: AlbumGroup,
     val hasEmbeddedPicture: Boolean? = null,
     val tagsReadAt: Long? = null,
+    val isDuplicate: Boolean = false,
 )
 
 /** What one transaction of the index writes. Albums and artists left with no song go with it. */

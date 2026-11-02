@@ -17,6 +17,12 @@
   the folder and the file name are read, and that MediaStore's own guesses from them don't count as
   MediaStore's values (Metadata). An MP3's duration from the parser is the `TLEN` frame, so "the stream's
   header" is `mvhd` for MP4 only, and the parser stays in the tags' bytes.
+- **Revised 2026-11-02:** library/06 took the grouping rules this ADR left to it (Grouping, rule 12). A
+  scan now groups the whole library after each batch, since what an album is depends on all its songs.
+  `Artist` gains `isVarious`, and `songs` gains `isDuplicate` and `artists` a `sortName`, as a change to
+  cache tables. The list of artists sorts without a leading "The", which 39.10's fast-scroll letter
+  follows. It had sorted by the whole name, so that part of the ticket's "as the library does today" was
+  new. An album that is gone while it is open says so in the display.
 
 ## Context
 
@@ -172,11 +178,46 @@ Each field of a song takes its value from the first of these that has one:
 - **"Unknown" is never stored as text.** The words the user sees ("Unknown album") are the screens',
   in strings that can be translated. The library sorts and groups a missing value as a value of its
   own.
-- **How songs become albums and artists** (album artist, compilations, discs, songs with no
-  album) are library/06's grouping rules. Until library/06, songs are grouped by album title and
-  album artist, or artist when there is none. A song keeps its own artist, and a name is never split,
-  so "U2 & Coldplay" is an artist of its own. An artist's albums include those of others they have a
-  song on, and an album artist's songs include those of their albums.
+
+### Grouping: how songs become albums and artists
+
+The rules are in `:device:library:impl`, and run over the whole library after each batch of a scan.
+
+- **Two names are one if they differ only in case or whitespace.** That is the artist's key. The row shows
+  the spelling on most songs, and it can change while the key and the id stay. Album titles follow the
+  same rule.
+- **"The Beatles" and "Beatles" are two artists,** as they very likely were on the player the device is
+  drawn after, whose name for an artist was its tag. They sort together: the list of artists sorts by a
+  name without a leading "The", so both are with the B's, and so is the fast-scroll letter. An artist
+  called only "The" sorts by that.
+- **A name is never split,** so "U2 & Coldplay" is an artist of its own.
+- **An album is its title plus its album artist,** so two "Greatest Hits" by different artists are two
+  albums. The album artist is the first of:
+  1. The album artist tag.
+  2. Various Artists, when the compilation flag is set.
+  3. For a song with neither, the other such songs with its album title in its folder: their one artist,
+     or Various Artists when there are several. The folder only tells apart two artists' untagged albums
+     of one name. It is never part of a key, so tagged songs are one album wherever their files are. A
+     compilation filed in one folder per artist does split, into one album each.
+- **A song keeps its own artist,** which Now Playing shows, or the album's when it has none. An artist's
+  albums include those of others they have a song on, and an album artist's songs include those of their
+  albums. So every artist on a compilation stays a row.
+- **Various Artists is one reserved row,** like Unknown: no text is stored, it has `isVarious` set, and the
+  screens give its name. An album artist tag of "Various Artists" or "Various" is that row. The same tag
+  as a song's artist names no one, and the song's artist is unknown.
+- **Songs with no album are one album with no title,** whoever their artists are, sorted last, and owned by
+  the unknown artist. Their folder isn't used, as `Music/Dump` names nothing (Metadata). It isn't on an
+  artist's screen, since opening it would show other artists' songs: their songs are under All Songs. The
+  unknown artist is a row only when a song is theirs.
+- **Songs of an album are in disc order, then track order.**
+- **The same song in two places shows once:** the same title, artist, album, track and disc, with the artist from
+  the tags or MediaStore, and the same duration. A song on a second album isn't a copy, nor are two untagged files of one
+  name. The largest file is the one shown and played, and on a tie the oldest row, so the choice doesn't move.
+  Every file keeps its row, marked as a duplicate, which no list shows. When the one shown is deleted, the next
+  scan shows another, whose id is its own.
+- **Rows move during pass 2.** A song can move to another album, and an album left with no song is gone. A
+  screen showing it says so in the display, and MENU goes back. What is playing isn't affected, since the
+  queue holds songs.
 
 ### Reading the tags: our own parser
 
@@ -443,6 +484,8 @@ misses.
     exported schema, which is in Git.
 11. `[enforced]` `fallbackToDestructiveMigration` is never called. It is in detekt's
     `ForbiddenMethodCall`.
+12. `[convention]` Songs are grouped by the rules under Grouping, in `:device:library:impl`. Keys ignore only
+    case and whitespace, and never hold a folder. Various Artists and Unknown are never stored as text.
 
 **Conformance.** Rule 2 is the detekt rule `MediaStoreOutsideLibrary` in `build-logic/detekt-rules`,
 with a violating and a passing case, which reports an import of `android.provider.MediaStore` or a
@@ -450,6 +493,7 @@ qualified use of it. That it runs everywhere but `:device:library:local:impl` is
 `config/detekt/detekt.yml`. Rule 4 is checked by `ModuleRules.kt` when the build is configured, on
 the `androidx.room` and `androidx.sqlite` groups, with a violating and a passing case in
 `ModuleRulesTest`. Rule 11 runs with type resolution, in `detektMain`, which `check` runs, and
-library/03 saw it report a call. The rest are reviewed. Rules 7 and 8 are behavior,
-covered by the tests of the scanner in `:device:library:impl` (library/03, library/05 and library/06),
+library/03 saw it report a call. The rest are reviewed. Rules 7, 8 and 12 are behavior,
+covered by the tests of the scanner and `GroupingTest` in `:device:library:impl` (library/03, library/05 and
+library/06),
 and rule 10 by Room's migration tests once there is a table of the user's data.

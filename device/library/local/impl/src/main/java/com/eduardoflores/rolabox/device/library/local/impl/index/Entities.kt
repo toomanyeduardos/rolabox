@@ -40,6 +40,8 @@ internal data class SongEntity(
     val hasEmbeddedPicture: Boolean? = null,
     /** The date modified at which the tags were last read, or null if they haven't been. */
     val tagsReadAt: Long? = null,
+    /** The same song as another row's, which is the one the lists show (ADR-024, Grouping). */
+    val isDuplicate: Boolean = false,
 )
 
 /** A song with the keys of its artist and album, for a scan to compare. */
@@ -70,6 +72,8 @@ internal data class ArtistEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val groupKey: String,
     val name: String?,
+    val sortName: String?,
+    val isVarious: Boolean,
 )
 
 /** MediaStore's version and generation at the last scan, per volume. library/07 compares them. */

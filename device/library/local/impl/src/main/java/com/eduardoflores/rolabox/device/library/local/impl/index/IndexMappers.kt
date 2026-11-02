@@ -15,7 +15,7 @@ import com.eduardoflores.rolabox.device.library.local.api.Sourced
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
-internal fun ArtistEntity.toArtist() = Artist(ArtistId(id), name)
+internal fun ArtistEntity.toArtist() = Artist(ArtistId(id), name, isVarious)
 
 internal fun AlbumEntity.toAlbum() = Album(AlbumId(id), ArtistId(artistId), title, year)
 
@@ -54,6 +54,7 @@ internal fun IndexedSongRow.toIndexedSong() = IndexedSong(
     albumKey = albumKey,
     hasEmbeddedPicture = song.hasEmbeddedPicture,
     tagsReadAt = song.tagsReadAt,
+    isDuplicate = song.isDuplicate,
 )
 
 private fun <T : Any> sourced(value: T?, source: FieldSource) = Sourced(value, source)
@@ -88,4 +89,5 @@ internal fun SongWrite.toEntity(artistId: Long, albumId: Long) = SongEntity(
     durationSource = metadata.durationMillis.source,
     hasEmbeddedPicture = hasEmbeddedPicture,
     tagsReadAt = tagsReadAt,
+    isDuplicate = isDuplicate,
 )

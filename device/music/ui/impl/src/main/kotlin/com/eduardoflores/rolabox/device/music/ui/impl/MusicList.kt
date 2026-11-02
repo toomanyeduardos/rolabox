@@ -82,5 +82,7 @@ internal fun MusicList(
         }
 
         ListUiState.Failed -> DeviceMessage(stringResource(R.string.music_library_unavailable))
+
+        ListUiState.Gone -> DeviceMessage(stringResource(R.string.music_no_longer_here))
     }
 }

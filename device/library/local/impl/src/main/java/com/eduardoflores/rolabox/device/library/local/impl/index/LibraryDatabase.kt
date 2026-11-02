@@ -9,7 +9,7 @@ import androidx.room.RoomDatabase
  */
 @Database(
     entities = [SongEntity::class, AlbumEntity::class, ArtistEntity::class, ScanStateEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 internal abstract class LibraryDatabase : RoomDatabase() {

@@ -13,14 +13,29 @@ internal sealed interface ListUiState<out T> {
 
     /** Every kind of [LibraryError] looks the same on the display: nothing the user can do from the wheel. */
     data object Failed : ListUiState<Nothing>
+
+    /**
+     * The album or artist this list is of is no longer in the library, as when a scan moves its songs to another
+     * (ADR-024). The display says so, and MENU goes back.
+     */
+    data object Gone : ListUiState<Nothing>
 }
 
 internal fun <T> Flow<Either<LibraryError, List<T>>>.asListState(): Flow<ListUiState<T>> = map { result ->
-    result.fold(ifLeft = { ListUiState.Failed }, ifRight = { items -> ListUiState.Loaded(items) })
+    result.fold(
+        ifLeft = { error ->
+            when (error) {
+                is LibraryError.AlbumNotFound, is LibraryError.ArtistNotFound -> ListUiState.Gone
+                else -> ListUiState.Failed
+            }
+        },
+        ifRight = { items -> ListUiState.Loaded(items) },
+    )
 }
 
 internal fun <T, R> ListUiState<T>.map(transform: (T) -> R): ListUiState<R> = when (this) {
     ListUiState.Loading -> ListUiState.Loading
     is ListUiState.Loaded -> ListUiState.Loaded(items.map(transform))
     ListUiState.Failed -> ListUiState.Failed
+    ListUiState.Gone -> ListUiState.Gone
 }

@@ -13,9 +13,10 @@ value class SongId(val value: Long)
 
 /**
  * What the library knows about a value can be nothing, whatever the file says: a name, a title, a year or a track
- * number is `null` then, and the words the user sees ("Unknown artist") are the screens' (ADR-024).
+ * number is `null` then, and the words the user sees ("Unknown artist") are the screens' (ADR-024). [isVarious] is
+ * the row of Various Artists, whose [name] is `null` too, for the screens to give the words of.
  */
-data class Artist(val id: ArtistId, val name: String?)
+data class Artist(val id: ArtistId, val name: String?, val isVarious: Boolean = false)
 
 data class Album(val id: AlbumId, val artistId: ArtistId, val title: String?, val year: Int?)
 

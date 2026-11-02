@@ -16,6 +16,8 @@ internal fun audioFile(
     albumArtist: String? = null,
     album: String? = "Album",
     year: Int? = null,
+    compilation: Boolean? = null,
+    durationMillis: Long? = 1000,
 ) = AudioFile(
     file = SongFile(id, "content://media/external/audio/media/$id", path, name, size, dateModified),
     title = title,
@@ -25,6 +27,6 @@ internal fun audioFile(
     trackNumber = null,
     discNumber = null,
     year = year,
-    compilation = null,
-    durationMillis = 1000,
+    compilation = compilation,
+    durationMillis = durationMillis,
 )

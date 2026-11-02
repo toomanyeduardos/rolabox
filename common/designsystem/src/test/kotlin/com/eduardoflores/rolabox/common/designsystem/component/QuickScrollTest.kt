@@ -94,8 +94,10 @@ class QuickScrollTest {
     }
 
     @Test
-    fun `a name that starts with the is with the T's, as the library sorts it`() {
-        assertEquals("T", quickScrollLetterOf("The Paper Lanterns"))
+    fun `a name that starts with the is with its next word, as the library sorts it`() {
+        assertEquals("P", quickScrollLetterOf("The Paper Lanterns"))
+        assertEquals("T", quickScrollLetterOf("Theory"))
+        assertEquals("T", quickScrollLetterOf("The"))
     }
 
     @Test
