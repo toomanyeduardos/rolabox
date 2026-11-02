@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import arrow.core.Either
 import arrow.core.raise.either
@@ -19,6 +20,7 @@ import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
 import com.eduardoflores.rolabox.device.playback.api.PlaybackState
 import com.eduardoflores.rolabox.device.playback.api.SeekDirection
+import com.eduardoflores.rolabox.device.playback.api.SkippedItems
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.ComparableTimeMark
@@ -54,15 +56,19 @@ internal const val SEEK_SPEED = 10
  */
 internal val RestartThreshold: Duration = 3.seconds
 
+/** How long [PlaybackState.skipped] keeps a skip, and so how long Now Playing says so. Tune it once it can be read. */
+internal val SkipNotice: Duration = 4.seconds
+
 /**
  * [PlaybackState] and [PlaybackController] on Media3 (ADR-023). Every action is a command on the player that
  * [connection] gives, a `MediaController` of [PlaybackService]'s session, and the state is built from its events.
  * The volume is the exception: [phoneVolume] changes it, and the session reports it like any other change.
  *
- * It keeps what Media3 doesn't: the [PlaybackItem]s of the queue, the count of starts and the hold of ⏮ or ⏭.
- * While an item plays or is being sought, the position is read every [Tick]. When the queue ends, the items are
- * cleared, so nothing is loaded. It runs in the application scope, since playback outlives the screens (ADR-006,
- * rule 6), and calls the player on its thread, where every field below is read and written. Nothing blocks.
+ * It keeps what Media3 doesn't: the [PlaybackItem]s of the queue, the count of starts, the hold of ⏮ or ⏭, and the
+ * items that couldn't be played. While an item plays or is being sought, the position is read every [Tick]. When the
+ * queue ends, the items are cleared, so nothing is loaded. It runs in the application scope, since playback outlives
+ * the screens (ADR-006, rule 6), and calls the player on its thread, where every field below is read and written.
+ * Nothing blocks.
  */
 // One function for each action of the controller, and the few that every action shares.
 @Suppress("TooManyFunctions")
@@ -85,7 +91,17 @@ internal class MediaPlayback @Inject constructor(
     private var hold: Hold? = null
     private var listenedTo: Player? = null
 
+    /** The items of this queue that failed, which a skip goes past. */
+    private var failed: Set<PlaybackItemId> = emptySet()
+
+    /** Whether ⏮ brought the player to an item that hasn't played yet, so a skip goes on backward. */
+    private var goingBack = false
+
     private val listener = object : Player.Listener {
+        override fun onPlayerError(error: PlaybackException) {
+            listenedTo?.let { skip(it, error.toUnplayable()) }
+        }
+
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             // A new list counts its own start in play(), and a repeat isn't used.
             if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO ||
@@ -96,6 +112,7 @@ internal class MediaPlayback @Inject constructor(
         }
 
         override fun onPlaybackStateChanged(playbackState: Int) {
+            if (playbackState == Player.STATE_READY) goingBack = false
             if (playbackState == Player.STATE_ENDED) listenedTo?.let(::unload)
         }
 
@@ -125,6 +142,14 @@ internal class MediaPlayback @Inject constructor(
                 }
             }
         }
+        scope.launch {
+            state.map { it.skipped }.distinctUntilChanged().collectLatest { skipped ->
+                if (skipped != null) {
+                    delay(SkipNotice)
+                    state.update { it.copy(skipped = null) }
+                }
+            }
+        }
     }
 
     override val currentItem: Flow<PlaybackItem?> = state.map { it.currentItem }.distinctUntilChanged()
@@ -134,6 +159,8 @@ internal class MediaPlayback @Inject constructor(
     override val queueIndex: Flow<Int?> = state.map { it.queueIndex }.distinctUntilChanged()
     override val startCount: Flow<Int> = state.map { it.startCount }.distinctUntilChanged()
     override val volume: Flow<Int> = state.map { it.volume }.distinctUntilChanged()
+    override val skipped: Flow<SkippedItems?> = state.map { it.skipped }.distinctUntilChanged()
+    override val unplayableQueue: Flow<SkippedItems?> = state.map { it.unplayableQueue }.distinctUntilChanged()
 
     override suspend fun play(source: PlaybackSource, from: PlaybackItemId): Either<PlaybackError, Unit> = either {
         val queue = library.queueOf(source).bind()
@@ -143,11 +170,13 @@ internal class MediaPlayback @Inject constructor(
             hold = null
             items = queue.map { it.item }
             uris = queue.associate { it.item.id to it.uri }
+            failed = emptySet()
+            goingBack = false
             // The whole queue, so the next item is prepared before the current one ends (ADR-023).
             player.setMediaItems(queue.map { it.toMediaItem() }, index, 0)
             player.prepare()
             player.play()
-            state.update { it.copy(startCount = it.startCount + 1) }
+            state.update { it.copy(startCount = it.startCount + 1, skipped = null, unplayableQueue = null) }
             refresh(player)
         }.bind()
     }
@@ -185,6 +214,7 @@ internal class MediaPlayback @Inject constructor(
     }
 
     override suspend fun next() = onLoaded { player ->
+        goingBack = false
         // Does nothing on the last item.
         player.seekToNext()
     }
@@ -193,7 +223,11 @@ internal class MediaPlayback @Inject constructor(
         val index = player.currentMediaItemIndex
         player.seekToPrevious()
         // Starting the same item again is no transition, so it is counted here.
-        if (player.currentMediaItemIndex == index) state.update { it.copy(startCount = it.startCount + 1) }
+        if (player.currentMediaItemIndex == index) {
+            state.update { it.copy(startCount = it.startCount + 1) }
+        } else {
+            goingBack = true
+        }
     }
 
     // The state follows when the session reports the new volume, as it does for the phone's keys.
@@ -235,7 +269,45 @@ internal class MediaPlayback @Inject constructor(
         listenedTo = null
         items = emptyList()
         hold = null
+        failed = emptySet()
         state.update { Snapshot(startCount = it.startCount, volume = it.volume) }
+    }
+
+    /**
+     * The current item couldn't be played: says so, and moves past it as playing or as paused as it was. When nothing
+     * is left to move to, the queue stops, and says that before nothing is loaded, so Now Playing isn't popped for it.
+     */
+    private fun skip(player: Player, error: PlaybackError.Unplayable) {
+        val index = player.currentMediaItemIndex
+        val item = items.getOrNull(index) ?: return
+        failed = failed + item.id
+        state.update {
+            it.copy(skipped = SkippedItems(item, error, (it.skipped?.count ?: 0) + 1))
+        }
+        val next = nextPlayable(index)
+        if (next == null) {
+            state.update { it.copy(unplayableQueue = it.skipped) }
+            unload(player)
+        } else {
+            endHold(player)
+            // Past the first item backward, a skip goes forward from there.
+            goingBack = goingBack && next < index
+            player.seekTo(next, 0)
+            player.prepare()
+        }
+        refresh(player)
+    }
+
+    /** The nearest item that hasn't failed: the way ⏮ was going, and otherwise forward. The queue doesn't wrap. */
+    private fun nextPlayable(from: Int): Int? {
+        val after = (from + 1 until items.size).firstOrNull { items[it].id !in failed }
+        val before = (from - 1 downTo 0).firstOrNull { items[it].id !in failed }
+        return if (goingBack) before ?: after else after
+    }
+
+    private fun endHold(player: Player) {
+        hold?.let { if (it.wasPlaying) player.play() }
+        hold = null
     }
 
     /** Moves a held item by the time since [held] last moved it, between 0:00 and its end. */
@@ -262,7 +334,7 @@ internal class MediaPlayback @Inject constructor(
     /**
      * Brings the queue up to date with the library. An item that is gone leaves it at once, and when that is the
      * current one the next item starts, or nothing is loaded when there is none after it. An item that moved is given
-     * its new URI, unless it is playing: its file is already open. A player that failed on a file that is gone starts
+     * its new URI, unless it is playing: its file is already open. Given a new URI, an item that failed can be tried
      * again.
      */
     private fun follow(locations: Map<SongId, String>, player: Player) {
@@ -273,8 +345,7 @@ internal class MediaPlayback @Inject constructor(
             unload(player)
         } else {
             if (current in gone) {
-                hold?.let { if (it.wasPlaying) player.play() }
-                hold = null
+                endHold(player)
                 state.update { it.copy(startCount = it.startCount + 1) }
             }
             // From the last, so that the indices left still hold.
@@ -283,7 +354,6 @@ internal class MediaPlayback @Inject constructor(
                 player.removeMediaItem(index)
             }
             moveToNewLocations(locations, player)
-            if (player.playerError != null) player.prepare()
         }
         refresh(player)
     }
@@ -291,9 +361,9 @@ internal class MediaPlayback @Inject constructor(
     private fun moveToNewLocations(locations: Map<SongId, String>, player: Player) {
         items.forEachIndexed { index, item ->
             val uri = locations[item.songId] ?: return@forEachIndexed
-            val canMove = index != player.currentMediaItemIndex || player.playerError != null
-            if (uri != uris[item.id] && canMove) {
+            if (uri != uris[item.id] && index != player.currentMediaItemIndex) {
                 uris = uris + (item.id to uri)
+                failed = failed - item.id
                 player.replaceMediaItem(index, QueuedItem(item, uri).toMediaItem())
             }
         }
@@ -304,6 +374,8 @@ internal class MediaPlayback @Inject constructor(
         if (items.isEmpty()) return
         items = emptyList()
         hold = null
+        failed = emptySet()
+        goingBack = false
         player.clearMediaItems()
     }
 
@@ -341,6 +413,8 @@ private data class Snapshot(
     val isPlaying: Boolean = false,
     val isSeeking: Boolean = false,
     val volume: Int = 0,
+    val skipped: SkippedItems? = null,
+    val unplayableQueue: SkippedItems? = null,
 ) {
     val currentItem: PlaybackItem? get() = queueIndex?.let(queue::getOrNull)
 

@@ -132,6 +132,10 @@
 - **Revised 2026-10-30:** Conformance names `MediaPlaybackTest`, not `InMemoryPlayerTest`. The real
   player replaced the in-memory one (ADR-023), and its tests took over the same behavior. The
   decision is unchanged.
+- **Revised 2026-11-02:** A queue that stops because nothing left in it can be played doesn't pop Now Playing, which
+  stays to say so until MENU (What each control does, When a song can't be played, rules 8 and 18). playback/04 has
+  to tell the user why the music stopped, and a popped screen can't. A skipped song takes the cover art's place for
+  a moment: this failure comes from no action, so rule 18's toast doesn't apply to it.
 
 ## Context
 
@@ -304,7 +308,8 @@ An item is **loaded** from the moment it starts until its queue ends. A loaded i
   on the last.
 - **Now Playing is only ever the top of the screen stack.** It is pushed by playing something, or by
   the main menu's Now Playing row. When the queue ends, nothing is loaded: `:app` pops Now Playing
-  if it is showing, and the main menu's row goes away.
+  if it is showing, and the main menu's row goes away. When it stopped because nothing left could be
+  played, Now Playing stays, as below.
 - **The volume is the system's media volume.** The wheel and the hardware keys change the same
   value, and each shows the other's change. One step of the wheel is one step of that volume
   ([ADR-023](023-playback-engine.md)).
@@ -353,6 +358,18 @@ A toast is the system's, and is drawn over the device and not in its display. It
 tells the user, chosen so that no failure is silent before the display has a message of its own.
 This is about an action that fails. A screen that has nothing to show, or can't load its content,
 says so in the display.
+
+### When a song can't be played
+
+A file can fail with no action to answer: corrupt, truncated, an unsupported codec, DRM, or gone. It is skipped
+([ADR-023](023-playback-engine.md)), the queue goes on, and Now Playing says so in the display, not in a toast.
+
+- **A skip takes the cover art's place for 4 s:** the song's title, the count when there were several in a row, and
+  why. Nothing else on the display moves, and the wheel works as usual. A skip is a start of an item, so it ends scrub.
+- **When nothing left in the queue can be played,** playback stops and nothing is loaded, so the record and the main
+  menu's row go away. Now Playing stays and says so, until MENU goes back or another row is played.
+- **Another screen showing tells nothing of it.** The device has no message outside Now Playing, and the list under
+  the user's hand shouldn't change.
 
 ### Full screens
 
@@ -544,7 +561,8 @@ as ADR-017's rule 10 requires.
 7. `[convention]` A list's highlight is saved state of its entry, and is restored when the user
    comes back to it.
 8. `[convention]` Now Playing is only ever the top of the screen stack, and it is popped when the
-   queue ends, back to the screen under it. Its modes, such as scrub, are state of the screen and
+   queue ends, back to the screen under it, unless the queue stopped because nothing left could be
+   played: then it stays to say so, until MENU. Its modes, such as scrub, are state of the screen and
    not destinations.
 9. `[enforced]` On every device screen the system's back leaves the app. It never pops the screen
    stack and never leaves a mode, and MENU is the only way back inside the display. Neither the
@@ -583,7 +601,8 @@ as ADR-017's rule 10 requires.
     starts the next item at 0:00, and does nothing on the last. The threshold belongs to the
     playback area.
 18. `[convention]` A play that fails loads nothing, pushes nothing, and tells the user why in a
-    toast, with a message for each kind of failure. No failure of an action is silent.
+    toast, with a message for each kind of failure. No failure of an action is silent. A song that
+    fails while the queue plays is no action's failure: Now Playing says so in the display.
 19. `[convention]` The display's header shows the title of the screen on top of the screen stack,
     which that screen gives through the host's contract (ADR-019, rule 9). The app's name is the
     main menu's title only. The header's record is shown while an item is loaded, spinning while it

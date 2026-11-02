@@ -13,4 +13,14 @@
     <string name="now_playing_unknown_artist">Unknown artist</string>
     <string name="now_playing_unknown_album">Unknown album</string>
     <string name="now_playing_nothing_loaded">Nothing is playing</string>
+    <string name="now_playing_nothing_left_to_play">Nothing left can be played</string>
+    <!-- A song that couldn't be played, and the next one started. The title is the last one skipped. -->
+    <string name="now_playing_skipped">Skipped %1$s</string>
+    <string name="now_playing_skipped_and_more">Skipped %1$s and %2$d more</string>
+    <string name="now_playing_skip_missing">This file is gone</string>
+    <string name="now_playing_skip_damaged">This file is damaged</string>
+    <string name="now_playing_skip_unsupported">This format isn\'t supported</string>
+    <string name="now_playing_skip_protected">This file is copy protected</string>
+    <string name="now_playing_skip_unreadable">This file can\'t be read</string>
+    <string name="now_playing_skip_unknown">It couldn\'t be played</string>
 </resources>

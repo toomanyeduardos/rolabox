@@ -12,6 +12,9 @@
 - **Revised 2026-11-02:** The queue follows the library (The service, the session and the controller).
   library/07 needs a song that is deleted to leave the queue without a crash, and it needs no engine error,
   which stays playback/04's.
+- **Revised 2026-11-02:** Unplayable files are decided (The service, the session and the controller, From the
+  engine's state to `PlaybackState`, Consequences). playback/04 builds them. A file that fails is skipped at once,
+  and the index's later news about it only removes it, so a failed player is no longer prepared in place.
 
 ## Context
 
@@ -107,9 +110,8 @@ notification, lock screen, headset, Bluetooth ───────────�
 - **The queue follows the library.** While something is loaded, the singleton observes where the library says
   each song is. A song that is gone leaves the queue at once. When it was the current one the next one starts,
   as playing or as paused as it was, and when none comes after it nothing is loaded. A song that moved is given
-  its new URI, unless it is playing, since its file is already open. A player that failed on such a file is
-  prepared again. The file being gone is learned from the index: a failure the index doesn't explain is
-  playback/04's.
+  its new URI, unless it is playing, since its file is already open. A file that fails before the index knows why
+  is skipped like any other that can't be played (below), and then leaves the queue when the index says it is gone.
 - **The singleton keeps what Media3 doesn't:** the `PlaybackItem`s of the queue, the count of starts,
   and the hold of ⏮ or ⏭. It runs in the application scope, since playback outlives the screens
   ([ADR-006](006-async-api-shape.md), rule 6). Media3 is called on the main thread, as it requires,
@@ -177,8 +179,18 @@ data class PlaybackItem(
   `Either<PlaybackError, …>`, as `play` does now. A failure the engine reports while it plays, which
   no call returned (a file that is gone or can't be decoded), is a `PlaybackError` that the state
   reports as it happens, and the singleton maps Media3's `PlaybackException` codes to it.
-  `PlaybackException` never leaves the `:impl`. playback/04 builds this: the cases, skipping to the
-  next item, and how the state reports them.
+  `PlaybackException` never leaves the `:impl`.
+- **The cases are `PlaybackError.Unplayable`:** `Missing`, `Damaged`, `Unsupported`, `Protected`, `Unreadable`, and
+  `EngineFailed` for a failure that isn't the file's. No call returns them.
+- **A song that fails is skipped.** The singleton moves to the nearest item of the queue that hasn't failed, as
+  playing or as paused as it was. It goes forward, unless ⏮ brought it there: then it goes on backward, and forward
+  once nothing before it can be played, so ⏮ can get past a bad song. The queue doesn't wrap.
+- **`PlaybackState.skipped` is state, not an event.** It holds the last item, its error and the count of the run for
+  4 s after a skip, and a skip in that time adds to it. A one-shot event would be missed by Now Playing, since the
+  first file of a list can fail before the screen that was pushed for it observes anything, and state kept longer
+  would show an old skip to a screen opened later.
+- **`PlaybackState.unplayableQueue` says the queue stopped.** When nothing left can be played, nothing is loaded and
+  it holds the run until the next `play` (ADR-018, rule 8). A queue that ends as queues do leaves it `null`.
 
 ### Volume is the phone's media volume
 
@@ -304,7 +316,10 @@ phone's music stream.
   phone to phone.
 - No notification permission prompt, ever, for playback.
 - The engine's failures while playing arrive as state, not as the result of a call, so the device
-  needs a way to show them that isn't a toast after an action (playback/04).
+  shows them on Now Playing and not in a toast (ADR-018, When a song can't be played). A skip while another screen
+  is showing is told to no one, unless the user opens Now Playing within its 4 s.
+- Skipping happens in the singleton, through the controller, so it needs the app's process and a connection. A queue
+  the system's controls resume with neither is playback/05's to check.
 
 ## Rules
 

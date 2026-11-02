@@ -2,8 +2,10 @@ package com.eduardoflores.rolabox.device.playback.ui.impl
 
 import com.eduardoflores.rolabox.common.testing.MainDispatcherRule
 import com.eduardoflores.rolabox.device.library.api.SongId
+import com.eduardoflores.rolabox.device.playback.api.PlaybackError
 import com.eduardoflores.rolabox.device.playback.api.PlaybackItem
 import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
+import com.eduardoflores.rolabox.device.playback.api.SkippedItems
 import com.eduardoflores.rolabox.device.playback.testing.FakePlayback
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -102,6 +104,56 @@ class NowPlayingViewModelTest {
         playback.unload()
 
         assertEquals(NowPlayingUiState.NothingLoaded, viewModel.uiState.value)
+    }
+
+    @Test
+    fun aSkip_isShownWithTheTitleTheOthersAndWhy_untilItsTimeIsOver() = runTest {
+        val viewModel = observedViewModel()
+        playback.load(Queue, index = 1)
+
+        playback.skippedItems(SkippedItems(Queue[0], PlaybackError.Unplayable.Damaged, count = 3))
+
+        assertEquals(
+            SkippedSongs(Queue[0].title, others = 2, SkipReason.Damaged),
+            (viewModel.uiState.value as NowPlayingUiState.Playing).skipped,
+        )
+
+        playback.skippedItems(null)
+
+        assertEquals(null, (viewModel.uiState.value as NowPlayingUiState.Playing).skipped)
+    }
+
+    @Test
+    fun eachKindOfError_hasItsReason() = runTest {
+        val viewModel = observedViewModel()
+        playback.load(Queue, index = 1)
+        val reasons = mapOf(
+            PlaybackError.Unplayable.Missing to SkipReason.Missing,
+            PlaybackError.Unplayable.Damaged to SkipReason.Damaged,
+            PlaybackError.Unplayable.Unsupported to SkipReason.Unsupported,
+            PlaybackError.Unplayable.Protected to SkipReason.Protected,
+            PlaybackError.Unplayable.Unreadable to SkipReason.Unreadable,
+            PlaybackError.Unplayable.EngineFailed to SkipReason.Unknown,
+        )
+
+        reasons.forEach { (error, reason) ->
+            playback.skippedItems(SkippedItems(Queue[0], error, count = 1))
+
+            assertEquals(reason, (viewModel.uiState.value as NowPlayingUiState.Playing).skipped?.reason)
+        }
+    }
+
+    @Test
+    fun whenNothingLeftCanBePlayed_saysSo() = runTest {
+        val viewModel = observedViewModel()
+        playback.load(Queue, index = 0)
+
+        playback.queueStopped(SkippedItems(Queue[2], PlaybackError.Unplayable.Unsupported, count = 3))
+
+        assertEquals(
+            NowPlayingUiState.NothingLeftToPlay(SkippedSongs(Queue[2].title, others = 2, SkipReason.Unsupported)),
+            viewModel.uiState.value,
+        )
     }
 
     @Test

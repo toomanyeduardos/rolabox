@@ -18,8 +18,10 @@ import com.eduardoflores.rolabox.device.playback.api.PlaybackItem
 import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
 import com.eduardoflores.rolabox.device.playback.api.SeekDirection
+import com.eduardoflores.rolabox.device.playback.api.SkippedItems
 import com.eduardoflores.rolabox.device.playback.testing.FakePlayback
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
@@ -43,6 +45,22 @@ class DeviceViewModelTest {
         backgroundScope.launch(mainDispatcherRule.testDispatcher) { viewModel.isPlaying.collect() }
         backgroundScope.launch(mainDispatcherRule.testDispatcher) { viewModel.mainMenuRows.collect() }
         backgroundScope.launch(mainDispatcherRule.testDispatcher) { viewModel.clicks.collect() }
+    }
+
+    @Test
+    fun aQueueThatEnds_popsNowPlaying_andOneThatCouldNotBePlayed_doesNot() = runTest {
+        val viewModel = observedViewModel()
+        backgroundScope.launch(mainDispatcherRule.testDispatcher) { viewModel.queueStoppedUnplayable.collect() }
+        val item = PlaybackItem(PlaybackItemId.Song(SongId(1)), "Song", "Artist", "Album", 1.seconds)
+        playback.load(listOf(item), index = 0)
+
+        playback.unload()
+        assertFalse(viewModel.queueStoppedUnplayable.value)
+
+        playback.load(listOf(item), index = 0)
+        playback.queueStopped(SkippedItems(item, PlaybackError.Unplayable.Damaged, count = 1))
+        assertTrue(viewModel.queueStoppedUnplayable.value)
+        assertFalse(viewModel.hasLoadedSong.value)
     }
 
     @Test

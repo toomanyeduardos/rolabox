@@ -29,6 +29,9 @@ internal abstract class DeviceViewModel : ViewModel() {
     /** Whether a song is loaded, so the main menu shows its Now Playing row. */
     abstract val hasLoadedSong: StateFlow<Boolean>
 
+    /** Whether the queue stopped with nothing left to play, so Now Playing stays to say so, until MENU. */
+    abstract val queueStoppedUnplayable: StateFlow<Boolean>
+
     /** Whether the loaded song is playing, so the header's record spins. */
     abstract val isPlaying: StateFlow<Boolean>
 

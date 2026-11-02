@@ -23,6 +23,9 @@ data class PlaybackItem(
     val duration: Duration,
 )
 
+/** The items that couldn't be played in a run of skips, [count] of them: the [last] one, and why it failed. */
+data class SkippedItems(val last: PlaybackItem, val error: PlaybackError.Unplayable, val count: Int)
+
 /** Which way [PlaybackController.startSeeking] moves the position. */
 enum class SeekDirection { Backward, Forward }
 

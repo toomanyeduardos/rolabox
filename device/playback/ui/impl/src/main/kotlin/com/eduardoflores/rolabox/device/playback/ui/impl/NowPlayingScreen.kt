@@ -23,6 +23,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceCoverArtPlaceholder
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceMessage
+import com.eduardoflores.rolabox.common.designsystem.component.DeviceNotice
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceProgressBar
 import com.eduardoflores.rolabox.common.designsystem.component.ProgressBarMode
 import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxMetal
@@ -74,9 +75,37 @@ internal fun NowPlayingScreen(state: NowPlayingUiState) {
 
         NowPlayingUiState.NothingLoaded -> DeviceMessage(stringResource(R.string.now_playing_nothing_loaded))
 
+        is NowPlayingUiState.NothingLeftToPlay -> DeviceMessage(
+            title = stringResource(R.string.now_playing_nothing_left_to_play),
+            body = skippedText(state.skipped),
+        )
+
         is NowPlayingUiState.Playing -> NowPlayingContent(state)
     }
 }
+
+/** "Skipped Glasshouse", or "Skipped Glasshouse and 2 more" after a run of them. */
+@Composable
+private fun skippedText(skipped: SkippedSongs): String {
+    val title = skipped.title ?: stringResource(R.string.now_playing_unknown_title)
+    return if (skipped.others > 0) {
+        stringResource(R.string.now_playing_skipped_and_more, title, skipped.others)
+    } else {
+        stringResource(R.string.now_playing_skipped, title)
+    }
+}
+
+@Composable
+private fun SkipReason.text(): String = stringResource(
+    when (this) {
+        SkipReason.Missing -> R.string.now_playing_skip_missing
+        SkipReason.Damaged -> R.string.now_playing_skip_damaged
+        SkipReason.Unsupported -> R.string.now_playing_skip_unsupported
+        SkipReason.Protected -> R.string.now_playing_skip_protected
+        SkipReason.Unreadable -> R.string.now_playing_skip_unreadable
+        SkipReason.Unknown -> R.string.now_playing_skip_unknown
+    },
+)
 
 /**
  * The song on the display, top to bottom: its place in the queue, its cover art, its title, artist and
@@ -111,7 +140,13 @@ private fun NowPlayingContent(state: NowPlayingUiState.Playing) {
         // Takes what the meta row, the names and the bar leave. The cover art is the largest square that fits in it,
         // so it grows with the display and the names keep their space.
         BoxWithConstraints(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-            DeviceCoverArtPlaceholder(Modifier.size(minOf(maxWidth, maxHeight).coerceAtLeast(CoverMinSize)))
+            val skipped = state.skipped
+            if (skipped != null) {
+                // What was skipped takes the cover art's place for a moment, so nothing else on the display moves.
+                DeviceNotice(skippedText(skipped), skipped.reason.text(), Modifier.fillMaxSize())
+            } else {
+                DeviceCoverArtPlaceholder(Modifier.size(minOf(maxWidth, maxHeight).coerceAtLeast(CoverMinSize)))
+            }
         }
         SongNames(state, Modifier.fillMaxWidth())
         NowPlayingBar(state)
