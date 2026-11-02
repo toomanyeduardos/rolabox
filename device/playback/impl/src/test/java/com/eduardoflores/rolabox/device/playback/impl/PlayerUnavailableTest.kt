@@ -24,6 +24,7 @@ import com.eduardoflores.rolabox.device.library.testing.audio.Mp3Tags
 import com.eduardoflores.rolabox.device.playback.api.PlaybackError
 import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
+import com.eduardoflores.rolabox.device.playback.testing.FakePlaybackLocalDataSource
 import java.io.File
 import kotlin.coroutines.ContinuationInterceptor
 import kotlin.time.Duration.Companion.seconds
@@ -83,6 +84,7 @@ class PlayerUnavailableTest {
                 library,
                 connection,
                 PhoneVolume(context),
+                FakePlaybackLocalDataSource(),
                 scope.backgroundScope,
                 scope.testScheduler.timeSource,
             )

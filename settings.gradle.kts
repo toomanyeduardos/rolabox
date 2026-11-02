@@ -69,6 +69,8 @@ include(":device:music:ui:impl")
 
 include(":device:playback:api")
 include(":device:playback:impl")
+include(":device:playback:local:api")
+include(":device:playback:local:impl")
 include(":device:playback:testing")
 include(":device:playback:ui:api")
 include(":device:playback:ui:impl")

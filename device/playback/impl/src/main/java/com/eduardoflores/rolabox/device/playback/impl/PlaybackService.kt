@@ -18,15 +18,22 @@ import com.eduardoflores.rolabox.common.designsystem.R
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import dagger.hilt.android.AndroidEntryPoint
+import java.util.Optional
+import javax.inject.Inject
 
 /**
  * Owns the player and its session (ADR-023): nothing else holds the [ExoPlayer]. The device reaches it through
  * a `MediaController`, as the system's controls and the media buttons do, so every way in plays the same
  * player. Media3 makes it a foreground service while the player plays, with the media notification, and takes the
- * notification away when nothing is loaded.
+ * notification away when nothing is loaded. It stores where it is when it stops, and what a media button resumes after
+ * the app was killed is what was stored (ADR-023).
  */
 @AndroidEntryPoint
 internal class PlaybackService : MediaSessionService() {
+    // Absent in tests that replace PlaybackModule, whose session only plays what it is given.
+    @Inject
+    lateinit var resumption: Optional<SessionResumption>
+
     private var session: MediaSession? = null
 
     @OptIn(UnstableApi::class)
@@ -38,7 +45,7 @@ internal class PlaybackService : MediaSessionService() {
             },
         )
         session = MediaSession.Builder(this, buildPlayer(this))
-            .setCallback(ItemsWithTheirUris)
+            .setCallback(SessionCallback(resumption.orElse(null)))
             .apply { theApp()?.let(::setSessionActivity) }
             .build()
     }
@@ -80,6 +87,7 @@ internal class PlaybackService : MediaSessionService() {
 
     private fun release() {
         session?.run {
+            resumption.ifPresent { it.storeFrom(player) }
             player.release()
             release()
         }
@@ -118,9 +126,18 @@ private val MusicAttributes = AudioAttributes.Builder()
 
 /**
  * A controller sends its items to the session without where their audio is, unless it's in the same process.
- * The URI goes along in the request metadata, as Media3 expects, and is put back here.
+ * The URI goes along in the request metadata, as Media3 expects, and is put back here. A play with nothing loaded, from
+ * a media button or the system's controls, gets what [resumption] restores.
  */
-private object ItemsWithTheirUris : MediaSession.Callback {
+private class SessionCallback(private val resumption: SessionResumption?) : MediaSession.Callback {
+    @OptIn(UnstableApi::class)
+    override fun onPlaybackResumption(
+        mediaSession: MediaSession,
+        controller: MediaSession.ControllerInfo,
+        isForPlayback: Boolean,
+    ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> =
+        resumption?.resumption() ?: super.onPlaybackResumption(mediaSession, controller, isForPlayback)
+
     override fun onAddMediaItems(
         mediaSession: MediaSession,
         controller: MediaSession.ControllerInfo,

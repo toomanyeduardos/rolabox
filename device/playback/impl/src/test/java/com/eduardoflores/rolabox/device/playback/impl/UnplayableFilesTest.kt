@@ -27,6 +27,7 @@ import com.eduardoflores.rolabox.device.playback.api.PlaybackError
 import com.eduardoflores.rolabox.device.playback.api.PlaybackItem
 import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
+import com.eduardoflores.rolabox.device.playback.testing.FakePlaybackLocalDataSource
 import java.io.File
 import kotlin.coroutines.ContinuationInterceptor
 import kotlin.time.Duration.Companion.seconds
@@ -85,6 +86,7 @@ class UnplayableFilesTest {
                 library,
                 connection,
                 PhoneVolume(context),
+                FakePlaybackLocalDataSource(),
                 scope.backgroundScope,
                 scope.testScheduler.timeSource,
             )

@@ -15,6 +15,9 @@
 - **Revised 2026-11-02:** Unplayable files are decided (The service, the session and the controller, From the
   engine's state to `PlaybackState`, Consequences). playback/04 builds them. A file that fails is skipped at once,
   and the index's later news about it only removes it, so a failed player is no longer prepared in place.
+- **Revised 2026-11-02:** The restore is decided (Permissions and the service's lifetime, Consequences). playback/05
+  builds it. It stores where the item was in its list too, since a stored song that is gone has no place of its own to
+  go on from. A restored queue is prepared, so its paused controls show, and a media button needs a receiver.
 
 ## Context
 
@@ -237,6 +240,18 @@ phone's music stream.
   paused, and nothing starts on its own. Media3's playback resumption (`onPlaybackResumption`) reads
   the same data when the system's controls or a Bluetooth button ask to play after the app was
   killed.
+- **It stores one point:** the source, the item by its `PlaybackItemId`, where that item was in the list, and the
+  position. Not the list, and no position per song. It is stored on each pause and new item, every few seconds while
+  playing, going to the background and when the service stops, and cleared when nothing is left loaded.
+- **It is restored at each start of the process, and each time the app comes back** ([ADR-025](025-process-start-tasks.md)),
+  when nothing is loaded: the app dismissed while paused releases its session, and the process may live on. What the
+  user played in the meantime stays. Nothing counts as a start of an item.
+- **A stored song that is gone** gives way to the song now at its place in the list, from 0:00. Past the end, or with
+  the list gone, nothing is loaded and nothing stays stored. A library that can't be read leaves it stored.
+- **A restored queue is prepared.** So the media notification and the lock screen show it paused, also after a process
+  started by background work, and a file that can't be played is skipped at once, as paused as it was.
+- **A media button after the app was killed** reaches the service through Media3's `MediaButtonReceiver`, declared with
+  it. The process starts for it, so the singleton is there and skips, and follows the library, as it always does.
 
 ### Fakes and tests
 
@@ -319,7 +334,10 @@ phone's music stream.
   shows them on Now Playing and not in a toast (ADR-018, When a song can't be played). A skip while another screen
   is showing is told to no one, unless the user opens Now Playing within its 4 s.
 - Skipping happens in the singleton, through the controller, so it needs the app's process and a connection. A queue
-  the system's controls resume with neither is playback/05's to check.
+  the system's controls resume starts that process, and its start connects the controller.
+- A restored queue shows a paused media notification after a reboot or background work, with the app never opened. The
+  stored file is opened at each start of the process.
+- A kill loses up to the few seconds since the last store, and a write at the moment the process dies may not land.
 
 ## Rules
 

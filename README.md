@@ -210,6 +210,8 @@ there is something to fake, a `:testing` module.
 | `:device:library:testing` | `FakeLibraryRepository`, fakes of the local sources, and the generated audio fixtures (see [Test audio](#test-audio)) |
 | `:device:library:local:api` | The library's local sources as interfaces: the index and the audio files |
 | `:device:library:local:impl` | The index in Room, the MediaStore queries, and the manifest with the audio permission |
+| `:device:playback:local:api` | Playback's local source as an interface: the point to resume from |
+| `:device:playback:local:impl` | That point on `PreferencesStore`: on the phone, and never synced |
 | `:device:music:ui:api` | The keys and entry contract of the music screens: Music, Artists, an artist's albums, songs |
 | `:device:music:ui:impl` | The music screens and their ViewModels, on the library's data |
 | `:device:settings:api` | The keys of the settings screens, the slots of the settings list, and the contract of a contributed section |
@@ -297,6 +299,8 @@ graph TD
     device_music_ui_impl[":device:music:ui:impl"]
     device_playback_api[":device:playback:api"]
     device_playback_impl[":device:playback:impl"]
+    device_playback_local_api[":device:playback:local:api"]
+    device_playback_local_impl[":device:playback:local:impl"]
     device_playback_testing[":device:playback:testing"]
     device_playback_ui_api[":device:playback:ui:api"]
     device_playback_ui_impl[":device:playback:ui:impl"]
@@ -323,6 +327,7 @@ graph TD
     app --> device_library_local_impl
     app --> device_music_ui_impl
     app --> device_playback_impl
+    app --> device_playback_local_impl
     app --> device_playback_ui_impl
     app --> device_settings_impl
     app --> device_ui_api
@@ -396,11 +401,21 @@ graph TD
     device_music_ui_impl --> device_music_ui_api
     device_playback_api --> device_library_api
     device_playback_impl --> common_designsystem
+    device_playback_impl --> common_storage_api
     device_playback_impl --> common_util
     device_playback_impl --> device_library_api
     device_playback_impl --> device_playback_api
+    device_playback_impl --> device_playback_local_api
+    device_playback_local_api --> common_storage_api
+    device_playback_local_api --> device_playback_api
+    device_playback_local_impl --> common_storage_api
+    device_playback_local_impl --> device_library_api
+    device_playback_local_impl --> device_playback_api
+    device_playback_local_impl --> device_playback_local_api
+    device_playback_testing --> common_storage_api
     device_playback_testing --> device_library_api
     device_playback_testing --> device_playback_api
+    device_playback_testing --> device_playback_local_api
     device_playback_ui_impl --> common_designsystem
     device_playback_ui_impl --> device_host
     device_playback_ui_impl --> device_playback_api

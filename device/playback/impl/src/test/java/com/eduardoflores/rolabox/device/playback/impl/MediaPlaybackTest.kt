@@ -32,6 +32,7 @@ import com.eduardoflores.rolabox.device.playback.api.PlaybackError
 import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
 import com.eduardoflores.rolabox.device.playback.api.SeekDirection
+import com.eduardoflores.rolabox.device.playback.testing.FakePlaybackLocalDataSource
 import java.io.File
 import kotlin.coroutines.ContinuationInterceptor
 import kotlin.math.abs
@@ -113,6 +114,7 @@ class MediaPlaybackTest {
                 library,
                 connection,
                 PhoneVolume(context),
+                FakePlaybackLocalDataSource(),
                 scope.backgroundScope,
                 scope.testScheduler.timeSource,
             )
