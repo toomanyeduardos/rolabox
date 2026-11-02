@@ -14,6 +14,7 @@ import com.eduardoflores.rolabox.device.library.api.ArtistId
 import com.eduardoflores.rolabox.device.library.api.LibraryError
 import com.eduardoflores.rolabox.device.library.api.LibraryRepository
 import com.eduardoflores.rolabox.device.library.api.LibraryStatus
+import com.eduardoflores.rolabox.device.library.api.Progress
 import com.eduardoflores.rolabox.device.library.api.Song
 import com.eduardoflores.rolabox.device.library.local.api.AudioFilesLocalDataSource
 import com.eduardoflores.rolabox.device.library.local.api.LibraryIndexLocalDataSource
@@ -73,9 +74,10 @@ internal class IndexLibraryRepository @Inject constructor(
     override fun observeStatus(): Flow<Either<LibraryError, LibraryStatus>> = combine(
         permissionGranted.filterNotNull(),
         scanner.phase,
+        scanner.readingTags,
         index.observeSongCount(),
-    ) { granted, phase, count ->
-        count.flatMap { songs -> statusOf(granted, phase, songs) }
+    ) { granted, phase, readingTags, count ->
+        count.flatMap { songs -> statusOf(granted, phase, readingTags, songs) }
     }.distinctUntilChanged().endingAtFirstLeft()
 
     override fun checkPermission() {
@@ -92,9 +94,14 @@ internal class IndexLibraryRepository @Inject constructor(
 }
 
 // A failed scan matters only while the index is empty: with songs, what it holds stays readable.
-private fun statusOf(granted: Boolean, phase: ScanPhase, songs: Int): Either<LibraryError, LibraryStatus> = when {
+private fun statusOf(
+    granted: Boolean,
+    phase: ScanPhase,
+    readingTags: Progress?,
+    songs: Int,
+): Either<LibraryError, LibraryStatus> = when {
     !granted -> LibraryStatus.PermissionMissing.right()
-    songs > 0 -> LibraryStatus.Ready(readingTags = null).right()
+    songs > 0 -> LibraryStatus.Ready(readingTags).right()
     phase is ScanPhase.Failed -> phase.error.left()
     phase == ScanPhase.Finished -> LibraryStatus.Empty.right()
     else -> LibraryStatus.Scanning.right()

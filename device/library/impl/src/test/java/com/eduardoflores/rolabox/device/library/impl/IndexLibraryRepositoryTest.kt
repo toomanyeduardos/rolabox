@@ -9,6 +9,7 @@ import com.eduardoflores.rolabox.device.library.api.LibraryError
 import com.eduardoflores.rolabox.device.library.api.LibraryStatus
 import com.eduardoflores.rolabox.device.library.testing.FakeAudioFilesLocalDataSource
 import com.eduardoflores.rolabox.device.library.testing.FakeLibraryIndexLocalDataSource
+import com.eduardoflores.rolabox.device.library.testing.FakeTagsLocalDataSource
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -31,7 +32,7 @@ class IndexLibraryRepositoryTest {
         return IndexLibraryRepository(
             index,
             files,
-            LibraryScanner(files, index, backgroundScope, dispatcher),
+            LibraryScanner(files, index, FakeTagsLocalDataSource(), backgroundScope, dispatcher),
             backgroundScope,
             dispatcher,
         )

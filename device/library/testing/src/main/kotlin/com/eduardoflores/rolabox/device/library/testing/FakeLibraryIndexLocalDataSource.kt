@@ -3,6 +3,7 @@ package com.eduardoflores.rolabox.device.library.testing
 import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
+import com.eduardoflores.rolabox.common.storage.api.StorageError
 import com.eduardoflores.rolabox.device.library.api.Album
 import com.eduardoflores.rolabox.device.library.api.AlbumId
 import com.eduardoflores.rolabox.device.library.api.Artist
@@ -41,6 +42,9 @@ class FakeLibraryIndexLocalDataSource : LibraryIndexLocalDataSource {
 
     /** Makes every write fail with this. */
     var writeError: LibraryError? = null
+
+    /** Makes every write fail once this many songs have been written, as a process killed by then would stop. */
+    var failWritesAfter: Int? = null
 
     val indexed: List<IndexedSong> get() = state.value.songs.values.toList()
 
@@ -98,7 +102,9 @@ class FakeLibraryIndexLocalDataSource : LibraryIndexLocalDataSource {
     override suspend fun getIndexedSongs(): Either<LibraryError, List<IndexedSong>> = indexed.right()
 
     override suspend fun write(batch: IndexBatch): Either<LibraryError, Unit> {
-        writeError?.let { return it.left() }
+        val killed = failWritesAfter?.let { after -> batches.sumOf { it.writes.size } >= after } == true
+        val error = writeError ?: LibraryError.Storage(StorageError.Unavailable).takeIf { killed }
+        if (error != null) return error.left()
         batches += batch
         state.value = state.value.applying(batch)
         return Unit.right()
@@ -122,7 +128,15 @@ class FakeLibraryIndexLocalDataSource : LibraryIndexLocalDataSource {
                 year = write.album.year ?: album?.year,
             )
             val id = write.id ?: SongId(nextId++)
-            songs[id] = IndexedSong(id, write.file, write.metadata, write.artist.key, write.album.key)
+            songs[id] = IndexedSong(
+                id,
+                write.file,
+                write.metadata,
+                write.artist.key,
+                write.album.key,
+                write.hasEmbeddedPicture,
+                write.tagsReadAt,
+            )
         }
         batch.removals.forEach(songs::remove)
         val usedAlbums = songs.values.mapTo(HashSet()) { it.albumKey }
