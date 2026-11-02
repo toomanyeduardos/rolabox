@@ -35,6 +35,12 @@ interface LibraryRepository {
     /** Emits [LibraryError.AlbumNotFound] and ends when there is no such album. */
     fun observeSongsByAlbum(albumId: AlbumId): Flow<Either<LibraryError, List<Song>>>
 
+    /**
+     * Where the audio of every song is, for playback to follow a song that is gone or has moved. It has the songs no
+     * list shows too: a song that became a duplicate is still a file that plays.
+     */
+    fun observeSongLocations(): Flow<Either<LibraryError, Map<SongId, String>>>
+
     suspend fun getArtist(id: ArtistId): Either<LibraryError, Artist>
 
     suspend fun getAlbum(id: AlbumId): Either<LibraryError, Album>

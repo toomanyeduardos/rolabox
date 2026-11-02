@@ -16,6 +16,7 @@ import com.eduardoflores.rolabox.device.library.api.LibraryRepository
 import com.eduardoflores.rolabox.device.library.api.LibraryStatus
 import com.eduardoflores.rolabox.device.library.api.Progress
 import com.eduardoflores.rolabox.device.library.api.Song
+import com.eduardoflores.rolabox.device.library.api.SongId
 import com.eduardoflores.rolabox.device.library.local.api.AudioFilesLocalDataSource
 import com.eduardoflores.rolabox.device.library.local.api.LibraryIndexLocalDataSource
 import javax.inject.Inject
@@ -84,9 +85,12 @@ internal class IndexLibraryRepository @Inject constructor(
         scope.launch(ioDispatcher) {
             val granted = files.getPermissionGranted()
             val wasGranted = permissionGranted.getAndUpdate { granted }
-            if (granted && wasGranted != true) scanner.start()
+            if (granted && wasGranted != true) scanner.keepCurrent()
         }
     }
+
+    override fun observeSongLocations(): Flow<Either<LibraryError, Map<SongId, String>>> =
+        index.observeSongLocations().distinctUntilChanged().endingAtFirstLeft()
 
     override fun observePermissionAsked(): Flow<Either<LibraryError, Boolean>> = files.observePermissionAsked()
 

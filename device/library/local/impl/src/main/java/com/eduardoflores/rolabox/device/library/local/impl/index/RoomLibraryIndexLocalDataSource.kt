@@ -13,6 +13,7 @@ import com.eduardoflores.rolabox.device.library.api.Artist
 import com.eduardoflores.rolabox.device.library.api.ArtistId
 import com.eduardoflores.rolabox.device.library.api.LibraryError
 import com.eduardoflores.rolabox.device.library.api.Song
+import com.eduardoflores.rolabox.device.library.api.SongId
 import com.eduardoflores.rolabox.device.library.local.api.IndexBatch
 import com.eduardoflores.rolabox.device.library.local.api.IndexedSong
 import com.eduardoflores.rolabox.device.library.local.api.LibraryIndexLocalDataSource
@@ -69,6 +70,13 @@ internal class RoomLibraryIndexLocalDataSource @Inject constructor(
 
     override suspend fun write(batch: IndexBatch): Either<LibraryError, Unit> =
         catchNamed(::toLibraryError) { dao.write(batch) }
+
+    override suspend fun getScanState(): Either<LibraryError, List<VolumeScanState>> = catchNamed(::toLibraryError) {
+        dao.scanState().map { VolumeScanState(it.volume, it.version, it.generation) }
+    }
+
+    override fun observeSongLocations(): Flow<Either<LibraryError, Map<SongId, String>>> =
+        dao.observeSongLocations().map { rows -> rows.associate { SongId(it.id) to it.uri } }.asRead()
 
     override suspend fun saveScanState(volumes: List<VolumeScanState>): Either<LibraryError, Unit> =
         catchNamed(::toLibraryError) {

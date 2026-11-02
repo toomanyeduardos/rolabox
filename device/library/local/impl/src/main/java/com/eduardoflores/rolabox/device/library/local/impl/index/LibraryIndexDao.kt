@@ -62,6 +62,9 @@ internal interface LibraryIndexDao {
     @Query("SELECT COUNT(*) FROM songs")
     fun observeSongCount(): Flow<Int>
 
+    @Query("SELECT id, uri FROM songs")
+    fun observeSongLocations(): Flow<List<SongLocationRow>>
+
     @Query("SELECT * FROM artists WHERE id = :id")
     suspend fun getArtist(id: Long): ArtistEntity?
 

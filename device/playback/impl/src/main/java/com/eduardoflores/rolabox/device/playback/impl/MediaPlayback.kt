@@ -11,6 +11,7 @@ import com.eduardoflores.rolabox.common.util.ApplicationScope
 import com.eduardoflores.rolabox.device.library.api.AlbumId
 import com.eduardoflores.rolabox.device.library.api.ArtistId
 import com.eduardoflores.rolabox.device.library.api.LibraryRepository
+import com.eduardoflores.rolabox.device.library.api.SongId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackController
 import com.eduardoflores.rolabox.device.playback.api.PlaybackError
 import com.eduardoflores.rolabox.device.playback.api.PlaybackItem
@@ -78,6 +79,9 @@ internal class MediaPlayback @Inject constructor(
 
     /** The items the player was given, in its order. Empty when nothing is loaded. */
     private var items: List<PlaybackItem> = emptyList()
+
+    /** Where the player was told each item's audio is. */
+    private var uris: Map<PlaybackItemId, String> = emptyMap()
     private var hold: Hold? = null
     private var listenedTo: Player? = null
 
@@ -111,6 +115,16 @@ internal class MediaPlayback @Inject constructor(
                 }
             }
         }
+        // Again for each new queue, so that what is applied is never older than the queue it is applied to.
+        scope.launch {
+            state.map { snapshot -> snapshot.queue.map { it.id } }.distinctUntilChanged().collectLatest { queue ->
+                if (queue.isNotEmpty()) {
+                    library.observeSongLocations().collect { locations ->
+                        locations.onRight { onPlayer { player -> follow(it, player) } }
+                    }
+                }
+            }
+        }
     }
 
     override val currentItem: Flow<PlaybackItem?> = state.map { it.currentItem }.distinctUntilChanged()
@@ -128,6 +142,7 @@ internal class MediaPlayback @Inject constructor(
         onPlayer { player ->
             hold = null
             items = queue.map { it.item }
+            uris = queue.associate { it.item.id to it.uri }
             // The whole queue, so the next item is prepared before the current one ends (ADR-023).
             player.setMediaItems(queue.map { it.toMediaItem() }, index, 0)
             player.prepare()
@@ -244,6 +259,46 @@ internal class MediaPlayback @Inject constructor(
     private fun Player.playsOrIsAboutTo(): Boolean =
         playWhenReady && playbackSuppressionReason != Player.PLAYBACK_SUPPRESSION_REASON_TRANSIENT_AUDIO_FOCUS_LOSS
 
+    /**
+     * Brings the queue up to date with the library. An item that is gone leaves it at once, and when that is the
+     * current one the next item starts, or nothing is loaded when there is none after it. An item that moved is given
+     * its new URI, unless it is playing: its file is already open. A player that failed on a file that is gone starts
+     * again.
+     */
+    private fun follow(locations: Map<SongId, String>, player: Player) {
+        if (items.isEmpty()) return
+        val current = player.currentMediaItemIndex
+        val gone = items.indices.filter { locations[items[it].songId] == null }
+        if (current in gone && items.indices.none { it > current && it !in gone }) {
+            unload(player)
+        } else {
+            if (current in gone) {
+                hold?.let { if (it.wasPlaying) player.play() }
+                hold = null
+                state.update { it.copy(startCount = it.startCount + 1) }
+            }
+            // From the last, so that the indices left still hold.
+            gone.asReversed().forEach { index ->
+                items = items.filterIndexed { itemIndex, _ -> itemIndex != index }
+                player.removeMediaItem(index)
+            }
+            moveToNewLocations(locations, player)
+            if (player.playerError != null) player.prepare()
+        }
+        refresh(player)
+    }
+
+    private fun moveToNewLocations(locations: Map<SongId, String>, player: Player) {
+        items.forEachIndexed { index, item ->
+            val uri = locations[item.songId] ?: return@forEachIndexed
+            val canMove = index != player.currentMediaItemIndex || player.playerError != null
+            if (uri != uris[item.id] && canMove) {
+                uris = uris + (item.id to uri)
+                player.replaceMediaItem(index, QueuedItem(item, uri).toMediaItem())
+            }
+        }
+    }
+
     /** The queue ended (ADR-018): nothing is loaded. */
     private fun unload(player: Player) {
         if (items.isEmpty()) return
@@ -268,6 +323,11 @@ internal class MediaPlayback @Inject constructor(
         }
     }
 }
+
+private val PlaybackItem.songId: SongId
+    get() = when (val itemId = id) {
+        is PlaybackItemId.Song -> itemId.id
+    }
 
 /** A hold of ⏮ or ⏭: which way it moves, whether the item plays once it ends, and when it last moved. */
 private class Hold(var direction: SeekDirection, var wasPlaying: Boolean, var movedAt: ComparableTimeMark)

@@ -7,6 +7,7 @@ import com.eduardoflores.rolabox.device.library.api.Artist
 import com.eduardoflores.rolabox.device.library.api.ArtistId
 import com.eduardoflores.rolabox.device.library.api.LibraryError
 import com.eduardoflores.rolabox.device.library.api.Song
+import com.eduardoflores.rolabox.device.library.api.SongId
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -43,6 +44,12 @@ interface LibraryIndexLocalDataSource {
 
     /** Writes [batch] in one transaction, so the lists change once and a killed process leaves a consistent index. */
     suspend fun write(batch: IndexBatch): Either<LibraryError, Unit>
+
+    /** What the last scan saw of MediaStore, or nothing before the first one. */
+    suspend fun getScanState(): Either<LibraryError, List<VolumeScanState>>
+
+    /** The URI of every song, a duplicate included, since it is still a file that can play. */
+    fun observeSongLocations(): Flow<Either<LibraryError, Map<SongId, String>>>
 
     /** Replaces what the last scan saw of MediaStore. */
     suspend fun saveScanState(volumes: List<VolumeScanState>): Either<LibraryError, Unit>
