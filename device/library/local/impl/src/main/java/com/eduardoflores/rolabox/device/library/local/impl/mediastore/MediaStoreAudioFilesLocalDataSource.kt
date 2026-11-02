@@ -5,11 +5,13 @@ import android.content.ContentResolver
 import android.content.ContentUris
 import android.content.Context
 import android.content.pm.PackageManager
+import android.database.ContentObserver
 import android.database.Cursor
 import android.database.sqlite.SQLiteException
 import android.os.Build
 import android.provider.MediaStore
 import android.provider.MediaStore.Audio.AudioColumns
+import androidx.annotation.RequiresApi
 import androidx.annotation.VisibleForTesting
 import arrow.core.Either
 import com.eduardoflores.rolabox.common.storage.api.PreferencesStore
@@ -19,6 +21,7 @@ import com.eduardoflores.rolabox.common.util.RolaboxDispatchers.IO
 import com.eduardoflores.rolabox.common.util.catchNamed
 import com.eduardoflores.rolabox.device.library.api.LibraryError
 import com.eduardoflores.rolabox.device.library.local.api.AudioFile
+import com.eduardoflores.rolabox.device.library.local.api.AudioFileChanges
 import com.eduardoflores.rolabox.device.library.local.api.AudioFileListing
 import com.eduardoflores.rolabox.device.library.local.api.AudioFilesLocalDataSource
 import com.eduardoflores.rolabox.device.library.local.api.VolumeScanState
@@ -26,7 +29,10 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.IOException
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
@@ -55,6 +61,35 @@ internal class MediaStoreAudioFilesLocalDataSource @Inject constructor(
             AudioFileListing(queryMusic(context.contentResolver, Build.VERSION.SDK_INT), volumes)
         }
     }
+
+    override suspend fun getVolumes(): Either<LibraryError, List<VolumeScanState>> = catchNamed(::toLibraryError) {
+        withContext(ioDispatcher) { volumeStates() }
+    }
+
+    override suspend fun getAudioFileChanges(since: List<VolumeScanState>): Either<LibraryError, AudioFileChanges> =
+        catchNamed(::toLibraryError) {
+            withContext(ioDispatcher) {
+                val sdk = Build.VERSION.SDK_INT
+                // Without generations, every file counts as changed.
+                val changed = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    queryChangedMusic(context.contentResolver, sdk, since)
+                } else {
+                    queryMusic(context.contentResolver, sdk)
+                }
+                AudioFileChanges(changed, queryMusicIds(context.contentResolver, sdk))
+            }
+        }
+
+    override fun observeChanges(): Flow<Unit> = callbackFlow {
+        val observer = object : ContentObserver(null) {
+            override fun onChange(selfChange: Boolean) {
+                trySend(Unit)
+            }
+        }
+        val collection = MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
+        context.contentResolver.registerContentObserver(collection, true, observer)
+        awaitClose { context.contentResolver.unregisterContentObserver(observer) }
+    }.conflate()
 
     private fun volumeStates(): List<VolumeScanState> = MediaStore.getExternalVolumeNames(context).map { volume ->
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -107,9 +142,41 @@ private fun projection(sdk: Int): List<String> = if (sdk >= Build.VERSION_CODES.
 
 /** One query for every volume: [MediaStore.VOLUME_EXTERNAL] is all of them, an SD card included. */
 @VisibleForTesting
-internal fun queryMusic(resolver: ContentResolver, sdk: Int): List<AudioFile> {
+internal fun queryMusic(resolver: ContentResolver, sdk: Int): List<AudioFile> =
+    queryAudioFiles(resolver, sdk, musicSelection(sdk), null)
+
+/** The music changed after each of [since]'s generations, on its own volume. */
+@RequiresApi(Build.VERSION_CODES.R)
+@VisibleForTesting
+internal fun queryChangedMusic(resolver: ContentResolver, sdk: Int, since: List<VolumeScanState>): List<AudioFile> {
+    val changed = since.joinToString(" OR ") {
+        "(${AudioColumns.VOLUME_NAME} = ? AND ${AudioColumns.GENERATION_MODIFIED} > ?)"
+    }
+    val args = since.flatMap { listOf(it.volume, (it.generation ?: 0).toString()) }.toTypedArray()
+    return queryAudioFiles(resolver, sdk, "${musicSelection(sdk)} AND ($changed)", args)
+}
+
+/** The ids of all the music: one column, so it is cheap on a large library. */
+@VisibleForTesting
+internal fun queryMusicIds(resolver: ContentResolver, sdk: Int): Set<Long> {
     val collection = MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
-    val cursor = resolver.query(collection, projection(sdk).toTypedArray(), musicSelection(sdk), null, null)
+    val cursor = resolver.query(collection, arrayOf(AudioColumns._ID), musicSelection(sdk), null, null)
+        ?: throw IOException("MediaStore answered with no cursor")
+    return cursor.use { rows ->
+        buildSet(rows.count) {
+            while (rows.moveToNext()) add(rows.getLong(0))
+        }
+    }
+}
+
+private fun queryAudioFiles(
+    resolver: ContentResolver,
+    sdk: Int,
+    selection: String,
+    args: Array<String>?,
+): List<AudioFile> {
+    val collection = MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
+    val cursor = resolver.query(collection, projection(sdk).toTypedArray(), selection, args, null)
         ?: throw IOException("MediaStore answered with no cursor")
     return cursor.use { rows ->
         buildList(rows.count) {

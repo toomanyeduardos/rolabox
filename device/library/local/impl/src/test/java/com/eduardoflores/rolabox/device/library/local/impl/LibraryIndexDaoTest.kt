@@ -346,5 +346,17 @@ class LibraryIndexDaoTest {
         assertEquals("external_primary", saved.volume)
         assertEquals("v2", saved.version)
         assertEquals(9L, saved.generation)
+        assertEquals(listOf(VolumeScanState("external_primary", "v2", 9)), index.getScanState().getOrNull())
+    }
+
+    @Test
+    fun theLocations_includeASongNoListShows() = runTest {
+        fill(write(1, title = "Shown"), write(2, title = "Copy").copy(isDuplicate = true))
+
+        val locations = index.observeSongLocations().first().getOrNull().orEmpty()
+        val songs = index.getIndexedSongs().getOrNull().orEmpty()
+
+        assertEquals(songs.associate { it.id to it.file.uri }, locations)
+        assertEquals(2, locations.size)
     }
 }

@@ -1,5 +1,6 @@
 package com.eduardoflores.rolabox.device.library.impl
 
+import arrow.core.left
 import arrow.core.right
 import com.eduardoflores.rolabox.common.storage.api.StorageError
 import com.eduardoflores.rolabox.device.library.api.LibraryError
@@ -10,10 +11,12 @@ import com.eduardoflores.rolabox.device.library.local.api.VolumeScanState
 import com.eduardoflores.rolabox.device.library.testing.FakeAudioFilesLocalDataSource
 import com.eduardoflores.rolabox.device.library.testing.FakeLibraryIndexLocalDataSource
 import com.eduardoflores.rolabox.device.library.testing.FakeTagsLocalDataSource
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -213,13 +216,200 @@ class LibraryScannerTest {
         runCurrent()
 
         assertEquals(1, files.listCount)
-        assertEquals(ScanPhase.Running, scanner.phase.value)
+    }
+
+    @Test
+    fun aChangeDuringAScan_marksTheLibraryDirty_andOneMoreScanRuns() = runTest {
+        val hold = CompletableDeferred<Unit>()
+        files.holdList = hold
+        val scanner = scanner()
+
+        scanner.start()
+        runCurrent()
+        scanner.start()
+        scanner.start()
+        runCurrent()
+        assertEquals(ScanPhase.RunningDirty, scanner.phase.value)
 
         hold.complete(Unit)
         runCurrent()
 
-        assertEquals(1, files.listCount)
+        assertEquals(2, files.listCount)
         assertEquals(ScanPhase.Finished, scanner.phase.value)
+    }
+
+    @Test
+    fun manyChanges_areOneScan_onceTheyStop() = runTest {
+        val scanner = scanner()
+        scanner.keepCurrent()
+        runCurrent()
+        assertEquals(1, files.listCount)
+
+        repeat(5) {
+            files.emitChange()
+            advanceTimeBy(ChangeDebounce - 1.milliseconds)
+            runCurrent()
+        }
+        assertEquals(1, files.listCount)
+
+        advanceTimeBy(2.milliseconds)
+        runCurrent()
+        assertEquals(2, files.listCount)
+    }
+
+    @Test
+    fun keepingCurrentTwice_scansOnce() = runTest {
+        val scanner = scanner()
+
+        scanner.keepCurrent()
+        scanner.keepCurrent()
+        runCurrent()
+
+        assertEquals(1, files.listCount)
+    }
+
+    @Test
+    fun atStart_withTheSameGeneration_nothingIsReadFromMediaStore() = runTest {
+        files.volumes = listOf(VolumeScanState("external_primary", "v1", 12))
+        files.files = listOf(audioFile(1))
+        scan()
+        index.batches.clear()
+
+        scan()
+
+        assertEquals(1, files.listCount)
+        assertEquals(0, files.changesCount)
+        assertTrue(index.batches.isEmpty())
+    }
+
+    @Test
+    fun atStart_nothingChanged_stillReadsTheTagsThatWereUnread() = runTest {
+        files.volumes = listOf(VolumeScanState("external_primary", "v1", 12))
+        files.files = listOf(audioFile(1))
+        val uri = files.files.single().file.uri
+        tags.results[uri] = LibraryError.FileUnreadable(uri).left()
+        scan()
+        assertNull(songOf(1).tagsReadAt)
+
+        tags.results[uri] = FileTags(title = "From the tags").right()
+        scan()
+
+        assertEquals("From the tags", songOf(1).metadata.title.value)
+    }
+
+    @Test
+    fun atStart_withALaterGeneration_onlyWhatChangedIsRead() = runTest {
+        files.volumes = listOf(VolumeScanState("external_primary", "v1", 12))
+        files.files = listOf(audioFile(1), audioFile(2))
+        scan()
+        val kept = songOf(2)
+
+        files.volumes = listOf(VolumeScanState("external_primary", "v1", 13))
+        files.changedFiles = listOf(audioFile(1, dateModified = 200, title = "New"), audioFile(3))
+        files.files = listOf(audioFile(1), audioFile(2), audioFile(3))
+        scan()
+
+        assertEquals(1, files.listCount)
+        assertEquals(1, files.changesCount)
+        assertEquals("New", songOf(1).metadata.title.value)
+        assertEquals(kept.id, songOf(2).id)
+        assertEquals(setOf(1L, 2L, 3L), index.indexed.map { it.file.mediaStoreId }.toSet())
+        assertEquals(files.volumes, index.savedScanState)
+    }
+
+    @Test
+    fun aDeletedFile_isFoundWithoutAnyChangedRow() = runTest {
+        files.volumes = listOf(VolumeScanState("external_primary", "v1", 12))
+        files.files = listOf(audioFile(1), audioFile(2, artist = "Other", album = "Other album"))
+        scan()
+
+        files.volumes = listOf(VolumeScanState("external_primary", "v1", 13))
+        files.files = listOf(audioFile(1))
+        scan()
+
+        assertEquals(listOf(1L), index.indexed.map { it.file.mediaStoreId })
+        assertEquals(listOf("Album"), index.albums.map { it.title })
+    }
+
+    @Test
+    fun aMovedFile_keepsItsSong_amongTheChanges() = runTest {
+        files.volumes = listOf(VolumeScanState("external_primary", "v1", 12))
+        files.files = listOf(audioFile(1, path = "Old/", name = "a.mp3", size = 7))
+        scan()
+        val id = songOf(1).id
+
+        val moved = audioFile(50, path = "New/", name = "a.mp3", size = 7)
+        files.volumes = listOf(VolumeScanState("external_primary", "v1", 13))
+        files.changedFiles = listOf(moved)
+        files.files = listOf(moved)
+        scan()
+
+        assertEquals(id, songOf(50).id)
+        assertEquals(1, index.indexed.size)
+    }
+
+    @Test
+    fun aCopyAmongTheChanges_isANewSong_andTheOriginalKeepsItsOwn() = runTest {
+        val original = audioFile(1, path = "A/", name = "a.mp3", size = 7)
+        files.volumes = listOf(VolumeScanState("external_primary", "v1", 12))
+        files.files = listOf(original)
+        scan()
+        val id = songOf(1).id
+
+        val copy = audioFile(2, path = "B/", name = "a.mp3", size = 7)
+        files.volumes = listOf(VolumeScanState("external_primary", "v1", 13))
+        files.changedFiles = listOf(copy)
+        files.files = listOf(original, copy)
+        scan()
+
+        assertEquals(id, songOf(1).id)
+        assertTrue(songOf(2).id != id)
+    }
+
+    @Test
+    fun withoutGenerations_everyRowIsCompared() = runTest {
+        files.volumes = listOf(VolumeScanState("external_primary", "v1", null))
+        files.files = listOf(audioFile(1))
+        scan()
+
+        scan()
+
+        assertEquals(2, files.listCount)
+        assertEquals(0, files.changesCount)
+    }
+
+    @Test
+    fun aNewVersionOfTheDatabase_comparesEveryRow() = runTest {
+        files.volumes = listOf(VolumeScanState("external_primary", "v1", 12))
+        scan()
+
+        files.volumes = listOf(VolumeScanState("external_primary", "v2", 13))
+        scan()
+
+        assertEquals(2, files.listCount)
+        assertEquals(0, files.changesCount)
+    }
+
+    @Test
+    fun aVolumeThatCameOrWent_comparesEveryRow() = runTest {
+        files.volumes = listOf(VolumeScanState("external_primary", "v1", 12))
+        scan()
+
+        files.volumes = files.volumes + VolumeScanState("sdcard-1", "v1", 3)
+        scan()
+
+        assertEquals(2, files.listCount)
+    }
+
+    @Test
+    fun aGenerationThatWentBack_comparesEveryRow() = runTest {
+        files.volumes = listOf(VolumeScanState("external_primary", "v1", 12))
+        scan()
+
+        files.volumes = listOf(VolumeScanState("external_primary", "v1", 3))
+        scan()
+
+        assertEquals(2, files.listCount)
     }
 
     @Test

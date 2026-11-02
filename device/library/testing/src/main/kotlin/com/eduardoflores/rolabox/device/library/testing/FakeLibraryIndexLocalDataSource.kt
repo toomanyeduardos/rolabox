@@ -154,6 +154,10 @@ class FakeLibraryIndexLocalDataSource : LibraryIndexLocalDataSource {
         return Index(songs, artists, albums)
     }
 
+    override suspend fun getScanState(): Either<LibraryError, List<VolumeScanState>> = savedScanState.orEmpty().right()
+
+    override fun observeSongLocations() = read { songs.mapValues { (_, song) -> song.file.uri } }
+
     override suspend fun saveScanState(volumes: List<VolumeScanState>): Either<LibraryError, Unit> {
         savedScanState = volumes
         return Unit.right()

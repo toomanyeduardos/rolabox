@@ -10,8 +10,11 @@ import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
 import androidx.test.core.app.ApplicationProvider
+import com.eduardoflores.rolabox.device.library.local.api.VolumeScanState
 import com.eduardoflores.rolabox.device.library.local.impl.mediastore.audioPermission
+import com.eduardoflores.rolabox.device.library.local.impl.mediastore.queryChangedMusic
 import com.eduardoflores.rolabox.device.library.local.impl.mediastore.queryMusic
+import com.eduardoflores.rolabox.device.library.local.impl.mediastore.queryMusicIds
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -45,6 +48,25 @@ class MediaStoreQueryTest {
     }
 
     @Test
+    fun aRowChangedAfterTheGeneration_ofItsVolume_isListed() {
+        Robolectric.setupContentProvider(FakeMediaProvider::class.java, MediaStore.AUTHORITY)
+        fun changedSince(volume: String, generation: Long) =
+            queryChangedMusic(resolver, Build.VERSION_CODES.S, listOf(VolumeScanState(volume, "v1", generation)))
+                .map { it.title }
+
+        assertEquals(listOf("Music"), changedSince("sdcard-1", 4))
+        assertEquals(emptyList<String>(), changedSince("sdcard-1", 5))
+        assertEquals(emptyList<String>(), changedSince("external_primary", 0))
+    }
+
+    @Test
+    fun theIds_areThoseOfTheMusicOnly() {
+        Robolectric.setupContentProvider(FakeMediaProvider::class.java, MediaStore.AUTHORITY)
+
+        assertEquals(setOf(1L), queryMusicIds(resolver, Build.VERSION_CODES.S))
+    }
+
+    @Test
     fun thePermission_isTheOneOfTheVersion() {
         assertEquals(Manifest.permission.READ_EXTERNAL_STORAGE, audioPermission(Build.VERSION_CODES.S_V2))
         assertEquals(Manifest.permission.READ_MEDIA_AUDIO, audioPermission(Build.VERSION_CODES.TIRAMISU))
@@ -60,9 +82,10 @@ internal class FakeMediaProvider : ContentProvider() {
                     "_display_name TEXT, _size INTEGER, date_modified INTEGER, title TEXT, artist TEXT, album TEXT, " +
                     "track INTEGER, year INTEGER, duration INTEGER, album_artist TEXT, disc_number TEXT, " +
                     "compilation TEXT, is_music INTEGER DEFAULT 1, is_ringtone INTEGER DEFAULT 0, " +
-                    "is_notification INTEGER DEFAULT 0, is_alarm INTEGER DEFAULT 0, is_recording INTEGER DEFAULT 0)",
+                    "is_notification INTEGER DEFAULT 0, is_alarm INTEGER DEFAULT 0, is_recording INTEGER DEFAULT 0, " +
+                    "generation_modified INTEGER DEFAULT 0)",
             )
-            insertRow("Music", volume = "sdcard-1")
+            insertRow("Music", "generation_modified" to 5, volume = "sdcard-1")
             insertRow("Not music", "is_music" to 0)
             insertRow("Ringtone", "is_ringtone" to 1)
             insertRow("Notification", "is_notification" to 1)

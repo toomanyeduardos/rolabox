@@ -58,6 +58,9 @@ internal data class SongRow(
     val uri: String,
 )
 
+/** Where a song's audio is. */
+internal data class SongLocationRow(val id: Long, val uri: String)
+
 @Entity(tableName = "albums", indices = [Index("groupKey", unique = true), Index("artistId")])
 internal data class AlbumEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,

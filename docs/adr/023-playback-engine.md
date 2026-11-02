@@ -9,6 +9,9 @@
   commands that set the device volume of a local player, and Media3 asks apps to use `AudioManager`
   for that instead. Its opt-in flag is experimental and due to be removed. playback/02 found it on a
   device.
+- **Revised 2026-11-02:** The queue follows the library (The service, the session and the controller).
+  library/07 needs a song that is deleted to leave the queue without a crash, and it needs no engine error,
+  which stays playback/04's.
 
 ## Context
 
@@ -101,6 +104,12 @@ notification, lock screen, headset, Bluetooth ───────────�
 - **The queue is Media3's playlist.** `play` resolves the list through the library and gives the
   whole queue to the player, so the next song is prepared before the current one ends and albums play
   without gaps (MP3 with its encoder's gapless header, and AAC).
+- **The queue follows the library.** While something is loaded, the singleton observes where the library says
+  each song is. A song that is gone leaves the queue at once. When it was the current one the next one starts,
+  as playing or as paused as it was, and when none comes after it nothing is loaded. A song that moved is given
+  its new URI, unless it is playing, since its file is already open. A player that failed on such a file is
+  prepared again. The file being gone is learned from the index: a failure the index doesn't explain is
+  playback/04's.
 - **The singleton keeps what Media3 doesn't:** the `PlaybackItem`s of the queue, the count of starts,
   and the hold of ⏮ or ⏭. It runs in the application scope, since playback outlives the screens
   ([ADR-006](006-async-api-shape.md), rule 6). Media3 is called on the main thread, as it requires,

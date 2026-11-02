@@ -12,6 +12,7 @@ import com.eduardoflores.rolabox.device.library.api.LibraryError
 import com.eduardoflores.rolabox.device.library.api.LibraryRepository
 import com.eduardoflores.rolabox.device.library.api.LibraryStatus
 import com.eduardoflores.rolabox.device.library.api.Song
+import com.eduardoflores.rolabox.device.library.api.SongId
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
@@ -108,6 +109,9 @@ class FakeLibraryRepository @Inject constructor() : LibraryRepository {
                 LibraryError.AlbumNotFound(albumId).left()
             }
         }
+
+    override fun observeSongLocations(): Flow<Either<LibraryError, Map<SongId, String>>> =
+        songsState.read { songs -> songs.associate { it.id to it.uri }.right() }
 
     override suspend fun getArtist(id: ArtistId): Either<LibraryError, Artist> = readError.value?.storageError()
         ?: (artists.firstOrNull { it.id == id }?.right() ?: LibraryError.ArtistNotFound(id).left())

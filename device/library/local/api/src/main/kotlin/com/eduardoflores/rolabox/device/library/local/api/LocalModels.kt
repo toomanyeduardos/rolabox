@@ -39,6 +39,12 @@ data class VolumeScanState(val volume: String, val version: String, val generati
 data class AudioFileListing(val files: List<AudioFile>, val volumes: List<VolumeScanState>)
 
 /**
+ * What changed since a scan: the [changed] files, and the MediaStore ids of every file still there. A generation says
+ * nothing about a row that was deleted, so a deleted file is one missing from [presentIds].
+ */
+data class AudioFileChanges(val changed: List<AudioFile>, val presentIds: Set<Long>)
+
+/**
  * What a file's tags say. A value they don't have is null. [hasEmbeddedPicture] is null when the format isn't one
  * the parser reads, so nobody knows.
  */

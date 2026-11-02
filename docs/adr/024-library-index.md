@@ -23,6 +23,12 @@
   cache tables. The list of artists sorts without a leading "The", which 39.10's fast-scroll letter
   follows. It had sorted by the whole name, so that part of the ticket's "as the library does today" was
   new. An album that is gone while it is open says so in the display.
+- **Revised 2026-11-02:** library/07 found that a generation shows rows added or changed, and never a row
+  deleted. So reading "only changed items" takes the changed rows and one query of the ids of all the music
+  (When and how the library is scanned). A change of volumes, a new version or a generation that went back
+  compares every row. A song in a queue follows the index, through `observeSongLocations()`, so a song gone
+  leaves the queue at once (What `LibraryRepository` becomes). A volume that is unmounted counts as gone, so
+  its songs come back with new ids.
 
 ## Context
 
@@ -282,7 +288,14 @@ A scan has **two passes**, so the device is usable within seconds of the first o
     anything changed, and only changed items are read. On API 29, pass 1 compares every row, which
     is one query.
   - A `ContentObserver` on MediaStore's audio collection while the process lives, debounced, so a
-    copy of many files is one scan.
+    copy of many files is one scan. It starts when the permission is first found granted.
+- **Every trigger compares first.** The same volumes at the same versions and generations read nothing, and
+  pass 2 still goes on with what is unread. A later generation reads the rows changed since, and the ids of
+  all the music, since a deleted row has no generation: a song whose id is gone is deleted, unless a changed
+  file matches it, as a moved file does. A changed file never takes the song of a file still there, since it
+  is then a copy. Anything else compares every row: no generations (API 29), another version, a generation
+  that went back, or a volume that came or went. A volume that is unmounted counts as gone, and its songs
+  come back with new ids.
 - **One scan at a time.** A trigger during a scan marks the library dirty, and one more scan runs
   when this one ends.
 - **The scanner is a `@Singleton` in `:device:library:impl`,** in the application scope
@@ -297,6 +310,8 @@ A scan has **two passes**, so the device is usable within seconds of the first o
   queries' `ORDER BY`.
 - **`Song` gains its URI,** as ADR-023 says and playback/02 adds: the `content://` URI from the
   index, as a string, since the `:api` is a JVM module with no `android.net.Uri`.
+- **It gains `observeSongLocations()`,** the URI of every song, those no list shows included, since a song
+  that became a duplicate still plays. Playback reads it to follow what is in its queue.
 - **It gains `observeStatus()`,** which the device's permission and empty rows read (library/04):
 
   ```kotlin
