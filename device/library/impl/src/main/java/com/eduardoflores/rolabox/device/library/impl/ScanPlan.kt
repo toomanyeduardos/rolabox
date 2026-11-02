@@ -29,10 +29,11 @@ internal fun planScan(files: List<AudioFile>, indexed: List<IndexedSong>): ScanP
 
     val writes = files.mapNotNull { file ->
         val song = matches[file]
-        file.toWrite(song?.id).takeUnless { song != null && it.isSameAs(song) }
+        file.toWrite(song).takeUnless { song != null && it.isSameAs(song) }
     }
     return ScanPlan(writes, untaken.map { it.id })
 }
 
 private fun SongWrite.isSameAs(song: IndexedSong) =
-    file == song.file && metadata == song.metadata && artist.key == song.artistKey && album.key == song.albumKey
+    file == song.file && metadata == song.metadata && artist.key == song.artistKey &&
+        album.key == song.albumKey && tagsReadAt == song.tagsReadAt

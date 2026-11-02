@@ -7,6 +7,7 @@ import com.eduardoflores.rolabox.device.library.local.api.IndexedSong
 import com.eduardoflores.rolabox.device.library.local.api.VolumeScanState
 import com.eduardoflores.rolabox.device.library.testing.FakeAudioFilesLocalDataSource
 import com.eduardoflores.rolabox.device.library.testing.FakeLibraryIndexLocalDataSource
+import com.eduardoflores.rolabox.device.library.testing.FakeTagsLocalDataSource
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -22,9 +23,10 @@ import org.junit.Test
 class LibraryScannerTest {
     private val files = FakeAudioFilesLocalDataSource()
     private val index = FakeLibraryIndexLocalDataSource()
+    private val tags = FakeTagsLocalDataSource()
 
     private fun TestScope.scanner() =
-        LibraryScanner(files, index, backgroundScope, StandardTestDispatcher(testScheduler))
+        LibraryScanner(files, index, tags, backgroundScope, StandardTestDispatcher(testScheduler))
 
     private fun TestScope.scan() {
         scanner().start()
@@ -180,7 +182,9 @@ class LibraryScannerTest {
 
         scan()
 
-        assertEquals(listOf(SCAN_BATCH_SIZE, SCAN_BATCH_SIZE, 1), index.batches.map { it.writes.size })
+        // Pass 1 writes, then pass 2 does, in the same batches.
+        val sizes = listOf(SCAN_BATCH_SIZE, SCAN_BATCH_SIZE, 1)
+        assertEquals(sizes + sizes, index.batches.map { it.writes.size })
     }
 
     @Test

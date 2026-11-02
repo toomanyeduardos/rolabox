@@ -12,6 +12,11 @@
   (What `LibraryRepository` becomes). Building library/04 showed that Android's rationale check is false
   both before the first ask and after a permanent denial, so the device can't tell them apart without
   it. Who asks is unchanged. The `LibraryStatus` cases keep their names.
+- **Revised 2026-11-02:** library/05 took the decisions this ADR left to it: declared Latin-1 is read as
+  CP1252, or as UTF-8 when it is valid UTF-8, and no other code page is guessed (Reading the tags); how
+  the folder and the file name are read, and that MediaStore's own guesses from them don't count as
+  MediaStore's values (Metadata). An MP3's duration from the parser is the `TLEN` frame, so "the stream's
+  header" is `mvhd` for MP4 only, and the parser stays in the tags' bytes.
 
 ## Context
 
@@ -46,7 +51,7 @@ What the decision has to fit:
 - **minSdk is 29.** The audio permission is `READ_MEDIA_AUDIO` from API 33 and
   `READ_EXTERNAL_STORAGE` before it. On API 29, MediaStore has no generation numbers.
 
-**Target state.** This ADR is ahead of the code. Pass 1 is built (library/03). The tickets that build
+**Target state.** This ADR is ahead of the code. Both passes are built (library/03 and library/05). The tickets that build
 the rest are listed under "What each ticket builds".
 
 ## Decision
@@ -146,13 +151,28 @@ Each field of a song takes its value from the first of these that has one:
 - **The index stores where each value came from,** as a source per field. A value from a weaker
   source is replaced when a stronger one turns up, and never the other way round, so a second pass
   only improves a song.
+- **While a file's date modified is the one its tags were read at, a rescan keeps what they said.** A
+  file that changed starts over from pass 1, since its old tags say nothing about it.
 - **Duration is not a tag but a property of the audio,** so for it MediaStore comes first, and the
-  parser's reading of the stream's header is used only when MediaStore has none.
+  parser's reading is used only when MediaStore has none: `mvhd` for MP4 and the `TLEN` frame for ID3. An
+  MP3's audio frames aren't parsed.
+- **MediaStore's guesses aren't its values.** For a file with no tag, the system fills in the file's
+  name as its title and the folder's name as its album. A title equal to the name without its extension,
+  or an album equal to the parent folder, counts as nothing from MediaStore, and the folder and the name
+  are then read by the rules below.
+- **The folder.** The top folder (`Music`, `Download`) is the system's, so it never counts. Of the
+  folders under it, the last two are the artist and the album, only if there are two and neither is a
+  generic name such as `Downloads` or `Unknown`, whose list is in the code. `Music/Dump/x.mp3` says
+  nothing, because a folder that names no artist is worse than none. Tags always win, so songs with the
+  same tags are one album wherever they are.
+- **The file name.** `Artist - Title.ext`, `01 Title.ext`, `01 - Title.ext` and
+  `01 - Artist - Title.ext` are read. Without a separator, it takes two or three digits to be a track
+  number, so `7 Rings` is a title. Track 0 is no track, here and in the tags. The title is otherwise the
+  name without its extension, so a song with a name never has a blank row.
 - **"Unknown" is never stored as text.** The words the user sees ("Unknown album") are the screens',
   in strings that can be translated. The library sorts and groups a missing value as a value of its
   own.
-- **Which source a field can come from, and how the folder and the name are read,** are library/05's
-  details. **How songs become albums and artists** (album artist, compilations, discs, songs with no
+- **How songs become albums and artists** (album artist, compilations, discs, songs with no
   album) are library/06's grouping rules. Until library/06, songs are grouped by album title and
   album artist, or artist when there is none. A song keeps its own artist, and a name is never split,
   so "U2 & Coldplay" is an artist of its own. An artist's albums include those of others they have a
@@ -173,8 +193,17 @@ Each field of a song takes its value from the first of these that has one:
   around it.
 - **The parser is plain Kotlin over bytes,** in `:local:impl`, tested on the JVM with tags built in
   the tests and with the generated tones of library/02.
-- **Text is decoded as the tag declares.** A Latin-1 frame that really holds another code page shows
-  wrong characters, as it does in most players. Whether to detect that is library/05's.
+- **Text is decoded as the tag declares, with one correction.** Latin-1, the declaration of old taggers
+  and all of ID3v1, is read as CP1252, since the two differ only in 0x80 to 0x9F, where Latin-1 has
+  control characters no tag means. When bytes past ASCII are valid UTF-8, they are read as UTF-8, since
+  that doesn't happen by chance. Other code pages (Cyrillic, Shift-JIS) aren't guessed: detection misfires
+  on text as short as a title, and a wrong guess spoils good tags, so those show wrong characters, as they
+  do in most players.
+- **ID3v2 comes before ID3v1, field by field,** since ID3v1 is cut at 30 characters. Of several values in
+  one frame, the first is used.
+- **What can't be read fails only that file.** It is a typed `LibraryError`, logged, and never shown.
+  Tags that make no sense count as read, so they aren't tried on each start. A file that couldn't be
+  opened stays unread, and the next scan tries it again.
 
 ### Identity: the index's own ids
 
@@ -279,7 +308,6 @@ A scan has **two passes**, so the device is usable within seconds of the first o
 - **"Add a folder" through the Storage Access Framework.** Later, for files MediaStore misses.
 - **A rescan the user starts,** from settings. Nothing needs it while the observer and the start-up
   check keep the index current.
-- **Detecting the real code page of a badly encoded tag** (library/05).
 - **Where a podcast episode's position is stored.** In a database of the podcasts' own, when they
   come (ADR-023, What was not decided).
 
@@ -375,7 +403,9 @@ misses.
   more module.
 - The parser is Rolabox's to maintain, and its bugs are Rolabox's. Its tests are the safety net,
   and the formats past MP3 and M4A rely on MediaStore's values.
-- A badly encoded Latin-1 tag still shows the wrong characters until library/05 decides otherwise.
+- A tag in a code page other than CP1252 or UTF-8 still shows the wrong characters.
+- The folder fallback can still take a folder for an artist, as in `Music/Rips/Loose/x.mp3`, on a song
+  with no metadata at all.
 - Ids are stable through rescans and the system's own rebuilds, at the price of a matching step in
   pass 1.
 - Each part with relational data has a database of its own. A screen that combines two parts'

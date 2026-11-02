@@ -36,9 +36,9 @@ internal data class SongEntity(
     val compilationSource: FieldSource,
     val durationMillis: Long?,
     val durationSource: FieldSource,
-    /** Null until the tags are read (library/05). */
+    /** Null until the tags are read, and for a format the parser doesn't read. */
     val hasEmbeddedPicture: Boolean? = null,
-    /** The date modified at which the tags were last read, or null if they haven't been (library/05). */
+    /** The date modified at which the tags were last read, or null if they haven't been. */
     val tagsReadAt: Long? = null,
 )
 

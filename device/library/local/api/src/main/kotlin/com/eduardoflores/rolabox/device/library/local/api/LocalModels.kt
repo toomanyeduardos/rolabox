@@ -38,6 +38,23 @@ data class VolumeScanState(val volume: String, val version: String, val generati
 /** Everything one query of MediaStore found, and the state of each volume when it did. */
 data class AudioFileListing(val files: List<AudioFile>, val volumes: List<VolumeScanState>)
 
+/**
+ * What a file's tags say. A value they don't have is null. [hasEmbeddedPicture] is null when the format isn't one
+ * the parser reads, so nobody knows.
+ */
+data class FileTags(
+    val title: String? = null,
+    val artist: String? = null,
+    val albumArtist: String? = null,
+    val album: String? = null,
+    val trackNumber: Int? = null,
+    val discNumber: Int? = null,
+    val year: Int? = null,
+    val compilation: Boolean? = null,
+    val durationMillis: Long? = null,
+    val hasEmbeddedPicture: Boolean? = null,
+)
+
 /** A song's fields, each with its source. */
 data class SongMetadata(
     val title: Sourced<String>,
@@ -57,13 +74,18 @@ data class ArtistGroup(val key: String, val name: String?)
 /** An album as the index finds it: by [key], which keeps its id across rescans. */
 data class AlbumGroup(val key: String, val title: String?, val year: Int?, val artist: ArtistGroup)
 
-/** A song as indexed, with the keys of the artist and the album it is on. */
+/**
+ * A song as indexed, with the keys of the artist and the album it is on. [tagsReadAt] is the date modified at which
+ * its tags were last read, or null if they haven't been.
+ */
 data class IndexedSong(
     val id: SongId,
     val file: SongFile,
     val metadata: SongMetadata,
     val artistKey: String,
     val albumKey: String,
+    val hasEmbeddedPicture: Boolean? = null,
+    val tagsReadAt: Long? = null,
 )
 
 /** A song to add, when [id] is null, or to update. */
@@ -73,6 +95,8 @@ data class SongWrite(
     val metadata: SongMetadata,
     val artist: ArtistGroup,
     val album: AlbumGroup,
+    val hasEmbeddedPicture: Boolean? = null,
+    val tagsReadAt: Long? = null,
 )
 
 /** What one transaction of the index writes. Albums and artists left with no song go with it. */

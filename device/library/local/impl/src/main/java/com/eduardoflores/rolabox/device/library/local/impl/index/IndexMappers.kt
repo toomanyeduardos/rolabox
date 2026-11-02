@@ -52,6 +52,8 @@ internal fun IndexedSongRow.toIndexedSong() = IndexedSong(
     ),
     artistKey = artistKey,
     albumKey = albumKey,
+    hasEmbeddedPicture = song.hasEmbeddedPicture,
+    tagsReadAt = song.tagsReadAt,
 )
 
 private fun <T : Any> sourced(value: T?, source: FieldSource) = Sourced(value, source)
@@ -84,4 +86,6 @@ internal fun SongWrite.toEntity(artistId: Long, albumId: Long) = SongEntity(
     compilationSource = metadata.compilation.source,
     durationMillis = metadata.durationMillis.value,
     durationSource = metadata.durationMillis.source,
+    hasEmbeddedPicture = hasEmbeddedPicture,
+    tagsReadAt = tagsReadAt,
 )
