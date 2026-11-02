@@ -114,11 +114,22 @@
 <div style="display:{{ s.ovD }};position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:104px;height:104px;border-radius:18px;align-items:center;justify-content:center;background:rgba(28,28,30,.74);box-shadow:0 8px 20px -8px rgba(0,0,0,.5);color:#fff;font-size:68px;font-weight:700;line-height:1;letter-spacing:-.02em">{{ s.ov }}</div>
 </div>
 </sc-if>
+<sc-if value="{{ s.isStopped }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:16px 22px;text-align:center">
+<div style="font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.2">{{ s.stopTitle }}</div>
+<div style="font-size:14px;line-height:1.35;color:{{ th.t.sMuted }};text-wrap:pretty">{{ s.stopBody }}</div>
+</div>
+</sc-if>
 <sc-if value="{{ s.isPlayer }}" hint-placeholder-val="{{ false }}">
 <div style="flex:1;display:flex;flex-direction:column;padding:10px 12px 12px;gap:12px">
 <div style="display:flex;justify-content:space-between;font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.06em;color:{{ th.t.sMuted }}"><span>{{ s.pos }}</span><span style="color:{{ s.tagC }}">{{ s.tag }}</span></div>
 <div style="display:flex;gap:12px;align-items:center">
+<sc-if value="{{ s.noCover }}" hint-placeholder-val="{{ false }}">
+<div style="width:108px;height:108px;flex:none;border-radius:4px;display:flex;flex-direction:column;gap:4px;align-items:center;justify-content:center;padding:6px;box-sizing:border-box;text-align:center;background:{{ th.t.art }};box-shadow:0 0 0 1px {{ th.t.sRule }},0 4px 10px -4px rgba(0,0,0,.35)"><div style="font-size:13px;font-weight:700;line-height:1.2">{{ s.noticeTitle }}</div><div style="font-size:11px;line-height:1.25;color:{{ th.t.sMuted }}">{{ s.noticeBody }}</div></div>
+</sc-if>
+<sc-if value="{{ s.hasCover }}" hint-placeholder-val="{{ true }}">
 <div style="width:108px;height:108px;flex:none;border-radius:4px;display:flex;align-items:center;justify-content:center;background:{{ th.t.art }};box-shadow:0 0 0 1px {{ th.t.sRule }},0 4px 10px -4px rgba(0,0,0,.35);font:600 9px ui-monospace,Menlo,monospace;letter-spacing:.1em;color:{{ th.t.sMuted }}">COVER ART</div>
+</sc-if>
 <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
 <div style="font-size:16px;font-weight:700;letter-spacing:-.01em;line-height:1.2">{{ s.song }}</div>
 <div style="font-size:14px;line-height:1.25">{{ s.artist }}</div>
@@ -206,7 +217,9 @@ class Component extends DCLogic {
       { num: '11', label: 'Settings', how: 'Center on Settings in the main menu. Clicker and Theme change in place with center: Theme steps through System, Light and Dark. Main Menu and About open a list. Account leaves the device for the full screen, and back returns here.', title: 'Settings', items: deviceSettings, hi: 0, play: null, w: 'center' },
       { num: '12', label: 'Settings · Main Menu', how: 'Center on Main Menu. Each row that can be hidden, with On or Off. Center changes it in place, and the main menu shows only the rows that are On. Settings and Now Playing are always shown, so they are not listed.', title: 'Main Menu', items: mainMenuRows, hi: 2, play: null, w: 'center' },
       { num: '13', label: 'Settings · About', how: 'Center on About. The app, its version and the number of songs in the library. Nothing is highlighted: there is nothing to open or change, and MENU goes back.', title: 'About', items: about, hi: -1, play: null, w: 'menu' },
-      { num: '14', label: 'Artists · fast turning', how: 'Spin fast through a long list sorted by name. The first letter of the highlighted row shows over the list and fades out shortly after the turning slows. A name that starts with a digit or a symbol shows #. "The Beatles" shows T, as the list sorts it. Menus and an album\'s songs never show it.', title: 'Artists', items: manyArtists, hi: 9, top: 6, total: 240, overlay: 'M', play: null, w: 'turn' }
+      { num: '14', label: 'Artists · fast turning', how: 'Spin fast through a long list sorted by name. The first letter of the highlighted row shows over the list and fades out shortly after the turning slows. A name that starts with a digit or a symbol shows #. "The Beatles" shows T, as the list sorts it. Menus and an album\'s songs never show it.', title: 'Artists', items: manyArtists, hi: 9, top: 6, total: 240, overlay: 'M', play: null, w: 'turn' },
+      { num: '20', label: 'Now Playing · song skipped', how: 'A song that can\'t be played is skipped and the next one starts. For 4s the message takes the cover art\'s place, with the reason under it, and nothing else moves. A skip in that time adds to the count and starts the 4s again. The wheel works as usual. Long titles end in an ellipsis after two lines.', player: 1, ...P, song: 'Tin Can Summer', pos: '4 OF 10', lt: '0:02', rt: '-3:12', pct: '1%', mode: 'play', play: true, w: 'none', notice: ['Skipped Glasshouse and 2 more', 'This file is damaged'] },
+      { num: '21', label: 'Now Playing · nothing left to play', how: 'No song left in the queue can be played. Nothing is loaded, so the record and the main menu\'s row go away, and Now Playing stays with this until MENU goes back. It uses the display\'s message, as 17 and 18 do. A queue that ends normally still pops Now Playing.', player: 1, stopped: ['Nothing left can be played', 'Skipped Glasshouse and 2 more'], play: null, w: 'menu' }
     ];
     const V = 8;
     const build = (t, bg) => defs.map(d => {
@@ -214,7 +227,9 @@ class Component extends DCLogic {
       const s = { num: d.num, label: d.label, how: d.how, w, ind: d.play == null ? null : disc(13, bg, d.play) };
       if (d.player) {
         const scrub = d.mode === 'scrub', vol = d.mode === 'vol';
+        if (d.stopped) return { ...s, isList: false, isPlayer: false, isStopped: true, title: 'Now Playing', stopTitle: d.stopped[0], stopBody: d.stopped[1] };
         return { ...s, isList: false, isPlayer: true, title: 'Now Playing', song: d.song, artist: d.artist, album: d.album, pos: d.pos,
+          hasCover: !d.notice, noCover: !!d.notice, noticeTitle: d.notice ? d.notice[0] : '', noticeBody: d.notice ? d.notice[1] : '',
           tag: d.tag || '', tagC: scrub ? '#E4572E' : t.sMuted, lt: d.lt, rt: d.rt, pct: d.pct,
           barH: scrub ? '8px' : '6px', fillC: scrub ? '#E4572E' : vol ? t.sInk : t.fill, knobD: scrub ? 'block' : 'none' };
       }

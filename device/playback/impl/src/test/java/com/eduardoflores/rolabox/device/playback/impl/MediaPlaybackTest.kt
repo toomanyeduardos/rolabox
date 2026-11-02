@@ -486,13 +486,18 @@ class MediaPlaybackTest {
     fun anItemThatEnds_isFollowedByTheNextFromItsStart_andItPlays() = scope.runTest {
         playback.play(PlaybackSource.ByAlbum(album.id), item(1))
 
-        playUntilTheNextItem()
+        TestPlayerRunHelper.run(
+            player,
+        ).untilPositionDiscontinuityWithReason(Player.DISCONTINUITY_REASON_AUTO_TRANSITION)
+        // Read before the looper runs again, and then held here: the fake clock runs ahead of a playing player on a
+        // busy machine.
+        assertTrue(playback.isPlaying.first())
+        player.pause()
+        tick()
 
         assertEquals(item(2), playback.currentItem.first()?.id)
         assertEquals(1, playback.queueIndex.first())
-        // It plays on while the test reads it, so it is only known to be near its start.
         assertTrue(playback.position.first() < 1.seconds)
-        assertTrue(playback.isPlaying.first())
     }
 
     @Test

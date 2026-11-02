@@ -41,6 +41,10 @@ internal class DeviceViewModelImpl @Inject constructor(
         .map { it != null }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), false)
 
+    override val queueStoppedUnplayable: StateFlow<Boolean> = playbackState.unplayableQueue
+        .map { it != null }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), false)
+
     override val isPlaying: StateFlow<Boolean> = playbackState.isPlaying
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), false)
 
@@ -99,6 +103,11 @@ private val AllShown = MainMenuRow.entries.associateWith { MainMenuRowVisibility
 
 private fun PlaybackError.toPlayFailure(): PlayFailure = when (this) {
     is PlaybackError.Library -> PlayFailure.LibraryUnavailable
+
     is PlaybackError.ItemNotInSource -> PlayFailure.SongNotInList
+
     PlaybackError.PlayerUnavailable -> PlayFailure.PlayerUnavailable
+
+    // The state reports these, and play() never returns one: the nearest thing to say if it ever did.
+    is PlaybackError.Unplayable -> PlayFailure.PlayerUnavailable
 }

@@ -2,8 +2,10 @@ package com.eduardoflores.rolabox.device.playback.ui.impl
 
 import androidx.lifecycle.viewModelScope
 import com.eduardoflores.rolabox.device.playback.api.PlaybackController
+import com.eduardoflores.rolabox.device.playback.api.PlaybackError
 import com.eduardoflores.rolabox.device.playback.api.PlaybackItem
 import com.eduardoflores.rolabox.device.playback.api.PlaybackState
+import com.eduardoflores.rolabox.device.playback.api.SkippedItems
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlin.time.Duration
@@ -53,13 +55,13 @@ internal class NowPlayingViewModelImpl @Inject constructor(
     override val uiState: StateFlow<NowPlayingUiState> = combine(
         combine(playbackState.currentItem, playbackState.startCount, ::Pair)
             .onEach { (item, start) -> endScrubOnAnotherStart(item, start) },
-        playbackState.position,
-        playbackState.queueIndex,
-        playbackState.queue,
+        combine(playbackState.position, playbackState.queueIndex, playbackState.queue, ::Triple),
         combine(mode, playbackState.volume, marker, ::Triple),
-    ) { (item, start), position, index, queue, (mode, volume, marker) ->
+        playbackState.skipped,
+        playbackState.unplayableQueue,
+    ) { (item, start), (position, index, queue), (mode, volume, marker), skipped, unplayableQueue ->
         if (item == null || index == null) {
-            NowPlayingUiState.NothingLoaded
+            unplayableQueue?.let { NowPlayingUiState.NothingLeftToPlay(it.toUi()) } ?: NowPlayingUiState.NothingLoaded
         } else {
             val shown = marker?.takeIf { mode == NowPlayingMode.Scrub && it.start == start }?.position ?: position
             NowPlayingUiState.Playing(
@@ -72,6 +74,7 @@ internal class NowPlayingViewModelImpl @Inject constructor(
                 duration = item.duration,
                 mode = mode,
                 volume = volume,
+                skipped = skipped?.toUi(),
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), NowPlayingUiState.Loading)
@@ -163,3 +166,16 @@ internal class NowPlayingViewModelImpl @Inject constructor(
         const val STOP_TIMEOUT_MILLIS = 5_000L
     }
 }
+
+private fun SkippedItems.toUi() = SkippedSongs(
+    title = last.title,
+    others = count - 1,
+    reason = when (error) {
+        PlaybackError.Unplayable.Missing -> SkipReason.Missing
+        PlaybackError.Unplayable.Damaged -> SkipReason.Damaged
+        PlaybackError.Unplayable.Unsupported -> SkipReason.Unsupported
+        PlaybackError.Unplayable.Protected -> SkipReason.Protected
+        PlaybackError.Unplayable.Unreadable -> SkipReason.Unreadable
+        PlaybackError.Unplayable.EngineFailed -> SkipReason.Unknown
+    },
+)

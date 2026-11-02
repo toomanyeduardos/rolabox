@@ -69,11 +69,13 @@ internal fun DeviceRoute(
         Toast.makeText(context, failure.message, Toast.LENGTH_SHORT).show()
         viewModel.onPlayFailureShown()
     }
-    // The queue ended: nothing is loaded, so Now Playing leaves the display if it is showing (ADR-018, rule 8).
+    val queueStoppedUnplayable by viewModel.queueStoppedUnplayable.collectAsStateWithLifecycle()
+    // The queue ended: nothing is loaded, so Now Playing leaves the display if it is showing (ADR-018, rule 8), unless
+    // it stays to say that nothing left could be played, until MENU.
     // Only a song that was loaded and no longer is counts, not the state before the first one is known.
     var wasLoaded by remember { mutableStateOf(false) }
     LaunchedEffect(nowPlayingShown) {
-        if (wasLoaded && !nowPlayingShown) stack.popIfTop(NowPlayingKey)
+        if (wasLoaded && !nowPlayingShown && !queueStoppedUnplayable) stack.popIfTop(NowPlayingKey)
         wasLoaded = nowPlayingShown
     }
     DeviceHost(

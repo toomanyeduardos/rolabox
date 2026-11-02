@@ -9,6 +9,7 @@ import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
 import com.eduardoflores.rolabox.device.playback.api.PlaybackState
 import com.eduardoflores.rolabox.device.playback.api.SeekDirection
+import com.eduardoflores.rolabox.device.playback.api.SkippedItems
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.Duration
@@ -33,6 +34,8 @@ class FakePlayback @Inject constructor() :
     private val positionState = MutableStateFlow(Duration.ZERO)
     private val startCountState = MutableStateFlow(0)
     private val volumeState = MutableStateFlow(INITIAL_VOLUME)
+    private val skippedState = MutableStateFlow<SkippedItems?>(null)
+    private val unplayableQueueState = MutableStateFlow<SkippedItems?>(null)
 
     /** What [play] answers with. */
     var playResult: Either<PlaybackError, Unit> = Unit.right()
@@ -64,6 +67,19 @@ class FakePlayback @Inject constructor() :
     override val queueIndex: Flow<Int?> = queueIndexState
     override val startCount: Flow<Int> = startCountState
     override val volume: Flow<Int> = volumeState
+    override val skipped: Flow<SkippedItems?> = skippedState
+    override val unplayableQueue: Flow<SkippedItems?> = unplayableQueueState
+
+    /** What [skipped] says, or `null` once its time is over. */
+    fun skippedItems(items: SkippedItems?) {
+        skippedState.value = items
+    }
+
+    /** No item left could be played: nothing is loaded, and [unplayableQueue] says why. */
+    fun queueStopped(items: SkippedItems) {
+        unplayableQueueState.value = items
+        unload()
+    }
 
     /** Loads [queue] with the item at [index] current, playing at 0:00. */
     fun load(queue: List<PlaybackItem>, index: Int) {

@@ -7,8 +7,8 @@ import com.eduardoflores.rolabox.device.host.DeviceScreen
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
-// The screen as the design shows it (player-designs/device, frames 06 to 08), on the assembled device. They call
-// the stateless composable with explicit state (ADR-016, rule 3).
+// The screen as the design shows it (player-designs/device, frames 06 to 08, 20 and 21), on the assembled device.
+// They call the stateless composable with explicit state (ADR-016, rule 3).
 
 private val Glasshouse = NowPlayingUiState.Playing(
     title = "Glasshouse",
@@ -29,6 +29,13 @@ private val LongTitle = Glasshouse.copy(
 private val Scrubbing = Glasshouse.copy(position = 1.minutes + 48.seconds, mode = NowPlayingMode.Scrub)
 
 private val ChangingVolume = Glasshouse.copy(mode = NowPlayingMode.Volume, volume = 62)
+
+private val Skipped = Glasshouse.copy(
+    title = "Tin Can Summer",
+    number = 4,
+    position = 2.seconds,
+    skipped = SkippedSongs("Glasshouse", others = 2, SkipReason.Damaged),
+)
 
 @Composable
 private fun DevicePreview(state: NowPlayingUiState) {
@@ -58,3 +65,21 @@ private fun NowPlayingScrubPreview() = DevicePreview(Scrubbing)
 @PreviewLightDark
 @Composable
 private fun NowPlayingVolumePreview() = DevicePreview(ChangingVolume)
+
+// Frame 20.
+@PreviewLightDark
+@Composable
+private fun NowPlayingSkippedPreview() = DevicePreview(Skipped)
+
+@PreviewLightDark
+@Composable
+private fun NowPlayingSkippedLongTitlePreview() = DevicePreview(
+    Skipped.copy(skipped = SkippedSongs(LongTitle.title, others = 0, SkipReason.Unsupported)),
+)
+
+// Frame 21.
+@PreviewLightDark
+@Composable
+private fun NowPlayingNothingLeftToPlayPreview() = DevicePreview(
+    NowPlayingUiState.NothingLeftToPlay(SkippedSongs("Glasshouse", others = 2, SkipReason.Damaged)),
+)

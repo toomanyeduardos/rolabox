@@ -38,4 +38,18 @@ interface PlaybackState {
 
     /** The phone's media volume, from 0 to 100 of its maximum. */
     val volume: Flow<Int>
+
+    /**
+     * The items just skipped because they couldn't be played. It is set for a few seconds after a skip, so a screen
+     * that starts observing right after it still sees it, and one that comes later doesn't. A skip in that time adds
+     * to the [SkippedItems.count]. `null` otherwise.
+     */
+    val skipped: Flow<SkippedItems?>
+
+    /**
+     * What stopped the queue, when no item left in it could be played. Nothing is loaded then, and this stays until
+     * the next [PlaybackController.play], so Now Playing can say so. `null` otherwise, also after a queue that ended
+     * as queues do.
+     */
+    val unplayableQueue: Flow<SkippedItems?>
 }

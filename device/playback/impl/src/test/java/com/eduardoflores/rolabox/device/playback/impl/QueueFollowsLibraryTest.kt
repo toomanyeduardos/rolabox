@@ -3,12 +3,11 @@ package com.eduardoflores.rolabox.device.playback.impl
 import android.content.Context
 import android.net.Uri
 import androidx.annotation.OptIn
-import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.test.utils.FakeClock
+import androidx.media3.test.utils.robolectric.RobolectricUtil
 import androidx.media3.test.utils.robolectric.ShadowMediaCodecConfig
-import androidx.media3.test.utils.robolectric.TestPlayerRunHelper
 import androidx.test.core.app.ApplicationProvider
 import arrow.core.right
 import com.eduardoflores.rolabox.device.library.api.Album
@@ -163,16 +162,18 @@ class QueueFollowsLibraryTest {
     }
 
     @Test
-    fun aPlayerThatFailedOnAFileThatIsGone_goesOn_whenTheLibraryLearnsOfIt() = scope.runTest {
+    fun aFileGoneBeforeTheLibraryLearnsOfIt_isSkipped_andLeavesTheQueueWhenItDoes() = scope.runTest {
         File(folder.root, "1.mp3").delete()
         playFromAlbum(1)
-        TestPlayerRunHelper.run(player).untilPlayerError()
-        assertEquals(Player.STATE_IDLE, player.playbackState)
+        RobolectricUtil.runMainLooperUntil { player.currentMediaItemIndex == 1 }
+        runCurrent()
+        assertEquals(2L, playback.currentItem.first()?.songNumber)
 
         library.songs = library.songs.filterNot { it.id == SongId(1) }
         runCurrent()
 
         assertEquals(2L, playback.currentItem.first()?.songNumber)
+        assertEquals(4, playback.queue.first().size)
         assertNull(player.playerError)
         assertTrue(playback.isPlaying.first())
     }
