@@ -219,6 +219,58 @@ class LibraryIndexDaoTest {
     }
 
     @Test
+    fun artists_sortByTheirSortName_withUnknownLast() = runTest {
+        fill(
+            write(1, artist = null, album = "One"),
+            write(2, artist = "Zed", album = "Two"),
+            write(3, artist = "Abba", album = "Three").let {
+                it.copy(artist = ArtistGroup("the beatles", "The Beatles", sortName = "beatles"))
+            },
+        )
+
+        assertEquals(
+            listOf("The Beatles", "Zed", null),
+            index.observeArtists().first().getOrNull().orEmpty().map { it.name }.filterNot { it == "Abba" },
+        )
+    }
+
+    @Test
+    fun aDuplicate_isInNoList_andStaysIndexed() = runTest {
+        fill(write(1, title = "Shown"), write(2, title = "Copy").copy(isDuplicate = true))
+
+        assertEquals(listOf("Shown"), index.observeSongs().first().getOrNull().orEmpty().map { it.title })
+        assertEquals(1, index.observeSongsByArtist(artistId("Artist")).first().getOrNull().orEmpty().size)
+        val album = index.observeAlbums().first().getOrNull().orEmpty().single().id
+        assertEquals(1, index.observeSongsByAlbum(album).first().getOrNull().orEmpty().size)
+        assertEquals(2, index.getIndexedSongs().getOrNull().orEmpty().size)
+    }
+
+    @Test
+    fun theUnknownAlbum_isOneRow_onNoArtistsScreen_withTheirSongsThere() = runTest {
+        val unknown = AlbumGroup("none", title = null, year = null, artist = ArtistGroup("", null))
+        fill(
+            write(1, artist = "A", album = null).copy(album = unknown),
+            write(2, artist = "B", album = null).copy(album = unknown),
+        )
+
+        assertEquals(listOf(null), index.observeAlbums().first().getOrNull().orEmpty().map { it.title })
+        assertEquals(emptyList<Any>(), index.observeAlbumsByArtist(artistId("A")).first().getOrNull().orEmpty())
+        assertEquals(1, index.observeSongsByArtist(artistId("A")).first().getOrNull().orEmpty().size)
+        // Nobody's song is the unknown artist's, so they aren't a row.
+        assertEquals(listOf("A", "B"), index.observeArtists().first().getOrNull().orEmpty().map { it.name })
+    }
+
+    @Test
+    fun aNewSpelling_changesTheRow_andKeepsItsId() = runTest {
+        fill(write(1, artist = "abba"))
+        val id = artistId("abba")
+
+        fill(write(2, artist = "abba", albumArtist = "Other").copy(artist = ArtistGroup("abba", "ABBA")))
+
+        assertEquals(id, artistId("ABBA"))
+    }
+
+    @Test
     fun anUpdate_keepsTheSongsId() = runTest {
         fill(write(1, title = "Old"))
         val id = index.getIndexedSongs().getOrNull().orEmpty().single().id

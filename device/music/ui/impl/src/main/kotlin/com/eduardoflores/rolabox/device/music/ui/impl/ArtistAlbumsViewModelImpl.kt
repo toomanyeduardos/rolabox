@@ -25,7 +25,13 @@ internal class ArtistAlbumsViewModelImpl @AssistedInject constructor(
 
     // A name that can't be read leaves the header empty: the list already says the library can't be read.
     override val title: StateFlow<ListTitle?> =
-        flow { emit(libraryRepository.getArtist(ArtistId(artistId)).getOrNull()?.let { ListTitle.Artist(it.name) }) }
+        flow {
+            emit(
+                libraryRepository.getArtist(ArtistId(artistId)).getOrNull()?.let {
+                    ListTitle.Artist(it.name, it.isVarious)
+                },
+            )
+        }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), null)
 
     @AssistedFactory

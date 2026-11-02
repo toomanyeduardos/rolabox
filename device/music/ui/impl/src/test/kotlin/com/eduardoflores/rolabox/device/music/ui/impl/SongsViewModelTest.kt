@@ -56,12 +56,12 @@ class SongsViewModelTest {
 
     @Test
     fun unknownAlbum_isFailed() = runTest {
-        assertEquals(ListUiState.Failed, observedViewModel(SongsSource.Album(AlbumId(UNKNOWN_ID))).uiState.value)
+        assertEquals(ListUiState.Gone, observedViewModel(SongsSource.Album(AlbumId(UNKNOWN_ID))).uiState.value)
     }
 
     @Test
     fun unknownArtist_isFailed() = runTest {
-        assertEquals(ListUiState.Failed, observedViewModel(SongsSource.Artist(ArtistId(UNKNOWN_ID))).uiState.value)
+        assertEquals(ListUiState.Gone, observedViewModel(SongsSource.Artist(ArtistId(UNKNOWN_ID))).uiState.value)
     }
 
     @Test

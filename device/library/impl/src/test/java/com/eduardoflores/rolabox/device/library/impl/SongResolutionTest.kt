@@ -118,11 +118,11 @@ class SongResolutionTest {
     @Test
     fun anUnchangedFile_keepsItsTags_overMediaStore() {
         val read = indexed(untagged).let { song ->
-            val write = song.toWriteAfterReading(FileTags(title = "From tags"))
+            val write = song.toDraftAfterReading(FileTags(title = "From tags"))
             song.copy(metadata = write.metadata, tagsReadAt = write.tagsReadAt)
         }
 
-        val write = untagged.copy(title = "From MediaStore").toWrite(read)
+        val write = untagged.copy(title = "From MediaStore").toDraft(read)
 
         assertEquals(Sourced("From tags", FieldSource.Tags), write.metadata.title)
         assertEquals(read.tagsReadAt, write.tagsReadAt)
@@ -132,7 +132,7 @@ class SongResolutionTest {
     fun aSongRead_stillTakesAStrongerSource_whenOneTurnsUp() {
         val read = indexed(untagged).let { it.copy(tagsReadAt = it.file.dateModified) }
 
-        val write = untagged.copy(artist = "Now known").toWrite(read)
+        val write = untagged.copy(artist = "Now known").toDraft(read)
 
         assertEquals(Sourced("Now known", FieldSource.MediaStore), write.metadata.artist)
     }
@@ -140,11 +140,11 @@ class SongResolutionTest {
     @Test
     fun aChangedFile_losesWhatItsOldTagsSaid_andIsReadAgain() {
         val read = indexed(untagged).let { song ->
-            val write = song.toWriteAfterReading(FileTags(title = "Old tag", hasEmbeddedPicture = true))
+            val write = song.toDraftAfterReading(FileTags(title = "Old tag", hasEmbeddedPicture = true))
             song.copy(metadata = write.metadata, hasEmbeddedPicture = true, tagsReadAt = write.tagsReadAt)
         }
 
-        val write = untagged.copy(file = untagged.file.copy(dateModified = 999)).toWrite(read)
+        val write = untagged.copy(file = untagged.file.copy(dateModified = 999)).toDraft(read)
 
         assertEquals(Sourced("Neon Rain", FieldSource.FileName), write.metadata.title)
         assertNull(write.tagsReadAt)
@@ -157,7 +157,9 @@ class SongResolutionTest {
         val first = indexed(audioFile(1, path = "Music/One/", name = "a.mp3", artist = null, album = null))
         val second = indexed(audioFile(2, path = "Download/Two/Three/", name = "b.mp3", artist = null, album = null))
 
-        assertEquals(first.toWriteAfterReading(tags).album.key, second.toWriteAfterReading(tags).album.key)
+        val writes = groupSongs(listOf(first.toDraftAfterReading(tags), second.toDraftAfterReading(tags)))
+
+        assertEquals(writes[0].album.key, writes[1].album.key)
     }
 
     private fun indexed(file: AudioFile) = IndexedSong(

@@ -1,8 +1,10 @@
 package com.eduardoflores.rolabox.device.library.impl
 
+import arrow.core.right
 import com.eduardoflores.rolabox.common.storage.api.StorageError
 import com.eduardoflores.rolabox.device.library.api.LibraryError
 import com.eduardoflores.rolabox.device.library.local.api.FieldSource
+import com.eduardoflores.rolabox.device.library.local.api.FileTags
 import com.eduardoflores.rolabox.device.library.local.api.IndexedSong
 import com.eduardoflores.rolabox.device.library.local.api.VolumeScanState
 import com.eduardoflores.rolabox.device.library.testing.FakeAudioFilesLocalDataSource
@@ -269,9 +271,9 @@ class LibraryScannerTest {
     @Test
     fun albums_areGroupedByTitleAndAlbumArtist() = runTest {
         files.files = listOf(
-            audioFile(1, artist = "A", album = "Same"),
-            audioFile(2, artist = "A", album = "Same"),
-            audioFile(3, artist = "B", album = "Same"),
+            audioFile(1, artist = "A", albumArtist = "A", album = "Same"),
+            audioFile(2, artist = "A", albumArtist = "A", album = "Same"),
+            audioFile(3, artist = "B", albumArtist = "B", album = "Same"),
         )
 
         scan()
@@ -282,16 +284,16 @@ class LibraryScannerTest {
     @Test
     fun aCompilation_isOneAlbum_andEachSongKeepsItsOwnArtist() = runTest {
         files.files = listOf(
-            audioFile(1, artist = "A", albumArtist = "Various", album = "Hits"),
-            audioFile(2, artist = "B", albumArtist = "Various", album = "Hits"),
+            audioFile(1, artist = "A", albumArtist = "Label", album = "Hits"),
+            audioFile(2, artist = "B", albumArtist = "Label", album = "Hits"),
         )
 
         scan()
 
         assertEquals(listOf("Hits"), index.albums.map { it.title })
-        assertEquals(setOf("A", "B", "Various"), index.artists.map { it.name }.toSet())
+        assertEquals(setOf("A", "B", "Label"), index.artists.map { it.name }.toSet())
         val album = index.albums.single()
-        assertEquals("Various", index.artists.first { it.id == album.artistId }.name)
+        assertEquals("Label", index.artists.first { it.id == album.artistId }.name)
         val songArtists = index.songs.map { song -> index.artists.first { it.id == song.artistId }.name }
         assertEquals(setOf("A", "B"), songArtists.toSet())
     }
@@ -319,5 +321,29 @@ class LibraryScannerTest {
 
         assertEquals(artist, index.artists.single())
         assertEquals(album, index.albums.single())
+    }
+
+    @Test
+    fun aSongRead_movesItsAlbumAsItGoes_andAnAlbumLeftEmptyIsGone() = runTest {
+        files.files = listOf(audioFile(1, artist = "A", album = "Guess"))
+        tags.results[files.files.single().file.uri] = FileTags(album = "Real").right()
+
+        scan()
+
+        assertEquals(listOf("Real"), index.albums.map { it.title })
+    }
+
+    @Test
+    fun aRescan_keepsTheIdsOfAlbumsAndArtists_whenTheirKeysStay() = runTest {
+        files.files = listOf(audioFile(1, artist = "A", album = "Hits"), audioFile(2, artist = "B", album = "Hits"))
+        scan()
+        val artists = index.artists
+        val albums = index.albums
+
+        files.files = files.files + audioFile(3, artist = "A", album = "Hits")
+        scan()
+
+        assertEquals(albums.map { it.id }, index.albums.map { it.id })
+        assertEquals(artists.map { it.id }, index.artists.map { it.id })
     }
 }

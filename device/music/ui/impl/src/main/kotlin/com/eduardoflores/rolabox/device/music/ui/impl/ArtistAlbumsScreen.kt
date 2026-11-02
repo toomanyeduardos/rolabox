@@ -53,4 +53,6 @@ internal fun ListUiState<Album>.withAllSongs(
     )
 
     ListUiState.Failed -> ListUiState.Failed
+
+    ListUiState.Gone -> ListUiState.Gone
 }

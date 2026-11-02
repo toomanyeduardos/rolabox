@@ -7,6 +7,7 @@ import com.eduardoflores.rolabox.device.library.local.api.LibraryIndexLocalDataS
 import com.eduardoflores.rolabox.device.library.local.api.TagsLocalDataSource
 import com.eduardoflores.rolabox.device.library.local.impl.index.LibraryDatabase
 import com.eduardoflores.rolabox.device.library.local.impl.index.LibraryIndexDao
+import com.eduardoflores.rolabox.device.library.local.impl.index.MIGRATION_1_2
 import com.eduardoflores.rolabox.device.library.local.impl.index.RoomLibraryIndexLocalDataSource
 import com.eduardoflores.rolabox.device.library.local.impl.mediastore.MediaStoreAudioFilesLocalDataSource
 import com.eduardoflores.rolabox.device.library.local.impl.tags.ContentResolverTagsLocalDataSource
@@ -38,7 +39,9 @@ abstract class LibraryLocalModule {
         @Provides
         @Singleton
         fun providesLibraryDatabase(@ApplicationContext context: Context): LibraryDatabase =
-            Room.databaseBuilder(context, LibraryDatabase::class.java, LibraryDatabase.NAME).build()
+            Room.databaseBuilder(context, LibraryDatabase::class.java, LibraryDatabase.NAME)
+                .addMigrations(MIGRATION_1_2)
+                .build()
 
         @Provides
         fun providesLibraryIndexDao(database: LibraryDatabase): LibraryIndexDao = database.libraryIndexDao()

@@ -7,7 +7,7 @@ import androidx.compose.ui.res.stringResource
 internal sealed interface ListTitle {
     val name: String?
 
-    data class Artist(override val name: String?) : ListTitle
+    data class Artist(override val name: String?, val isVarious: Boolean = false) : ListTitle
 
     data class Album(override val name: String?) : ListTitle
 }
@@ -16,6 +16,10 @@ internal sealed interface ListTitle {
 @Composable
 internal fun ListTitle?.label(): String? = when (this) {
     null -> null
-    is ListTitle.Artist -> name ?: stringResource(R.string.music_unknown_artist)
+
+    is ListTitle.Artist -> name ?: stringResource(
+        if (isVarious) R.string.music_various_artists else R.string.music_unknown_artist,
+    )
+
     is ListTitle.Album -> name ?: stringResource(R.string.music_unknown_album)
 }

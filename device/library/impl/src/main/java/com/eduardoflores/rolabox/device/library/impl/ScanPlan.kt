@@ -27,13 +27,27 @@ internal fun planScan(files: List<AudioFile>, indexed: List<IndexedSong>): ScanP
     matchBy({ it.file.relativePath to it.file.fileName }, { it.file.relativePath to it.file.fileName })
     matchBy({ it.file.fileName to it.file.size }, { it.file.fileName to it.file.size })
 
-    val writes = files.mapNotNull { file ->
-        val song = matches[file]
-        file.toWrite(song).takeUnless { song != null && it.isSameAs(song) }
-    }
+    val writes = groupSongs(files.map { it.toDraft(matches[it]) }).changedFrom(indexed)
     return ScanPlan(writes, untaken.map { it.id })
+}
+
+/**
+ * What the index has to change after reading [read] of [indexed]'s songs. The rules look at a whole album, so every
+ * song is grouped again, and one read can move songs that weren't.
+ */
+internal fun regroupAfterReading(indexed: List<IndexedSong>, read: List<SongDraft>): List<SongWrite> {
+    val readById = read.associateBy { it.id }
+    return groupSongs(indexed.map { readById[it.id] ?: it.toDraft() }).changedFrom(indexed)
+}
+
+private fun IndexedSong.toDraft() = SongDraft(id, file, metadata, hasEmbeddedPicture, tagsReadAt)
+
+/** A song is written only if something changed. */
+private fun List<SongWrite>.changedFrom(indexed: List<IndexedSong>): List<SongWrite> {
+    val byId = indexed.associateBy { it.id }
+    return filterNot { write -> byId[write.id]?.let(write::isSameAs) == true }
 }
 
 private fun SongWrite.isSameAs(song: IndexedSong) =
     file == song.file && metadata == song.metadata && artist.key == song.artistKey &&
-        album.key == song.albumKey && tagsReadAt == song.tagsReadAt
+        album.key == song.albumKey && tagsReadAt == song.tagsReadAt && isDuplicate == song.isDuplicate

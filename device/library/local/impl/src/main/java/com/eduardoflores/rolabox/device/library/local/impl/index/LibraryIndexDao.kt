@@ -21,13 +21,17 @@ private const val BY_YEAR = "ORDER BY year IS NULL, year, title IS NULL, title C
 @Suppress("TooManyFunctions")
 @Dao
 internal interface LibraryIndexDao {
-    @Query("SELECT * FROM artists ORDER BY name IS NULL, name COLLATE NOCASE, id")
+    // The album of songs with no album belongs to the unknown artist, who isn't a row unless a song is theirs.
+    @Query(
+        "SELECT * FROM artists WHERE name IS NOT NULL OR isVarious OR id IN (SELECT artistId FROM songs) " +
+            "ORDER BY sortName IS NULL, sortName, id",
+    )
     fun observeArtists(): Flow<List<ArtistEntity>>
 
     @Query("SELECT * FROM albums $BY_YEAR")
     fun observeAlbums(): Flow<List<AlbumEntity>>
 
-    @Query("SELECT $SONG_COLUMNS FROM songs s $BY_TITLE")
+    @Query("SELECT $SONG_COLUMNS FROM songs s WHERE s.isDuplicate = 0 $BY_TITLE")
     fun observeSongs(): Flow<List<SongRow>>
 
     @Query("SELECT * FROM artists WHERE id = :id")
@@ -37,19 +41,19 @@ internal interface LibraryIndexDao {
     fun observeAlbum(id: Long): Flow<AlbumEntity?>
 
     @Query(
-        "SELECT * FROM albums WHERE artistId = :artistId " +
-            "OR id IN (SELECT albumId FROM songs WHERE artistId = :artistId) $BY_YEAR",
+        "SELECT * FROM albums WHERE title IS NOT NULL AND (artistId = :artistId " +
+            "OR id IN (SELECT albumId FROM songs WHERE artistId = :artistId)) $BY_YEAR",
     )
     fun observeAlbumsByArtist(artistId: Long): Flow<List<AlbumEntity>>
 
     @Query(
-        "SELECT $SONG_COLUMNS FROM songs s WHERE s.artistId = :artistId " +
-            "OR s.albumId IN (SELECT id FROM albums WHERE artistId = :artistId) $BY_TITLE",
+        "SELECT $SONG_COLUMNS FROM songs s WHERE s.isDuplicate = 0 AND (s.artistId = :artistId " +
+            "OR s.albumId IN (SELECT id FROM albums WHERE artistId = :artistId AND title IS NOT NULL)) $BY_TITLE",
     )
     fun observeSongsByArtist(artistId: Long): Flow<List<SongRow>>
 
     @Query(
-        "SELECT $SONG_COLUMNS FROM songs s WHERE s.albumId = :albumId " +
+        "SELECT $SONG_COLUMNS FROM songs s WHERE s.albumId = :albumId AND s.isDuplicate = 0 " +
             "ORDER BY s.discNumber IS NULL, s.discNumber, s.trackNumber IS NULL, s.trackNumber, " +
             "s.title IS NULL, s.title COLLATE NOCASE, s.id",
     )
@@ -91,8 +95,19 @@ internal interface LibraryIndexDao {
         upsertScanState(state)
     }
 
-    private suspend fun artistIdOf(artist: ArtistGroup): Long =
-        artistIdByKey(artist.key) ?: insertArtist(ArtistEntity(groupKey = artist.key, name = artist.name))
+    private suspend fun artistIdOf(artist: ArtistGroup): Long {
+        val wanted = ArtistEntity(
+            groupKey = artist.key,
+            name = artist.name,
+            sortName = artist.sortName,
+            isVarious = artist.isVarious,
+        )
+        val existing = artistByKey(artist.key) ?: return insertArtist(wanted)
+        // The key stays, and the spelling the row shows follows the songs.
+        val updated = wanted.copy(id = existing.id)
+        if (updated != existing) updateArtist(updated)
+        return existing.id
+    }
 
     private suspend fun albumIdOf(album: AlbumGroup): Long {
         val artistId = artistIdOf(album.artist)
@@ -101,13 +116,13 @@ internal interface LibraryIndexDao {
                 AlbumEntity(groupKey = album.key, artistId = artistId, title = album.title, year = album.year),
             )
         // A song that has no year doesn't take it away from the album.
-        val updated = existing.copy(artistId = artistId, year = album.year ?: existing.year)
+        val updated = existing.copy(artistId = artistId, title = album.title, year = album.year ?: existing.year)
         if (updated != existing) updateAlbum(updated)
         return existing.id
     }
 
-    @Query("SELECT id FROM artists WHERE groupKey = :key")
-    suspend fun artistIdByKey(key: String): Long?
+    @Query("SELECT * FROM artists WHERE groupKey = :key")
+    suspend fun artistByKey(key: String): ArtistEntity?
 
     @Query("SELECT * FROM albums WHERE groupKey = :key")
     suspend fun albumByKey(key: String): AlbumEntity?
@@ -117,6 +132,9 @@ internal interface LibraryIndexDao {
 
     @Insert
     suspend fun insertAlbum(album: AlbumEntity): Long
+
+    @Update
+    suspend fun updateArtist(artist: ArtistEntity)
 
     @Update
     suspend fun updateAlbum(album: AlbumEntity)

@@ -11,7 +11,6 @@ import com.eduardoflores.rolabox.device.library.local.api.AudioFilesLocalDataSou
 import com.eduardoflores.rolabox.device.library.local.api.IndexBatch
 import com.eduardoflores.rolabox.device.library.local.api.IndexedSong
 import com.eduardoflores.rolabox.device.library.local.api.LibraryIndexLocalDataSource
-import com.eduardoflores.rolabox.device.library.local.api.SongWrite
 import com.eduardoflores.rolabox.device.library.local.api.TagsLocalDataSource
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -88,7 +87,8 @@ internal class LibraryScanner @Inject constructor(
         mutableReadingTags.value = Progress(done, songs.size)
         try {
             unread.chunked(SCAN_BATCH_SIZE).forEach { batch ->
-                val writes = batch.mapNotNull { song -> readTagsOf(song) }
+                val read = batch.mapNotNull { song -> readTagsOf(song) }
+                val writes = regroupAfterReading(index.getIndexedSongs().bind(), read)
                 if (writes.isNotEmpty()) index.write(IndexBatch(writes = writes)).bind()
                 done += batch.size
                 mutableReadingTags.value = Progress(done, songs.size)
@@ -99,11 +99,11 @@ internal class LibraryScanner @Inject constructor(
     }
 
     /**
-     * The write after reading [song]. Tags that make no sense won't make more next time, so the song counts as read.
+     * [song] after reading its tags. Tags that make no sense won't make more next time, so the song counts as read.
      * A file that couldn't be opened might be next time, so nothing is written and the next scan tries again.
      */
-    private suspend fun readTagsOf(song: IndexedSong): SongWrite? = tags.readTags(song.file).fold(
-        ifLeft = { error -> if (error is LibraryError.FileUnreadable) null else song.toWriteAfterReading(tags = null) },
-        ifRight = song::toWriteAfterReading,
+    private suspend fun readTagsOf(song: IndexedSong): SongDraft? = tags.readTags(song.file).fold(
+        ifLeft = { error -> if (error is LibraryError.FileUnreadable) null else song.toDraftAfterReading(tags = null) },
+        ifRight = song::toDraftAfterReading,
     )
 }

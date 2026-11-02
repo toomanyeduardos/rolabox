@@ -196,20 +196,20 @@ class IndexLibraryRepositoryTest {
     @Test
     fun anArtistOnACompilation_opensThatAlbum_andTheAlbumArtistOpensItsSongs() = runTest {
         files.files = listOf(
-            audioFile(1, artist = "A", albumArtist = "Various", album = "Hits"),
-            audioFile(2, artist = "B", albumArtist = "Various", album = "Hits"),
+            audioFile(1, artist = "A", albumArtist = "Label", album = "Hits"),
+            audioFile(2, artist = "B", albumArtist = "Label", album = "Hits"),
         )
         val repository = repository()
         repository.checkPermission()
         runCurrent()
         val artist = index.artists.first { it.name == "A" }.id
-        val various = index.artists.first { it.name == "Various" }.id
+        val label = index.artists.first { it.name == "Label" }.id
 
         assertEquals(
             listOf("Hits"),
             repository.observeAlbumsByArtist(artist).first().getOrNull().orEmpty().map { it.title },
         )
-        assertEquals(2, repository.observeSongsByArtist(various).first().getOrNull().orEmpty().size)
+        assertEquals(2, repository.observeSongsByArtist(label).first().getOrNull().orEmpty().size)
     }
 
     @Test

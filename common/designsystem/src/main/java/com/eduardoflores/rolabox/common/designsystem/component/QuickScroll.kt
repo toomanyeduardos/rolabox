@@ -66,10 +66,12 @@ fun rememberQuickScroll(): QuickScroll {
 }
 
 /**
- * The first character of [label], in upper case, or [QUICK_SCROLL_OTHER] when it isn't a letter. "The"
- * isn't skipped, because the library sorts by the whole name: "The Beatles" is with the T's.
+ * The first character of [label], in upper case, or [QUICK_SCROLL_OTHER] when it isn't a letter. A leading "The" is
+ * skipped, because the library sorts without it: "The Beatles" is with the B's (ADR-024, Grouping).
  */
 internal fun quickScrollLetterOf(label: String): String {
-    val first = label.trimStart().firstOrNull()
+    val trimmed = label.trimStart()
+    val withoutThe = if (trimmed.startsWith("the ", ignoreCase = true)) trimmed.drop("the ".length) else trimmed
+    val first = withoutThe.trimStart().ifEmpty { trimmed }.firstOrNull()
     return if (first != null && first.isLetter()) first.uppercaseChar().toString() else QUICK_SCROLL_OTHER
 }

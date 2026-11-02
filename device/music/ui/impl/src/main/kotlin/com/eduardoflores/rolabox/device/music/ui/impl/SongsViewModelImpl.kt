@@ -34,7 +34,7 @@ internal class SongsViewModelImpl @AssistedInject constructor(
                 }
 
                 is SongsSource.Artist -> libraryRepository.getArtist(source.id).getOrNull()?.let {
-                    ListTitle.Artist(it.name)
+                    ListTitle.Artist(it.name, it.isVarious)
                 }
             },
         )
