@@ -40,6 +40,7 @@ dependencies {
     implementation(project(":device:library:local:impl"))
     implementation(project(":device:music:ui:impl"))
     implementation(project(":device:playback:impl"))
+    implementation(project(":device:playback:local:impl"))
     implementation(project(":device:playback:ui:impl"))
     implementation(project(":device:settings:impl"))
     implementation(project(":device:ui:impl"))

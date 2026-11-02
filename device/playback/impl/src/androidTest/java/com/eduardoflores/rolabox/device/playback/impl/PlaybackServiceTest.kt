@@ -26,6 +26,7 @@ import com.eduardoflores.rolabox.device.library.testing.audio.Mp3Stream
 import com.eduardoflores.rolabox.device.library.testing.audio.Mp3Tags
 import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
+import com.eduardoflores.rolabox.device.playback.testing.FakePlaybackLocalDataSource
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import java.io.File
@@ -175,6 +176,7 @@ class PlaybackServiceTest {
             library,
             SessionConnection(context, Dispatchers.Main.immediate),
             PhoneVolume(context),
+            FakePlaybackLocalDataSource(),
             scope,
             TimeSource.Monotonic,
         )
@@ -219,6 +221,7 @@ class PlaybackServiceTest {
                 FakeLibraryRepository(),
                 SessionConnection(context, Dispatchers.Main.immediate),
                 PhoneVolume(context),
+                FakePlaybackLocalDataSource(),
                 scope,
                 TimeSource.Monotonic,
             )

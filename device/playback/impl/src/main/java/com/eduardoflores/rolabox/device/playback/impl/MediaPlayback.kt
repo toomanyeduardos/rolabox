@@ -1,16 +1,20 @@
 package com.eduardoflores.rolabox.device.playback.impl
 
 import android.net.Uri
+import androidx.annotation.OptIn
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.session.MediaSession
 import arrow.core.Either
 import arrow.core.raise.either
 import com.eduardoflores.rolabox.common.util.ApplicationScope
 import com.eduardoflores.rolabox.device.library.api.AlbumId
 import com.eduardoflores.rolabox.device.library.api.ArtistId
+import com.eduardoflores.rolabox.device.library.api.LibraryError
 import com.eduardoflores.rolabox.device.library.api.LibraryRepository
 import com.eduardoflores.rolabox.device.library.api.SongId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackController
@@ -21,6 +25,10 @@ import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
 import com.eduardoflores.rolabox.device.playback.api.PlaybackState
 import com.eduardoflores.rolabox.device.playback.api.SeekDirection
 import com.eduardoflores.rolabox.device.playback.api.SkippedItems
+import com.eduardoflores.rolabox.device.playback.local.api.PlaybackLocalDataSource
+import com.eduardoflores.rolabox.device.playback.local.api.ResumePoint
+import com.google.common.util.concurrent.ListenableFuture
+import com.google.common.util.concurrent.SettableFuture
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.ComparableTimeMark
@@ -29,6 +37,7 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -59,6 +68,9 @@ internal val RestartThreshold: Duration = 3.seconds
 /** How long [PlaybackState.skipped] keeps a skip, and so how long Now Playing says so. Tune it once it can be read. */
 internal val SkipNotice: Duration = 4.seconds
 
+/** How often the resume point is stored while an item plays, which is the most a kill can lose. */
+internal val StoreEvery: Duration = 5.seconds
+
 /**
  * [PlaybackState] and [PlaybackController] on Media3 (ADR-023). Every action is a command on the player that
  * [connection] gives, a `MediaController` of [PlaybackService]'s session, and the state is built from its events.
@@ -69,6 +81,9 @@ internal val SkipNotice: Duration = 4.seconds
  * queue ends, the items are cleared, so nothing is loaded. It runs in the application scope, since playback outlives
  * the screens (ADR-006, rule 6), and calls the player on its thread, where every field below is read and written.
  * Nothing blocks.
+ *
+ * It also stores where it is in [local], and restores that when the app was killed: loaded and paused from [restore],
+ * and for a media button or the system's controls from [resumption], which plays it (ADR-023).
  */
 // One function for each action of the controller, and the few that every action shares.
 @Suppress("TooManyFunctions")
@@ -77,10 +92,12 @@ internal class MediaPlayback @Inject constructor(
     private val library: LibraryRepository,
     private val connection: PlayerConnection,
     private val phoneVolume: PhoneVolume,
-    @ApplicationScope scope: CoroutineScope,
+    private val local: PlaybackLocalDataSource,
+    @ApplicationScope private val scope: CoroutineScope,
     private val timeSource: TimeSource.WithComparableMarks,
 ) : PlaybackState,
-    PlaybackController {
+    PlaybackController,
+    SessionResumption {
     private val state = MutableStateFlow(Snapshot())
 
     /** The items the player was given, in its order. Empty when nothing is loaded. */
@@ -88,6 +105,12 @@ internal class MediaPlayback @Inject constructor(
 
     /** Where the player was told each item's audio is. */
     private var uris: Map<PlaybackItemId, String> = emptyMap()
+
+    /** The list that was played, which is what is stored of the queue. */
+    private var source: PlaybackSource? = null
+
+    /** What to write to [local], the latest only, and `null` to clear it. Written in order, so a clear stays one. */
+    private val toStore = Channel<ResumePoint?>(Channel.CONFLATED)
     private var hold: Hold? = null
     private var listenedTo: Player? = null
 
@@ -142,6 +165,24 @@ internal class MediaPlayback @Inject constructor(
                 }
             }
         }
+        // On each pause and each new item, and every so often while it plays.
+        scope.launch {
+            state.map { it.currentItem?.id to it.isPlaying }.distinctUntilChanged().collectLatest { (item, playing) ->
+                if (item != null) {
+                    onPlayer(::store)
+                    while (playing) {
+                        delay(StoreEvery)
+                        onPlayer(::store)
+                    }
+                }
+            }
+        }
+        // A point that can't be written loses nothing but where to carry on from, so nothing is told (ADR-007, rule 7).
+        scope.launch {
+            for (point in toStore) {
+                if (point != null) local.store(point) else local.clear()
+            }
+        }
         scope.launch {
             state.map { it.skipped }.distinctUntilChanged().collectLatest { skipped ->
                 if (skipped != null) {
@@ -167,18 +208,105 @@ internal class MediaPlayback @Inject constructor(
         val index = queue.indexOfFirst { it.item.id == from }
         if (index < 0) raise(PlaybackError.ItemNotInSource(from, source))
         onPlayer { player ->
-            hold = null
-            items = queue.map { it.item }
-            uris = queue.associate { it.item.id to it.uri }
-            failed = emptySet()
-            goingBack = false
+            load(source, queue)
             // The whole queue, so the next item is prepared before the current one ends (ADR-023).
             player.setMediaItems(queue.map { it.toMediaItem() }, index, 0)
             player.prepare()
             player.play()
             state.update { it.copy(startCount = it.startCount + 1, skipped = null, unplayableQueue = null) }
             refresh(player)
+            // The same item in another list changes no state, and the list is what is stored.
+            store(player)
         }.bind()
+    }
+
+    /**
+     * Loads what was stored, paused where it was, when nothing is loaded. An item the user played in the meantime
+     * stays, and so does anything the session already has. It is safe to call at any time.
+     */
+    suspend fun restore() {
+        var empty = false
+        onPlayer { empty = it.mediaItemCount == 0 }
+        if (!empty) return
+        val stored = storedQueue() ?: return
+        onPlayer { player ->
+            if (player.mediaItemCount == 0) {
+                load(stored.source, stored.queue)
+                player.setMediaItems(stored.queue.map { it.toMediaItem() }, stored.index, stored.position)
+                player.pause()
+                player.prepare()
+                refresh(player)
+            }
+        }
+    }
+
+    // The session plays what this returns, and the state follows from its events.
+    // MediaItemsWithStartPosition is unstable in Media3, and what its resumption asks for.
+    @OptIn(UnstableApi::class)
+    override fun resumption(): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+        val resumed = SettableFuture.create<MediaSession.MediaItemsWithStartPosition>()
+        scope.launch(connection.dispatcher) {
+            val stored = storedQueue()
+            if (stored == null) {
+                resumed.setException(UnsupportedOperationException("Nothing was stored to resume"))
+            } else {
+                load(stored.source, stored.queue)
+                resumed.set(
+                    MediaSession.MediaItemsWithStartPosition(
+                        stored.queue.map { it.toMediaItem() },
+                        stored.index,
+                        stored.position,
+                    ),
+                )
+            }
+        }
+        return resumed
+    }
+
+    override fun storeFrom(player: Player) = store(player)
+
+    /** Stores where it is now, if anything is loaded. */
+    suspend fun storeNow() {
+        onPlayer(::store)
+    }
+
+    private fun load(source: PlaybackSource, queue: List<QueuedItem>) {
+        hold = null
+        this.source = source
+        items = queue.map { it.item }
+        uris = queue.associate { it.item.id to it.uri }
+        failed = emptySet()
+        goingBack = false
+    }
+
+    /**
+     * The stored list as it is now, and where in it to carry on. A song that is gone leaves the next one at its index,
+     * from 0:00. Nothing is left when that is past the end, or the list is gone, so nothing is stored any more. A
+     * library that can't be read says nothing about the songs, so what is stored stays.
+     */
+    private suspend fun storedQueue(): StoredQueue? {
+        val point = local.resumePoint().getOrNull() ?: return null
+        return library.queueOf(point.source).fold(
+            ifLeft = { error ->
+                if (error.isListGone()) local.clear()
+                null
+            },
+            ifRight = { queue ->
+                val stored = queue.resumedAt(point)
+                if (stored == null) local.clear()
+                stored
+            },
+        )
+    }
+
+    private fun store(player: Player) {
+        val list = source ?: return
+        val index = player.currentMediaItemIndex
+        val item = items.getOrNull(index)
+        if (item != null && player.mediaItemCount == items.size) {
+            val position = player.currentPosition.coerceAtLeast(0).milliseconds
+            toStore.trySend(ResumePoint(list, item.id, index, position))
+        }
     }
 
     override suspend fun pause() = onLoaded { player ->
@@ -376,6 +504,7 @@ internal class MediaPlayback @Inject constructor(
         hold = null
         failed = emptySet()
         goingBack = false
+        toStore.trySend(null)
         player.clearMediaItems()
     }
 
@@ -437,6 +566,21 @@ private class QueuedItem(val item: PlaybackItem, val uri: String) {
         )
         .build()
 }
+
+/** A stored list, loaded again: its items and where to carry on in them. */
+private class StoredQueue(val source: PlaybackSource, val queue: List<QueuedItem>, val index: Int, val position: Long)
+
+private fun List<QueuedItem>.resumedAt(point: ResumePoint): StoredQueue? {
+    val index = indexOfFirst { it.item.id == point.item }
+    return when {
+        index >= 0 -> StoredQueue(point.source, this, index, point.position.inWholeMilliseconds)
+        point.index in indices -> StoredQueue(point.source, this, point.index, 0)
+        else -> null
+    }
+}
+
+private fun PlaybackError.isListGone(): Boolean = this is PlaybackError.Library &&
+    (cause is LibraryError.ArtistNotFound || cause is LibraryError.AlbumNotFound)
 
 /** The list of [source] as the queue shows it, with the names of each song's artist and album and its URI. */
 private suspend fun LibraryRepository.queueOf(source: PlaybackSource): Either<PlaybackError, List<QueuedItem>> =
