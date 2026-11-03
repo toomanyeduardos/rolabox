@@ -90,7 +90,7 @@ internal class RoomLibraryIndexLocalDataSource @Inject constructor(
     private fun <T> Flow<T>.asRead(): Flow<Either<LibraryError, T>> = flowOn(ioDispatcher).catchNamed(::toLibraryError)
 }
 
-private fun toLibraryError(error: Throwable): LibraryError? = when (error) {
+internal fun toLibraryError(error: Throwable): LibraryError? = when (error) {
     is SQLiteDatabaseCorruptException -> LibraryError.Storage(StorageError.Corrupted)
     is SQLiteException -> LibraryError.Storage(StorageError.Unavailable)
     else -> null

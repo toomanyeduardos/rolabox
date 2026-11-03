@@ -11,6 +11,11 @@ internal data class SettingsUiState(
     val clicker: Clicker? = null,
     /** The theme, or null until it has loaded, or if it can't be read, like [clicker]. */
     val darkTheme: DarkThemeConfig? = null,
+    /**
+     * Whether covers missing from the phone are downloaded (ADR-027), or null until it has loaded, or if it can't be
+     * read, like [clicker].
+     */
+    val onlineArtwork: Boolean? = null,
     /** The rows of the contributed sections, in the order of their slots. */
     val sections: List<SettingsRow> = emptyList(),
     /** The last change couldn't be saved, until [SettingsViewModel.onSaveFailureShown]. */
@@ -26,6 +31,9 @@ internal abstract class SettingsViewModel : ViewModel() {
 
     /** Center on Theme: steps to the next of System, Light and Dark, and around. Nothing until it has loaded. */
     abstract fun onThemeChange()
+
+    /** Center on Online Artwork: turns it Off when it is On, and On when it is Off. Nothing until it has loaded. */
+    abstract fun onOnlineArtworkChange()
 
     /** The failure to save was shown, so it isn't shown again. */
     abstract fun onSaveFailureShown()

@@ -85,3 +85,41 @@ internal data class ArtistEntity(
 /** MediaStore's version and generation at the last scan, per volume. library/07 compares them. */
 @Entity(tableName = "scan_state")
 internal data class ScanStateEntity(@PrimaryKey val volume: String, val version: String, val generation: Long?)
+
+/** What is known of an album's cover beyond the phone (ADR-027). */
+internal enum class ArtworkState { Pending, Found, NotFound, OnPhone }
+
+/**
+ * The record of an album's cover, kept by the album's grouping key. It is the user's data (ADR-024, rule 10): a rescan
+ * doesn't rebuild it, so a change to it has a migration, and the migrations of the cache tables leave it as it is.
+ */
+@Entity(tableName = "album_artwork")
+internal data class AlbumArtworkEntity(
+    @PrimaryKey val albumKey: String,
+    val state: ArtworkState,
+    /** The image in the app's files, when [state] is [ArtworkState.Found]. */
+    val fileName: String? = null,
+    /** The source's id of the album, when [state] is [ArtworkState.Found]. */
+    val sourceId: String? = null,
+    /** When it was found, in epoch millis. */
+    val foundAt: Long? = null,
+    /** How many times the source answered with no cover. */
+    val attempts: Int = 0,
+    /** When the source last answered with no cover, in epoch millis. */
+    val lastAttemptAt: Long? = null,
+)
+
+/** An album in the index, with what the download reads of it and its record, if it has one. */
+internal data class ArtworkAlbumRow(
+    val albumKey: String,
+    val title: String?,
+    val artistName: String?,
+    val isVarious: Boolean,
+    val artworkSongUri: String?,
+    val state: ArtworkState?,
+    val fileName: String?,
+    val sourceId: String?,
+    val foundAt: Long?,
+    val attempts: Int?,
+    val lastAttemptAt: Long?,
+)

@@ -6,6 +6,7 @@ import com.eduardoflores.rolabox.common.testing.MainDispatcherRule
 import com.eduardoflores.rolabox.common.userdata.api.Clicker
 import com.eduardoflores.rolabox.common.userdata.api.DarkThemeConfig
 import com.eduardoflores.rolabox.common.userdata.testing.FakeUserDataRepository
+import com.eduardoflores.rolabox.device.library.testing.FakeArtworkRepository
 import com.eduardoflores.rolabox.device.settings.api.SettingsRow
 import com.eduardoflores.rolabox.device.settings.api.SettingsSlot
 import kotlinx.coroutines.flow.first
@@ -23,10 +24,11 @@ class SettingsViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val userData = FakeUserDataRepository()
+    private val artwork = FakeArtworkRepository()
 
     // The state is only computed while someone observes it, as the screen does.
     private fun viewModel(vararg sections: FakeSection) =
-        SettingsViewModelImpl(sections.toSet(), userData).also { it.uiState.launchIn(it.viewModelScope) }
+        SettingsViewModelImpl(sections.toSet(), userData, artwork).also { it.uiState.launchIn(it.viewModelScope) }
 
     @Test
     fun theValues_areLoaded_andWithNoSectionsThereAreOnlySettingsOwnRows() {
@@ -34,9 +36,16 @@ class SettingsViewModelTest {
 
         assertEquals(Clicker.ON, viewModel.uiState.value.clicker)
         assertEquals(DarkThemeConfig.FOLLOW_SYSTEM, viewModel.uiState.value.darkTheme)
+        assertEquals(true, viewModel.uiState.value.onlineArtwork)
         assertEquals(emptyList<SettingsRow>(), viewModel.uiState.value.sections)
         assertEquals(
-            listOf(SettingsListRow.Clicker, SettingsListRow.Theme, SettingsListRow.MainMenu, SettingsListRow.About),
+            listOf(
+                SettingsListRow.Clicker,
+                SettingsListRow.Theme,
+                SettingsListRow.OnlineArtwork,
+                SettingsListRow.MainMenu,
+                SettingsListRow.About,
+            ),
             settingsListRows(viewModel.uiState.value.sections),
         )
     }
@@ -75,6 +84,19 @@ class SettingsViewModelTest {
 
         viewModel.onClickerChange()
         assertEquals(Clicker.ON, viewModel.uiState.value.clicker)
+    }
+
+    @Test
+    fun onlineArtwork_changesInPlace_andIsStoredByTheLibrary() = runTest {
+        val viewModel = viewModel()
+
+        viewModel.onOnlineArtworkChange()
+        assertEquals(false, viewModel.uiState.value.onlineArtwork)
+        assertEquals(false, artwork.downloadEnabled.value)
+
+        viewModel.onOnlineArtworkChange()
+        assertEquals(true, viewModel.uiState.value.onlineArtwork)
+        assertEquals(true, artwork.downloadEnabled.value)
     }
 
     @Test

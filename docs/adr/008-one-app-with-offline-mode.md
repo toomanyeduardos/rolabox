@@ -58,6 +58,12 @@
   Firestore mapping of the preferences is in `:common:userdata:network:impl` and their `Syncer` in
   `:common:userdata:impl` ([ADR-022](022-data-source-sub-parts.md), 39.05a). The decision is
   unchanged.
+- **Revised 2026-11-03:** The library downloads missing covers from the Cover Art Archive
+  ([ADR-027](027-artwork-from-the-internet.md)), the first request that isn't Firebase. Rule 6 now
+  says that offline mode makes no request of any kind: no Firebase request, and no artwork download.
+  A signed-out user who hasn't chosen offline mode can still download covers, since nothing about
+  their account is sent.
+
 ## Context
 
 Rolabox is one product. A user can sign in, so their preferences follow them across devices
@@ -291,7 +297,8 @@ record:
    Firebase requests, except the password reset email that the user asks for from the Reset
    password screen (`AuthRepository.sendPasswordResetEmail`). `SyncRunner` runs `Syncer`s only for a
    signed-in user who hasn't chosen offline mode, and the sync triggers request nothing in offline
-   mode. Tests cover both.
+   mode. While offline mode is chosen, the app makes no other request either: the library downloads
+   no artwork ([ADR-027](027-artwork-from-the-internet.md)). Tests cover each.
 7. `[convention]` Offline mode can only be chosen while signed out. Every sign-in the user starts
    turns it off before its first Firebase request, and turns it back on if the sign-in fails.
 8. `[convention]` SDK objects that can open a connection (`FirebaseFirestore`) are injected through

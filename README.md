@@ -205,11 +205,13 @@ there is something to fake, a `:testing` module.
 | `:device:host` | The device's mechanism: the screen stack inside the display, wheel event routing, and the contract device screens use |
 | `:device:ui:api` | The device's keys and entry contract |
 | `:device:ui:impl` | The device's assembly: its entries, the main menu, what each exit opens, the playback handlers |
-| `:device:library:api` | The music library's API: `LibraryRepository`, `LibraryStatus`, `Artist`, `Album`, `Song`, `LibraryError` |
-| `:device:library:impl` | The repository over the index, the scanner and its triggers, and the grouping |
-| `:device:library:testing` | `FakeLibraryRepository`, fakes of the local sources, and the generated audio fixtures (see [Test audio](#test-audio)) |
-| `:device:library:local:api` | The library's local sources as interfaces: the index and the audio files |
-| `:device:library:local:impl` | The index in Room, the MediaStore queries, and the manifest with the audio permission |
+| `:device:library:api` | The music library's API: `LibraryRepository`, `ArtworkRepository`, `LibraryStatus`, `Artist`, `Album`, `Song`, `LibraryError` |
+| `:device:library:impl` | The repository over the index, the scanner and its triggers, the grouping, and the download of missing covers in WorkManager |
+| `:device:library:testing` | `FakeLibraryRepository`, fakes of the local and network sources, and the generated audio fixtures (see [Test audio](#test-audio)) |
+| `:device:library:local:api` | The library's local sources as interfaces: the index, the audio files, and the record of downloaded covers |
+| `:device:library:local:impl` | The index in Room, the MediaStore queries, the downloaded covers, and the manifest with the audio permission |
+| `:device:library:network:api` | The library's network source as an interface: covers missing from the phone |
+| `:device:library:network:impl` | That source over OkHttp: MusicBrainz's search and the Cover Art Archive ([ADR-027](docs/adr/027-artwork-from-the-internet.md)) |
 | `:device:playback:local:api` | Playback's local source as an interface: the point to resume from |
 | `:device:playback:local:impl` | That point on `PreferencesStore`: on the phone, and never synced |
 | `:device:music:ui:api` | The keys and entry contract of the music screens: Music, Artists, an artist's albums, songs |
@@ -294,6 +296,8 @@ graph TD
     device_library_impl[":device:library:impl"]
     device_library_local_api[":device:library:local:api"]
     device_library_local_impl[":device:library:local:impl"]
+    device_library_network_api[":device:library:network:api"]
+    device_library_network_impl[":device:library:network:impl"]
     device_library_testing[":device:library:testing"]
     device_music_ui_api[":device:music:ui:api"]
     device_music_ui_impl[":device:music:ui:impl"]
@@ -325,6 +329,7 @@ graph TD
     app --> common_util
     app --> device_library_impl
     app --> device_library_local_impl
+    app --> device_library_network_impl
     app --> device_music_ui_impl
     app --> device_playback_impl
     app --> device_playback_local_impl
@@ -384,17 +389,23 @@ graph TD
     common_userdata_testing --> common_userdata_network_api
     device_host --> common_designsystem
     device_library_api --> common_storage_api
+    device_library_impl --> common_storage_api
+    device_library_impl --> common_userdata_api
     device_library_impl --> common_util
     device_library_impl --> device_library_api
     device_library_impl --> device_library_local_api
+    device_library_impl --> device_library_network_api
     device_library_local_api --> device_library_api
     device_library_local_impl --> common_storage_api
     device_library_local_impl --> common_util
     device_library_local_impl --> device_library_api
     device_library_local_impl --> device_library_local_api
+    device_library_network_impl --> common_util
+    device_library_network_impl --> device_library_network_api
     device_library_testing --> common_storage_api
     device_library_testing --> device_library_api
     device_library_testing --> device_library_local_api
+    device_library_testing --> device_library_network_api
     device_music_ui_impl --> common_designsystem
     device_music_ui_impl --> device_host
     device_music_ui_impl --> device_library_api

@@ -2,10 +2,10 @@ package com.eduardoflores.rolabox.device.settings.impl
 
 import androidx.lifecycle.viewModelScope
 import arrow.core.Either
-import com.eduardoflores.rolabox.common.storage.api.StorageError
 import com.eduardoflores.rolabox.common.userdata.api.Clicker
 import com.eduardoflores.rolabox.common.userdata.api.DarkThemeConfig
 import com.eduardoflores.rolabox.common.userdata.api.UserDataRepository
+import com.eduardoflores.rolabox.device.library.api.ArtworkRepository
 import com.eduardoflores.rolabox.device.settings.api.SettingsRow
 import com.eduardoflores.rolabox.device.settings.api.SettingsSection
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -20,25 +20,32 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/** The settings are preferences, stored by `:common:userdata` (ADR-011): Settings stores nothing of its own. */
+/**
+ * The settings are preferences, stored by `:common:userdata` (ADR-011), and the library's setting of the covers it
+ * downloads, which stays on this phone (ADR-027): Settings stores nothing of its own.
+ */
 @HiltViewModel
 internal class SettingsViewModelImpl @Inject constructor(
     sections: Set<@JvmSuppressWildcards SettingsSection>,
     private val userDataRepository: UserDataRepository,
+    private val artworkRepository: ArtworkRepository,
 ) : SettingsViewModel() {
     private val saveFailed = MutableStateFlow(false)
 
     // A preference that can't be read looks the same as one that hasn't loaded: the row shows no value.
     private val userData = userDataRepository.observeUserData().map { it.getOrNull() }
+    private val onlineArtwork = artworkRepository.observeDownloadEnabled().map { it.getOrNull() }
 
     override val uiState: StateFlow<SettingsUiState> = combine(
         userData,
+        onlineArtwork,
         sectionRows(arrangeSections(sections)),
         saveFailed,
-    ) { userData, sections, saveFailed ->
+    ) { userData, onlineArtwork, sections, saveFailed ->
         SettingsUiState(
             clicker = userData?.clicker,
             darkTheme = userData?.darkThemeConfig,
+            onlineArtwork = onlineArtwork,
             sections = sections,
             saveFailed = saveFailed,
         )
@@ -58,11 +65,16 @@ internal class SettingsViewModelImpl @Inject constructor(
         save { userDataRepository.setDarkThemeConfig(theme.next()) }
     }
 
+    override fun onOnlineArtworkChange() {
+        val enabled = uiState.value.onlineArtwork ?: return
+        save { artworkRepository.setDownloadEnabled(!enabled) }
+    }
+
     override fun onSaveFailureShown() {
         saveFailed.value = false
     }
 
-    private fun save(write: suspend () -> Either<StorageError, Unit>) {
+    private fun save(write: suspend () -> Either<*, Unit>) {
         viewModelScope.launch { write().onLeft { saveFailed.value = true } }
     }
 

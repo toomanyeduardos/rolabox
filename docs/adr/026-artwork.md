@@ -4,6 +4,11 @@
 - **Date:** 2026-11-03
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review
+- **Revised 2026-11-03:** library/08 found albums with no cover on the phone, and downloads them
+  ([ADR-027](027-artwork-from-the-internet.md)). The order gains the downloaded cover after the
+  folder's image (rule 2), and what is on the phone still wins. Whether there is artwork is known once
+  it loads, and can change after: `ArtworkRepository` gains `observeArtwork`, which Now Playing and
+  playback observe, so a cover that arrives replaces the placeholder (Who shows it, rule 6).
 
 ## Context
 
@@ -41,8 +46,10 @@ is on screen at a time, since artwork in the lists is out of this phase.
 - **An album's reference is one of its songs:** the first, in track order, whose tags have a
   picture, or the first song when none has. The image in the folder is the same for all of them.
   The index picks it in the album's query, so no table changes.
-- **Whether there is artwork is known only once it loads.** The index knows about the embedded
-  picture, not about the folder. So every song has a reference, and "none" is the answer of a load.
+- **Whether there is artwork is known only once it loads, and can change after.** The index knows
+  about the embedded picture, not about the folder. So every song has a reference, and "none" is the
+  answer of a load. A cover downloaded later (ADR-027) changes that answer, which `observeArtwork`
+  emits.
 
 ### Where it comes from: MediaStore's thumbnail of the song
 
@@ -52,7 +59,8 @@ is on screen at a time, since artwork in the lists is out of this phase.
 - **The order is the system's:** the picture embedded in the tags; then the best `.jpg` or `.png`
   in the song's folder, where the system prefers names with `albumart` and then any `.jpg`, which
   `cover.jpg` and `folder.jpg` are; then none. The system doesn't look in `Download` or in a
-  top-level folder. Rolabox doesn't re-rank what it returns.
+  top-level folder. Rolabox doesn't re-rank what it returns. After it, a cover downloaded for the
+  album (ADR-027), then none.
 - **No image permission is asked for.** ADR-024's line that `cover.jpg` needs it is revised.
 - **A load that finds nothing is not an error.** The provider throws `IOException` when there is no
   artwork, and when the file is gone, and both are "none": a file that is gone has no cover either.
@@ -64,7 +72,9 @@ is on screen at a time, since artwork in the lists is out of this phase.
 - **`:device:library:api` gains `ArtworkRepository`,** with one `suspend` call
   ([ADR-006](006-async-api-shape.md)) that takes an `ArtworkRef` and returns
   `Either<LibraryError, ArtworkImage?>`, `null` for none. `ArtworkImage` is the width, the height
-  and the ARGB pixels, so the `:api` stays JVM. The fake is in `:device:library:testing`.
+  and the ARGB pixels, so the `:api` stays JVM. The fake is in `:device:library:testing`. It also
+  gains `observeArtwork`, a `Flow` of the same result that emits again when a cover is downloaded or
+  replaced (ADR-027).
 - **`:device:library:impl` keeps the last few images in memory,** in an LRU of a few entries: the
   song playing and the ones around it. An entry is for one version of the file, so a file that
   changed loads again.
@@ -73,8 +83,8 @@ is on screen at a time, since artwork in the lists is out of this phase.
 
 ### Who shows it
 
-- **Now Playing's ViewModel injects `ArtworkRepository`,** and loads the artwork of the item playing
-  when the item changes. Its UI state holds the image, `null` while it loads and when there is none.
+- **Now Playing's ViewModel injects `ArtworkRepository`,** and observes the artwork of the item
+  playing, from when the item changes, so a cover downloaded while it shows replaces the placeholder. Its UI state holds the image, `null` while it loads and when there is none.
   A change of song clears it first, so the old cover never stands for the new song.
 - **The design system draws it:** `DeviceCoverArt` takes the image, and draws it cropped to a square
   in the frame the placeholder already has, or the placeholder when there is no image
@@ -85,7 +95,9 @@ is on screen at a time, since artwork in the lists is out of this phase.
   item's `MediaMetadata.artworkUri` to a Rolabox URI that names the song, and gives the session a
   `BitmapLoader` that reads that URI through `ArtworkRepository`. Media3 hands the platform the
   `Bitmap` it loaded, and the platform's session also gets the URI, which only Rolabox can read: with
-  no artwork, the system's media controls try it, log a warning and show their own background.
+  no artwork, the system's media controls try it, log a warning and show their own background. When
+  the current item's artwork changes, playback updates its metadata with a URI that carries the new
+  version, so Media3 loads it again without interrupting playback (ADR-027).
 
 ## Alternatives considered
 
@@ -131,14 +143,15 @@ is on screen at a time, since artwork in the lists is out of this phase.
 1. `[convention]` Artwork crosses an `:api` as an `ArtworkRef`, and as pixels only from
    `ArtworkRepository`. No model of the library or of playback holds an image, or the URI of one.
 2. `[convention]` Artwork comes from MediaStore's thumbnail of the song: the picture embedded in its
-   tags, then an image in its folder, then none. Rolabox asks for no image permission.
+   tags, then an image in its folder; then a cover downloaded for its album (ADR-027); then none. What
+   is on the phone always wins. Rolabox asks for no image permission.
 3. `[enforced]` Only `:device:library:local:impl` calls `loadThumbnail`.
 4. `[enforced]` No image-loading library is a dependency: Coil (`io.coil-kt`, `io.coil-kt.coil3`), Glide
    (`com.github.bumptech.glide`), Picasso (`com.squareup.picasso`) or Fresco (`com.facebook.fresco`).
 5. `[convention]` The design system draws the artwork and its placeholder, in one frame. Artwork that
    is loading or missing is the placeholder.
 6. `[convention]` Now Playing, the notification and the lock screen get the artwork through
-   `ArtworkRepository`, so they show the same image.
+   `ArtworkRepository`, so they show the same image, and follow it when it changes.
 
 **Conformance.** Rule 3 is the detekt rule `MediaStoreOutsideLibrary` in `build-logic/detekt-rules`,
 which also reports a call of `loadThumbnail`, with a violating and a passing case, and runs everywhere

@@ -5,7 +5,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 /** Version 2 as Room exported it. Room checks the tables against the entities when the migration ends. */
 @Suppress("MaxLineLength") // Room's own statements, to compare with the exported schema as they are.
-private val TABLES_OF_VERSION_2 = listOf(
+internal val TABLES_OF_VERSION_2 = listOf(
     "CREATE TABLE IF NOT EXISTS `songs` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `artistId` INTEGER NOT NULL, `albumId` INTEGER NOT NULL, `mediaStoreId` INTEGER NOT NULL, `uri` TEXT NOT NULL, `relativePath` TEXT NOT NULL, `fileName` TEXT NOT NULL, `size` INTEGER NOT NULL, `dateModified` INTEGER NOT NULL, `title` TEXT, `titleSource` TEXT NOT NULL, `artist` TEXT, `artistSource` TEXT NOT NULL, `albumArtist` TEXT, `albumArtistSource` TEXT NOT NULL, `album` TEXT, `albumSource` TEXT NOT NULL, `trackNumber` INTEGER, `trackNumberSource` TEXT NOT NULL, `discNumber` INTEGER, `discNumberSource` TEXT NOT NULL, `year` INTEGER, `yearSource` TEXT NOT NULL, `compilation` INTEGER, `compilationSource` TEXT NOT NULL, `durationMillis` INTEGER, `durationSource` TEXT NOT NULL, `hasEmbeddedPicture` INTEGER, `tagsReadAt` INTEGER, `isDuplicate` INTEGER NOT NULL)",
     "CREATE INDEX IF NOT EXISTS `index_songs_mediaStoreId` ON `songs` (`mediaStoreId`)",
     "CREATE INDEX IF NOT EXISTS `index_songs_artistId` ON `songs` (`artistId`)",
@@ -23,5 +23,18 @@ internal val MIGRATION_1_2 = object : Migration(1, 2) {
     override fun migrate(db: SupportSQLiteDatabase) {
         listOf("songs", "albums", "artists", "scan_state").forEach { db.execSQL("DROP TABLE IF EXISTS `$it`") }
         TABLES_OF_VERSION_2.forEach(db::execSQL)
+    }
+}
+
+/**
+ * library/08's record of the covers it downloads, the first table of the user's data (ADR-027). The cache tables
+ * didn't change, so they stay, and nothing is rescanned.
+ */
+internal val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        @Suppress("MaxLineLength") // Room's own statement, to compare with the exported schema as it is.
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `album_artwork` (`albumKey` TEXT NOT NULL, `state` TEXT NOT NULL, `fileName` TEXT, `sourceId` TEXT, `foundAt` INTEGER, `attempts` INTEGER NOT NULL, `lastAttemptAt` INTEGER, PRIMARY KEY(`albumKey`))",
+        )
     }
 }

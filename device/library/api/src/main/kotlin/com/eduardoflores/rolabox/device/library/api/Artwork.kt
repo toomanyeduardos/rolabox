@@ -1,8 +1,9 @@
 package com.eduardoflores.rolabox.device.library.api
 
 /**
- * Where a cover is: the song whose picture it is, the one in its tags or the one in its folder (ADR-026). It holds no
- * image, and whether there is one is known only once [ArtworkRepository.loadArtwork] has looked.
+ * Where a cover is: the song whose picture it is, the one in its tags or its folder, or else its album's downloaded one
+ * (ADR-026, ADR-027). It holds no image, and whether there is one is known only once [ArtworkRepository.loadArtwork]
+ * has looked, and can change after, which [ArtworkRepository.observeArtwork] follows.
  */
 data class ArtworkRef(val song: SongId)
 

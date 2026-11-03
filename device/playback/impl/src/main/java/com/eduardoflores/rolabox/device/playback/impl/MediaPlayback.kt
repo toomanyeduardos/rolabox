@@ -15,6 +15,7 @@ import com.eduardoflores.rolabox.common.util.ApplicationScope
 import com.eduardoflores.rolabox.device.library.api.AlbumId
 import com.eduardoflores.rolabox.device.library.api.ArtistId
 import com.eduardoflores.rolabox.device.library.api.ArtworkRef
+import com.eduardoflores.rolabox.device.library.api.ArtworkRepository
 import com.eduardoflores.rolabox.device.library.api.LibraryError
 import com.eduardoflores.rolabox.device.library.api.LibraryRepository
 import com.eduardoflores.rolabox.device.library.api.SongId
@@ -44,6 +45,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
@@ -86,8 +88,9 @@ internal val StoreEvery: Duration = 5.seconds
  * It also stores where it is in [local], and restores that when the app was killed: loaded and paused from [restore],
  * and for a media button or the system's controls from [resumption], which plays it (ADR-023).
  */
-// One function for each action of the controller, and the few that every action shares.
-@Suppress("TooManyFunctions")
+// One function for each action of the controller, and the few that every action shares. One parameter for each of
+// what it plays with: the library, the player, the volume, the stored point, the scope, the clock and the artwork.
+@Suppress("TooManyFunctions", "LongParameterList")
 @Singleton
 internal class MediaPlayback @Inject constructor(
     private val library: LibraryRepository,
@@ -96,6 +99,7 @@ internal class MediaPlayback @Inject constructor(
     private val local: PlaybackLocalDataSource,
     @ApplicationScope private val scope: CoroutineScope,
     private val timeSource: TimeSource.WithComparableMarks,
+    private val artwork: ArtworkRepository,
 ) : PlaybackState,
     PlaybackController,
     SessionResumption {
@@ -106,6 +110,9 @@ internal class MediaPlayback @Inject constructor(
 
     /** Where the player was told each item's audio is. */
     private var uris: Map<PlaybackItemId, String> = emptyMap()
+
+    /** How many times each item's artwork changed while it played, which its artwork URI carries. */
+    private var artworkVersions: Map<PlaybackItemId, Int> = emptyMap()
 
     /** The list that was played, which is what is stored of the queue. */
     private var source: PlaybackSource? = null
@@ -164,6 +171,14 @@ internal class MediaPlayback @Inject constructor(
                         locations.onRight { onPlayer { player -> follow(it, player) } }
                     }
                 }
+            }
+        }
+        // A cover that arrives for the item playing, downloaded for its album, reaches the notification and the lock
+        // screen (ADR-027): its first value is the one the session loads anyway.
+        scope.launch {
+            state.map { it.currentItem }.distinctUntilChanged { old, new -> old?.id == new?.id }.collectLatest { item ->
+                val ref = item?.artwork ?: return@collectLatest
+                artwork.observeArtwork(ref).drop(1).collect { onPlayer { player -> showNewArtwork(item, player) } }
             }
         }
         // On each pause and each new item, and every so often while it plays.
@@ -276,6 +291,7 @@ internal class MediaPlayback @Inject constructor(
         this.source = source
         items = queue.map { it.item }
         uris = queue.associate { it.item.id to it.uri }
+        artworkVersions = emptyMap()
         failed = emptySet()
         goingBack = false
     }
@@ -487,13 +503,27 @@ internal class MediaPlayback @Inject constructor(
         refresh(player)
     }
 
+    /**
+     * Gives the item playing an artwork URI of a new version, so Media3 loads its artwork again, through the session's
+     * bitmap loader (ADR-027). Only the metadata changes, so the player goes on without a pause.
+     */
+    private fun showNewArtwork(item: PlaybackItem, player: Player) {
+        val index = player.currentMediaItemIndex
+        val uri = uris[item.id]
+        if (items.getOrNull(index)?.id != item.id || uri == null) return
+        artworkVersions = artworkVersions + (item.id to (artworkVersions[item.id] ?: 0) + 1)
+        player.replaceMediaItem(index, queuedItem(item, uri).toMediaItem())
+    }
+
+    private fun queuedItem(item: PlaybackItem, uri: String) = QueuedItem(item, uri, artworkVersions[item.id] ?: 0)
+
     private fun moveToNewLocations(locations: Map<SongId, String>, player: Player) {
         items.forEachIndexed { index, item ->
             val uri = locations[item.songId] ?: return@forEachIndexed
             if (uri != uris[item.id] && index != player.currentMediaItemIndex) {
                 uris = uris + (item.id to uri)
                 failed = failed - item.id
-                player.replaceMediaItem(index, QueuedItem(item, uri).toMediaItem())
+                player.replaceMediaItem(index, queuedItem(item, uri).toMediaItem())
             }
         }
     }
@@ -553,7 +583,7 @@ private data class Snapshot(
 }
 
 /** An item of the queue, and where its audio is, which the player needs and the `:api` doesn't show. */
-private class QueuedItem(val item: PlaybackItem, val uri: String) {
+private class QueuedItem(val item: PlaybackItem, val uri: String, val artworkVersion: Int = 0) {
     fun toMediaItem(): MediaItem = MediaItem.Builder()
         .setUri(uri)
         // A controller in another process drops the URI, and the session puts it back from here.
@@ -563,7 +593,7 @@ private class QueuedItem(val item: PlaybackItem, val uri: String) {
                 .setTitle(item.title)
                 .setArtist(item.artist)
                 .setAlbumTitle(item.album)
-                .setArtworkUri(item.artwork?.let(::artworkUriOf))
+                .setArtworkUri(item.artwork?.let { artworkUriOf(it, artworkVersion) })
                 .build(),
         )
         .build()

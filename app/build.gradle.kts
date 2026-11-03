@@ -38,6 +38,7 @@ dependencies {
     implementation(project(":common:userdata:network:impl"))
     implementation(project(":device:library:impl"))
     implementation(project(":device:library:local:impl"))
+    implementation(project(":device:library:network:impl"))
     implementation(project(":device:music:ui:impl"))
     implementation(project(":device:playback:impl"))
     implementation(project(":device:playback:local:impl"))
