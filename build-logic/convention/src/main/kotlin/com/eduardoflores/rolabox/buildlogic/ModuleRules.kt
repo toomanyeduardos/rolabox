@@ -55,6 +55,11 @@ private val IMAGE_LIBRARY_GROUPS =
     setOf("io.coil-kt", "io.coil-kt.coil3", "com.github.bumptech.glide", "com.squareup.picasso", "com.facebook.fresco")
 private const val LOCAL_IMPL_SUFFIX = ":local:impl"
 
+// HTTP and JSON are dependencies of :network:impl modules only (ADR-027 rule 7).
+private const val OKHTTP_GROUP = "com.squareup.okhttp3"
+private const val KOTLINX_GROUP = "org.jetbrains.kotlinx"
+private const val SERIALIZATION_JSON_PREFIX = "kotlinx-serialization-json"
+
 // What :app's own code uses from the product areas (ADR-020 rule 13). It also uses :common, and lists every :impl.
 private val APP_ALLOWED_API_PATHS = setOf(":auth:data:api", ":auth:ui:api", ":device:ui:api")
 
@@ -66,7 +71,7 @@ private const val DAGGER_GROUP = "com.google.dagger"
 private const val PAPARAZZI_GROUP = "app.cash.paparazzi"
 private const val PAPARAZZI_PLUGIN = "app.cash.paparazzi"
 
-/** Checks the `[enforced]` dependency rules of ADR-020, ADR-022, ADR-023, ADR-024, ADR-026, ADR-005 and ADR-016 while the build is configured. */
+/** Checks the `[enforced]` dependency rules of ADR-020, ADR-022, ADR-023, ADR-024, ADR-026, ADR-027, ADR-005 and ADR-016 while the build is configured. */
 internal fun Project.enforceModuleRules() {
     val modulePath = path
 
@@ -138,6 +143,11 @@ internal fun externalDependencyViolation(
         group in DATABASE_GROUPS && !modulePath.endsWith(LOCAL_IMPL_SUFFIX) ->
             "ADR-024 rule 4: Room and SQLite are dependencies of :local:impl modules only. Keep the part's " +
                 "database in its :local:impl, and reach it through its :local:api"
+
+        (group == OKHTTP_GROUP || group == KOTLINX_GROUP && name.startsWith(SERIALIZATION_JSON_PREFIX)) &&
+            !modulePath.endsWith(NETWORK_IMPL_SUFFIX) ->
+            "ADR-027 rule 7: OkHttp and kotlinx-serialization-json are dependencies of :network:impl modules " +
+                "only. Make the request in the part's :network:impl, and reach it through its :network:api"
 
         group in IMAGE_LIBRARY_GROUPS ->
             "ADR-026 rule 4: no image-loading library is a dependency. Load artwork through ArtworkRepository " +

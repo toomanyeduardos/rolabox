@@ -17,11 +17,13 @@ private const val SONG_COLUMNS = "s.id, s.albumId, s.artistId, s.title, s.trackN
 private const val BY_TITLE = "ORDER BY s.title IS NULL, s.title COLLATE NOCASE, s.id"
 private const val BY_YEAR = "ORDER BY year IS NULL, year, title IS NULL, title COLLATE NOCASE, id"
 
-// The song whose cover stands for album `a`: the first, in track order, whose tags have a picture, or else the first
-// song (ADR-026). A duplicate comes last, and an album always has a song, since one without is deleted.
-private const val ALBUM_COLUMNS = "a.*, (SELECT s.id FROM songs s WHERE s.albumId = a.id " +
+// The id of the song whose cover stands for album `a`: the first, in track order, whose tags have a picture, or else
+// the first song (ADR-026). A duplicate comes last, and an album always has a song, since one without is deleted.
+internal const val ARTWORK_SONG_OF_ALBUM = "(SELECT s.id FROM songs s WHERE s.albumId = a.id " +
     "ORDER BY s.hasEmbeddedPicture IS NOT 1, s.isDuplicate, s.discNumber IS NULL, s.discNumber, " +
-    "s.trackNumber IS NULL, s.trackNumber, s.title IS NULL, s.title COLLATE NOCASE, s.id LIMIT 1) AS artworkSongId"
+    "s.trackNumber IS NULL, s.trackNumber, s.title IS NULL, s.title COLLATE NOCASE, s.id LIMIT 1)"
+
+private const val ALBUM_COLUMNS = "a.*, $ARTWORK_SONG_OF_ALBUM AS artworkSongId"
 
 // One interface for one database: the observed lists, and what one batch of a scan writes.
 @Suppress("TooManyFunctions")

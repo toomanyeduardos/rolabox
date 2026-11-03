@@ -128,6 +128,19 @@ class NowPlayingViewModelTest {
     }
 
     @Test
+    fun aCoverThatArrives_whileTheSongPlays_replacesThePlaceholder() = runTest {
+        val viewModel = observedViewModel()
+        playback.load(Queue, index = 2)
+        assertNull(viewModel.artwork)
+
+        // Downloaded for its album (ADR-027).
+        artwork.covers[ArtworkRef(SongId(3))] = Blue.right()
+
+        assertEquals(Blue, viewModel.artwork)
+        assertEquals(listOf(ArtworkRef(SongId(3))), artwork.loads)
+    }
+
+    @Test
     fun whenTheSongChanges_theOldArtworkGoes_beforeTheNewOneLoads() = runTest {
         artwork.covers[ArtworkRef(SongId(1))] = Blue.right()
         artwork.covers[ArtworkRef(SongId(2))] = Red.right()

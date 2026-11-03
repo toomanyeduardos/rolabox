@@ -1,0 +1,287 @@
+{
+  "created": "2026-11-03T22:01:58.478Z",
+  "count": 15,
+  "offset": 0,
+  "release-groups": [
+    {
+      "id": "ee87a455-debf-467e-89a3-027c1cf6d9a2",
+      "type-id": "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1",
+      "score": 100,
+      "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+      "artist-credit-id": "edbf1ee2-3861-3d95-b971-8f243cbc7e54",
+      "count": 1,
+      "title": "Greatest Hits",
+      "first-release-date": "2023",
+      "primary-type": "Album",
+      "secondary-types": [
+        "Compilation"
+      ],
+      "secondary-type-ids": [
+        "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1"
+      ],
+      "artist-credit": [
+        {
+          "name": "Queen",
+          "artist": {
+            "id": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+            "name": "Queen",
+            "sort-name": "Queen",
+            "disambiguation": "UK rock group"
+          }
+        }
+      ]
+    },
+    {
+      "id": "b6d1f1a6-fc62-49bc-8426-dcfd8a95de91",
+      "type-id": "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1",
+      "score": 100,
+      "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+      "artist-credit-id": "edbf1ee2-3861-3d95-b971-8f243cbc7e54",
+      "count": 1,
+      "title": "Greatest Hits",
+      "first-release-date": "2008",
+      "primary-type": "Album",
+      "secondary-types": [
+        "Compilation"
+      ],
+      "secondary-type-ids": [
+        "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1"
+      ],
+      "artist-credit": [
+        {
+          "name": "Queen",
+          "artist": {
+            "id": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+            "name": "Queen",
+            "sort-name": "Queen",
+            "disambiguation": "UK rock group"
+          }
+        }
+      ]
+    },
+    {
+      "id": "69ce61c8-127f-3809-95d8-62fdf3ae1347",
+      "type-id": "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1",
+      "score": 100,
+      "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+      "artist-credit-id": "edbf1ee2-3861-3d95-b971-8f243cbc7e54",
+      "count": 67,
+      "title": "Greatest Hits",
+      "first-release-date": "1981-11-03",
+      "primary-type": "Album",
+      "secondary-types": [
+        "Compilation"
+      ],
+      "secondary-type-ids": [
+        "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1"
+      ],
+      "artist-credit": [
+        {
+          "name": "Queen",
+          "artist": {
+            "id": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+            "name": "Queen",
+            "sort-name": "Queen",
+            "disambiguation": "UK rock group"
+          }
+        }
+      ]
+    },
+    {
+      "id": "fc1f95fc-b3ff-4961-8516-5c53c20b046a",
+      "type-id": "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1",
+      "score": 93,
+      "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+      "artist-credit-id": "edbf1ee2-3861-3d95-b971-8f243cbc7e54",
+      "count": 1,
+      "title": "Greatest Hits II",
+      "first-release-date": "2008",
+      "primary-type": "Album",
+      "secondary-types": [
+        "Compilation"
+      ],
+      "secondary-type-ids": [
+        "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1"
+      ],
+      "artist-credit": [
+        {
+          "name": "Queen",
+          "artist": {
+            "id": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+            "name": "Queen",
+            "sort-name": "Queen",
+            "disambiguation": "UK rock group"
+          }
+        }
+      ]
+    },
+    {
+      "id": "669e4101-afdb-3dc3-926d-779667e8a867",
+      "type-id": "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1",
+      "score": 93,
+      "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+      "artist-credit-id": "b1f6d0b0-c87e-4501-880c-d207d7f86870",
+      "count": 16,
+      "title": "Greatest Hits III",
+      "first-release-date": "1999-11-08",
+      "primary-type": "Album",
+      "secondary-types": [
+        "Compilation"
+      ],
+      "secondary-type-ids": [
+        "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1"
+      ],
+      "artist-credit": [
+        {
+          "joinphrase": "+",
+          "name": "Queen",
+          "artist": {
+            "id": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+            "name": "Queen",
+            "sort-name": "Queen",
+            "disambiguation": "UK rock group"
+          }
+        }
+      ]
+    },
+    {
+      "id": "152499ea-d489-386a-bfde-f632dcc950f3",
+      "type-id": "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1",
+      "score": 93,
+      "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+      "artist-credit-id": "edbf1ee2-3861-3d95-b971-8f243cbc7e54",
+      "count": 39,
+      "title": "Greatest Hits II",
+      "first-release-date": "1991-10-28",
+      "primary-type": "Album",
+      "secondary-types": [
+        "Compilation"
+      ],
+      "secondary-type-ids": [
+        "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1"
+      ],
+      "artist-credit": [
+        {
+          "name": "Queen",
+          "artist": {
+            "id": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+            "name": "Queen",
+            "sort-name": "Queen",
+            "disambiguation": "UK rock group"
+          }
+        }
+      ]
+    },
+    {
+      "id": "3607ff69-810c-3726-a7d6-ad3901037f82",
+      "type-id": "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1",
+      "score": 93,
+      "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+      "artist-credit-id": "edbf1ee2-3861-3d95-b971-8f243cbc7e54",
+      "count": 1,
+      "title": "Greatest Hits IV",
+      "primary-type": "Album",
+      "secondary-types": [
+        "Compilation"
+      ],
+      "secondary-type-ids": [
+        "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1"
+      ],
+      "artist-credit": [
+        {
+          "name": "Queen",
+          "artist": {
+            "id": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+            "name": "Queen",
+            "sort-name": "Queen",
+            "disambiguation": "UK rock group"
+          }
+        }
+      ]
+    },
+    {
+      "id": "16d5fff9-aa36-47a5-9ca6-f27bd97458fd",
+      "type-id": "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1",
+      "score": 93,
+      "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+      "artist-credit-id": "edbf1ee2-3861-3d95-b971-8f243cbc7e54",
+      "count": 2,
+      "title": "Greatest Hits III",
+      "first-release-date": "1995",
+      "primary-type": "Album",
+      "secondary-types": [
+        "Compilation"
+      ],
+      "secondary-type-ids": [
+        "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1"
+      ],
+      "artist-credit": [
+        {
+          "name": "Queen",
+          "artist": {
+            "id": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+            "name": "Queen",
+            "sort-name": "Queen",
+            "disambiguation": "UK rock group"
+          }
+        }
+      ]
+    },
+    {
+      "id": "1528e521-fb3d-4a76-b6dd-bf60c92c8347",
+      "type-id": "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1",
+      "score": 87,
+      "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+      "artist-credit-id": "edbf1ee2-3861-3d95-b971-8f243cbc7e54",
+      "count": 4,
+      "title": "Greatest Hits in Japan",
+      "first-release-date": "2020-01-15",
+      "primary-type": "Album",
+      "secondary-types": [
+        "Compilation"
+      ],
+      "secondary-type-ids": [
+        "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1"
+      ],
+      "artist-credit": [
+        {
+          "name": "Queen",
+          "artist": {
+            "id": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+            "name": "Queen",
+            "sort-name": "Queen",
+            "disambiguation": "UK rock group"
+          }
+        }
+      ]
+    },
+    {
+      "id": "adf8f970-547e-3171-965a-707745c51808",
+      "type-id": "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1",
+      "score": 83,
+      "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+      "artist-credit-id": "edbf1ee2-3861-3d95-b971-8f243cbc7e54",
+      "count": 5,
+      "title": "Greatest Hits I & II",
+      "first-release-date": "1994",
+      "primary-type": "Album",
+      "secondary-types": [
+        "Compilation"
+      ],
+      "secondary-type-ids": [
+        "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1"
+      ],
+      "artist-credit": [
+        {
+          "name": "Queen",
+          "artist": {
+            "id": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+            "name": "Queen",
+            "sort-name": "Queen",
+            "disambiguation": "UK rock group"
+          }
+        }
+      ]
+    }
+  ]
+}

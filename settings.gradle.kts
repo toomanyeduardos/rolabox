@@ -63,6 +63,8 @@ include(":device:library:impl")
 include(":device:library:testing")
 include(":device:library:local:api")
 include(":device:library:local:impl")
+include(":device:library:network:api")
+include(":device:library:network:impl")
 
 include(":device:music:ui:api")
 include(":device:music:ui:impl")

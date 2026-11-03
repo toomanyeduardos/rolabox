@@ -18,6 +18,7 @@ import com.eduardoflores.rolabox.device.library.api.ArtistId
 import com.eduardoflores.rolabox.device.library.api.ArtworkRef
 import com.eduardoflores.rolabox.device.library.api.Song
 import com.eduardoflores.rolabox.device.library.api.SongId
+import com.eduardoflores.rolabox.device.library.testing.FakeArtworkRepository
 import com.eduardoflores.rolabox.device.library.testing.FakeLibraryRepository
 import com.eduardoflores.rolabox.device.library.testing.audio.FixtureContent
 import com.eduardoflores.rolabox.device.library.testing.audio.Mp3Stream
@@ -88,6 +89,7 @@ class PlayerUnavailableTest {
                 FakePlaybackLocalDataSource(),
                 scope.backgroundScope,
                 scope.testScheduler.timeSource,
+                FakeArtworkRepository(),
             )
     }
 

@@ -128,13 +128,21 @@ A wrong cover is worse than none, so the match is strict:
 - **The pass runs only while downloading is allowed** (Offline mode and the setting), since its
   thumbnails are of use only to the download.
 - **A record is corrected when a load finds it wrong.** A load that finds a thumbnail makes the row
-  `OnPhone` (and deletes a `Found` file). A load of an `OnPhone` album that finds none makes it
-  `Pending`. A `Found` row whose file is missing becomes `Pending`.
+  `OnPhone` (and deletes a `Found` file). A load of an `OnPhone` album that finds none, for the song
+  and for the song that stands for the album, makes it `Pending`: a song with no picture of its own
+  can be on an album whose other song has one. A `Found` row whose file is missing becomes `Pending`.
 
 ### The work: WorkManager
 
 - **One unique work, `artwork-download`,** that keeps a running one, with a network constraint of any
   kind. It takes the due albums one at a time, `Pending` first, and stops when none is left.
+- **The album shown goes first.** Observing a song's artwork (`observeArtwork`), as Now Playing and
+  playback do for the item playing, makes its album the one wanted next, when the phone has no cover
+  for it and it is queued or has no record yet: one with none is queued then. The work is enqueued if
+  downloading is allowed. The request in flight isn't cancelled: it ends and is kept, and the album
+  wanted is the next one asked for, a few seconds later at one request a second. Only one album is
+  wanted at a time, the last one shown, kept in memory. An album not found waits out its day or week
+  like any other (rule 5), and an album already found or on the phone isn't asked for.
 - **Why WorkManager, unlike the scan (ADR-024, rule 9):** nobody waits for it, it needs the network,
   it should survive the process and the network going away, and WorkManager gives it a constraint and
   a backoff. A process killed halfway leaves the album it was on as it was, and the work resumes.
@@ -142,7 +150,7 @@ A wrong cover is worse than none, so the match is strict:
   `SyncWorker` does.
 - **ADR-022's rule 2 is revised** to allow a part's work that fetches what its network side has and
   its local side keeps. The repositories still read the local side only: `ArtworkRepository` never
-  calls the network.
+  calls the network. It makes an album wanted, and enqueues the work, which does.
 
 ### Retries
 
@@ -167,9 +175,10 @@ A wrong cover is worse than none, so the match is strict:
 ### Offline mode and the setting
 
 - **No artwork request is made in offline mode.** ADR-008's rule 6 is revised to say so.
-- **The setting "Download missing artwork" is on by default,** kept on this phone and not synced, as
-  the library's flag for the permission request is: in `:common:storage`, through the library's local
-  side. A row in the settings list (`:device:settings:impl`) shows it, through `ArtworkRepository`.
+- **The setting is on by default,** kept on this phone and not synced, as the library's flag for the
+  permission request is: in `:common:storage`, through the library's local side. The settings list
+  (`:device:settings:impl`) shows it as Online Artwork, On or Off, after Theme, through
+  `ArtworkRepository`. Center changes it in place, as it does Clicker.
 - **The work checks both before each request,** not only when it is enqueued, and stops when either
   says no. Turning the setting off, or choosing offline mode, cancels the work. Covers already
   downloaded are still shown.
@@ -180,8 +189,8 @@ A wrong cover is worse than none, so the match is strict:
 - **`ArtworkRef` stays a song.** The `:impl` maps the song to its album's key.
 - **It gains `observeArtwork(ref)`,** a `Flow<Either<LibraryError, ArtworkImage?>>` that emits the
   image the load would return, and again when the album's record changes: when a cover is
-  downloaded, or the phone's replaces it. `loadArtwork(ref)` stays, for Media3's one-shot
-  `BitmapLoader`.
+  downloaded, or the phone's replaces it. Observing it makes the album wanted next (The work).
+  `loadArtwork(ref)` stays, for Media3's one-shot `BitmapLoader`.
 - **It gains the setting:** `observeDownloadEnabled()` and `setDownloadEnabled(enabled)`.
 - **The LRU's entry is for one version of the file and one version of the record,** so a download
   isn't hidden by an image of the placeholder's time.
@@ -208,9 +217,10 @@ A wrong cover is worse than none, so the match is strict:
 
 - **The library gains its network sub-part** (ADR-022, rule 1). ADR-024 said it had none.
 - **OkHttp and kotlinx-serialization-json** are new in the stack, as dependencies of `:network:impl`
-  modules only. OkHttp follows the archive's redirect, and is tested against recorded responses with
-  its `MockWebServer`. The `OkHttpClient` is injected lazily, so nothing opens a connection in
-  offline mode (ADR-008, rule 8).
+  modules only. OkHttp follows the archive's redirect. The tests serve recorded answers of MusicBrainz
+  from an OkHttp interceptor, so no request leaves them. JSON is read as a tree, with no compiler
+  plugin. The `OkHttpClient` is injected lazily, so nothing opens a connection in offline mode
+  (ADR-008, rule 8).
 - **`CoverSourceError`** is the network side's sealed error ([ADR-007](007-error-handling.md)):
   `Unreachable` (no network, a timeout), `Server(code)`, and `Malformed` for an answer that can't be
   read. The network's `:impl` maps `IOException`, `SocketTimeoutException` and the HTTP codes to it.
@@ -232,6 +242,12 @@ A wrong cover is worse than none, so the match is strict:
 - **Download when Now Playing opens an album, with no queue.** No pass, no table of attempts, and only
   albums that are played. But the first play would show the placeholder, the notification would too,
   a failure would be tried again on every play, and an album played offline would never get one.
+- **Downloads in the library's order only, with no album first.** Nothing in memory, and the order is
+  the index's. But with a few dozen albums ahead of it, the album playing waits a minute or more for a
+  cover that was found on the first device test.
+- **Cancel the work when another album is shown, and start again with it.** The album shown would be
+  asked for at once. But the request in flight would be lost, and since nothing is kept until an
+  answer is, all it saves is the few seconds of one album.
 - **Download in the application scope, like the scan.** No WorkManager. But it dies with the process,
   has no network constraint, and its backoff would be Rolabox's to write.
 - **Write the cover into the files.** Every player would see it. But ADR-024's rule 1 never writes the
@@ -271,7 +287,9 @@ A wrong cover is worse than none, so the match is strict:
 3. `[convention]` No artwork request is made in offline mode or while the setting is off. The work
    checks both before each request. Tests cover both.
 4. `[convention]` Downloads run only in the library's `artwork-download` WorkManager work, one album at a
-   time, with a network constraint. `ArtworkRepository` never calls the network.
+   time, with a network constraint: the album shown first, then the queued ones, then the ones due again.
+   A request in flight is never cancelled to change the order. `ArtworkRepository` never calls the
+   network.
 5. `[convention]` Only an answer of no cover is an attempt. An album is tried again after at least a day,
    then a week, and not after three attempts. A `Found` album is never fetched again.
 6. `[convention]` The record of each album is a table of the user's data, keyed by the album's grouping

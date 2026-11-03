@@ -42,7 +42,7 @@ internal class MediaStoreArtworkLocalDataSource @Inject constructor(
     }
 }
 
-private fun Bitmap.toArtworkImage(): ArtworkImage {
+internal fun Bitmap.toArtworkImage(): ArtworkImage {
     // A hardware bitmap's pixels can't be read, so it is copied to memory first.
     val readable = if (config == Bitmap.Config.HARDWARE) copy(Bitmap.Config.ARGB_8888, false) else this
     val pixels = IntArray(readable.width * readable.height)

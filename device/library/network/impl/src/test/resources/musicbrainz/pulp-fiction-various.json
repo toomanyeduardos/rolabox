@@ -1,0 +1,92 @@
+{
+  "created": "2026-11-03T22:01:55.234Z",
+  "count": 3,
+  "offset": 0,
+  "release-groups": [
+    {
+      "id": "6ec24356-e2f9-402a-9e9c-2ee68ce5b509",
+      "type-id": "6d0c5bf6-7a33-3420-a519-44fc63eedebf",
+      "score": 100,
+      "primary-type-id": "6d0c5bf6-7a33-3420-a519-44fc63eedebf",
+      "artist-credit-id": "949a7fd5-fe73-3e8f-922e-01ff4ca958f7",
+      "count": 1,
+      "title": "Pulp Fiction",
+      "disambiguation": "collectors edition DVD",
+      "first-release-date": "2005-10-04",
+      "primary-type": "EP",
+      "secondary-types": [
+        "Soundtrack"
+      ],
+      "secondary-type-ids": [
+        "22a628ad-c082-3c4f-b1b6-d41665107b88"
+      ],
+      "artist-credit": [
+        {
+          "name": "Various Artists",
+          "artist": {
+            "id": "89ad4ac3-39f7-470e-963a-56509c546377",
+            "name": "Various Artists",
+            "sort-name": "Various Artists",
+            "disambiguation": "add compilations to this artist"
+          }
+        }
+      ]
+    },
+    {
+      "id": "1703cd63-9401-33c0-87c6-50c4ba2e0ba8",
+      "type-id": "22a628ad-c082-3c4f-b1b6-d41665107b88",
+      "score": 62,
+      "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+      "artist-credit-id": "949a7fd5-fe73-3e8f-922e-01ff4ca958f7",
+      "count": 25,
+      "title": "Pulp Fiction: Music From the Motion Picture",
+      "first-release-date": "1994-09-26",
+      "primary-type": "Album",
+      "secondary-types": [
+        "Soundtrack"
+      ],
+      "secondary-type-ids": [
+        "22a628ad-c082-3c4f-b1b6-d41665107b88"
+      ],
+      "artist-credit": [
+        {
+          "name": "Various Artists",
+          "artist": {
+            "id": "89ad4ac3-39f7-470e-963a-56509c546377",
+            "name": "Various Artists",
+            "sort-name": "Various Artists",
+            "disambiguation": "add compilations to this artist"
+          }
+        }
+      ]
+    },
+    {
+      "id": "d8df37bf-afcd-47f8-878b-3e5ad4accb47",
+      "type-id": "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1",
+      "score": 44,
+      "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+      "artist-credit-id": "949a7fd5-fe73-3e8f-922e-01ff4ca958f7",
+      "count": 1,
+      "title": "Double Feature Soundtracks From the Quentin Tarantino Films Reservoir Dogs & Pulp Fiction",
+      "first-release-date": "1994",
+      "primary-type": "Album",
+      "secondary-types": [
+        "Compilation"
+      ],
+      "secondary-type-ids": [
+        "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1"
+      ],
+      "artist-credit": [
+        {
+          "name": "Various Artists",
+          "artist": {
+            "id": "89ad4ac3-39f7-470e-963a-56509c546377",
+            "name": "Various Artists",
+            "sort-name": "Various Artists",
+            "disambiguation": "add compilations to this artist"
+          }
+        }
+      ]
+    }
+  ]
+}

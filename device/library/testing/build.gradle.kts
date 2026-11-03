@@ -5,8 +5,10 @@ plugins {
 dependencies {
     implementation(project(":device:library:api"))
     implementation(project(":device:library:local:api"))
+    implementation(project(":device:library:network:api"))
     implementation(project(":common:storage:api"))
     implementation(libs.javax.inject)
+    implementation(libs.kotlinx.coroutines.core)
 
     testImplementation(libs.junit)
 }

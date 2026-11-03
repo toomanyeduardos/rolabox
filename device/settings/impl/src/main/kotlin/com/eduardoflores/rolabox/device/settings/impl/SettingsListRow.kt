@@ -11,6 +11,8 @@ internal sealed interface SettingsListRow {
 
     data object Theme : SettingsListRow
 
+    data object OnlineArtwork : SettingsListRow
+
     data object MainMenu : SettingsListRow
 
     data object About : SettingsListRow
@@ -18,6 +20,11 @@ internal sealed interface SettingsListRow {
     data class Section(val row: SettingsRow) : SettingsListRow
 }
 
-internal fun settingsListRows(sections: List<SettingsRow>): List<SettingsListRow> =
-    listOf(SettingsListRow.Clicker, SettingsListRow.Theme, SettingsListRow.MainMenu, SettingsListRow.About) +
-        sections.map(SettingsListRow::Section)
+internal fun settingsListRows(sections: List<SettingsRow>): List<SettingsListRow> = listOf(
+    SettingsListRow.Clicker,
+    SettingsListRow.Theme,
+    SettingsListRow.OnlineArtwork,
+    SettingsListRow.MainMenu,
+    SettingsListRow.About,
+) +
+    sections.map(SettingsListRow::Section)

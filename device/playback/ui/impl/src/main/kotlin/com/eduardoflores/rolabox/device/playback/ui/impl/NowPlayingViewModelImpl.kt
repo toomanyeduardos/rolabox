@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
@@ -180,8 +181,8 @@ internal class NowPlayingViewModelImpl @Inject constructor(
 
 /**
  * The cover of the item playing, `null` while it loads and when it has none (ADR-026). Another item clears it first,
- * so the last song's cover never stands for this one. One that can't be read has none: the screen has nothing to say
- * about it.
+ * so the last song's cover never stands for this one. A cover that arrives while the item plays, downloaded for its
+ * album, replaces the placeholder (ADR-027). One that can't be read has none: the screen has nothing to say about it.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 private fun ArtworkRepository.coversOf(items: Flow<PlaybackItem?>): Flow<ArtworkImage?> = items
@@ -189,8 +190,9 @@ private fun ArtworkRepository.coversOf(items: Flow<PlaybackItem?>): Flow<Artwork
     .distinctUntilChanged()
     .transformLatest { ref ->
         emit(null)
-        ref?.let { loadArtwork(it).getOrNull() }?.let { emit(it) }
+        if (ref != null) emitAll(observeArtwork(ref).map { it.getOrNull() })
     }
+    .distinctUntilChanged()
 
 private fun SkippedItems.toUi() = SkippedSongs(
     title = last.title,

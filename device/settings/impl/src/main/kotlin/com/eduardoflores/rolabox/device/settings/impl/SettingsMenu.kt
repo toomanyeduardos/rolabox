@@ -17,7 +17,7 @@ import com.eduardoflores.rolabox.device.host.rememberListHighlight
 
 /**
  * The settings list, a device screen (ADR-018, rule 11). Turning moves the highlight, which stops at
- * the first and last rows. Center on Clicker or Theme changes its value in place, without leaving the
+ * the first and last rows. Center on Clicker, Theme or Online Artwork changes its value in place, without leaving the
  * list. Center on Main Menu reports [onMainMenuClick], on About [onAboutClick], and on a contributed
  * section's row [onOpenFullScreen] with the key it opens, the generic exit that leaves the display
  * (ADR-020, rule 17). The highlight is saved with the entry (ADR-018, rule 7).
@@ -41,6 +41,7 @@ internal fun SettingsRoute(
             WheelEvent.Center -> when (val row = rows.getOrNull(highlight.index)) {
                 SettingsListRow.Clicker -> viewModel.onClickerChange()
                 SettingsListRow.Theme -> viewModel.onThemeChange()
+                SettingsListRow.OnlineArtwork -> viewModel.onOnlineArtworkChange()
                 SettingsListRow.MainMenu -> onMainMenuClick()
                 SettingsListRow.About -> onAboutClick()
                 is SettingsListRow.Section -> row.row.opens?.let(onOpenFullScreen)
@@ -71,6 +72,14 @@ internal fun SettingsList(state: SettingsUiState, highlightedIndex: Int) {
                     stringResource(R.string.settings_theme),
                     value = state.darkTheme?.let {
                         stringResource(it.label)
+                    },
+                )
+
+            SettingsListRow.OnlineArtwork ->
+                DeviceListRow(
+                    stringResource(R.string.settings_online_artwork),
+                    value = state.onlineArtwork?.let {
+                        stringResource(if (it) R.string.settings_on else R.string.settings_off)
                     },
                 )
 

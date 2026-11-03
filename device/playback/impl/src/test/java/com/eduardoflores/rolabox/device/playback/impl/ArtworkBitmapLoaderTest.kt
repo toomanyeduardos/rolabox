@@ -18,6 +18,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
@@ -51,6 +52,9 @@ class ArtworkBitmapLoaderTest {
     @Test
     fun anItemsArtworkUri_namesItsRef() {
         assertEquals(ref, artworkRefOf(artworkUriOf(ref)))
+        // A new version is a new URI for the same song (ADR-027).
+        assertEquals(ref, artworkRefOf(artworkUriOf(ref, version = 2)))
+        assertNotEquals(artworkUriOf(ref), artworkUriOf(ref, version = 2))
         assertNull(artworkRefOf(Uri.parse("content://media/external/audio/media/7")))
     }
 

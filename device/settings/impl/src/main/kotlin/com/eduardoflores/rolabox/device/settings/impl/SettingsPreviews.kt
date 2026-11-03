@@ -33,6 +33,7 @@ private fun SettingsPreview() = DevicePreview(title = "Settings") {
         state = SettingsUiState(
             clicker = Clicker.ON,
             darkTheme = DarkThemeConfig.FOLLOW_SYSTEM,
+            onlineArtwork = true,
             sections = listOf(SettingsRow(title = { "Account" }, opens = PreviewKey)),
         ),
         highlightedIndex = 0,

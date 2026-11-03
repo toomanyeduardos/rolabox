@@ -164,6 +164,29 @@ class ModuleRulesTest {
     }
 
     @Test
+    fun `ADR-027 rule 7 - OkHttp and kotlinx-serialization-json only in a network impl`() {
+        listOf(
+            Triple(":device:library:impl", "com.squareup.okhttp3", "okhttp"),
+            Triple(":device:library:network:api", "com.squareup.okhttp3", "okhttp"),
+            Triple(":device:library:local:impl", "org.jetbrains.kotlinx", "kotlinx-serialization-json"),
+            Triple(":app", "org.jetbrains.kotlinx", "kotlinx-serialization-json-okio"),
+        ).forEach { (module, group, name) ->
+            assertTrue(externalDependencyViolation(module, group, name, false)!!.contains("ADR-027 rule 7"))
+        }
+        assertNull(externalDependencyViolation(":device:library:network:impl", "com.squareup.okhttp3", "okhttp", false))
+        assertNull(
+            externalDependencyViolation(
+                ":device:library:network:impl",
+                "org.jetbrains.kotlinx",
+                "kotlinx-serialization-json",
+                false,
+            ),
+        )
+        // The core of kotlinx.serialization isn't JSON, and navigation keys use it everywhere.
+        assertNull(externalDependencyViolation(":device:ui:api", "org.jetbrains.kotlinx", "kotlinx-serialization-core", false))
+    }
+
+    @Test
     fun `ADR-022 rule 4 - sync depends on no userdata module`() {
         assertViolatesRule("ADR-022 rule 4", ":common:sync:impl", ":common:userdata:api")
         assertViolatesRule("ADR-022 rule 4", ":common:sync:api", ":common:userdata:api")
