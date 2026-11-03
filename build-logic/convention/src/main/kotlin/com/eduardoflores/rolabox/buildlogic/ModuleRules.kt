@@ -49,6 +49,10 @@ private const val MEDIA3_GROUP = "androidx.media3"
 
 // Room and SQLite are dependencies of :local:impl modules only (ADR-024 rule 4).
 private val DATABASE_GROUPS = setOf("androidx.room", "androidx.sqlite")
+
+// Artwork is loaded by the library itself, with no image library (ADR-026 rule 4): Coil, Glide, Picasso and Fresco.
+private val IMAGE_LIBRARY_GROUPS =
+    setOf("io.coil-kt", "io.coil-kt.coil3", "com.github.bumptech.glide", "com.squareup.picasso", "com.facebook.fresco")
 private const val LOCAL_IMPL_SUFFIX = ":local:impl"
 
 // What :app's own code uses from the product areas (ADR-020 rule 13). It also uses :common, and lists every :impl.
@@ -62,7 +66,7 @@ private const val DAGGER_GROUP = "com.google.dagger"
 private const val PAPARAZZI_GROUP = "app.cash.paparazzi"
 private const val PAPARAZZI_PLUGIN = "app.cash.paparazzi"
 
-/** Checks the `[enforced]` dependency rules of ADR-020, ADR-022, ADR-023, ADR-024, ADR-005 and ADR-016 while the build is configured. */
+/** Checks the `[enforced]` dependency rules of ADR-020, ADR-022, ADR-023, ADR-024, ADR-026, ADR-005 and ADR-016 while the build is configured. */
 internal fun Project.enforceModuleRules() {
     val modulePath = path
 
@@ -134,6 +138,10 @@ internal fun externalDependencyViolation(
         group in DATABASE_GROUPS && !modulePath.endsWith(LOCAL_IMPL_SUFFIX) ->
             "ADR-024 rule 4: Room and SQLite are dependencies of :local:impl modules only. Keep the part's " +
                 "database in its :local:impl, and reach it through its :local:api"
+
+        group in IMAGE_LIBRARY_GROUPS ->
+            "ADR-026 rule 4: no image-loading library is a dependency. Load artwork through ArtworkRepository " +
+                "in :device:library:api"
 
         group == PAPARAZZI_GROUP && !appliesPaparazzi ->
             "ADR-016 rule 1: Paparazzi comes only from the rolabox.android.paparazzi plugin, which the module doesn't apply"

@@ -1,6 +1,8 @@
 package com.eduardoflores.rolabox.device.playback.ui.impl
 
 import androidx.lifecycle.viewModelScope
+import com.eduardoflores.rolabox.device.library.api.ArtworkImage
+import com.eduardoflores.rolabox.device.library.api.ArtworkRepository
 import com.eduardoflores.rolabox.device.playback.api.PlaybackController
 import com.eduardoflores.rolabox.device.playback.api.PlaybackError
 import com.eduardoflores.rolabox.device.playback.api.PlaybackItem
@@ -10,15 +12,20 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.launch
 
 /** How far one step of the wheel moves the marker in scrub. Tune it once it can be felt. */
@@ -39,6 +46,7 @@ internal val VolumeIdle: Duration = 2.seconds
 internal class NowPlayingViewModelImpl @Inject constructor(
     private val playbackState: PlaybackState,
     private val playbackController: PlaybackController,
+    artworkRepository: ArtworkRepository,
 ) : NowPlayingViewModel() {
     /** Where a turn left the marker, and the start of the item it was turned on. */
     private data class ScrubMarker(val start: Int, val position: Duration)
@@ -52,14 +60,16 @@ internal class NowPlayingViewModelImpl @Inject constructor(
     /** The start of the item scrub was selected on: ⏮ can start the same item again. */
     private var scrubStart: Int? = null
 
+    private val artwork = artworkRepository.coversOf(playbackState.currentItem)
+
     override val uiState: StateFlow<NowPlayingUiState> = combine(
         combine(playbackState.currentItem, playbackState.startCount, ::Pair)
             .onEach { (item, start) -> endScrubOnAnotherStart(item, start) },
         combine(playbackState.position, playbackState.queueIndex, playbackState.queue, ::Triple),
         combine(mode, playbackState.volume, marker, ::Triple),
-        playbackState.skipped,
-        playbackState.unplayableQueue,
-    ) { (item, start), (position, index, queue), (mode, volume, marker), skipped, unplayableQueue ->
+        combine(playbackState.skipped, playbackState.unplayableQueue, ::Pair),
+        artwork,
+    ) { (item, start), (position, index, queue), (mode, volume, marker), (skipped, unplayableQueue), artwork ->
         if (item == null || index == null) {
             unplayableQueue?.let { NowPlayingUiState.NothingLeftToPlay(it.toUi()) } ?: NowPlayingUiState.NothingLoaded
         } else {
@@ -75,6 +85,7 @@ internal class NowPlayingViewModelImpl @Inject constructor(
                 mode = mode,
                 volume = volume,
                 skipped = skipped?.toUi(),
+                artwork = artwork,
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), NowPlayingUiState.Loading)
@@ -166,6 +177,20 @@ internal class NowPlayingViewModelImpl @Inject constructor(
         const val STOP_TIMEOUT_MILLIS = 5_000L
     }
 }
+
+/**
+ * The cover of the item playing, `null` while it loads and when it has none (ADR-026). Another item clears it first,
+ * so the last song's cover never stands for this one. One that can't be read has none: the screen has nothing to say
+ * about it.
+ */
+@OptIn(ExperimentalCoroutinesApi::class)
+private fun ArtworkRepository.coversOf(items: Flow<PlaybackItem?>): Flow<ArtworkImage?> = items
+    .map { it?.artwork }
+    .distinctUntilChanged()
+    .transformLatest { ref ->
+        emit(null)
+        ref?.let { loadArtwork(it).getOrNull() }?.let { emit(it) }
+    }
 
 private fun SkippedItems.toUi() = SkippedSongs(
     title = last.title,

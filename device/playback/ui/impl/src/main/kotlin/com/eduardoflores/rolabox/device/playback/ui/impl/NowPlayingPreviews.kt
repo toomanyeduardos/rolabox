@@ -2,8 +2,10 @@ package com.eduardoflores.rolabox.device.playback.ui.impl
 
 import androidx.compose.runtime.Composable
 import com.eduardoflores.rolabox.common.designsystem.component.PreviewLightDark
+import com.eduardoflores.rolabox.common.designsystem.component.sampleCoverArt
 import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxTheme
 import com.eduardoflores.rolabox.device.host.DeviceScreen
+import com.eduardoflores.rolabox.device.library.api.ArtworkImage
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
@@ -25,6 +27,15 @@ private val LongTitle = Glasshouse.copy(
     artist = "Maren Holt and the Quiet Fleet Orchestra of Northbound",
     album = "Paper Satellites: The Complete Recordings, Remastered and Expanded",
 )
+
+// The design system's sample cover, as the library would hand it over.
+private val SampleCover: ArtworkImage = sampleCoverArt().let { image ->
+    val pixels = IntArray(image.width * image.height)
+    image.readPixels(pixels)
+    ArtworkImage(image.width, image.height, pixels)
+}
+
+private val WithArtwork = Glasshouse.copy(artwork = SampleCover)
 
 private val Scrubbing = Glasshouse.copy(position = 1.minutes + 48.seconds, mode = NowPlayingMode.Scrub)
 
@@ -53,6 +64,15 @@ private fun NowPlayingPreview() = DevicePreview(Glasshouse)
 @PreviewLightDark
 @Composable
 private fun NowPlayingLongTitlePreview() = DevicePreview(LongTitle)
+
+// The song's cover in the placeholder's place, shrinking the same way at 1.5x (ADR-026).
+@PreviewLightDark
+@Composable
+private fun NowPlayingArtworkPreview() = DevicePreview(WithArtwork)
+
+@PreviewLightDark
+@Composable
+private fun NowPlayingArtworkLongTitlePreview() = DevicePreview(LongTitle.copy(artwork = SampleCover))
 
 @PreviewLightDark
 @Composable

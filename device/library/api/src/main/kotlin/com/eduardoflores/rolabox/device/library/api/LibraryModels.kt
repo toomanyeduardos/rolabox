@@ -18,7 +18,8 @@ value class SongId(val value: Long)
  */
 data class Artist(val id: ArtistId, val name: String?, val isVarious: Boolean = false)
 
-data class Album(val id: AlbumId, val artistId: ArtistId, val title: String?, val year: Int?)
+/** [artwork] is where the album's cover is: one of its songs, whose picture stands for the album (ADR-026). */
+data class Album(val id: AlbumId, val artistId: ArtistId, val title: String?, val year: Int?, val artwork: ArtworkRef)
 
 /**
  * A song of the library. [uri] is where its audio is, the `content://` URI MediaStore gives it, which playback

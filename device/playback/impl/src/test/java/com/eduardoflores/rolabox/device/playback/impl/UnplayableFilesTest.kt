@@ -16,6 +16,7 @@ import com.eduardoflores.rolabox.device.library.api.Album
 import com.eduardoflores.rolabox.device.library.api.AlbumId
 import com.eduardoflores.rolabox.device.library.api.Artist
 import com.eduardoflores.rolabox.device.library.api.ArtistId
+import com.eduardoflores.rolabox.device.library.api.ArtworkRef
 import com.eduardoflores.rolabox.device.library.api.Song
 import com.eduardoflores.rolabox.device.library.api.SongId
 import com.eduardoflores.rolabox.device.library.testing.FakeLibraryRepository
@@ -64,7 +65,7 @@ class UnplayableFilesTest {
 
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val artist = Artist(ArtistId(1), "Artist")
-    private val album = Album(AlbumId(1), artist.id, "Album", 2000)
+    private val album = Album(AlbumId(1), artist.id, "Album", 2000, ArtworkRef(SongId(1)))
     private val library = FakeLibraryRepository()
     private val scope = TestScope()
     private lateinit var player: ExoPlayer

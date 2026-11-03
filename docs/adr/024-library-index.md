@@ -29,6 +29,9 @@
   compares every row. A song in a queue follows the index, through `observeSongLocations()`, so a song gone
   leaves the queue at once (What `LibraryRepository` becomes). A volume that is unmounted counts as gone, so
   its songs come back with new ids.
+- **Revised 2026-11-03:** playback/06 found that MediaStore's thumbnail of a song reads the image next to
+  the files, so a `cover.jpg` needs no images permission (What is stored). How artwork is loaded and shown
+  is [ADR-026](026-artwork.md).
 
 ## Context
 
@@ -145,8 +148,9 @@ files ──tags──────┘     pass 1, pass 2      (Room)   └─ So
 
   Genre is not stored yet. music/02 adds it as a change to cache tables.
 - **Artwork is a reference, not an image.** The index records whether a file has an embedded
-  picture, once its tags have been read. How it is loaded and shown is playback/06's. A cover image
-  next to the files (`cover.jpg`) needs the images permission, and is out of this phase.
+  picture, once its tags have been read. How it is loaded and shown is
+  [ADR-026](026-artwork.md)'s. A cover image next to the files (`cover.jpg`) is found by MediaStore's
+  thumbnail of the song, with no images permission.
 
 ### Metadata: one fixed order per field
 

@@ -155,7 +155,7 @@ rolabox:
     active: true
     excludes: ['**/device/host/**', '**/common/designsystem/**']
   MediaStoreOutsideLibrary:
-    # ADR-024 rule 2: only the library's local side finds the music on the phone.
+    # ADR-024 rule 2: only the library's local side finds the music on the phone, and ADR-026 rule 3: loads thumbnails.
     active: true
     excludes: ['**/device/library/local/impl/**']
   FixedHeightAroundText:

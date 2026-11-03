@@ -21,6 +21,7 @@ import arrow.core.Either
 import arrow.core.getOrElse
 import com.eduardoflores.rolabox.common.designsystem.component.WHEEL_TEST_TAG
 import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxTheme
+import com.eduardoflores.rolabox.device.library.api.ArtworkRef
 import com.eduardoflores.rolabox.device.library.api.LibraryError
 import com.eduardoflores.rolabox.device.library.api.LibraryRepository
 import com.eduardoflores.rolabox.device.playback.api.PlaybackItem
@@ -147,7 +148,7 @@ class DeviceBackTest {
         composeRule.waitForIdle()
         playback.load(
             songs.map {
-                PlaybackItem(PlaybackItemId.Song(it.id), it.title, "Artist", "Album", it.duration)
+                PlaybackItem(PlaybackItemId.Song(it.id), it.title, "Artist", "Album", it.duration, ArtworkRef(it.id))
             },
             SONG_INDEX,
         )

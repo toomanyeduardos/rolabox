@@ -2,6 +2,7 @@ package com.eduardoflores.rolabox.device.library.local.impl.di
 
 import android.content.Context
 import androidx.room.Room
+import com.eduardoflores.rolabox.device.library.local.api.ArtworkLocalDataSource
 import com.eduardoflores.rolabox.device.library.local.api.AudioFilesLocalDataSource
 import com.eduardoflores.rolabox.device.library.local.api.LibraryIndexLocalDataSource
 import com.eduardoflores.rolabox.device.library.local.api.TagsLocalDataSource
@@ -9,6 +10,7 @@ import com.eduardoflores.rolabox.device.library.local.impl.index.LibraryDatabase
 import com.eduardoflores.rolabox.device.library.local.impl.index.LibraryIndexDao
 import com.eduardoflores.rolabox.device.library.local.impl.index.MIGRATION_1_2
 import com.eduardoflores.rolabox.device.library.local.impl.index.RoomLibraryIndexLocalDataSource
+import com.eduardoflores.rolabox.device.library.local.impl.mediastore.MediaStoreArtworkLocalDataSource
 import com.eduardoflores.rolabox.device.library.local.impl.mediastore.MediaStoreAudioFilesLocalDataSource
 import com.eduardoflores.rolabox.device.library.local.impl.tags.ContentResolverTagsLocalDataSource
 import dagger.Binds
@@ -31,6 +33,11 @@ abstract class LibraryLocalModule {
     internal abstract fun bindsAudioFilesLocalDataSource(
         dataSource: MediaStoreAudioFilesLocalDataSource,
     ): AudioFilesLocalDataSource
+
+    @Binds
+    internal abstract fun bindsArtworkLocalDataSource(
+        dataSource: MediaStoreArtworkLocalDataSource,
+    ): ArtworkLocalDataSource
 
     @Binds
     internal abstract fun bindsTagsLocalDataSource(dataSource: ContentResolverTagsLocalDataSource): TagsLocalDataSource

@@ -17,6 +17,12 @@ private const val SONG_COLUMNS = "s.id, s.albumId, s.artistId, s.title, s.trackN
 private const val BY_TITLE = "ORDER BY s.title IS NULL, s.title COLLATE NOCASE, s.id"
 private const val BY_YEAR = "ORDER BY year IS NULL, year, title IS NULL, title COLLATE NOCASE, id"
 
+// The song whose cover stands for album `a`: the first, in track order, whose tags have a picture, or else the first
+// song (ADR-026). A duplicate comes last, and an album always has a song, since one without is deleted.
+private const val ALBUM_COLUMNS = "a.*, (SELECT s.id FROM songs s WHERE s.albumId = a.id " +
+    "ORDER BY s.hasEmbeddedPicture IS NOT 1, s.isDuplicate, s.discNumber IS NULL, s.discNumber, " +
+    "s.trackNumber IS NULL, s.trackNumber, s.title IS NULL, s.title COLLATE NOCASE, s.id LIMIT 1) AS artworkSongId"
+
 // One interface for one database: the observed lists, and what one batch of a scan writes.
 @Suppress("TooManyFunctions")
 @Dao
@@ -28,8 +34,8 @@ internal interface LibraryIndexDao {
     )
     fun observeArtists(): Flow<List<ArtistEntity>>
 
-    @Query("SELECT * FROM albums $BY_YEAR")
-    fun observeAlbums(): Flow<List<AlbumEntity>>
+    @Query("SELECT $ALBUM_COLUMNS FROM albums a $BY_YEAR")
+    fun observeAlbums(): Flow<List<AlbumRow>>
 
     @Query("SELECT $SONG_COLUMNS FROM songs s WHERE s.isDuplicate = 0 $BY_TITLE")
     fun observeSongs(): Flow<List<SongRow>>
@@ -37,14 +43,14 @@ internal interface LibraryIndexDao {
     @Query("SELECT * FROM artists WHERE id = :id")
     fun observeArtist(id: Long): Flow<ArtistEntity?>
 
-    @Query("SELECT * FROM albums WHERE id = :id")
-    fun observeAlbum(id: Long): Flow<AlbumEntity?>
+    @Query("SELECT $ALBUM_COLUMNS FROM albums a WHERE a.id = :id")
+    fun observeAlbum(id: Long): Flow<AlbumRow?>
 
     @Query(
-        "SELECT * FROM albums WHERE title IS NOT NULL AND (artistId = :artistId " +
-            "OR id IN (SELECT albumId FROM songs WHERE artistId = :artistId)) $BY_YEAR",
+        "SELECT $ALBUM_COLUMNS FROM albums a WHERE a.title IS NOT NULL AND (a.artistId = :artistId " +
+            "OR a.id IN (SELECT albumId FROM songs WHERE artistId = :artistId)) $BY_YEAR",
     )
-    fun observeAlbumsByArtist(artistId: Long): Flow<List<AlbumEntity>>
+    fun observeAlbumsByArtist(artistId: Long): Flow<List<AlbumRow>>
 
     @Query(
         "SELECT $SONG_COLUMNS FROM songs s WHERE s.isDuplicate = 0 AND (s.artistId = :artistId " +
@@ -68,8 +74,11 @@ internal interface LibraryIndexDao {
     @Query("SELECT * FROM artists WHERE id = :id")
     suspend fun getArtist(id: Long): ArtistEntity?
 
-    @Query("SELECT * FROM albums WHERE id = :id")
-    suspend fun getAlbum(id: Long): AlbumEntity?
+    @Query("SELECT $ALBUM_COLUMNS FROM albums a WHERE a.id = :id")
+    suspend fun getAlbum(id: Long): AlbumRow?
+
+    @Query("SELECT * FROM songs WHERE id = :id")
+    suspend fun getSong(id: Long): SongEntity?
 
     @Query(
         "SELECT s.*, ar.groupKey AS artistKey, al.groupKey AS albumKey FROM songs s " +

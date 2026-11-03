@@ -70,6 +70,9 @@ internal data class AlbumEntity(
     val year: Int?,
 )
 
+/** An album, with the song whose cover stands for it (ADR-026), which its query picks. */
+internal data class AlbumRow(@Embedded val album: AlbumEntity, val artworkSongId: Long)
+
 @Entity(tableName = "artists", indices = [Index("groupKey", unique = true)])
 internal data class ArtistEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,

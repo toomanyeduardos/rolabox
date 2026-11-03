@@ -4,6 +4,7 @@ import com.eduardoflores.rolabox.device.library.api.Album
 import com.eduardoflores.rolabox.device.library.api.AlbumId
 import com.eduardoflores.rolabox.device.library.api.Artist
 import com.eduardoflores.rolabox.device.library.api.ArtistId
+import com.eduardoflores.rolabox.device.library.api.ArtworkRef
 import com.eduardoflores.rolabox.device.library.api.Song
 import com.eduardoflores.rolabox.device.library.api.SongId
 import com.eduardoflores.rolabox.device.library.testing.FakeLibraryRepository
@@ -11,9 +12,9 @@ import kotlin.time.Duration.Companion.minutes
 
 val MarenHolt = Artist(ArtistId(1), "Maren Holt")
 val BlueHarbor = Artist(ArtistId(2), "Blue Harbor")
-val LowTideRadio = Album(AlbumId(10), MarenHolt.id, "Low Tide Radio", year = 2019)
-val PaperSatellites = Album(AlbumId(11), MarenHolt.id, "Paper Satellites", year = 2022)
-val Harborlight = Album(AlbumId(20), BlueHarbor.id, "Harborlight", year = 2021)
+val LowTideRadio = Album(AlbumId(10), MarenHolt.id, "Low Tide Radio", year = 2019, ArtworkRef(SongId(10)))
+val PaperSatellites = Album(AlbumId(11), MarenHolt.id, "Paper Satellites", year = 2022, ArtworkRef(SongId(11)))
+val Harborlight = Album(AlbumId(20), BlueHarbor.id, "Harborlight", year = 2021, ArtworkRef(SongId(20)))
 
 val Glasshouse = song(100, PaperSatellites, "Glasshouse", trackNumber = 2)
 val Coastline = song(101, PaperSatellites, "Coastline", trackNumber = 1)

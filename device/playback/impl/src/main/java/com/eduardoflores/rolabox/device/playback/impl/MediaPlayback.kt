@@ -14,6 +14,7 @@ import arrow.core.raise.either
 import com.eduardoflores.rolabox.common.util.ApplicationScope
 import com.eduardoflores.rolabox.device.library.api.AlbumId
 import com.eduardoflores.rolabox.device.library.api.ArtistId
+import com.eduardoflores.rolabox.device.library.api.ArtworkRef
 import com.eduardoflores.rolabox.device.library.api.LibraryError
 import com.eduardoflores.rolabox.device.library.api.LibraryRepository
 import com.eduardoflores.rolabox.device.library.api.SongId
@@ -562,6 +563,7 @@ private class QueuedItem(val item: PlaybackItem, val uri: String) {
                 .setTitle(item.title)
                 .setArtist(item.artist)
                 .setAlbumTitle(item.album)
+                .setArtworkUri(item.artwork?.let(::artworkUriOf))
                 .build(),
         )
         .build()
@@ -605,6 +607,7 @@ private suspend fun LibraryRepository.queueOf(source: PlaybackSource): Either<Pl
                 artist = artists.getValue(song.artistId),
                 album = albums.getValue(song.albumId),
                 duration = song.duration,
+                artwork = ArtworkRef(song.id),
             )
             QueuedItem(item, song.uri)
         }

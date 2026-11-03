@@ -4,6 +4,7 @@ import com.eduardoflores.rolabox.device.library.api.Album
 import com.eduardoflores.rolabox.device.library.api.AlbumId
 import com.eduardoflores.rolabox.device.library.api.Artist
 import com.eduardoflores.rolabox.device.library.api.ArtistId
+import com.eduardoflores.rolabox.device.library.api.ArtworkRef
 import com.eduardoflores.rolabox.device.library.api.Song
 import com.eduardoflores.rolabox.device.library.api.SongId
 import com.eduardoflores.rolabox.device.library.local.api.FieldSource
@@ -17,7 +18,8 @@ import kotlin.time.Duration.Companion.milliseconds
 
 internal fun ArtistEntity.toArtist() = Artist(ArtistId(id), name, isVarious)
 
-internal fun AlbumEntity.toAlbum() = Album(AlbumId(id), ArtistId(artistId), title, year)
+internal fun AlbumRow.toAlbum() =
+    Album(AlbumId(album.id), ArtistId(album.artistId), album.title, album.year, ArtworkRef(SongId(artworkSongId)))
 
 internal fun SongRow.toSong() = Song(
     id = SongId(id),
@@ -29,16 +31,11 @@ internal fun SongRow.toSong() = Song(
     uri = uri,
 )
 
+internal fun SongEntity.toSongFile() = SongFile(mediaStoreId, uri, relativePath, fileName, size, dateModified)
+
 internal fun IndexedSongRow.toIndexedSong() = IndexedSong(
     id = SongId(song.id),
-    file = SongFile(
-        mediaStoreId = song.mediaStoreId,
-        uri = song.uri,
-        relativePath = song.relativePath,
-        fileName = song.fileName,
-        size = song.size,
-        dateModified = song.dateModified,
-    ),
+    file = song.toSongFile(),
     metadata = SongMetadata(
         title = sourced(song.title, song.titleSource),
         artist = sourced(song.artist, song.artistSource),

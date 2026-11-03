@@ -418,6 +418,7 @@ graph TD
     device_playback_testing --> device_playback_local_api
     device_playback_ui_impl --> common_designsystem
     device_playback_ui_impl --> device_host
+    device_playback_ui_impl --> device_library_api
     device_playback_ui_impl --> device_playback_api
     device_playback_ui_impl --> device_playback_ui_api
     device_settings_impl --> common_designsystem

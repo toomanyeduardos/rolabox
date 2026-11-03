@@ -20,6 +20,7 @@ import com.eduardoflores.rolabox.common.designsystem.component.WHEEL_TEST_TAG
 import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxTheme
 import com.eduardoflores.rolabox.device.library.api.Album
 import com.eduardoflores.rolabox.device.library.api.Artist
+import com.eduardoflores.rolabox.device.library.api.ArtworkRef
 import com.eduardoflores.rolabox.device.library.api.LibraryError
 import com.eduardoflores.rolabox.device.library.api.LibraryRepository
 import com.eduardoflores.rolabox.device.library.api.Song
@@ -324,7 +325,7 @@ class DeviceNavigationTest {
 
     /** The queue a player loads when [songs] are played. */
     private fun queueOf(songs: List<Song>) =
-        songs.map { PlaybackItem(itemOf(it), it.title, "Artist", "Album", it.duration) }
+        songs.map { PlaybackItem(itemOf(it), it.title, "Artist", "Album", it.duration, ArtworkRef(it.id)) }
 
     private fun wheel() = composeRule.onNodeWithTag(WHEEL_TEST_TAG)
 

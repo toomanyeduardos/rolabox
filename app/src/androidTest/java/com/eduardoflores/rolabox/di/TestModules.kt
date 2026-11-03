@@ -14,8 +14,10 @@ import com.eduardoflores.rolabox.common.util.RolaboxDispatchers.Default
 import com.eduardoflores.rolabox.common.util.RolaboxDispatchers.IO
 import com.eduardoflores.rolabox.common.util.RolaboxDispatchers.Main
 import com.eduardoflores.rolabox.common.util.di.DispatchersModule
+import com.eduardoflores.rolabox.device.library.api.ArtworkRepository
 import com.eduardoflores.rolabox.device.library.api.LibraryRepository
 import com.eduardoflores.rolabox.device.library.impl.di.LibraryModule
+import com.eduardoflores.rolabox.device.library.testing.FakeArtworkRepository
 import com.eduardoflores.rolabox.device.library.testing.FakeLibraryRepository
 import com.eduardoflores.rolabox.device.playback.api.PlaybackController
 import com.eduardoflores.rolabox.device.playback.api.PlaybackState
@@ -81,6 +83,10 @@ object TestLibraryModule {
         albums = TestLibrary.albums
         songs = TestLibrary.songs
     }
+
+    // No song of the tests' library has a cover, so Now Playing shows the placeholder (ADR-026).
+    @Provides
+    fun providesArtworkRepository(fake: FakeArtworkRepository): ArtworkRepository = fake
 }
 
 @Module

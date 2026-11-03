@@ -4,6 +4,7 @@ import com.eduardoflores.rolabox.device.library.api.Album
 import com.eduardoflores.rolabox.device.library.api.AlbumId
 import com.eduardoflores.rolabox.device.library.api.Artist
 import com.eduardoflores.rolabox.device.library.api.ArtistId
+import com.eduardoflores.rolabox.device.library.api.ArtworkRef
 import com.eduardoflores.rolabox.device.library.api.Song
 import com.eduardoflores.rolabox.device.library.api.SongId
 import kotlin.time.Duration.Companion.minutes
@@ -17,10 +18,10 @@ internal object TestLibrary {
     private val tides = Artist(ArtistId(2), "The Low Tides")
     private val mireille = Artist(ArtistId(3), "Mireille Okafor")
 
-    private val paperLanterns = Album(AlbumId(1), aurora.id, "Paper Lanterns", 2019)
-    private val northbound = Album(AlbumId(2), aurora.id, "Northbound", 2022)
-    private val saltwater = Album(AlbumId(3), tides.id, "Saltwater Radio", 2015)
-    private val twoRooms = Album(AlbumId(4), mireille.id, "Two Rooms", 2020)
+    private val paperLanterns = Album(AlbumId(1), aurora.id, "Paper Lanterns", 2019, ArtworkRef(SongId(1)))
+    private val northbound = Album(AlbumId(2), aurora.id, "Northbound", 2022, ArtworkRef(SongId(2)))
+    private val saltwater = Album(AlbumId(3), tides.id, "Saltwater Radio", 2015, ArtworkRef(SongId(3)))
+    private val twoRooms = Album(AlbumId(4), mireille.id, "Two Rooms", 2020, ArtworkRef(SongId(4)))
 
     val artists = listOf(aurora, tides, mireille)
     val albums = listOf(paperLanterns, northbound, saltwater, twoRooms)
