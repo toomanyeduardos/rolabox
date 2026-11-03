@@ -16,6 +16,12 @@
   [ADR-020](020-modules-by-product-area.md), now that the code has moved (37.07b). `StorageError` is
   in `:common:storage:api`, and the exception-to-error helpers in `:common:util` (Decision,
   Consequences). The decision is unchanged.
+- **Revised 2026-11-03:** There is no single network: each remote source has its own `:network:api`
+  ([ADR-022](022-data-source-sub-parts.md)), which owns its error type. Sync's is `RemoteError`, and
+  the library's cover source has `CoverSourceError`
+  ([ADR-027](027-artwork-from-the-internet.md)). "Not found" from a source that answered is a `Right`
+  with no value, not an error. WorkManager work folds the `Either` into its `Result`, as a ViewModel
+  folds it into UI state (rule 8). The decision is unchanged.
 
 ## Context
 

@@ -32,6 +32,12 @@
 - **Revised 2026-11-03:** playback/06 found that MediaStore's thumbnail of a song reads the image next to
   the files, so a `cover.jpg` needs no images permission (What is stored). How artwork is loaded and shown
   is [ADR-026](026-artwork.md).
+- **Revised 2026-11-03:** library/08 downloads the covers missing from the phone
+  ([ADR-027](027-artwork-from-the-internet.md)). The library gains a network sub-part (The layout), and
+  its first table of the user's data, the artwork record of each album, which survives rescans and has
+  tested migrations (What is stored, Changing the schema). A pass after each scan queues the albums with
+  no cover on the phone, in WorkManager work of its own: rule 9 is about the scan, and the scan is
+  unchanged.
 
 ## Context
 
@@ -113,8 +119,9 @@ files ──tags──────┘     pass 1, pass 2      (Room)   └─ So
                              observer, the ID3 and MP4 parser, and the manifest with the permission
 ```
 
-- **The library has a local sub-part and no network one** (ADR-022, rule 2). Favorites add a
-  network sub-part when they are synced. That is their own ticket.
+- **The library has a local sub-part, and a network one for the covers it downloads**
+  ([ADR-027](027-artwork-from-the-internet.md)). Favorites will use that network sub-part when they
+  are synced. That is their own ticket.
 - **`:local` knows how everything is stored on the phone:** the database's tables, MediaStore's
   columns, and the byte layout of ID3 and MP4. Room, MediaStore, `ContentResolver` and their
   exceptions stay in `:local:impl` and are mapped to `LibraryError` at its boundary
@@ -145,6 +152,7 @@ files ──tags──────┘     pass 1, pass 2      (Room)   └─ So
   | Albums | One row per album, found by its grouping key: title, artist, year | Cache |
   | Artists | One row per artist, found by its grouping key: name | Cache |
   | Scan state | MediaStore's version and generation at the last scan, for each volume | Cache |
+  | Album artwork | One row per album, found by its grouping key: whether its cover is on the phone, downloaded (with the cached file) or not found (with the attempts), as [ADR-027](027-artwork-from-the-internet.md) says | User's data |
 
   Genre is not stored yet. music/02 adds it as a change to cache tables.
 - **Artwork is a reference, not an image.** The index records whether a file has an embedded
@@ -307,6 +315,9 @@ A scan has **two passes**, so the device is usable within seconds of the first o
 - **No WorkManager.** A scan runs while the app is open, and the user is waiting for what it finds.
   WorkManager adds deferral and constraints to work that has to start now, and a periodic scan while
   the app is closed would wake the phone to find changes that the next start finds anyway.
+- **When a scan ends, a pass queues the covers to download** ([ADR-027](027-artwork-from-the-internet.md)).
+  The download is WorkManager work, since nobody waits for it and it needs the network. It is not
+  part of the scan, which this rule keeps out of WorkManager.
 
 ### What `LibraryRepository` becomes
 
@@ -345,7 +356,8 @@ A scan has **two passes**, so the device is usable within seconds of the first o
   table of the user's data (favorites later, for example) is not, since nothing on the phone could
   rebuild it.
 - **A change to cache tables drops and recreates them in its migration,** and the next start
-  rescans. Every table is cache today.
+  rescans. Album artwork is the first table of the user's data, and those migrations leave it as it
+  is.
 - **A change to a table of the user's data has a real migration,** tested against the schema Room
   exports, which is checked into Git with each version.
 - **`fallbackToDestructiveMigration` is never used.** It drops the whole database, and would drop
@@ -362,6 +374,8 @@ A scan has **two passes**, so the device is usable within seconds of the first o
   the dirty flag. No WorkManager.
 - **music/02:** the genre, read by the parser and added to the songs table as a change to cache
   tables.
+- **library/08:** the album artwork table, the first of the user's data, with its migration tests;
+  the network sub-part; the pass after each scan ([ADR-027](027-artwork-from-the-internet.md)).
 
 ### What was not decided
 
@@ -515,4 +529,4 @@ the `androidx.room` and `androidx.sqlite` groups, with a violating and a passing
 library/03 saw it report a call. The rest are reviewed. Rules 7, 8 and 12 are behavior,
 covered by the tests of the scanner and `GroupingTest` in `:device:library:impl` (library/03, library/05 and
 library/06),
-and rule 10 by Room's migration tests once there is a table of the user's data.
+and rule 10 by Room's migration tests of the album artwork table, from library/08.

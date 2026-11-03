@@ -16,6 +16,11 @@
   sub-part's `:api` may also declare plain models of its own, for what the part's `:api` doesn't
   show (The layout, rule 7). The library's local side returns files, tags and the source of each
   field, which no screen sees. The decision is unchanged.
+- **Revised 2026-11-03:** The library's network sub-part downloads covers, which isn't sync: nothing
+  goes up, and there's no account ([ADR-027](027-artwork-from-the-internet.md)). Besides its `Syncer`,
+  a part's WorkManager work may use both sides to fetch what the network side has and the local side
+  keeps (The layout, rule 2). Its repositories still read and write the local side only. Rule 6 is
+  about synced data, and doesn't apply to it.
 
 ## Context
 
@@ -72,7 +77,9 @@ data.
   Room database, with its entities and DAOs, is in its `:local:impl` ([ADR-024](024-library-index.md)).
 - **`:network` knows the remote SDK:** the paths, the document's fields and the transaction.
 - **The part's `:impl` combines the two.** Its repositories read and write the local side only
-  ([ADR-002](002-offline-first-data-flow.md), rules 1 and 2). Its `Syncer` uses both.
+  ([ADR-002](002-offline-first-data-flow.md), rules 1 and 2). Its `Syncer` uses both, and so may its
+  WorkManager work that fetches data into the local side, such as the library's covers
+  ([ADR-027](027-artwork-from-the-internet.md)).
 - **A sub-part's `:api` belongs to its part.** It is seen by the part's `:impl` and `:testing`, and
   by the sub-part's own `:impl`. Screens and other parts see the part's `:api` and nothing under it.
 - **Types.** A sub-part's `:api` uses the models of the part's `:api`, and declares plain models of
@@ -171,7 +178,8 @@ Each step leaves the build green.
    remote one is `:<part>:network:{api,impl}`. A sub-part's `:api` is depended on only by the
    `:impl` and the `:testing` of its part, and by its own `:impl`.
 2. `[convention]` A part has a `:local` or a `:network` only when it has that side. Its
-   repositories read and write the local side only, and only its `Syncer` uses both.
+   repositories read and write the local side only. Only its `Syncer`, and its WorkManager work that
+   fetches data into the local side, use both.
 3. `[enforced]` Firestore is a dependency of `:network:impl` modules only.
 4. `[enforced]` No `:common:sync` module depends on a `:common:userdata` module, or on any
    other part whose data it syncs.
