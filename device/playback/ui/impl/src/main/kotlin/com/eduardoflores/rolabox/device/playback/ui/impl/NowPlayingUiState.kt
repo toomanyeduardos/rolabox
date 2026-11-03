@@ -1,5 +1,6 @@
 package com.eduardoflores.rolabox.device.playback.ui.impl
 
+import com.eduardoflores.rolabox.device.library.api.ArtworkImage
 import kotlin.time.Duration
 
 /** What the bar of Now Playing shows (ADR-018, rule 8). Scrub is a mode of the screen, not a destination. */
@@ -38,7 +39,8 @@ internal sealed interface NowPlayingUiState {
      * between 0:00 and [duration], and in [NowPlayingMode.Scrub] it is where the marker is, not where the
      * song is. [mode] says what the bar and the corner of the screen show, and [volume] is
      * the level from 0 to 100 that the bar shows in [NowPlayingMode.Volume]. [skipped] is what was just skipped
-     * to get here, which takes the cover art's place for a moment.
+     * to get here, which takes the cover art's place for a moment. [artwork] is the song's cover, `null` while it loads
+     * and when it has none, which the placeholder stands for (ADR-026).
      */
     data class Playing(
         val title: String?,
@@ -51,6 +53,7 @@ internal sealed interface NowPlayingUiState {
         val mode: NowPlayingMode = NowPlayingMode.Time,
         val volume: Int = 0,
         val skipped: SkippedSongs? = null,
+        val artwork: ArtworkImage? = null,
     ) : NowPlayingUiState {
         /** How full the volume is, from 0 to 1. */
         val volumeFraction: Float

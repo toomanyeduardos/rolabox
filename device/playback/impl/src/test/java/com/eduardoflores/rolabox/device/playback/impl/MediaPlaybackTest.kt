@@ -21,6 +21,7 @@ import com.eduardoflores.rolabox.device.library.api.Album
 import com.eduardoflores.rolabox.device.library.api.AlbumId
 import com.eduardoflores.rolabox.device.library.api.Artist
 import com.eduardoflores.rolabox.device.library.api.ArtistId
+import com.eduardoflores.rolabox.device.library.api.ArtworkRef
 import com.eduardoflores.rolabox.device.library.api.LibraryError
 import com.eduardoflores.rolabox.device.library.api.Song
 import com.eduardoflores.rolabox.device.library.api.SongId
@@ -75,8 +76,8 @@ class MediaPlaybackTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val audioManager = context.getSystemService(AudioManager::class.java)
     private val artist = Artist(ArtistId(1), "Artist")
-    private val album = Album(AlbumId(1), artist.id, "Album", 2000)
-    private val otherAlbum = Album(AlbumId(2), artist.id, "Other album", 2001)
+    private val album = Album(AlbumId(1), artist.id, "Album", 2000, ArtworkRef(SongId(1)))
+    private val otherAlbum = Album(AlbumId(2), artist.id, "Other album", 2001, ArtworkRef(SongId(2)))
     private val library = FakeLibraryRepository()
     private val scope = TestScope()
     private lateinit var player: ExoPlayer
@@ -171,6 +172,15 @@ class MediaPlaybackTest {
         assertEquals("Artist", item?.artist)
         assertEquals("Album", item?.album)
         assertEquals(12.seconds, item?.duration)
+    }
+
+    @Test
+    fun play_givesEachItemTheArtworkOfItsSong_whichTheSessionLoads() = scope.runTest {
+        playback.play(PlaybackSource.ByAlbum(album.id), item(2))
+
+        assertEquals((1L..5L).map { ArtworkRef(SongId(it)) }, playback.queue.first().map { it.artwork })
+        val uri = player.currentMediaItem?.mediaMetadata?.artworkUri
+        assertEquals(ArtworkRef(SongId(2)), uri?.let(::artworkRefOf))
     }
 
     @Test

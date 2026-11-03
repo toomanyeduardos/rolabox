@@ -39,6 +39,9 @@ interface LibraryIndexLocalDataSource {
 
     suspend fun getAlbum(id: AlbumId): Either<LibraryError, Album?>
 
+    /** The file of a song, a duplicate included, or `null` when it isn't in the index. */
+    suspend fun getSongFile(id: SongId): Either<LibraryError, SongFile?>
+
     /** Every song as indexed, for a scan to compare with what it found. */
     suspend fun getIndexedSongs(): Either<LibraryError, List<IndexedSong>>
 

@@ -1,5 +1,6 @@
 package com.eduardoflores.rolabox.device.playback.ui.impl
 
+import android.graphics.Bitmap
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -11,9 +12,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -21,7 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.eduardoflores.rolabox.common.designsystem.component.DeviceCoverArtPlaceholder
+import com.eduardoflores.rolabox.common.designsystem.component.DeviceCoverArt
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceMessage
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceNotice
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceProgressBar
@@ -33,6 +37,7 @@ import com.eduardoflores.rolabox.device.host.HandleMenu
 import com.eduardoflores.rolabox.device.host.HandleWheelEvents
 import com.eduardoflores.rolabox.device.host.ObservePlaybackButtons
 import com.eduardoflores.rolabox.device.host.ScreenTitle
+import com.eduardoflores.rolabox.device.library.api.ArtworkImage
 
 private val ScreenPadding = 12.dp
 private val ScreenTopPadding = 10.dp
@@ -145,12 +150,21 @@ private fun NowPlayingContent(state: NowPlayingUiState.Playing) {
                 // What was skipped takes the cover art's place for a moment, so nothing else on the display moves.
                 DeviceNotice(skippedText(skipped), skipped.reason.text(), Modifier.fillMaxSize())
             } else {
-                DeviceCoverArtPlaceholder(Modifier.size(minOf(maxWidth, maxHeight).coerceAtLeast(CoverMinSize)))
+                DeviceCoverArt(
+                    rememberCoverArt(state.artwork),
+                    Modifier.size(minOf(maxWidth, maxHeight).coerceAtLeast(CoverMinSize)),
+                )
             }
         }
         SongNames(state, Modifier.fillMaxWidth())
         NowPlayingBar(state)
     }
+}
+
+/** The cover as Compose draws it, made once for each cover: the state keeps the same one while the song plays. */
+@Composable
+private fun rememberCoverArt(artwork: ArtworkImage?): ImageBitmap? = remember(artwork) {
+    artwork?.let { Bitmap.createBitmap(it.pixels, it.width, it.height, Bitmap.Config.ARGB_8888).asImageBitmap() }
 }
 
 /** The bar: the time, and the volume while it is changing. Scrub is the marker's time with a thicker, orange bar. */

@@ -11,6 +11,7 @@ import com.eduardoflores.rolabox.common.userdata.api.MainMenuRow
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRowVisibility
 import com.eduardoflores.rolabox.common.userdata.testing.FakeUserDataRepository
 import com.eduardoflores.rolabox.device.library.api.AlbumId
+import com.eduardoflores.rolabox.device.library.api.ArtworkRef
 import com.eduardoflores.rolabox.device.library.api.LibraryError
 import com.eduardoflores.rolabox.device.library.api.SongId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackError
@@ -51,7 +52,8 @@ class DeviceViewModelTest {
     fun aQueueThatEnds_popsNowPlaying_andOneThatCouldNotBePlayed_doesNot() = runTest {
         val viewModel = observedViewModel()
         backgroundScope.launch(mainDispatcherRule.testDispatcher) { viewModel.queueStoppedUnplayable.collect() }
-        val item = PlaybackItem(PlaybackItemId.Song(SongId(1)), "Song", "Artist", "Album", 1.seconds)
+        val item =
+            PlaybackItem(PlaybackItemId.Song(SongId(1)), "Song", "Artist", "Album", 1.seconds, ArtworkRef(SongId(1)))
         playback.load(listOf(item), index = 0)
 
         playback.unload()
@@ -321,7 +323,7 @@ class DeviceViewModelTest {
 }
 
 private val Queue = (1L..3L).map {
-    PlaybackItem(PlaybackItemId.Song(SongId(it)), "Song $it", "Artist", "Album", duration = 3.minutes)
+    PlaybackItem(PlaybackItemId.Song(SongId(it)), "Song $it", "Artist", "Album", 3.minutes, ArtworkRef(SongId(it)))
 }
 
 private val AllShown = MainMenuRow.entries.associateWith { MainMenuRowVisibility.SHOWN }

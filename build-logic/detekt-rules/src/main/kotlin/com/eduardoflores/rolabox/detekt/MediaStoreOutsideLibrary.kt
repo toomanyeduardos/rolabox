@@ -4,6 +4,7 @@ import dev.detekt.api.Config
 import dev.detekt.api.Entity
 import dev.detekt.api.Finding
 import dev.detekt.api.Rule
+import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtImportDirective
@@ -11,10 +12,12 @@ import org.jetbrains.kotlin.psi.psiUtil.getStrictParentOfType
 
 /**
  * ADR-024 rule 2: only the library's local side finds the music on the phone. Every other module reads
- * the library through `LibraryRepository`, and playback opens the URIs it gives.
+ * the library through `LibraryRepository`, and playback opens the URIs it gives. ADR-026 rule 3: only it
+ * loads MediaStore's thumbnails, the covers, which the rest read through `ArtworkRepository`.
  *
- * The rule reports an import of `android.provider.MediaStore` or of anything inside it, and a fully
- * qualified use of it with no import. It knows nothing about modules: that it doesn't run on
+ * The rule reports an import of `android.provider.MediaStore` or of anything inside it, a fully
+ * qualified use of it with no import, and a call of `loadThumbnail`, by its name, since no other
+ * function of that name is Rolabox's. It knows nothing about modules: that it doesn't run on
  * `:device:library:local:impl` is its `excludes` in `config/detekt/detekt.yml`.
  */
 class MediaStoreOutsideLibrary(config: Config) :
@@ -35,6 +38,19 @@ class MediaStoreOutsideLibrary(config: Config) :
         }
     }
 
+    override fun visitCallExpression(expression: KtCallExpression) {
+        super.visitCallExpression(expression)
+        if (expression.calleeExpression?.text == LOAD_THUMBNAIL) {
+            report(
+                Finding(
+                    Entity.from(expression),
+                    "ADR-026 rule 3: a thumbnail is loaded outside :device:library:local:impl. Load a cover " +
+                        "through ArtworkRepository.",
+                ),
+            )
+        }
+    }
+
     private fun reportAt(element: KtElement) {
         report(
             Finding(
@@ -47,5 +63,6 @@ class MediaStoreOutsideLibrary(config: Config) :
 
     private companion object {
         const val MEDIA_STORE = "android.provider.MediaStore"
+        const val LOAD_THUMBNAIL = "loadThumbnail"
     }
 }

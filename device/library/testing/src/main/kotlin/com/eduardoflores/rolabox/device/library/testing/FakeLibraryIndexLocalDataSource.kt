@@ -8,6 +8,7 @@ import com.eduardoflores.rolabox.device.library.api.Album
 import com.eduardoflores.rolabox.device.library.api.AlbumId
 import com.eduardoflores.rolabox.device.library.api.Artist
 import com.eduardoflores.rolabox.device.library.api.ArtistId
+import com.eduardoflores.rolabox.device.library.api.ArtworkRef
 import com.eduardoflores.rolabox.device.library.api.LibraryError
 import com.eduardoflores.rolabox.device.library.api.Song
 import com.eduardoflores.rolabox.device.library.api.SongId
@@ -15,6 +16,7 @@ import com.eduardoflores.rolabox.device.library.local.api.ArtistGroup
 import com.eduardoflores.rolabox.device.library.local.api.IndexBatch
 import com.eduardoflores.rolabox.device.library.local.api.IndexedSong
 import com.eduardoflores.rolabox.device.library.local.api.LibraryIndexLocalDataSource
+import com.eduardoflores.rolabox.device.library.local.api.SongFile
 import com.eduardoflores.rolabox.device.library.local.api.VolumeScanState
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -103,6 +105,8 @@ class FakeLibraryIndexLocalDataSource : LibraryIndexLocalDataSource {
     override suspend fun getAlbum(id: AlbumId): Either<LibraryError, Album?> =
         state.value.albums.values.firstOrNull { it.id == id }.right()
 
+    override suspend fun getSongFile(id: SongId): Either<LibraryError, SongFile?> = state.value.songs[id]?.file.right()
+
     override suspend fun getIndexedSongs(): Either<LibraryError, List<IndexedSong>> = indexed.right()
 
     override suspend fun write(batch: IndexBatch): Either<LibraryError, Unit> {
@@ -132,6 +136,8 @@ class FakeLibraryIndexLocalDataSource : LibraryIndexLocalDataSource {
                 artistId = albumArtist,
                 title = write.album.title,
                 year = write.album.year ?: album?.year,
+                // Set below, once the album's songs are known.
+                artwork = album?.artwork ?: ArtworkRef(SongId(0)),
             )
             val id = write.id ?: SongId(nextId++)
             songs[id] = IndexedSong(
@@ -148,6 +154,7 @@ class FakeLibraryIndexLocalDataSource : LibraryIndexLocalDataSource {
         batch.removals.forEach(songs::remove)
         val usedAlbums = songs.values.mapTo(HashSet()) { it.albumKey }
         albums.keys.retainAll(usedAlbums)
+        albums.replaceAll { key, album -> album.copy(artwork = songs.values.artworkOf(key)) }
         val albumArtists = albums.values.mapTo(HashSet()) { it.artistId }
         val songArtists = songs.values.mapTo(HashSet()) { it.artistKey }
         artists.entries.retainAll { (key, artist) -> key in songArtists || artist.id in albumArtists }
@@ -162,4 +169,12 @@ class FakeLibraryIndexLocalDataSource : LibraryIndexLocalDataSource {
         savedScanState = volumes
         return Unit.right()
     }
+}
+
+/** The song whose cover stands for the album of [albumKey], as the real index picks it, in insertion order. */
+private fun Collection<IndexedSong>.artworkOf(albumKey: String): ArtworkRef {
+    val song = filter { it.albumKey == albumKey }
+        .sortedWith(compareBy({ it.hasEmbeddedPicture != true }, { it.isDuplicate }))
+        .first()
+    return ArtworkRef(song.id)
 }

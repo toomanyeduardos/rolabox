@@ -17,6 +17,7 @@ import com.eduardoflores.rolabox.device.library.api.SongId
 import com.eduardoflores.rolabox.device.library.local.api.IndexBatch
 import com.eduardoflores.rolabox.device.library.local.api.IndexedSong
 import com.eduardoflores.rolabox.device.library.local.api.LibraryIndexLocalDataSource
+import com.eduardoflores.rolabox.device.library.local.api.SongFile
 import com.eduardoflores.rolabox.device.library.local.api.VolumeScanState
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
@@ -36,7 +37,7 @@ internal class RoomLibraryIndexLocalDataSource @Inject constructor(
         dao.observeArtists().map { rows -> rows.map(ArtistEntity::toArtist) }.asRead()
 
     override fun observeAlbums(): Flow<Either<LibraryError, List<Album>>> =
-        dao.observeAlbums().map { rows -> rows.map(AlbumEntity::toAlbum) }.asRead()
+        dao.observeAlbums().map { rows -> rows.map(AlbumRow::toAlbum) }.asRead()
 
     override fun observeSongs(): Flow<Either<LibraryError, List<Song>>> =
         dao.observeSongs().map { rows -> rows.map(SongRow::toSong) }.asRead()
@@ -48,7 +49,7 @@ internal class RoomLibraryIndexLocalDataSource @Inject constructor(
         dao.observeAlbum(id.value).map { it?.toAlbum() }.asRead()
 
     override fun observeAlbumsByArtist(artistId: ArtistId): Flow<Either<LibraryError, List<Album>>> =
-        dao.observeAlbumsByArtist(artistId.value).map { rows -> rows.map(AlbumEntity::toAlbum) }.asRead()
+        dao.observeAlbumsByArtist(artistId.value).map { rows -> rows.map(AlbumRow::toAlbum) }.asRead()
 
     override fun observeSongsByArtist(artistId: ArtistId): Flow<Either<LibraryError, List<Song>>> =
         dao.observeSongsByArtist(artistId.value).map { rows -> rows.map(SongRow::toSong) }.asRead()
@@ -63,6 +64,9 @@ internal class RoomLibraryIndexLocalDataSource @Inject constructor(
 
     override suspend fun getAlbum(id: AlbumId): Either<LibraryError, Album?> =
         catchNamed(::toLibraryError) { dao.getAlbum(id.value)?.toAlbum() }
+
+    override suspend fun getSongFile(id: SongId): Either<LibraryError, SongFile?> =
+        catchNamed(::toLibraryError) { dao.getSong(id.value)?.toSongFile() }
 
     override suspend fun getIndexedSongs(): Either<LibraryError, List<IndexedSong>> = catchNamed(::toLibraryError) {
         withContext(ioDispatcher) { dao.getIndexedSongs().map(IndexedSongRow::toIndexedSong) }

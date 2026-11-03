@@ -18,6 +18,7 @@ import com.eduardoflores.rolabox.device.library.api.Album
 import com.eduardoflores.rolabox.device.library.api.AlbumId
 import com.eduardoflores.rolabox.device.library.api.Artist
 import com.eduardoflores.rolabox.device.library.api.ArtistId
+import com.eduardoflores.rolabox.device.library.api.ArtworkRef
 import com.eduardoflores.rolabox.device.library.api.Song
 import com.eduardoflores.rolabox.device.library.api.SongId
 import com.eduardoflores.rolabox.device.library.testing.FakeLibraryRepository
@@ -169,7 +170,7 @@ class PlaybackServiceTest {
         val song = Song(SongId(1), AlbumId(1), ArtistId(1), "Song", 1, 10.seconds, Uri.fromFile(file).toString())
         val library = FakeLibraryRepository().apply {
             artists = listOf(Artist(ArtistId(1), "Artist"))
-            albums = listOf(Album(AlbumId(1), ArtistId(1), "Album", 2000))
+            albums = listOf(Album(AlbumId(1), ArtistId(1), "Album", 2000, ArtworkRef(SongId(1))))
             songs = listOf(song)
         }
         val playback = MediaPlayback(

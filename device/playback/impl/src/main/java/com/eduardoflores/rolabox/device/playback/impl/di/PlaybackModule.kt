@@ -1,6 +1,7 @@
 package com.eduardoflores.rolabox.device.playback.impl.di
 
 import com.eduardoflores.rolabox.common.util.ProcessStartTask
+import com.eduardoflores.rolabox.device.library.api.ArtworkRepository
 import com.eduardoflores.rolabox.device.playback.api.PlaybackController
 import com.eduardoflores.rolabox.device.playback.api.PlaybackState
 import com.eduardoflores.rolabox.device.playback.impl.MediaPlayback
@@ -42,4 +43,7 @@ abstract class PlaybackModule {
 abstract class PlaybackServiceModule {
     @BindsOptionalOf
     internal abstract fun optionalSessionResumption(): SessionResumption
+
+    @BindsOptionalOf
+    internal abstract fun optionalArtworkRepository(): ArtworkRepository
 }

@@ -150,6 +150,20 @@ class ModuleRulesTest {
     }
 
     @Test
+    fun `ADR-026 rule 4 - no image-loading library anywhere`() {
+        listOf(
+            ":device:playback:ui:impl" to "io.coil-kt.coil3",
+            ":common:designsystem" to "io.coil-kt",
+            ":device:library:local:impl" to "com.github.bumptech.glide",
+            ":app" to "com.squareup.picasso",
+            ":device:music:ui:impl" to "com.facebook.fresco",
+        ).forEach { (module, group) ->
+            assertTrue(externalDependencyViolation(module, group, "any", true)!!.contains("ADR-026 rule 4"))
+        }
+        assertNull(externalDependencyViolation(":device:playback:impl", "androidx.media3", "media3-datasource", true))
+    }
+
+    @Test
     fun `ADR-022 rule 4 - sync depends on no userdata module`() {
         assertViolatesRule("ADR-022 rule 4", ":common:sync:impl", ":common:userdata:api")
         assertViolatesRule("ADR-022 rule 4", ":common:sync:api", ":common:userdata:api")

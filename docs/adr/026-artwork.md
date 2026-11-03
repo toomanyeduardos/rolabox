@@ -55,7 +55,9 @@ is on screen at a time, since artwork in the lists is out of this phase.
   top-level folder. Rolabox doesn't re-rank what it returns.
 - **No image permission is asked for.** ADR-024's line that `cover.jpg` needs it is revised.
 - **A load that finds nothing is not an error.** The provider throws `IOException` when there is no
-  artwork, and that is "none". A song gone from the device is the library's existing error.
+  artwork, and when the file is gone, and both are "none": a file that is gone has no cover either.
+  A song no longer in the index has none. A file the system won't open, for want of the permission,
+  is `LibraryError.FileUnreadable`.
 
 ### How it is loaded: in the library, with no image library
 
@@ -81,8 +83,9 @@ is on screen at a time, since artwork in the lists is out of this phase.
   text).
 - **The notification and the lock screen ask the same repository.** `:device:playback:impl` sets each
   item's `MediaMetadata.artworkUri` to a Rolabox URI that names the song, and gives the session a
-  `BitmapLoader` that reads that URI through `ArtworkRepository`. Media3 hands the platform a
-  `Bitmap`, so the URI never leaves the process.
+  `BitmapLoader` that reads that URI through `ArtworkRepository`. Media3 hands the platform the
+  `Bitmap` it loaded, and the platform's session also gets the URI, which only Rolabox can read: with
+  no artwork, the system's media controls try it, log a warning and show their own background.
 
 ## Alternatives considered
 
@@ -130,7 +133,7 @@ is on screen at a time, since artwork in the lists is out of this phase.
 2. `[convention]` Artwork comes from MediaStore's thumbnail of the song: the picture embedded in its
    tags, then an image in its folder, then none. Rolabox asks for no image permission.
 3. `[enforced]` Only `:device:library:local:impl` calls `loadThumbnail`.
-4. `[enforced]` No image-loading library is a dependency: Coil (`io.coil-kt`), Glide
+4. `[enforced]` No image-loading library is a dependency: Coil (`io.coil-kt`, `io.coil-kt.coil3`), Glide
    (`com.github.bumptech.glide`), Picasso (`com.squareup.picasso`) or Fresco (`com.facebook.fresco`).
 5. `[convention]` The design system draws the artwork and its placeholder, in one frame. Artwork that
    is loading or missing is the placeholder.

@@ -1,7 +1,12 @@
 package com.eduardoflores.rolabox.device.playback.ui.impl
 
+import arrow.core.left
+import arrow.core.right
 import com.eduardoflores.rolabox.common.testing.MainDispatcherRule
+import com.eduardoflores.rolabox.device.library.api.ArtworkRef
+import com.eduardoflores.rolabox.device.library.api.LibraryError
 import com.eduardoflores.rolabox.device.library.api.SongId
+import com.eduardoflores.rolabox.device.library.testing.FakeArtworkRepository
 import com.eduardoflores.rolabox.device.playback.api.PlaybackError
 import com.eduardoflores.rolabox.device.playback.api.PlaybackItem
 import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
@@ -11,12 +16,14 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
 
@@ -25,14 +32,15 @@ class NowPlayingViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val playback = FakePlayback()
+    private val artwork = FakeArtworkRepository()
 
-    private fun TestScope.observedViewModel() = NowPlayingViewModelImpl(playback, playback).also { viewModel ->
+    private fun TestScope.observedViewModel() = NowPlayingViewModelImpl(playback, playback, artwork).also { viewModel ->
         backgroundScope.launch(mainDispatcherRule.testDispatcher) { viewModel.uiState.collect() }
     }
 
     @Test
     fun beforeAnythingIsObserved_isLoading() {
-        assertEquals(NowPlayingUiState.Loading, NowPlayingViewModelImpl(playback, playback).uiState.value)
+        assertEquals(NowPlayingUiState.Loading, NowPlayingViewModelImpl(playback, playback, artwork).uiState.value)
     }
 
     @Test
@@ -69,6 +77,94 @@ class NowPlayingViewModelTest {
         playback.load(listOf(song(1, LONG_TITLE)), index = 0)
 
         assertEquals(LONG_TITLE, (viewModel.uiState.value as NowPlayingUiState.Playing).title)
+    }
+
+    // Artwork (ADR-026)
+
+    private val NowPlayingViewModel.artwork get() = (uiState.value as NowPlayingUiState.Playing).artwork
+
+    @Test
+    fun aSongWithArtwork_showsIt() = runTest {
+        artwork.covers[ArtworkRef(SongId(3))] = Blue.right()
+        val viewModel = observedViewModel()
+
+        playback.load(Queue, index = 2)
+
+        assertEquals(Blue, viewModel.artwork)
+        assertEquals(listOf(ArtworkRef(SongId(3))), artwork.loads)
+    }
+
+    @Test
+    fun aSongWithoutArtwork_hasNone_forThePlaceholder() = runTest {
+        val viewModel = observedViewModel()
+
+        playback.load(Queue, index = 2)
+
+        assertNull(viewModel.artwork)
+    }
+
+    @Test
+    fun artworkThatCantBeRead_isNone() = runTest {
+        artwork.covers[ArtworkRef(SongId(3))] = LibraryError.FileUnreadable("content://song/3").left()
+        val viewModel = observedViewModel()
+
+        playback.load(Queue, index = 2)
+
+        assertNull(viewModel.artwork)
+    }
+
+    @Test
+    fun whileTheArtworkLoads_thereIsNone() = runTest {
+        artwork.covers[ArtworkRef(SongId(3))] = Blue.right()
+        val hold = CompletableDeferred<Unit>()
+        artwork.hold = hold
+        val viewModel = observedViewModel()
+
+        playback.load(Queue, index = 2)
+        assertNull(viewModel.artwork)
+
+        hold.complete(Unit)
+        assertEquals(Blue, viewModel.artwork)
+    }
+
+    @Test
+    fun whenTheSongChanges_theOldArtworkGoes_beforeTheNewOneLoads() = runTest {
+        artwork.covers[ArtworkRef(SongId(1))] = Blue.right()
+        artwork.covers[ArtworkRef(SongId(2))] = Red.right()
+        val viewModel = observedViewModel()
+        playback.load(Queue, index = 0)
+        val hold = CompletableDeferred<Unit>()
+        artwork.hold = hold
+
+        playback.load(Queue, index = 1)
+        assertNull(viewModel.artwork)
+
+        hold.complete(Unit)
+        assertEquals(Red, viewModel.artwork)
+    }
+
+    @Test
+    fun whenTheSongChanges_toOneWithout_theOldArtworkGoes() = runTest {
+        artwork.covers[ArtworkRef(SongId(1))] = Blue.right()
+        val viewModel = observedViewModel()
+        playback.load(Queue, index = 0)
+
+        playback.load(Queue, index = 1)
+
+        assertNull(viewModel.artwork)
+    }
+
+    @Test
+    fun whileTheSongPlays_itsArtworkIsLoadedOnce() = runTest {
+        artwork.covers[ArtworkRef(SongId(1))] = Blue.right()
+        val viewModel = observedViewModel()
+        playback.load(Queue, index = 0)
+
+        playback.positionAt(30.seconds)
+        playback.positionAt(31.seconds)
+
+        assertEquals(Blue, viewModel.artwork)
+        assertEquals(listOf(ArtworkRef(SongId(1))), artwork.loads)
     }
 
     @Test
@@ -549,8 +645,17 @@ class NowPlayingViewModelTest {
     private companion object {
         const val LONG_TITLE = "The Unreasonably Long Name of a Song That Will Never Fit on a Small Display"
 
-        fun song(id: Long, title: String, duration: Duration = 3.minutes + 41.seconds) =
-            PlaybackItem(PlaybackItemId.Song(SongId(id)), title, "Maren Holt", "Paper Satellites", duration)
+        fun song(id: Long, title: String, duration: Duration = 3.minutes + 41.seconds) = PlaybackItem(
+            PlaybackItemId.Song(SongId(id)),
+            title,
+            "Maren Holt",
+            "Paper Satellites",
+            duration,
+            ArtworkRef(SongId(id)),
+        )
+
+        val Blue = FakeArtworkRepository.solid(0xFF0000FF.toInt())
+        val Red = FakeArtworkRepository.solid(0xFFFF0000.toInt())
 
         val Queue = listOf(song(1, "Dial Tone"), song(2, "Coastline"), song(3, "Glasshouse"))
     }

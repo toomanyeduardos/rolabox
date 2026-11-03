@@ -10,16 +10,20 @@ import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DataSourceBitmapLoader
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import com.eduardoflores.rolabox.common.designsystem.R
+import com.eduardoflores.rolabox.device.library.api.ArtworkRepository
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Optional
 import javax.inject.Inject
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
 
 /**
  * Owns the player and its session (ADR-023): nothing else holds the [ExoPlayer]. The device reaches it through
@@ -34,7 +38,14 @@ internal class PlaybackService : MediaSessionService() {
     @Inject
     lateinit var resumption: Optional<SessionResumption>
 
+    // Absent in this module's instrumented tests, whose graph has no library: the session then loads what Media3 does.
+    @Inject
+    lateinit var artwork: Optional<ArtworkRepository>
+
     private var session: MediaSession? = null
+
+    // Where the artwork loads, for as long as the service lives.
+    private val scope = MainScope()
 
     @OptIn(UnstableApi::class)
     override fun onCreate() {
@@ -46,9 +57,15 @@ internal class PlaybackService : MediaSessionService() {
         )
         session = MediaSession.Builder(this, buildPlayer(this))
             .setCallback(SessionCallback(resumption.orElse(null)))
+            .apply { artwork.ifPresent { setBitmapLoader(artworkLoader(it)) } }
             .apply { theApp()?.let(::setSessionActivity) }
             .build()
     }
+
+    /** The artwork of the notification and the lock screen, as Now Playing shows it (ADR-026, rule 6). */
+    @OptIn(UnstableApi::class)
+    private fun artworkLoader(artwork: ArtworkRepository) =
+        ArtworkBitmapLoader(artwork, DataSourceBitmapLoader(this), scope)
 
     /** What the notification opens: the app's launcher activity, which only `:app` knows (ADR-023, rule 2). */
     private fun theApp(): PendingIntent? = packageManager.getLaunchIntentForPackage(packageName)?.let {
@@ -82,6 +99,7 @@ internal class PlaybackService : MediaSessionService() {
 
     override fun onDestroy() {
         release()
+        scope.cancel()
         super.onDestroy()
     }
 

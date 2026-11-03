@@ -42,4 +42,39 @@ class MediaStoreOutsideLibraryTest {
 
         assertEquals(emptyList<Any>(), findings)
     }
+
+    @Test
+    fun `flags a thumbnail loaded from the content resolver`() {
+        val findings = rule.lint(
+            """
+            import android.content.Context
+            import android.net.Uri
+            import android.util.Size
+
+            class Covers(private val context: Context) {
+                fun cover(uri: Uri) = context.contentResolver.loadThumbnail(uri, Size(720, 720), null)
+            }
+            """.trimIndent(),
+        )
+
+        assertEquals(listOf(6), findings.map { it.entity.location.source.line })
+        assertTrue(findings.single().message.startsWith("ADR-026 rule 3:"))
+    }
+
+    @Test
+    fun `passes a cover read through the repository`() {
+        val findings = rule.lint(
+            """
+            import com.eduardoflores.rolabox.device.library.api.ArtworkRef
+            import com.eduardoflores.rolabox.device.library.api.ArtworkRepository
+
+            class Covers(private val artwork: ArtworkRepository) {
+                suspend fun cover(ref: ArtworkRef) = artwork.loadArtwork(ref)
+                val name = "loadThumbnail"
+            }
+            """.trimIndent(),
+        )
+
+        assertEquals(emptyList<Any>(), findings)
+    }
 }

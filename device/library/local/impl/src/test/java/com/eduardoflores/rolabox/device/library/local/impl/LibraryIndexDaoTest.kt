@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.eduardoflores.rolabox.device.library.api.ArtistId
+import com.eduardoflores.rolabox.device.library.api.ArtworkRef
 import com.eduardoflores.rolabox.device.library.api.SongId
 import com.eduardoflores.rolabox.device.library.local.api.AlbumGroup
 import com.eduardoflores.rolabox.device.library.local.api.ArtistGroup
@@ -16,6 +17,10 @@ import com.eduardoflores.rolabox.device.library.local.api.Sourced
 import com.eduardoflores.rolabox.device.library.local.api.VolumeScanState
 import com.eduardoflores.rolabox.device.library.local.impl.index.LibraryDatabase
 import com.eduardoflores.rolabox.device.library.local.impl.index.RoomLibraryIndexLocalDataSource
+import com.eduardoflores.rolabox.device.library.local.impl.tags.ArrayByteSource
+import com.eduardoflores.rolabox.device.library.local.impl.tags.parseTags
+import com.eduardoflores.rolabox.device.library.testing.audio.AudioFixtureSet
+import com.eduardoflores.rolabox.device.library.testing.audio.AudioFixtures
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -57,6 +62,7 @@ class LibraryIndexDaoTest {
         track: Int? = null,
         disc: Int? = null,
         duration: Long? = 1000,
+        picture: Boolean? = null,
     ): SongWrite {
         val artistGroup = ArtistGroup(artist.orEmpty(), artist)
         val albumArtistGroup = ArtistGroup(albumArtist.orEmpty(), albumArtist)
@@ -76,6 +82,7 @@ class LibraryIndexDaoTest {
             ),
             artist = artistGroup,
             album = AlbumGroup("${album.orEmpty()}|${albumArtist.orEmpty()}", album, year, albumArtistGroup),
+            hasEmbeddedPicture = picture,
         )
     }
 
@@ -358,5 +365,54 @@ class LibraryIndexDaoTest {
 
         assertEquals(songs.associate { it.id to it.file.uri }, locations)
         assertEquals(2, locations.size)
+    }
+
+    // The cover of an album (ADR-026), with whether a song has a picture as the parser reads library/02's fixtures.
+
+    private fun hasPicture(set: AudioFixtureSet, name: String): Boolean? =
+        parseTags(ArrayByteSource(set.fixtures.first { it.path.endsWith(name) }.bytes()))?.hasEmbeddedPicture
+
+    private suspend fun theAlbum() = index.observeAlbums().first().getOrNull().orEmpty().single()
+
+    @Test
+    fun anAlbumsArtwork_isItsFirstSongWithAPicture_inTrackOrder() = runTest {
+        val bare = hasPicture(AudioFixtures.broken, "05 Static Bloom.mp3")
+        val covered = hasPicture(AudioFixtures.clean, ".mp3")
+        assertEquals(false, bare)
+        assertEquals(true, covered)
+        fill(
+            write(1, track = 1, picture = bare),
+            write(2, track = 3, picture = covered),
+            write(3, track = 2, picture = covered),
+        )
+
+        assertEquals(ArtworkRef(SongId(3)), theAlbum().artwork)
+    }
+
+    @Test
+    fun anAlbumWithNoPicture_hasTheArtworkOfItsFirstSong_whoseFolderMayHaveOne() = runTest {
+        fill(write(1, track = 2, picture = false), write(2, track = 1), write(3, track = 3, picture = false))
+
+        assertEquals(ArtworkRef(SongId(2)), theAlbum().artwork)
+    }
+
+    @Test
+    fun anAlbumsArtwork_isTheSameWhereverTheAlbumIsRead() = runTest {
+        fill(write(1, track = 2, picture = true), write(2, track = 1))
+        val album = theAlbum()
+
+        assertEquals(ArtworkRef(SongId(1)), album.artwork)
+        assertEquals(album, index.getAlbum(album.id).getOrNull())
+        assertEquals(album, index.observeAlbum(album.id).first().getOrNull())
+        assertEquals(listOf(album), index.observeAlbumsByArtist(album.artistId).first().getOrNull())
+    }
+
+    @Test
+    fun aSongsFile_isFoundByItsId_andASongNotIndexedHasNone() = runTest {
+        fill(write(7))
+        val song = index.getIndexedSongs().getOrNull().orEmpty().single()
+
+        assertEquals(song.file, index.getSongFile(song.id).getOrNull())
+        assertNull(index.getSongFile(SongId(99)).getOrNull())
     }
 }
