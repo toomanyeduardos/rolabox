@@ -41,6 +41,10 @@
   state and Conformance say so. In the app's models a row is a `MainMenuRow` and its value a
   `MainMenuRowVisibility`; the stored and synced names are written out field by field, so renaming
   a row in code never moves its value (rule 7). No rule changes.
+- **Revised 2026-11-04:** Shuffle and Repeat are two more fields of the preferences, `shuffle` and
+  `repeat`, now that [ADR-028](028-shuffle-and-repeat.md) decided their values (Decision). The text
+  said they would be added when playback/07 (was 39.11) decided them. They follow rule 11 as the
+  other settings do, and are not in the code until playback/08 builds them. No rule changes.
 
 ## Context
 
@@ -128,11 +132,13 @@ and stores nothing. The parts of the device that use a setting read it from
 | `mainMenuPodcasts` | `SHOWN`, `HIDDEN` | `SHOWN` |
 | `mainMenuAudiobooks` | `SHOWN`, `HIDDEN` | `SHOWN` |
 | `mainMenuShuffleSongs` | `SHOWN`, `HIDDEN` | `SHOWN` |
+| `shuffle` | `OFF`, `SONGS`, `ALBUMS` | `OFF` |
+| `repeat` | `OFF`, `ONE`, `ALL` | `OFF` |
 
 Every field is the same map, `{ value: <enum name>, updatedAt: <timestamp> }`, a switch too. So the
 rules and the two mappings have one kind of value, and a switch can gain a third value without
-changing its type. Shuffle and Repeat follow the account and will be two more fields of this
-document, added when their values are decided (39.11).
+changing its type. Shuffle and Repeat follow the account like the others, and what they do to the
+queue is [ADR-028](028-shuffle-and-repeat.md)'s.
 
 **A fixed set of switches is a field each, not a collection.** The main menu's rows are a list on
 the screen, but the user adds and removes nothing: the rows are fixed

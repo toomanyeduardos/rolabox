@@ -136,6 +136,12 @@
   stays to say so until MENU (What each control does, When a song can't be played, rules 8 and 18). playback/04 has
   to tell the user why the music stopped, and a popped screen can't. A skipped song takes the cover art's place for
   a moment: this failure comes from no action, so rule 18's toast doesn't apply to it.
+- **Revised 2026-11-04:** Shuffle and repeat are decided by [ADR-028](028-shuffle-and-repeat.md) (What each control
+  does, What was not decided, rule 17). The queue is still the list a row was selected from, and Shuffle decides the
+  order it plays in: ⏮ and ⏭ move through that order, and "the first item" and "the last" are its ends. With Repeat
+  All, ⏭ on the last starts the first and ⏮ on the first starts the last, so "does nothing on the last" and "always
+  restarts on the first" hold with Repeat Off or One. The main menu's Shuffle Songs row plays the whole library
+  shuffled. playback/07 decided it, and playback/08 builds it.
 
 ## Context
 
@@ -306,6 +312,10 @@ An item is **loaded** from the moment it starts until its queue ends. A loaded i
   the previous item, and doesn't read the position.
 - **⏭ starts the next item of the queue at 0:00,** wherever the loaded item is, and does nothing
   on the last.
+- **Shuffle and Repeat change the order and the ends** ([ADR-028](028-shuffle-and-repeat.md)). ⏮ and
+  ⏭ move through the order the queue plays in, which is the list's unless Shuffle is on, and with
+  Repeat All they wrap: ⏭ on the last starts the first, and ⏮ at the start of the first starts the
+  last. The main menu's Shuffle Songs plays the whole library in a random order.
 - **Now Playing is only ever the top of the screen stack.** It is pushed by playing something, or by
   the main menu's Now Playing row. When the queue ends, nothing is loaded: `:app` pops Now Playing
   if it is showing, and the main menu's row goes away. When it stopped because nothing left could be
@@ -444,9 +454,8 @@ as ADR-017's rule 10 requires.
   ticket, as a revision of this ADR.
 - **Screen readers.** A display that isn't touched and a wheel that is a custom gesture both need a
   TalkBack design. It comes as a section of ADR-017, and may add rules here.
-- **Queue rules** beyond the whole list, started from the selected row: shuffle and repeat. The
-  playback ADR, [ADR-023](023-playback-engine.md), leaves them open too, to their own decision
-  (playback/07).
+- **Queue rules** beyond the whole list, started from the selected row: shuffle and repeat. They
+  were left here, and are decided by [ADR-028](028-shuffle-and-repeat.md).
 - **The playback engine, its service and the media session** were left here, and are decided by
   [ADR-023](023-playback-engine.md).
 
@@ -599,7 +608,8 @@ as ADR-017's rule 10 requires.
     shown, and starts from that row. ⏮ restarts the loaded item at 0:00 when its position is past
     3 s, and starts the previous item at 0:00 otherwise. On the first item it always restarts. ⏭
     starts the next item at 0:00, and does nothing on the last. The threshold belongs to the
-    playback area.
+    playback area. The first and the last are the ends of the order the queue plays in, which
+    Shuffle decides, and with Repeat All ⏮ and ⏭ wrap at them (ADR-028).
 18. `[convention]` A play that fails loads nothing, pushes nothing, and tells the user why in a
     toast, with a message for each kind of failure. No failure of an action is silent. A song that
     fails while the queue plays is no action's failure: Now Playing says so in the display.
