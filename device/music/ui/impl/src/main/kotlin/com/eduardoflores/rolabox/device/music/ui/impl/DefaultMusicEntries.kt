@@ -6,11 +6,13 @@ import androidx.navigation3.runtime.NavKey
 import com.eduardoflores.rolabox.device.library.api.AlbumId
 import com.eduardoflores.rolabox.device.library.api.ArtistId
 import com.eduardoflores.rolabox.device.music.ui.api.AlbumSongsKey
+import com.eduardoflores.rolabox.device.music.ui.api.AlbumsKey
 import com.eduardoflores.rolabox.device.music.ui.api.ArtistAlbumsKey
 import com.eduardoflores.rolabox.device.music.ui.api.ArtistSongsKey
 import com.eduardoflores.rolabox.device.music.ui.api.ArtistsKey
 import com.eduardoflores.rolabox.device.music.ui.api.MusicEntries
 import com.eduardoflores.rolabox.device.music.ui.api.MusicMenuKey
+import com.eduardoflores.rolabox.device.music.ui.api.SongsKey
 import javax.inject.Inject
 
 /**
@@ -22,16 +24,35 @@ internal class DefaultMusicEntries @Inject constructor() : MusicEntries {
     override fun screenStackEntries(
         scope: EntryProviderScope<NavKey>,
         onArtistsClick: () -> Unit,
+        onAlbumsClick: () -> Unit,
+        onSongsClick: () -> Unit,
         onArtistClick: (artistId: Long) -> Unit,
         onAllSongsClick: (artistId: Long) -> Unit,
         onAlbumClick: (albumId: Long) -> Unit,
         onSongClick: (songId: Long) -> Unit,
     ) = with(scope) {
         entry<MusicMenuKey> {
-            MusicMenuRoute(viewModel = hiltViewModel<MusicMenuViewModelImpl>(), onArtistsClick = onArtistsClick)
+            MusicMenuRoute(
+                viewModel = hiltViewModel<MusicMenuViewModelImpl>(),
+                onArtistsClick = onArtistsClick,
+                onAlbumsClick = onAlbumsClick,
+                onSongsClick = onSongsClick,
+            )
         }
         entry<ArtistsKey> {
             ArtistsRoute(viewModel = hiltViewModel<ArtistsViewModelImpl>(), onArtistClick = onArtistClick)
+        }
+        entry<AlbumsKey> {
+            AlbumsRoute(viewModel = hiltViewModel<AlbumsViewModelImpl>(), onAlbumClick = onAlbumClick)
+        }
+        entry<SongsKey> {
+            SongsRoute(
+                viewModel = hiltViewModel<SongsViewModelImpl, SongsViewModelImpl.Factory>(
+                    creationCallback = { factory -> factory.create(SongsSource.All) },
+                ),
+                sortedByName = SongsSource.All.isSortedByName,
+                onSongClick = onSongClick,
+            )
         }
         entry<ArtistAlbumsKey> { key ->
             ArtistAlbumsRoute(
@@ -44,18 +65,22 @@ internal class DefaultMusicEntries @Inject constructor() : MusicEntries {
             )
         }
         entry<AlbumSongsKey> { key ->
+            val source = SongsSource.Album(AlbumId(key.albumId))
             SongsRoute(
                 viewModel = hiltViewModel<SongsViewModelImpl, SongsViewModelImpl.Factory>(
-                    creationCallback = { factory -> factory.create(SongsSource.Album(AlbumId(key.albumId))) },
+                    creationCallback = { factory -> factory.create(source) },
                 ),
+                sortedByName = source.isSortedByName,
                 onSongClick = onSongClick,
             )
         }
         entry<ArtistSongsKey> { key ->
+            val source = SongsSource.Artist(ArtistId(key.artistId))
             SongsRoute(
                 viewModel = hiltViewModel<SongsViewModelImpl, SongsViewModelImpl.Factory>(
-                    creationCallback = { factory -> factory.create(SongsSource.Artist(ArtistId(key.artistId))) },
+                    creationCallback = { factory -> factory.create(source) },
                 ),
+                sortedByName = source.isSortedByName,
                 onSongClick = onSongClick,
             )
         }

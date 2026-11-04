@@ -21,6 +21,7 @@ internal class SongsViewModelImpl @AssistedInject constructor(
     override val uiState: StateFlow<ListUiState<Song>> = when (source) {
         is SongsSource.Album -> libraryRepository.observeSongsByAlbum(source.id)
         is SongsSource.Artist -> libraryRepository.observeSongsByArtist(source.id)
+        SongsSource.All -> libraryRepository.observeSongs()
     }
         .asListState()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ListUiState.Loading)
@@ -36,6 +37,8 @@ internal class SongsViewModelImpl @AssistedInject constructor(
                 is SongsSource.Artist -> libraryRepository.getArtist(source.id).getOrNull()?.let {
                     ListTitle.Artist(it.name, it.isVarious)
                 }
+
+                SongsSource.All -> ListTitle.AllSongs
             },
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), null)

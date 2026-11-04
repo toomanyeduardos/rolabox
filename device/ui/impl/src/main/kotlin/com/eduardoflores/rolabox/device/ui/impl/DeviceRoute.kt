@@ -19,11 +19,13 @@ import com.eduardoflores.rolabox.device.host.DeviceHost
 import com.eduardoflores.rolabox.device.host.rememberScreenStack
 import com.eduardoflores.rolabox.device.library.api.SongId
 import com.eduardoflores.rolabox.device.music.ui.api.AlbumSongsKey
+import com.eduardoflores.rolabox.device.music.ui.api.AlbumsKey
 import com.eduardoflores.rolabox.device.music.ui.api.ArtistAlbumsKey
 import com.eduardoflores.rolabox.device.music.ui.api.ArtistSongsKey
 import com.eduardoflores.rolabox.device.music.ui.api.ArtistsKey
 import com.eduardoflores.rolabox.device.music.ui.api.MusicEntries
 import com.eduardoflores.rolabox.device.music.ui.api.MusicMenuKey
+import com.eduardoflores.rolabox.device.music.ui.api.SongsKey
 import com.eduardoflores.rolabox.device.playback.api.SeekDirection
 import com.eduardoflores.rolabox.device.playback.ui.api.NowPlayingKey
 import com.eduardoflores.rolabox.device.playback.ui.api.PlaybackEntries
@@ -93,6 +95,8 @@ internal fun DeviceRoute(
             musicEntries.screenStackEntries(
                 scope = this,
                 onArtistsClick = { stack.push(ArtistsKey) },
+                onAlbumsClick = { stack.push(AlbumsKey) },
+                onSongsClick = { stack.push(SongsKey) },
                 onArtistClick = { artistId -> stack.push(ArtistAlbumsKey(artistId)) },
                 onAllSongsClick = { artistId -> stack.push(ArtistSongsKey(artistId)) },
                 onAlbumClick = { albumId -> stack.push(AlbumSongsKey(albumId)) },

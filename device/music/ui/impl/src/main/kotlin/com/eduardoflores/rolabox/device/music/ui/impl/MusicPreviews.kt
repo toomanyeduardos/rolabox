@@ -26,6 +26,12 @@ private val Songs = listOf(
     "Coastline", "Halfway Houses", "Night Bus", "Paper Satellites",
 ).map { DeviceListRow(it) }
 
+// Every album, by title without a leading "The", and the album of songs with no album last.
+private val Albums = listOf(
+    "Coastal Lines", "Glass Garden", "Halfway Houses", "Harborlight", "Low Tide Radio", "North of Here",
+    "Paper Satellites", "Quiet Hours", "Static Bloom", "The Long Weekend", "Under Lanterns", "Weather Report",
+).map { DeviceListRow(it, opensSubmenu = true) }
+
 @Composable
 private fun DevicePreview(title: String, content: @Composable () -> Unit) {
     RolaboxTheme {
@@ -104,6 +110,50 @@ private fun ArtistAlbumsPreview() = DevicePreview(title = "Maren Holt") {
 @Composable
 private fun SongsPreview() = DevicePreview(title = "Paper Satellites") {
     MusicList(ListUiState.Loaded(Songs), highlightedIndex = 2, emptyText = stringResource(R.string.music_no_songs))
+}
+
+@PreviewLightDark
+@Composable
+private fun AlbumsPreview() = DevicePreview(title = "Albums") {
+    val unknownAlbum = DeviceListRow(stringResource(R.string.music_unknown_album), opensSubmenu = true)
+    val rows = Albums + unknownAlbum
+    MusicList(
+        ListUiState.Loaded(rows),
+        highlightedIndex = rows.lastIndex,
+        emptyText = stringResource(R.string.music_no_albums),
+    )
+}
+
+@PreviewLightDark
+@Composable
+private fun AlbumsFastTurningPreview() = DevicePreview(title = "Albums") {
+    MusicList(
+        ListUiState.Loaded(Albums),
+        highlightedIndex = 9,
+        emptyText = stringResource(R.string.music_no_albums),
+        letter = "L",
+    )
+}
+
+@PreviewLightDark
+@Composable
+private fun AllSongsFastTurningPreview() = DevicePreview(title = "Songs") {
+    MusicList(
+        ListUiState.Loaded(Songs.sortedBy { it.label }),
+        highlightedIndex = 6,
+        emptyText = stringResource(R.string.music_no_songs),
+        letter = "P",
+    )
+}
+
+@PreviewLightDark
+@Composable
+private fun NoAlbumsPreview() = DevicePreview(title = "Albums") {
+    MusicList(
+        ListUiState.Loaded(emptyList()),
+        highlightedIndex = 0,
+        emptyText = stringResource(R.string.music_no_albums),
+    )
 }
 
 @PreviewLightDark

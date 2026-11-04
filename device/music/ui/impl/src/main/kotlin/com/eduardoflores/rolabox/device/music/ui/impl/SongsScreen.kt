@@ -12,9 +12,10 @@ import com.eduardoflores.rolabox.device.host.ScreenTitle
  * Connects a list of songs to its ViewModel, which the entry creates (ADR-021). A song opens
  * nothing on the display: center on it reports [onSongClick] with its id, and so does ⏯, since a song
  * is a row that can be played (ADR-018, rule 5). The screen's title is the name of what the songs are of.
+ * [sortedByName] is for songs sorted by title, which show the fast-scroll letter: all of an artist's, or every song.
  */
 @Composable
-internal fun SongsRoute(viewModel: SongsViewModel, onSongClick: (songId: Long) -> Unit) {
+internal fun SongsRoute(viewModel: SongsViewModel, sortedByName: Boolean, onSongClick: (songId: Long) -> Unit) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val title by viewModel.title.collectAsStateWithLifecycle()
     val unknownSong = stringResource(R.string.music_unknown_song)
@@ -28,5 +29,6 @@ internal fun SongsRoute(viewModel: SongsViewModel, onSongClick: (songId: Long) -
         emptyText = stringResource(R.string.music_no_songs),
         onCenter = onSongRow,
         onPlayPause = onSongRow,
+        sortedByName = sortedByName,
     )
 }

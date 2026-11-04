@@ -13,17 +13,20 @@ import androidx.navigation3.runtime.NavKey
  */
 interface MusicEntries {
     /**
-     * Adds the entries of [MusicMenuKey], [ArtistsKey], [ArtistAlbumsKey], [AlbumSongsKey] and
-     * [ArtistSongsKey], for the screen stack inside the display.
+     * Adds the entries of [MusicMenuKey], [ArtistsKey], [AlbumsKey], [SongsKey], [ArtistAlbumsKey],
+     * [AlbumSongsKey] and [ArtistSongsKey], for the screen stack inside the display.
      *
-     * The exits: center on Artists in the Music menu is [onArtistsClick]; on an artist,
-     * [onArtistClick]; on "All Songs" in an artist's albums, [onAllSongsClick] with that artist; on
-     * an album, [onAlbumClick]; on a song, [onSongClick]. The other rows of the Music menu do nothing yet.
+     * The exits: center on Artists, Albums or Songs in the Music menu is [onArtistsClick],
+     * [onAlbumsClick] or [onSongsClick]; on an artist, [onArtistClick]; on "All Songs" in an artist's
+     * albums, [onAllSongsClick] with that artist; on an album, in an artist's albums or in Albums,
+     * [onAlbumClick]; on a song, [onSongClick]. Genres and Playlists do nothing yet.
      */
     @Suppress("LongParameterList") // One lambda per exit, so the contract lists how its screens are left.
     fun screenStackEntries(
         scope: EntryProviderScope<NavKey>,
         onArtistsClick: () -> Unit,
+        onAlbumsClick: () -> Unit,
+        onSongsClick: () -> Unit,
         onArtistClick: (artistId: Long) -> Unit,
         onAllSongsClick: (artistId: Long) -> Unit,
         onAlbumClick: (albumId: Long) -> Unit,
