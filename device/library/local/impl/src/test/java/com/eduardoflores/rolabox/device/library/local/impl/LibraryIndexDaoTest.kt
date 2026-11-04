@@ -149,25 +149,31 @@ class LibraryIndexDaoTest {
     }
 
     @Test
-    fun albums_areSortedByYearThenTitle() = runTest {
+    fun albums_areSortedByTitle_withoutALeadingThe_andTheUnknownOneLast() = runTest {
+        val unknown = AlbumGroup("none", title = null, year = null, artist = ArtistGroup("", null))
         fill(
-            write(1, album = "Late", year = 2020),
-            write(2, album = "None"),
-            write(3, album = "Early b", year = 2000),
-            write(4, album = "Early a", year = 2000),
+            write(1, album = "Late", year = 2000),
+            write(2, album = null).copy(album = unknown),
+            write(3, album = "the Wall", year = 2020),
+            write(4, album = "early", year = 2020),
+            write(5, album = "The"),
+            write(6, album = "Theory"),
         )
 
         assertEquals(
-            listOf("Early a", "Early b", "Late", "None"),
+            listOf("early", "Late", "The", "Theory", "the Wall", null),
             index.observeAlbums().first().getOrNull().orEmpty().map { it.title },
         )
     }
 
     @Test
-    fun songs_areSortedByTitle_withAMissingOneLast() = runTest {
-        fill(write(1, title = null), write(2, title = "b"), write(3, title = "A"))
+    fun songs_areSortedByTitle_withoutALeadingThe_andAMissingOneLast() = runTest {
+        fill(write(1, title = null), write(2, title = "b"), write(3, title = "A"), write(4, title = "The Air"))
 
-        assertEquals(listOf("A", "b", null), index.observeSongs().first().getOrNull().orEmpty().map { it.title })
+        assertEquals(
+            listOf("A", "The Air", "b", null),
+            index.observeSongs().first().getOrNull().orEmpty().map { it.title },
+        )
     }
 
     @Test

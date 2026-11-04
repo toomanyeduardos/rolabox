@@ -6,8 +6,8 @@ import kotlinx.coroutines.flow.Flow
 /**
  * The music library: artists, their albums and the songs on them.
  *
- * Artists are sorted by name, without a leading "The", albums by year and then title, and songs by title, except
- * the songs of one album, which follow the disc and track order. A missing value sorts last.
+ * Artists are sorted by name and songs by title, both without a leading "The", except the songs of one album, which
+ * follow the disc and track order. A missing value sorts last.
  *
  * Any read can fail, because the library may be kept anywhere. A `Left` ends the flow.
  */
@@ -15,13 +15,17 @@ import kotlinx.coroutines.flow.Flow
 interface LibraryRepository {
     fun observeArtists(): Flow<Either<LibraryError, List<Artist>>>
 
+    /**
+     * Every album, the one of songs with no album included, sorted by title without a leading "The", for the list of
+     * every album, which the fast-scroll letter follows.
+     */
     fun observeAlbums(): Flow<Either<LibraryError, List<Album>>>
 
     fun observeSongs(): Flow<Either<LibraryError, List<Song>>>
 
     /**
      * The albums of the artist, and the albums of others they have a song on, but not the album of songs with no
-     * album: those are in [observeSongsByArtist]. Emits
+     * album: those are in [observeSongsByArtist]. Sorted by year and then title, as an artist's albums came out. Emits
      * [LibraryError.ArtistNotFound] and ends when there is no such artist.
      */
     fun observeAlbumsByArtist(artistId: ArtistId): Flow<Either<LibraryError, List<Album>>>

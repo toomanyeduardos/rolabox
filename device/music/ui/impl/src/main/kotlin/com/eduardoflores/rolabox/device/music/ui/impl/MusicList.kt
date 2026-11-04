@@ -22,9 +22,9 @@ import com.eduardoflores.rolabox.device.host.rememberListHighlight
  * The highlight is saved with the entry that calls this (ADR-018, rule 7), and belongs to the host's
  * holder. [emptyText] is shown when the list has no rows.
  *
- * [sortedByName] is for a list whose rows are sorted by their labels, such as the artists: while it is
- * turned fast, the first letter of the highlighted row is shown over it. Menus and an album's songs
- * aren't sorted by name, and never show it.
+ * [sortedByName] is for a list whose rows are sorted by their labels, such as the artists, the albums and
+ * the songs: while it is turned fast, the first letter of the highlighted row is shown over it. Menus,
+ * an artist's albums and an album's songs aren't sorted by name, and never show it.
  */
 @Composable
 internal fun WheelList(

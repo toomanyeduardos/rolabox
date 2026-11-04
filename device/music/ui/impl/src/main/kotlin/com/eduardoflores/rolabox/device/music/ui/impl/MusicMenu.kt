@@ -25,12 +25,18 @@ private enum class MusicMenuRow { Artists, Albums, Songs, Genres, Playlists }
 
 /**
  * Music: its menu, or why there is none. Turning moves the highlight, which stops at the first and last
- * rows. Center on Artists reports [onArtistsClick]; the other rows do nothing until their screens exist.
+ * rows. Center on Artists, Albums or Songs reports [onArtistsClick], [onAlbumsClick] or [onSongsClick];
+ * Genres and Playlists do nothing until their screens exist.
  * The first time it opens, it asks for the audio permission (ADR-024). Center on the row that takes the
  * menu's place asks again, or opens system settings when Android won't.
  */
 @Composable
-internal fun MusicMenuRoute(viewModel: MusicMenuViewModel, onArtistsClick: () -> Unit) {
+internal fun MusicMenuRoute(
+    viewModel: MusicMenuViewModel,
+    onArtistsClick: () -> Unit,
+    onAlbumsClick: () -> Unit,
+    onSongsClick: () -> Unit,
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val highlight = rememberListHighlight()
     val permission = rememberAudioPermissionStep(viewModel::onPermissionResult)
@@ -48,10 +54,9 @@ internal fun MusicMenuRoute(viewModel: MusicMenuViewModel, onArtistsClick: () ->
             is MusicMenuUiState.Menu -> when (event) {
                 is WheelEvent.Turn -> highlight.move(event.steps, MusicMenuRow.entries.size)
 
-                WheelEvent.Center -> when (MusicMenuRow.entries[highlight.index]) {
-                    MusicMenuRow.Artists -> onArtistsClick()
-                    MusicMenuRow.Albums, MusicMenuRow.Songs, MusicMenuRow.Genres, MusicMenuRow.Playlists -> Unit
-                }
+                WheelEvent.Center -> MusicMenuRow.entries[highlight.index]
+                    .exit(onArtistsClick, onAlbumsClick, onSongsClick)
+                    ?.invoke()
 
                 else -> Unit
             }
@@ -66,6 +71,18 @@ internal fun MusicMenuRoute(viewModel: MusicMenuViewModel, onArtistsClick: () ->
         }
     }
     MusicMenuScreen(state, highlightedIndex = highlight.index)
+}
+
+/** What center on this row reports, or `null` for a row whose screen doesn't exist yet. */
+private fun MusicMenuRow.exit(
+    onArtistsClick: () -> Unit,
+    onAlbumsClick: () -> Unit,
+    onSongsClick: () -> Unit,
+): (() -> Unit)? = when (this) {
+    MusicMenuRow.Artists -> onArtistsClick
+    MusicMenuRow.Albums -> onAlbumsClick
+    MusicMenuRow.Songs -> onSongsClick
+    MusicMenuRow.Genres, MusicMenuRow.Playlists -> null
 }
 
 /** The stateless screen that previews and screenshot tests call (ADR-021, rule 4). */

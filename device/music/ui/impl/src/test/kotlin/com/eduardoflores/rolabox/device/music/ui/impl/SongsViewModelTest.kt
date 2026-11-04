@@ -46,6 +46,39 @@ class SongsViewModelTest {
     }
 
     @Test
+    fun all_isEverySongOfTheLibrary_inItsOrder() = runTest {
+        val state = observedViewModel(SongsSource.All).uiState.value
+
+        assertEquals(ListUiState.Loaded(listOf(Glasshouse, Coastline, DialTone, Lighthouse)), state)
+    }
+
+    @Test
+    fun all_withNoSongs_isLoadedAndEmpty() = runTest {
+        library.songs = emptyList()
+
+        assertEquals(ListUiState.Loaded(emptyList<Nothing>()), observedViewModel(SongsSource.All).uiState.value)
+    }
+
+    @Test
+    fun all_whenTheLibraryCantBeRead_isFailed() = runTest {
+        library.setReadError(StorageError.Corrupted)
+
+        assertEquals(ListUiState.Failed, observedViewModel(SongsSource.All).uiState.value)
+    }
+
+    @Test
+    fun title_ofEverySong_isSongs() = runTest {
+        assertEquals(ListTitle.AllSongs, observedViewModel(SongsSource.All).title.value)
+    }
+
+    @Test
+    fun onlyAnAlbumsSongs_arentSortedByName() {
+        assertEquals(false, SongsSource.Album(PaperSatellites.id).isSortedByName)
+        assertEquals(true, SongsSource.Artist(MarenHolt.id).isSortedByName)
+        assertEquals(true, SongsSource.All.isSortedByName)
+    }
+
+    @Test
     fun anAlbumWithoutSongs_isLoadedAndEmpty() = runTest {
         library.songs = emptyList()
 

@@ -14,11 +14,19 @@ data object MusicMenuKey : NavKey
 @Serializable
 data object ArtistsKey : NavKey
 
+/** Every album of the library, by title. */
+@Serializable
+data object AlbumsKey : NavKey
+
+/** Every song of the library, by title. */
+@Serializable
+data object SongsKey : NavKey
+
 /** The albums of an artist, after "All Songs". */
 @Serializable
 data class ArtistAlbumsKey(val artistId: Long) : NavKey
 
-/** The songs of one album, in track order. */
+/** The songs of one album, in track order, from an artist's albums or from Albums. */
 @Serializable
 data class AlbumSongsKey(val albumId: Long) : NavKey
 

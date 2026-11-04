@@ -13,8 +13,14 @@ import kotlinx.coroutines.flow.Flow
 
 private const val SONG_COLUMNS = "s.id, s.albumId, s.artistId, s.title, s.trackNumber, s.durationMillis, s.uri"
 
+// A title without a leading "The", as the artists' sortName and the fast-scroll letter (ADR-024): "The Wall" is with
+// the W's. A title of only "The" sorts by that. LIKE ignores the case of ASCII letters.
+private const val SONG_SORT_TITLE = "CASE WHEN s.title LIKE 'the %' THEN substr(s.title, 5) ELSE s.title END"
+private const val ALBUM_SORT_TITLE = "CASE WHEN a.title LIKE 'the %' THEN substr(a.title, 5) ELSE a.title END"
+
 // A missing value sorts last, as a value of its own (ADR-024). The id settles what is otherwise equal.
-private const val BY_TITLE = "ORDER BY s.title IS NULL, s.title COLLATE NOCASE, s.id"
+private const val BY_TITLE = "ORDER BY s.title IS NULL, $SONG_SORT_TITLE COLLATE NOCASE, s.id"
+private const val BY_ALBUM_TITLE = "ORDER BY a.title IS NULL, $ALBUM_SORT_TITLE COLLATE NOCASE, a.id"
 private const val BY_YEAR = "ORDER BY year IS NULL, year, title IS NULL, title COLLATE NOCASE, id"
 
 // The id of the song whose cover stands for album `a`: the first, in track order, whose tags have a picture, or else
@@ -36,7 +42,7 @@ internal interface LibraryIndexDao {
     )
     fun observeArtists(): Flow<List<ArtistEntity>>
 
-    @Query("SELECT $ALBUM_COLUMNS FROM albums a $BY_YEAR")
+    @Query("SELECT $ALBUM_COLUMNS FROM albums a $BY_ALBUM_TITLE")
     fun observeAlbums(): Flow<List<AlbumRow>>
 
     @Query("SELECT $SONG_COLUMNS FROM songs s WHERE s.isDuplicate = 0 $BY_TITLE")
