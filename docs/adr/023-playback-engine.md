@@ -18,6 +18,11 @@
 - **Revised 2026-11-02:** The restore is decided (Permissions and the service's lifetime, Consequences). playback/05
   builds it. It stores where the item was in its list too, since a stored song that is gone has no place of its own to
   go on from. A restored queue is prepared, so its paused controls show, and a media button needs a receiver.
+- **Revised 2026-11-04:** Shuffle and repeat are decided by [ADR-028](028-shuffle-and-repeat.md) (From the engine's
+  state to `PlaybackState`, Permissions and the service's lifetime, What was not decided). They are Media3's repeat
+  mode and a shuffle order of the `:impl`, so the state's queue is in the order it plays, a skip follows that order
+  and wraps with Repeat All, and the restored point also stores a shuffled queue's order, which the library can't
+  give again. playback/07 decided it, and playback/08 builds it.
 
 ## Context
 
@@ -159,7 +164,7 @@ data class PlaybackItem(
 
 | `PlaybackState` | From Media3 |
 | --- | --- |
-| `queue`, `queueIndex`, `currentItem` | The singleton's list of items, and the player's current media item index |
+| `queue`, `queueIndex`, `currentItem` | The singleton's list of items, in the order they play (ADR-028), and where the player's current media item is in it |
 | `isPlaying` | `playWhenReady`. A song that is buffering is still playing, and nothing loaded is `false` |
 | `position` | `currentPosition`, read on the clock below |
 | `startCount` | Counted by the singleton on each `onMediaItemTransition`, and on a restart by ⏮ (a seek to 0:00 of the same item) |
@@ -187,7 +192,9 @@ data class PlaybackItem(
   `EngineFailed` for a failure that isn't the file's. No call returns them.
 - **A song that fails is skipped.** The singleton moves to the nearest item of the queue that hasn't failed, as
   playing or as paused as it was. It goes forward, unless ⏮ brought it there: then it goes on backward, and forward
-  once nothing before it can be played, so ⏮ can get past a bad song. The queue doesn't wrap.
+  once nothing before it can be played, so ⏮ can get past a bad song. "Nearest" is in the order the queue plays
+  in, and the search wraps only with Repeat All, where it still stops once every item has failed
+  ([ADR-028](028-shuffle-and-repeat.md)). Otherwise the queue doesn't wrap.
 - **`PlaybackState.skipped` is state, not an event.** It holds the last item, its error and the count of the run for
   4 s after a skip, and a skip in that time adds to it. A one-shot event would be missed by Now Playing, since the
   first file of a list can fail before the screen that was pushed for it observes anything, and state kept longer
@@ -242,7 +249,9 @@ phone's music stream.
   killed.
 - **It stores one point:** the source, the item by its `PlaybackItemId`, where that item was in the list, and the
   position. Not the list, and no position per song. It is stored on each pause and new item, every few seconds while
-  playing, going to the background and when the service stops, and cleared when nothing is left loaded.
+  playing, going to the background and when the service stops, and cleared when nothing is left loaded. A shuffled
+  queue also stores its order, when the order changes, since the library gives only the list's order
+  ([ADR-028](028-shuffle-and-repeat.md), What is restored).
 - **It is restored at each start of the process, and each time the app comes back** ([ADR-025](025-process-start-tasks.md)),
   when nothing is loaded: the app dismissed while paused releases its session, and the process may live on. What the
   user played in the meantime stays. Nothing counts as a start of an item.
@@ -269,7 +278,7 @@ phone's music stream.
 
 ### What was not decided
 
-- **Shuffle and repeat,** which ADR-018 left here. playback/07 decides them.
+- **Shuffle and repeat,** which ADR-018 left here. They are decided by [ADR-028](028-shuffle-and-repeat.md).
 - **Android Auto, Wear OS and casting.** A `MediaLibraryService` would be needed for Android Auto's
   browsing, and it is out of this phase.
 - **Artwork** in the notification and on Now Playing (playback/06).
