@@ -10,6 +10,8 @@ import androidx.media3.test.utils.robolectric.ShadowMediaCodecConfig
 import androidx.media3.test.utils.robolectric.TestPlayerRunHelper
 import androidx.test.core.app.ApplicationProvider
 import arrow.core.right
+import com.eduardoflores.rolabox.common.userdata.api.Shuffle
+import com.eduardoflores.rolabox.common.userdata.testing.FakeUserDataRepository
 import com.eduardoflores.rolabox.device.library.api.Album
 import com.eduardoflores.rolabox.device.library.api.AlbumId
 import com.eduardoflores.rolabox.device.library.api.Artist
@@ -24,10 +26,13 @@ import com.eduardoflores.rolabox.device.library.testing.audio.Mp3Stream
 import com.eduardoflores.rolabox.device.library.testing.audio.Mp3Tags
 import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
+import com.eduardoflores.rolabox.device.playback.local.api.PlayOrder
 import com.eduardoflores.rolabox.device.playback.local.api.ResumePoint
+import com.eduardoflores.rolabox.device.playback.local.api.ShuffledBy
 import com.eduardoflores.rolabox.device.playback.testing.FakePlaybackLocalDataSource
 import java.io.File
 import kotlin.coroutines.ContinuationInterceptor
+import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -66,6 +71,7 @@ class ResumeWhereYouLeftOffTest {
     private val source = PlaybackSource.ByAlbum(album.id)
     private val library = FakeLibraryRepository()
     private val local = FakePlaybackLocalDataSource()
+    private val userData = FakeUserDataRepository()
     private val scope = TestScope()
     private lateinit var player: ExoPlayer
     private lateinit var playback: MediaPlayback
@@ -91,6 +97,8 @@ class ResumeWhereYouLeftOffTest {
                 scope.backgroundScope,
                 scope.testScheduler.timeSource,
                 FakeArtworkRepository(),
+                userData,
+                PlayOrders(Random(0)),
             )
     }
 
@@ -238,6 +246,147 @@ class ResumeWhereYouLeftOffTest {
 
         assertTrue(resumed.isDone)
         assertTrue(runCatching { resumed.get() }.exceptionOrNull()?.cause is UnsupportedOperationException)
+    }
+
+    // ADR-028, rule 9: a shuffled queue's order and what shuffled it are stored, and the point's index is into it.
+    @Test
+    fun aShuffledPlay_storesItsOrder_andThePointsIndexIsIntoIt() = scope.runTest {
+        userData.setShuffle(Shuffle.SONGS)
+
+        playback.play(source, songId(3))
+        runCurrent()
+
+        val queue = playback.queue.first().map { it.id }
+        assertEquals(PlayOrder(queue, ShuffledBy.Songs), local.order)
+        assertEquals(0, local.point?.index)
+    }
+
+    @Test
+    fun aPlayInTheListsOrder_storesNoOrder() = scope.runTest {
+        local.order = PlayOrder(listOf(songId(1)), ShuffledBy.Songs)
+
+        playback.play(source, songId(3))
+        runCurrent()
+
+        assertNull(local.order)
+    }
+
+    // ADR-028: the order is written when it changes, and not every few seconds as the point is.
+    @Test
+    fun theOrder_isNotWrittenWhileItPlays() = scope.runTest {
+        userData.setShuffle(Shuffle.SONGS)
+        playback.play(source, songId(1))
+        runCurrent()
+        val writes = local.orderWrites
+
+        advanceTimeBy(StoreEvery * 3)
+        runCurrent()
+
+        assertEquals(writes, local.orderWrites)
+    }
+
+    @Test
+    fun aChangeOfShuffle_writesTheNewOrder() = scope.runTest {
+        playback.play(source, songId(2))
+        runCurrent()
+
+        userData.setShuffle(Shuffle.SONGS)
+        runCurrent()
+
+        assertEquals(songId(2), local.order?.items?.first())
+        assertEquals(ShuffledBy.Songs, local.order?.shuffledBy)
+    }
+
+    @Test
+    fun aStoredShuffledQueue_comesBackInItsOrder_atTheStoredSong() = scope.runTest {
+        userData.setShuffle(Shuffle.SONGS)
+        local.point = point(song = 3, index = 1, position = 4.seconds)
+        local.order = PlayOrder(listOf(2, 3, 1, 5, 4).map(::songId), ShuffledBy.Songs)
+
+        playback.restore()
+        runCurrent()
+
+        assertEquals(listOf(2, 3, 1, 5, 4).map(::songId), playback.queue.first().map { it.id })
+        assertEquals(1, playback.queueIndex.first())
+        assertEquals(songId(3), playback.currentItem.first()?.id)
+        assertEquals(4.seconds, playback.position.first())
+        assertTrue(playback.isShuffled.first())
+    }
+
+    @Test
+    fun aStoredShuffleSongsQueue_comesBackShuffled_withShuffleOff() = scope.runTest {
+        local.point = point(song = 3, index = 1, position = 4.seconds)
+        local.order = PlayOrder(listOf(2, 3, 1, 5, 4).map(::songId), ShuffledBy.ShuffleSongs)
+
+        playback.restore()
+        runCurrent()
+
+        assertEquals(listOf(2, 3, 1, 5, 4).map(::songId), playback.queue.first().map { it.id })
+        assertTrue(playback.isShuffled.first())
+    }
+
+    // ADR-028: the settings are read as they are, so Shuffle Off brings the list's order back, at the stored song.
+    @Test
+    fun aStoredShuffledQueue_withShuffleOff_comesBackInTheListsOrder() = scope.runTest {
+        local.point = point(song = 3, index = 1, position = 4.seconds)
+        local.order = PlayOrder(listOf(2, 3, 1, 5, 4).map(::songId), ShuffledBy.Songs)
+
+        playback.restore()
+        runCurrent()
+
+        assertEquals((1..5).map(::songId), playback.queue.first().map { it.id })
+        assertEquals(2, playback.queueIndex.first())
+        assertEquals(4.seconds, playback.position.first())
+        assertFalse(playback.isShuffled.first())
+    }
+
+    @Test
+    fun anOrderWithoutTheStoredSong_isDropped_andANewOrderStartsFromIt() = scope.runTest {
+        userData.setShuffle(Shuffle.SONGS)
+        local.point = point(song = 3, index = 1, position = 4.seconds)
+        local.order = PlayOrder(listOf(2, 1).map(::songId), ShuffledBy.Songs)
+
+        playback.restore()
+        runCurrent()
+
+        val queue = playback.queue.first().map { it.id }
+        assertEquals(songId(3), queue.first())
+        assertEquals((1..5).map(::songId).toSet(), queue.toSet())
+        assertEquals(4.seconds, playback.position.first())
+    }
+
+    // ADR-028: a song that is gone leaves the stored order, and the song now at its place loads.
+    @Test
+    fun aStoredSongThatIsGone_leavesTheOrder_andTheOneAtItsPlaceLoads() = scope.runTest {
+        userData.setShuffle(Shuffle.SONGS)
+        local.point = point(song = 3, index = 1, position = 4.seconds)
+        local.order = PlayOrder(listOf(2, 3, 1, 5, 4).map(::songId), ShuffledBy.Songs)
+        library.songs = library.songs.filterNot { it.id == SongId(3) }
+
+        playback.restore()
+        runCurrent()
+
+        assertEquals(listOf(2, 1, 5, 4).map(::songId), playback.queue.first().map { it.id })
+        assertEquals(songId(1), playback.currentItem.first()?.id)
+        assertEquals(Duration.ZERO, playback.position.first())
+    }
+
+    @Test
+    fun aResumption_givesTheStoredOrderToThePlayer() = scope.runTest {
+        userData.setShuffle(Shuffle.SONGS)
+        local.point = point(song = 3, index = 1, position = 4.seconds)
+        local.order = PlayOrder(listOf(2, 3, 1, 5, 4).map(::songId), ShuffledBy.Songs)
+
+        val resumed = playback.resumption()
+        runCurrent()
+        val items = resumed.get()
+        player.setMediaItems(items.mediaItems, items.startIndex, items.startPositionMs)
+        runCurrent()
+
+        // Song 3 is at index 2 of the list, and song 1, at index 0, follows it in the stored order.
+        assertEquals(2, items.startIndex)
+        assertTrue(player.shuffleModeEnabled)
+        assertEquals(0, player.currentTimeline.getNextWindowIndex(2, player.repeatMode, true))
     }
 
     private fun playTo(position: Duration, index: Int) {

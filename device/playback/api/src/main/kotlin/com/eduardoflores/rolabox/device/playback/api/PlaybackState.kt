@@ -23,11 +23,24 @@ interface PlaybackState {
      */
     val position: Flow<Duration>
 
-    /** The whole list that was played, including the items before the one it started from. */
+    /**
+     * The whole list that was played, including the items before the one it started from, in the order it plays
+     * (ADR-028): the list's own order, or a shuffled one. Under Repeat All with Shuffle on, it is the order of this
+     * round.
+     */
     val queue: Flow<List<PlaybackItem>>
 
     /** Where [currentItem] is in [queue], or `null` when nothing is loaded. */
     val queueIndex: Flow<Int?>
+
+    /**
+     * Whether [queue] plays in a shuffled order: Shuffle is Songs or Albums, or the queue came from
+     * [PlaybackController.shuffle] (ADR-028). `false` when nothing is loaded.
+     */
+    val isShuffled: Flow<Boolean>
+
+    /** What happens at the ends of the queue: the Repeat setting, which applies whether or not anything is loaded. */
+    val repeatMode: Flow<RepeatMode>
 
     /**
      * How many times an item has started at 0:00: when a row is played, when ⏮ or ⏭ starts an item, and when

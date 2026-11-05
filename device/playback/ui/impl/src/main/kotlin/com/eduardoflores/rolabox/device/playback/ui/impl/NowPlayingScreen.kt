@@ -29,6 +29,8 @@ import com.eduardoflores.rolabox.common.designsystem.component.DeviceCoverArt
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceMessage
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceNotice
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceProgressBar
+import com.eduardoflores.rolabox.common.designsystem.component.DeviceQueueIcon
+import com.eduardoflores.rolabox.common.designsystem.component.DeviceQueueIcons
 import com.eduardoflores.rolabox.common.designsystem.component.ProgressBarMode
 import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxMetal
 import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxType
@@ -38,12 +40,16 @@ import com.eduardoflores.rolabox.device.host.HandleWheelEvents
 import com.eduardoflores.rolabox.device.host.ObservePlaybackButtons
 import com.eduardoflores.rolabox.device.host.ScreenTitle
 import com.eduardoflores.rolabox.device.library.api.ArtworkImage
+import com.eduardoflores.rolabox.device.playback.api.RepeatMode
 
 private val ScreenPadding = 12.dp
 private val ScreenTopPadding = 10.dp
 private val SectionGap = 12.dp
 private val TextGap = 4.dp
 private val CoverMinSize = 56.dp
+
+// Between the place in the queue and its icons, as the designs space them.
+private val QueueIconsGap = 8.dp
 private const val TITLE_MAX_LINES = 2
 
 /**
@@ -126,11 +132,27 @@ private fun NowPlayingContent(state: NowPlayingUiState.Playing) {
             .padding(start = ScreenPadding, end = ScreenPadding, top = ScreenTopPadding, bottom = ScreenPadding),
         verticalArrangement = Arrangement.spacedBy(SectionGap),
     ) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(
-                stringResource(R.string.now_playing_position, state.number, state.count),
-                style = RolaboxType.styles.displayMeta,
-            )
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // The icons follow the place in the queue, since both describe the queue (ADR-028). At large font scales
+            // the place gives way first, so the icons and the mode always fit.
+            Row(
+                Modifier.weight(1f, fill = false),
+                horizontalArrangement = Arrangement.spacedBy(QueueIconsGap),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    stringResource(R.string.now_playing_position, state.number, state.count),
+                    style = RolaboxType.styles.displayMeta,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                DeviceQueueIcons(state.queueIcons)
+            }
             when (state.mode) {
                 NowPlayingMode.Time -> Unit
 
@@ -225,3 +247,14 @@ private fun SongNames(state: NowPlayingUiState.Playing, modifier: Modifier = Mod
         )
     }
 }
+
+/** The icons of how the queue plays: Shuffle while it is shuffled, and Repeat or Repeat One (ADR-028). */
+private val NowPlayingUiState.Playing.queueIcons: List<DeviceQueueIcon>
+    get() = listOfNotNull(
+        DeviceQueueIcon.Shuffle.takeIf { shuffled },
+        when (repeat) {
+            RepeatMode.Off -> null
+            RepeatMode.One -> DeviceQueueIcon.RepeatOne
+            RepeatMode.All -> DeviceQueueIcon.Repeat
+        },
+    )

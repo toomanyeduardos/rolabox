@@ -27,6 +27,7 @@ internal fun SongRow.toSong() = Song(
     artistId = ArtistId(artistId),
     title = title,
     trackNumber = trackNumber,
+    discNumber = discNumber,
     duration = durationMillis?.milliseconds ?: Duration.ZERO,
     uri = uri,
 )

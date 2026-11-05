@@ -11,6 +11,11 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaSession
 import arrow.core.Either
 import arrow.core.raise.either
+import arrow.core.raise.ensure
+import com.eduardoflores.rolabox.common.userdata.api.Repeat
+import com.eduardoflores.rolabox.common.userdata.api.Shuffle
+import com.eduardoflores.rolabox.common.userdata.api.UserData
+import com.eduardoflores.rolabox.common.userdata.api.UserDataRepository
 import com.eduardoflores.rolabox.common.util.ApplicationScope
 import com.eduardoflores.rolabox.device.library.api.AlbumId
 import com.eduardoflores.rolabox.device.library.api.ArtistId
@@ -18,6 +23,7 @@ import com.eduardoflores.rolabox.device.library.api.ArtworkRef
 import com.eduardoflores.rolabox.device.library.api.ArtworkRepository
 import com.eduardoflores.rolabox.device.library.api.LibraryError
 import com.eduardoflores.rolabox.device.library.api.LibraryRepository
+import com.eduardoflores.rolabox.device.library.api.Song
 import com.eduardoflores.rolabox.device.library.api.SongId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackController
 import com.eduardoflores.rolabox.device.playback.api.PlaybackError
@@ -25,10 +31,13 @@ import com.eduardoflores.rolabox.device.playback.api.PlaybackItem
 import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
 import com.eduardoflores.rolabox.device.playback.api.PlaybackState
+import com.eduardoflores.rolabox.device.playback.api.RepeatMode
 import com.eduardoflores.rolabox.device.playback.api.SeekDirection
 import com.eduardoflores.rolabox.device.playback.api.SkippedItems
+import com.eduardoflores.rolabox.device.playback.local.api.PlayOrder
 import com.eduardoflores.rolabox.device.playback.local.api.PlaybackLocalDataSource
 import com.eduardoflores.rolabox.device.playback.local.api.ResumePoint
+import com.eduardoflores.rolabox.device.playback.local.api.ShuffledBy
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.SettableFuture
 import javax.inject.Inject
@@ -46,6 +55,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
@@ -87,9 +97,14 @@ internal val StoreEvery: Duration = 5.seconds
  *
  * It also stores where it is in [local], and restores that when the app was killed: loaded and paused from [restore],
  * and for a media button or the system's controls from [resumption], which plays it (ADR-023).
+ *
+ * Shuffle and Repeat are the user's settings, which it reads from [userData] and applies at once (ADR-028). The repeat
+ * mode is the player's, and so is the shuffle order, which [playQueue] makes and the player is given: the playlist
+ * stays in the list's order.
  */
 // One function for each action of the controller, and the few that every action shares. One parameter for each of
-// what it plays with: the library, the player, the volume, the stored point, the scope, the clock and the artwork.
+// what it plays with: the library, the player, the volume, the stored point, the scope, the clock, the artwork, the
+// settings and the random orders.
 @Suppress("TooManyFunctions", "LongParameterList")
 @Singleton
 internal class MediaPlayback @Inject constructor(
@@ -100,13 +115,28 @@ internal class MediaPlayback @Inject constructor(
     @ApplicationScope private val scope: CoroutineScope,
     private val timeSource: TimeSource.WithComparableMarks,
     private val artwork: ArtworkRepository,
+    private val userData: UserDataRepository,
+    private val orders: PlayOrders,
 ) : PlaybackState,
     PlaybackController,
     SessionResumption {
     private val state = MutableStateFlow(Snapshot())
 
-    /** The items the player was given, in its order. Empty when nothing is loaded. */
+    /** The items the player was given, in its order, which is the list's. Empty when nothing is loaded. */
     private var items: List<PlaybackItem> = emptyList()
+
+    /** The order [items] play in, and the rounds of Repeat All (ADR-028). */
+    private val playQueue = PlayQueue(orders)
+
+    /** [items] in the order they play, made again only when the items or their order change. */
+    private var ordered: List<PlaybackItem> = emptyList()
+    private var orderedFrom: Pair<List<PlaybackItem>, List<Int>>? = null
+
+    /** The order the player was last given, so the same one isn't sent again. */
+    private var playerOrder: List<Int>? = null
+
+    /** The Shuffle and Repeat settings, `null` until they are read (ADR-028, rule 1). */
+    private val settings = MutableStateFlow<Settings?>(null)
 
     /** Where the player was told each item's audio is. */
     private var uris: Map<PlaybackItemId, String> = emptyMap()
@@ -117,8 +147,11 @@ internal class MediaPlayback @Inject constructor(
     /** The list that was played, which is what is stored of the queue. */
     private var source: PlaybackSource? = null
 
-    /** What to write to [local], the latest only, and `null` to clear it. Written in order, so a clear stays one. */
-    private val toStore = Channel<ResumePoint?>(Channel.CONFLATED)
+    /**
+     * What to write to [local], in order, so a clear stays one and an order is never lost. A point is only the latest:
+     * one followed by another is never written.
+     */
+    private val toStore = Channel<Write>(Channel.UNLIMITED)
     private var hold: Hold? = null
     private var listenedTo: Player? = null
 
@@ -134,12 +167,14 @@ internal class MediaPlayback @Inject constructor(
         }
 
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-            // A new list counts its own start in play(), and a repeat isn't used.
+            // A new list counts its own start in play(). Repeat One starting the item again is a start too (ADR-028).
             if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO ||
-                reason == Player.MEDIA_ITEM_TRANSITION_REASON_SEEK
+                reason == Player.MEDIA_ITEM_TRANSITION_REASON_SEEK ||
+                reason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT
             ) {
                 state.update { it.copy(startCount = it.startCount + 1) }
             }
+            listenedTo?.let(::applyOrder)
         }
 
         override fun onPlaybackStateChanged(playbackState: Int) {
@@ -195,9 +230,24 @@ internal class MediaPlayback @Inject constructor(
         }
         // A point that can't be written loses nothing but where to carry on from, so nothing is told (ADR-007, rule 7).
         scope.launch {
-            for (point in toStore) {
-                if (point != null) local.store(point) else local.clear()
+            for (first in toStore) {
+                val writes = generateSequence(first) { toStore.tryReceive().getOrNull() }.toList()
+                writes.forEachIndexed { at, write ->
+                    val replaced = write is Write.Point && writes.drop(at + 1).any { it !is Write.Order }
+                    if (!replaced) write.to(local)
+                }
             }
+        }
+        // Each change applies at once to what is loaded, and a value that arrives by sync as one set here (ADR-028). A
+        // setting that can't be read is its default.
+        scope.launch {
+            userData.observeUserData()
+                .map { result -> result.getOrNull().toSettings() }
+                .distinctUntilChanged()
+                .collect { new ->
+                    settings.value = new
+                    onPlayer { player -> follow(new, player) }
+                }
         }
         scope.launch {
             state.map { it.skipped }.distinctUntilChanged().collectLatest { skipped ->
@@ -218,22 +268,41 @@ internal class MediaPlayback @Inject constructor(
     override val volume: Flow<Int> = state.map { it.volume }.distinctUntilChanged()
     override val skipped: Flow<SkippedItems?> = state.map { it.skipped }.distinctUntilChanged()
     override val unplayableQueue: Flow<SkippedItems?> = state.map { it.unplayableQueue }.distinctUntilChanged()
+    override val isShuffled: Flow<Boolean> = state.map { it.isShuffled }.distinctUntilChanged()
+    override val repeatMode: Flow<RepeatMode> = state.map { it.repeatMode }.distinctUntilChanged()
 
     override suspend fun play(source: PlaybackSource, from: PlaybackItemId): Either<PlaybackError, Unit> = either {
-        val queue = library.queueOf(source).bind()
-        val index = queue.indexOfFirst { it.item.id == from }
+        val list = library.queueOf(source).bind()
+        val index = list.indexOfFirst { it.item.id == from }
         if (index < 0) raise(PlaybackError.ItemNotInSource(from, source))
-        onPlayer { player ->
-            load(source, queue)
-            // The whole queue, so the next item is prepared before the current one ends (ADR-023).
-            player.setMediaItems(queue.map { it.toMediaItem() }, index, 0)
-            player.prepare()
-            player.play()
-            state.update { it.copy(startCount = it.startCount + 1, skipped = null, unplayableQueue = null) }
-            refresh(player)
-            // The same item in another list changes no state, and the list is what is stored.
-            store(player)
-        }.bind()
+        start(source, list, currentSettings().shuffle.shuffledBy, index).bind()
+    }
+
+    // Shuffle Songs: shuffled by songs whatever the setting says, from a random item (ADR-028, rule 5).
+    override suspend fun shuffle(source: PlaybackSource): Either<PlaybackError, Unit> = either {
+        val list = library.queueOf(source).bind()
+        ensure(list.isNotEmpty()) { PlaybackError.NothingToPlay(source) }
+        start(source, list, ShuffledBy.ShuffleSongs, orders.randomIndex(list.size)).bind()
+    }
+
+    /** Loads [list] in place of what was loaded, in an order shuffled [by] a value or in its own, and plays [index]. */
+    private suspend fun start(
+        source: PlaybackSource,
+        list: List<QueuedItem>,
+        by: ShuffledBy?,
+        index: Int,
+    ): Either<PlaybackError, Unit> = onPlayer { player ->
+        load(source, list, by, index)
+        // The whole queue, so the next item is prepared before the current one ends (ADR-023).
+        player.setMediaItems(list.map { it.toMediaItem() }, index, 0)
+        applyOrder(player)
+        player.prepare()
+        player.play()
+        state.update { it.copy(startCount = it.startCount + 1, skipped = null, unplayableQueue = null) }
+        refresh(player)
+        // The same item in another list changes no state, and the list is what is stored.
+        store(player)
+        storeOrder()
     }
 
     /**
@@ -245,13 +314,16 @@ internal class MediaPlayback @Inject constructor(
         onPlayer { empty = it.mediaItemCount == 0 }
         if (!empty) return
         val stored = storedQueue() ?: return
+        val current = currentSettings()
         onPlayer { player ->
             if (player.mediaItemCount == 0) {
-                load(stored.source, stored.queue)
+                load(stored, current)
                 player.setMediaItems(stored.queue.map { it.toMediaItem() }, stored.index, stored.position)
+                follow(current, player)
                 player.pause()
                 player.prepare()
                 refresh(player)
+                storeOrder()
             }
         }
     }
@@ -263,10 +335,12 @@ internal class MediaPlayback @Inject constructor(
         val resumed = SettableFuture.create<MediaSession.MediaItemsWithStartPosition>()
         scope.launch(connection.dispatcher) {
             val stored = storedQueue()
+            val current = currentSettings()
             if (stored == null) {
                 resumed.setException(UnsupportedOperationException("Nothing was stored to resume"))
             } else {
-                load(stored.source, stored.queue)
+                load(stored, current)
+                storeOrder()
                 resumed.set(
                     MediaSession.MediaItemsWithStartPosition(
                         stored.queue.map { it.toMediaItem() },
@@ -274,6 +348,9 @@ internal class MediaPlayback @Inject constructor(
                         stored.position,
                     ),
                 )
+                // The session plays the items once it has them, and the order follows them (PlayOrderKeeper).
+                val current = currentSettings()
+                onPlayer { player -> follow(current, player) }
             }
         }
         return resumed
@@ -286,44 +363,130 @@ internal class MediaPlayback @Inject constructor(
         onPlayer(::store)
     }
 
-    private fun load(source: PlaybackSource, queue: List<QueuedItem>) {
+    private fun load(source: PlaybackSource, list: List<QueuedItem>, by: ShuffledBy?, index: Int) {
+        loadItems(source, list)
+        playQueue.load(list.map { it.place }, by, index)
+    }
+
+    /**
+     * Loads what was stored, in the stored order when there is one. The settings are read as they are now, so a queue
+     * stored shuffled comes back in the list's order when Shuffle is off, as if it had been turned off while it played
+     * (ADR-028, "What is restored").
+     */
+    private fun load(stored: StoredQueue, settings: Settings) {
+        loadItems(stored.source, stored.queue)
+        val places = stored.queue.map { it.place }
+        val order = stored.order
+        if (order !=
+            null
+        ) {
+            playQueue.restore(places, order.by, order.round)
+        } else {
+            playQueue.load(places, null, stored.index)
+        }
+        val by = settings.shuffle.shuffledBy
+        if (playQueue.shuffledBy != ShuffledBy.ShuffleSongs &&
+            playQueue.shuffledBy != by
+        ) {
+            playQueue.reorder(by, stored.index)
+        }
+    }
+
+    private fun loadItems(source: PlaybackSource, list: List<QueuedItem>) {
         hold = null
         this.source = source
-        items = queue.map { it.item }
-        uris = queue.associate { it.item.id to it.uri }
+        items = list.map { it.item }
+        uris = list.associate { it.item.id to it.uri }
         artworkVersions = emptyMap()
         failed = emptySet()
         goingBack = false
+        playerOrder = null
+    }
+
+    /** The settings once they are read: what is played is in the order they say (ADR-028, rule 1). */
+    private suspend fun currentSettings(): Settings = settings.filterNotNull().first()
+
+    /**
+     * Applies the settings to the player and to what is loaded, at once and without interrupting the loaded item
+     * (ADR-028, rule 4). A change of Shuffle gives a new order from the loaded item, or the list's order again, except
+     * to a queue of Shuffle Songs. A queue already in the order the setting says is left as it is.
+     */
+    private fun follow(settings: Settings, player: Player) {
+        if (player.repeatMode != settings.repeat.media3) player.repeatMode = settings.repeat.media3
+        state.update { it.copy(repeatMode = settings.repeat) }
+        val by = settings.shuffle.shuffledBy
+        if (items.isNotEmpty() && playQueue.shuffledBy != ShuffledBy.ShuffleSongs && playQueue.shuffledBy != by) {
+            playQueue.reorder(by, player.currentMediaItemIndex)
+            storeOrder()
+        }
+        applyOrder(player)
+        refresh(player)
+    }
+
+    /**
+     * Gives the player the shuffle mode and the order for the item it is on (ADR-028, rule 6), and starts the next
+     * round when the queue just wrapped to it.
+     */
+    private fun applyOrder(player: Player) {
+        if (items.isEmpty() || player.mediaItemCount != items.size) return
+        val current = player.currentMediaItemIndex
+        if (playQueue.startedNextRound(current)) storeOrder()
+        val order = playQueue.playerOrder(current, state.value.repeatMode)
+        if (player.shuffleModeEnabled != (order != null)) player.shuffleModeEnabled = order != null
+        if (order != null && order != playerOrder) player.setPlayOrder(order.map { items[it].id.mediaId })
+        playerOrder = order
     }
 
     /**
      * The stored list as it is now, and where in it to carry on. A song that is gone leaves the next one at its index,
      * from 0:00. Nothing is left when that is past the end, or the list is gone, so nothing is stored any more. A
-     * library that can't be read says nothing about the songs, so what is stored stays.
+     * library that can't be read says nothing about the songs, so what is stored stays. A shuffled queue comes back in
+     * its stored order, and an order that can't be used is dropped (ADR-028, "What is restored").
      */
     private suspend fun storedQueue(): StoredQueue? {
         val point = local.resumePoint().getOrNull() ?: return null
+        val order = local.playOrder().getOrNull()
         return library.queueOf(point.source).fold(
             ifLeft = { error ->
                 if (error.isListGone()) local.clear()
                 null
             },
-            ifRight = { queue ->
-                val stored = queue.resumedAt(point)
+            ifRight = { list ->
+                val stored = list.resumedAt(point, order?.roundIn(list, point))
                 if (stored == null) local.clear()
                 stored
             },
         )
     }
 
+    /**
+     * The round of a stored [PlayOrder] in [list]: a song that is gone leaves it, as it leaves the queue, and a song
+     * new to the list goes at its end, in a random order. `null` when it doesn't hold the stored song.
+     */
+    private fun PlayOrder.roundIn(list: List<QueuedItem>, point: ResumePoint): StoredOrder? {
+        if (point.item !in items) return null
+        val indexOf = list.indices.associateBy { list[it].item.id }
+        val kept = items.mapNotNull { indexOf[it] }
+        val added = list.indices - kept.toSet()
+        return StoredOrder(shuffledBy, kept + orders.shuffled(added))
+    }
+
+    // The index is where the item is in the play order (ADR-028), which is the list's when it isn't shuffled.
     private fun store(player: Player) {
         val list = source ?: return
         val index = player.currentMediaItemIndex
         val item = items.getOrNull(index)
         if (item != null && player.mediaItemCount == items.size) {
             val position = player.currentPosition.coerceAtLeast(0).milliseconds
-            toStore.trySend(ResumePoint(list, item.id, index, position))
+            toStore.trySend(Write.Point(ResumePoint(list, item.id, playQueue.positionOf(index), position)))
         }
+    }
+
+    /** Stores the order when it changes, apart from the point: a whole library's order is too large to write often. */
+    private fun storeOrder() {
+        val by = playQueue.shuffledBy
+        val order = by?.let { shuffledBy -> PlayOrder(playQueue.order.map { items[it].id }, shuffledBy) }
+        toStore.trySend(Write.Order(order))
     }
 
     override suspend fun pause() = onLoaded { player ->
@@ -403,6 +566,8 @@ internal class MediaPlayback @Inject constructor(
                         listenedTo?.removeListener(listener)
                         player.addListener(listener)
                         listenedTo = player
+                        playerOrder = null
+                        settings.value?.let { player.repeatMode = it.repeat.media3 }
                         refresh(player)
                     }
                     action(player)
@@ -413,9 +578,11 @@ internal class MediaPlayback @Inject constructor(
         listenedTo?.removeListener(listener)
         listenedTo = null
         items = emptyList()
+        playQueue.clear()
         hold = null
         failed = emptySet()
-        state.update { Snapshot(startCount = it.startCount, volume = it.volume) }
+        playerOrder = null
+        state.update { Snapshot(startCount = it.startCount, volume = it.volume, repeatMode = it.repeatMode) }
     }
 
     /**
@@ -429,25 +596,22 @@ internal class MediaPlayback @Inject constructor(
         state.update {
             it.copy(skipped = SkippedItems(item, error, (it.skipped?.count ?: 0) + 1))
         }
-        val next = nextPlayable(index)
+        val round = playQueue.order
+        val next = playQueue.nextPlayable(index, state.value.repeatMode, goingBack) { items[it].id in failed }
         if (next == null) {
             state.update { it.copy(unplayableQueue = it.skipped) }
             unload(player)
         } else {
             endHold(player)
             // Past the first item backward, a skip goes forward from there.
-            goingBack = goingBack && next < index
+            goingBack = goingBack && playQueue.positionOf(next) < playQueue.positionOf(index)
             player.seekTo(next, 0)
+            // A skip past the end of a shuffled round under Repeat All started the next round (ADR-028).
+            if (playQueue.order !== round) storeOrder()
+            applyOrder(player)
             player.prepare()
         }
         refresh(player)
-    }
-
-    /** The nearest item that hasn't failed: the way ⏮ was going, and otherwise forward. The queue doesn't wrap. */
-    private fun nextPlayable(from: Int): Int? {
-        val after = (from + 1 until items.size).firstOrNull { items[it].id !in failed }
-        val before = (from - 1 downTo 0).firstOrNull { items[it].id !in failed }
-        return if (goingBack) before ?: after else after
     }
 
     private fun endHold(player: Player) {
@@ -486,17 +650,23 @@ internal class MediaPlayback @Inject constructor(
         if (items.isEmpty()) return
         val current = player.currentMediaItemIndex
         val gone = items.indices.filter { locations[items[it].songId] == null }
-        if (current in gone && items.indices.none { it > current && it !in gone }) {
+        if (current in gone && !playQueue.hasNext(current, state.value.repeatMode) { it in gone }) {
             unload(player)
         } else {
             if (current in gone) {
                 endHold(player)
                 state.update { it.copy(startCount = it.startCount + 1) }
             }
-            // From the last, so that the indices left still hold.
+            // From the last, so that the indices left still hold. The player's order loses them as the queue's does.
             gone.asReversed().forEach { index ->
                 items = items.filterIndexed { itemIndex, _ -> itemIndex != index }
+                playQueue.remove(index)
                 player.removeMediaItem(index)
+            }
+            if (gone.isNotEmpty()) {
+                playerOrder = null
+                applyOrder(player)
+                if (playQueue.shuffledBy != null) storeOrder()
             }
             moveToNewLocations(locations, player)
         }
@@ -512,10 +682,11 @@ internal class MediaPlayback @Inject constructor(
         val uri = uris[item.id]
         if (items.getOrNull(index)?.id != item.id || uri == null) return
         artworkVersions = artworkVersions + (item.id to (artworkVersions[item.id] ?: 0) + 1)
-        player.replaceMediaItem(index, queuedItem(item, uri).toMediaItem())
+        player.replaceMediaItem(index, queuedItem(index, item, uri).toMediaItem())
     }
 
-    private fun queuedItem(item: PlaybackItem, uri: String) = QueuedItem(item, uri, artworkVersions[item.id] ?: 0)
+    private fun queuedItem(index: Int, item: PlaybackItem, uri: String) =
+        QueuedItem(item, uri, playQueue.placeOf(index), artworkVersions[item.id] ?: 0)
 
     private fun moveToNewLocations(locations: Map<SongId, String>, player: Player) {
         items.forEachIndexed { index, item ->
@@ -523,7 +694,7 @@ internal class MediaPlayback @Inject constructor(
             if (uri != uris[item.id] && index != player.currentMediaItemIndex) {
                 uris = uris + (item.id to uri)
                 failed = failed - item.id
-                player.replaceMediaItem(index, queuedItem(item, uri).toMediaItem())
+                player.replaceMediaItem(index, queuedItem(index, item, uri).toMediaItem())
             }
         }
     }
@@ -532,10 +703,12 @@ internal class MediaPlayback @Inject constructor(
     private fun unload(player: Player) {
         if (items.isEmpty()) return
         items = emptyList()
+        playQueue.clear()
         hold = null
         failed = emptySet()
         goingBack = false
-        toStore.trySend(null)
+        playerOrder = null
+        toStore.trySend(Write.Clear)
         player.clearMediaItems()
     }
 
@@ -545,13 +718,79 @@ internal class MediaPlayback @Inject constructor(
         val range = device.maxVolume - device.minVolume
         state.update { snapshot ->
             snapshot.copy(
-                queue = if (loaded) items else emptyList(),
-                queueIndex = if (loaded) player.currentMediaItemIndex else null,
+                queue = if (loaded) inPlayOrder() else emptyList(),
+                queueIndex = if (loaded) {
+                    playQueue.positionOf(player.currentMediaItemIndex).takeIf {
+                        it >= 0
+                    }
+                } else {
+                    null
+                },
+                isShuffled = loaded && playQueue.shuffledBy != null,
                 position = if (loaded) player.currentPosition.coerceAtLeast(0).milliseconds else Duration.ZERO,
                 isPlaying = loaded && (hold?.wasPlaying ?: player.playsOrIsAboutTo()),
                 isSeeking = loaded && hold != null,
                 volume = if (range > 0) (player.deviceVolume - device.minVolume) * MAX_VOLUME / range else 0,
             )
+        }
+    }
+
+    /** The items in the order they play (ADR-028, rule 7), made again only when the items or the order change. */
+    private fun inPlayOrder(): List<PlaybackItem> {
+        val from = orderedFrom
+        if (from == null || from.first !== items || from.second !== playQueue.order) {
+            ordered = playQueue.order.map(items::get)
+            orderedFrom = items to playQueue.order
+        }
+        return ordered
+    }
+}
+
+/** The settings playback follows (ADR-028). */
+private data class Settings(val shuffle: Shuffle, val repeat: RepeatMode)
+
+private fun UserData?.toSettings() = Settings(
+    shuffle = this?.shuffle ?: Shuffle.OFF,
+    repeat = when (this?.repeat ?: Repeat.OFF) {
+        Repeat.OFF -> RepeatMode.Off
+        Repeat.ONE -> RepeatMode.One
+        Repeat.ALL -> RepeatMode.All
+    },
+)
+
+private val Shuffle.shuffledBy: ShuffledBy?
+    get() = when (this) {
+        Shuffle.OFF -> null
+        Shuffle.SONGS -> ShuffledBy.Songs
+        Shuffle.ALBUMS -> ShuffledBy.Albums
+    }
+
+private val RepeatMode.media3: Int
+    get() = when (this) {
+        RepeatMode.Off -> Player.REPEAT_MODE_OFF
+        RepeatMode.One -> Player.REPEAT_MODE_ONE
+        RepeatMode.All -> Player.REPEAT_MODE_ALL
+    }
+
+/** A write to the stored point, in the order they are made. */
+private sealed interface Write {
+    suspend fun to(local: PlaybackLocalDataSource)
+
+    data class Point(val point: ResumePoint) : Write {
+        override suspend fun to(local: PlaybackLocalDataSource) {
+            local.store(point)
+        }
+    }
+
+    data class Order(val order: PlayOrder?) : Write {
+        override suspend fun to(local: PlaybackLocalDataSource) {
+            local.storeOrder(order)
+        }
+    }
+
+    data object Clear : Write {
+        override suspend fun to(local: PlaybackLocalDataSource) {
+            local.clear()
         }
     }
 }
@@ -575,6 +814,8 @@ private data class Snapshot(
     val volume: Int = 0,
     val skipped: SkippedItems? = null,
     val unplayableQueue: SkippedItems? = null,
+    val isShuffled: Boolean = false,
+    val repeatMode: RepeatMode = RepeatMode.Off,
 ) {
     val currentItem: PlaybackItem? get() = queueIndex?.let(queue::getOrNull)
 
@@ -582,9 +823,13 @@ private data class Snapshot(
     val isMoving: Boolean get() = currentItem != null && (isPlaying || isSeeking)
 }
 
-/** An item of the queue, and where its audio is, which the player needs and the `:api` doesn't show. */
-private class QueuedItem(val item: PlaybackItem, val uri: String, val artworkVersion: Int = 0) {
+/**
+ * An item of the queue, where its audio is, which the player needs and the `:api` doesn't show, and where it is in its
+ * album, which the Albums order needs (ADR-028).
+ */
+private class QueuedItem(val item: PlaybackItem, val uri: String, val place: AlbumPlace, val artworkVersion: Int = 0) {
     fun toMediaItem(): MediaItem = MediaItem.Builder()
+        .setMediaId(item.id.mediaId)
         .setUri(uri)
         // A controller in another process drops the URI, and the session puts it back from here.
         .setRequestMetadata(MediaItem.RequestMetadata.Builder().setMediaUri(Uri.parse(uri)).build())
@@ -599,14 +844,25 @@ private class QueuedItem(val item: PlaybackItem, val uri: String, val artworkVer
         .build()
 }
 
-/** A stored list, loaded again: its items and where to carry on in them. */
-private class StoredQueue(val source: PlaybackSource, val queue: List<QueuedItem>, val index: Int, val position: Long)
+/** A stored list, loaded again: its items, where to carry on in them, and the round it was in when it was shuffled. */
+private class StoredQueue(
+    val source: PlaybackSource,
+    val queue: List<QueuedItem>,
+    val index: Int,
+    val position: Long,
+    val order: StoredOrder?,
+)
 
-private fun List<QueuedItem>.resumedAt(point: ResumePoint): StoredQueue? {
+/** A stored play order, as indices into the list it is loaded with. */
+private class StoredOrder(val by: ShuffledBy, val round: List<Int>)
+
+/** Where to carry on: the stored item, and when it is gone the one at its place, in the [order] when there is one. */
+private fun List<QueuedItem>.resumedAt(point: ResumePoint, order: StoredOrder?): StoredQueue? {
     val index = indexOfFirst { it.item.id == point.item }
+    val inPlayOrder = order?.round ?: indices.toList()
     return when {
-        index >= 0 -> StoredQueue(point.source, this, index, point.position.inWholeMilliseconds)
-        point.index in indices -> StoredQueue(point.source, this, point.index, 0)
+        index >= 0 -> StoredQueue(point.source, this, index, point.position.inWholeMilliseconds, order)
+        point.index in inPlayOrder.indices -> StoredQueue(point.source, this, inPlayOrder[point.index], 0, order)
         else -> null
     }
 }
@@ -639,8 +895,10 @@ private suspend fun LibraryRepository.queueOf(source: PlaybackSource): Either<Pl
                 duration = song.duration,
                 artwork = ArtworkRef(song.id),
             )
-            QueuedItem(item, song.uri)
+            QueuedItem(item, song.uri, song.place)
         }
     }
+
+private val Song.place get() = AlbumPlace(albumId, discNumber, trackNumber)
 
 private const val MAX_VOLUME = 100

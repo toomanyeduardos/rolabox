@@ -68,6 +68,12 @@ internal class DeviceViewModelImpl @Inject constructor(
         }
     }
 
+    override fun onShuffleSongsClick(onPlaying: () -> Unit) {
+        viewModelScope.launch {
+            playbackController.shuffle(PlaybackSource.AllSongs).onRight { onPlaying() }
+        }
+    }
+
     override fun onPlayFailureShown() {
         playFailureState.value = null
     }
@@ -107,6 +113,9 @@ private fun PlaybackError.toPlayFailure(): PlayFailure = when (this) {
     is PlaybackError.ItemNotInSource -> PlayFailure.SongNotInList
 
     PlaybackError.PlayerUnavailable -> PlayFailure.PlayerUnavailable
+
+    // Only Shuffle Songs returns it, and that says nothing: the nearest thing to say if a song click ever did.
+    is PlaybackError.NothingToPlay -> PlayFailure.SongNotInList
 
     // The state reports these, and play() never returns one: the nearest thing to say if it ever did.
     is PlaybackError.Unplayable -> PlayFailure.PlayerUnavailable

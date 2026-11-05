@@ -13,6 +13,8 @@ import com.eduardoflores.rolabox.common.userdata.api.Clicker
 import com.eduardoflores.rolabox.common.userdata.api.DarkThemeConfig
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRow
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRowVisibility
+import com.eduardoflores.rolabox.common.userdata.api.Repeat
+import com.eduardoflores.rolabox.common.userdata.api.Shuffle
 import com.eduardoflores.rolabox.common.userdata.api.SyncedPreferences
 import com.eduardoflores.rolabox.common.userdata.testing.FakePreferencesLocalDataSource
 import com.eduardoflores.rolabox.common.userdata.testing.FakePreferencesNetworkDataSource
@@ -134,6 +136,25 @@ class PreferencesSyncerTest {
         val expected = SyncedPreferences(clicker = synced(Clicker.ON, 2))
         assertEquals(expected, network.byUser[USER])
         assertEquals(expected.right(), phone.local.getSyncedPreferences())
+    }
+
+    @Test
+    fun shuffleAndRepeat_newerIsPushedAndOlderIsPulledOver() = runTest {
+        val phone = device()
+        val tablet = device()
+        phone.local.setShuffle(synced(Shuffle.SONGS, 1))
+        phone.local.setRepeat(synced(Repeat.ALL, 3))
+        tablet.local.setShuffle(synced(Shuffle.ALBUMS, 2))
+        tablet.local.setRepeat(synced(Repeat.ONE, 2))
+
+        phone.syncer.sync(USER)
+        tablet.syncer.sync(USER)
+        phone.syncer.sync(USER)
+
+        val expected = SyncedPreferences(shuffle = synced(Shuffle.ALBUMS, 2), repeat = synced(Repeat.ALL, 3))
+        assertEquals(expected, network.byUser[USER])
+        assertEquals(expected.right(), phone.local.getSyncedPreferences())
+        assertEquals(expected.right(), tablet.local.getSyncedPreferences())
     }
 
     // ADR-011 rule 9: each row is a field, so two rows hidden on two devices offline both stay hidden.

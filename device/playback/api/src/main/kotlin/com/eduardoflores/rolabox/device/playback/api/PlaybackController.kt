@@ -14,6 +14,14 @@ interface PlaybackController {
      */
     suspend fun play(source: PlaybackSource, from: PlaybackItemId): Either<PlaybackError, Unit>
 
+    /**
+     * Shuffle Songs (ADR-028): loads the whole list of [source] in a random order, by song, and starts playing a random
+     * item of it at 0:00, in place of what was loaded. The queue stays shuffled whatever the Shuffle setting says, and
+     * Repeat applies to it. Nothing changes on a `Left`, which [PlaybackError.NothingToPlay] is for a list with no
+     * items.
+     */
+    suspend fun shuffle(source: PlaybackSource): Either<PlaybackError, Unit>
+
     /** Pauses the loaded item where it is. Does nothing when it is paused, or when nothing is loaded. */
     suspend fun pause()
 

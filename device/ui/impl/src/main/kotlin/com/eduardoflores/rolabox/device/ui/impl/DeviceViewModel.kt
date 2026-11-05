@@ -56,6 +56,13 @@ internal abstract class DeviceViewModel : ViewModel() {
      */
     abstract fun onSongClick(source: PlaybackSource, songId: SongId, onPlaying: () -> Unit)
 
+    /**
+     * Shuffle Songs: plays the whole library in a random order, from a random song, in place of what was loaded, and
+     * then calls [onPlaying] (ADR-028, rule 5). With nothing to play, or when it can't, nothing happens and nothing is
+     * said: the row stays as it was.
+     */
+    abstract fun onShuffleSongsClick(onPlaying: () -> Unit)
+
     /** The message of [playFailure] was shown, so it isn't shown again. */
     abstract fun onPlayFailureShown()
 

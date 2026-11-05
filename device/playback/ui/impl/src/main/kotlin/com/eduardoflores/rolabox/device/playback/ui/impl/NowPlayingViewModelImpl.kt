@@ -69,8 +69,9 @@ internal class NowPlayingViewModelImpl @Inject constructor(
         combine(playbackState.position, playbackState.queueIndex, playbackState.queue, ::Triple),
         combine(mode, playbackState.volume, marker, ::Triple),
         combine(playbackState.skipped, playbackState.unplayableQueue, ::Pair),
-        artwork,
-    ) { (item, start), (position, index, queue), (mode, volume, marker), (skipped, unplayableQueue), artwork ->
+        combine(artwork, playbackState.isShuffled, playbackState.repeatMode, ::Triple),
+    ) { (item, start), (position, index, queue), (mode, volume, marker), (skipped, unplayableQueue), order ->
+        val (artwork, shuffled, repeat) = order
         if (item == null || index == null) {
             unplayableQueue?.let { NowPlayingUiState.NothingLeftToPlay(it.toUi()) } ?: NowPlayingUiState.NothingLoaded
         } else {
@@ -87,6 +88,8 @@ internal class NowPlayingViewModelImpl @Inject constructor(
                 volume = volume,
                 skipped = skipped?.toUi(),
                 artwork = artwork,
+                shuffled = shuffled,
+                repeat = repeat,
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), NowPlayingUiState.Loading)

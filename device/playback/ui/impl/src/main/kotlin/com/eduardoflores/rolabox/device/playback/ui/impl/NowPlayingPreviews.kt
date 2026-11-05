@@ -1,3 +1,5 @@
+@file:Suppress("TooManyFunctions") // One for each state of the screen (ADR-016).
+
 package com.eduardoflores.rolabox.device.playback.ui.impl
 
 import androidx.compose.runtime.Composable
@@ -6,6 +8,7 @@ import com.eduardoflores.rolabox.common.designsystem.component.sampleCoverArt
 import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxTheme
 import com.eduardoflores.rolabox.device.host.DeviceScreen
 import com.eduardoflores.rolabox.device.library.api.ArtworkImage
+import com.eduardoflores.rolabox.device.playback.api.RepeatMode
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
@@ -102,4 +105,23 @@ private fun NowPlayingSkippedLongTitlePreview() = DevicePreview(
 @Composable
 private fun NowPlayingNothingLeftToPlayPreview() = DevicePreview(
     NowPlayingUiState.NothingLeftToPlay(SkippedSongs("Glasshouse", others = 2, SkipReason.Damaged)),
+)
+
+// Shuffle and Repeat All, as frame 22 of the designs shows them (ADR-028).
+@PreviewLightDark
+@Composable
+private fun NowPlayingShuffleRepeatAllPreview() = DevicePreview(
+    Glasshouse.copy(number = 4, shuffled = true, repeat = RepeatMode.All),
+)
+
+// Repeat One with Shuffle off, as frame 23 shows it.
+@PreviewLightDark
+@Composable
+private fun NowPlayingRepeatOnePreview() = DevicePreview(Glasshouse.copy(repeat = RepeatMode.One))
+
+// The widest the row gets: a whole library's place, both icons and the volume's tag. At 1.5x the place gives way.
+@PreviewLightDark
+@Composable
+private fun NowPlayingQueueIconsWithVolumePreview() = DevicePreview(
+    ChangingVolume.copy(number = 1234, count = 12345, shuffled = true, repeat = RepeatMode.One),
 )

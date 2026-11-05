@@ -10,6 +10,8 @@ import com.eduardoflores.rolabox.common.userdata.api.Clicker
 import com.eduardoflores.rolabox.common.userdata.api.DarkThemeConfig
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRow
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRowVisibility
+import com.eduardoflores.rolabox.common.userdata.api.Repeat
+import com.eduardoflores.rolabox.common.userdata.api.Shuffle
 import com.eduardoflores.rolabox.common.userdata.api.SyncedPreferences
 import com.eduardoflores.rolabox.common.userdata.local.api.PreferencesLocalDataSource
 import javax.inject.Inject
@@ -48,6 +50,12 @@ class FakePreferencesLocalDataSource @Inject constructor() : PreferencesLocalDat
     override suspend fun setClicker(clicker: SyncedValue<Clicker>): Either<StorageError, Unit> =
         write { it.copy(clicker = clicker) }
 
+    override suspend fun setShuffle(shuffle: SyncedValue<Shuffle>): Either<StorageError, Unit> =
+        write { it.copy(shuffle = shuffle) }
+
+    override suspend fun setRepeat(repeat: SyncedValue<Repeat>): Either<StorageError, Unit> =
+        write { it.copy(repeat = repeat) }
+
     override suspend fun setMainMenuRowVisibility(
         row: MainMenuRow,
         visibility: SyncedValue<MainMenuRowVisibility>,
@@ -58,6 +66,8 @@ class FakePreferencesLocalDataSource @Inject constructor() : PreferencesLocalDat
             darkThemeConfig = newer(it.darkThemeConfig, preferences.darkThemeConfig),
             accentColor = newer(it.accentColor, preferences.accentColor),
             clicker = newer(it.clicker, preferences.clicker),
+            shuffle = newer(it.shuffle, preferences.shuffle),
+            repeat = newer(it.repeat, preferences.repeat),
             mainMenuRows = MainMenuRow.entries
                 .mapNotNull { row -> newer(it.mainMenuRows[row], preferences.mainMenuRows[row])?.let { row to it } }
                 .toMap(),

@@ -1,6 +1,8 @@
 plugins {
     id("rolabox.android.screens")
     id("rolabox.android.paparazzi")
+    // The main menu's wiring to the screen stack is tested composed, on Robolectric.
+    id("rolabox.android.robolectric")
 }
 
 android {
@@ -29,4 +31,9 @@ dependencies {
     testImplementation(project(":device:playback:testing"))
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.robolectric)
+    testImplementation(platform(libs.androidx.compose.bom))
+    testImplementation(libs.androidx.compose.ui.test.junit4)
+    // The Espresso that Compose's test rule brings calls an InputManager method Robolectric's SDK no longer has.
+    testImplementation(libs.androidx.espresso.core)
 }

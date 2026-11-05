@@ -12,5 +12,7 @@ data class SyncedPreferences(
     val darkThemeConfig: SyncedValue<DarkThemeConfig>? = null,
     val accentColor: SyncedValue<AccentColor>? = null,
     val clicker: SyncedValue<Clicker>? = null,
+    val shuffle: SyncedValue<Shuffle>? = null,
+    val repeat: SyncedValue<Repeat>? = null,
     val mainMenuRows: Map<MainMenuRow, SyncedValue<MainMenuRowVisibility>> = emptyMap(),
 )

@@ -9,6 +9,8 @@ import com.eduardoflores.rolabox.common.userdata.api.Clicker
 import com.eduardoflores.rolabox.common.userdata.api.DarkThemeConfig
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRow
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRowVisibility
+import com.eduardoflores.rolabox.common.userdata.api.Repeat
+import com.eduardoflores.rolabox.common.userdata.api.Shuffle
 import com.eduardoflores.rolabox.common.userdata.api.UserData
 import com.eduardoflores.rolabox.common.userdata.api.UserDataRepository
 import javax.inject.Inject
@@ -20,12 +22,16 @@ import kotlinx.coroutines.flow.transformWhile
 import kotlinx.coroutines.flow.update
 
 @Singleton
+// One function for each of the repository's, and the few a test sets.
+@Suppress("TooManyFunctions")
 class FakeUserDataRepository @Inject constructor() : UserDataRepository {
     private val userData = MutableStateFlow(
         UserData(
             darkThemeConfig = DarkThemeConfig.FOLLOW_SYSTEM,
             accentColor = AccentColor.BLUE,
             clicker = Clicker.ON,
+            shuffle = Shuffle.OFF,
+            repeat = Repeat.OFF,
             mainMenuRows = MainMenuRow.entries.associateWith { MainMenuRowVisibility.SHOWN },
         ),
     )
@@ -46,6 +52,10 @@ class FakeUserDataRepository @Inject constructor() : UserDataRepository {
         write { it.copy(accentColor = color) }
 
     override suspend fun setClicker(clicker: Clicker): Either<StorageError, Unit> = write { it.copy(clicker = clicker) }
+
+    override suspend fun setShuffle(shuffle: Shuffle): Either<StorageError, Unit> = write { it.copy(shuffle = shuffle) }
+
+    override suspend fun setRepeat(repeat: Repeat): Either<StorageError, Unit> = write { it.copy(repeat = repeat) }
 
     override suspend fun setMainMenuRowVisibility(
         row: MainMenuRow,

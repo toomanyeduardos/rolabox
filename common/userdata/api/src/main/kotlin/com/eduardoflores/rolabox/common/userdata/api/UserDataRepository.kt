@@ -13,6 +13,10 @@ interface UserDataRepository {
 
     suspend fun setClicker(clicker: Clicker): Either<StorageError, Unit>
 
+    suspend fun setShuffle(shuffle: Shuffle): Either<StorageError, Unit>
+
+    suspend fun setRepeat(repeat: Repeat): Either<StorageError, Unit>
+
     suspend fun setMainMenuRowVisibility(
         row: MainMenuRow,
         visibility: MainMenuRowVisibility,

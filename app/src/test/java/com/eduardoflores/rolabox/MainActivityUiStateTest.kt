@@ -6,6 +6,8 @@ import com.eduardoflores.rolabox.common.userdata.api.Clicker
 import com.eduardoflores.rolabox.common.userdata.api.DarkThemeConfig
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRow
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRowVisibility
+import com.eduardoflores.rolabox.common.userdata.api.Repeat
+import com.eduardoflores.rolabox.common.userdata.api.Shuffle
 import com.eduardoflores.rolabox.common.userdata.api.UserData
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -67,6 +69,8 @@ class MainActivityUiStateTest {
             darkThemeConfig = config,
             accentColor = accentColor,
             clicker = Clicker.ON,
+            shuffle = Shuffle.OFF,
+            repeat = Repeat.OFF,
             mainMenuRows = MainMenuRow.entries.associateWith { MainMenuRowVisibility.SHOWN },
         ),
     )

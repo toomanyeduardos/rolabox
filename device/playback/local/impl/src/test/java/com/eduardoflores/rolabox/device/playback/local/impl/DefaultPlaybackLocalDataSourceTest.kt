@@ -7,7 +7,9 @@ import com.eduardoflores.rolabox.device.library.api.ArtistId
 import com.eduardoflores.rolabox.device.library.api.SongId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
+import com.eduardoflores.rolabox.device.playback.local.api.PlayOrder
 import com.eduardoflores.rolabox.device.playback.local.api.ResumePoint
+import com.eduardoflores.rolabox.device.playback.local.api.ShuffledBy
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -49,6 +51,57 @@ class DefaultPlaybackLocalDataSourceTest {
             preferences.setString("playback_resume_point", it)
 
             assertEquals(null.right(), dataSource.resumePoint())
+        }
+    }
+
+    // ADR-028: a shuffled queue's order, and what shuffled it, apart from the point.
+    @Test
+    fun anOrderComesBackAsItWasStored_whateverShuffledIt() = runTest {
+        ShuffledBy.entries.forEach { shuffledBy ->
+            val order = PlayOrder(listOf(3L, 1L, 2L).map { PlaybackItemId.Song(SongId(it)) }, shuffledBy)
+
+            dataSource.storeOrder(order)
+
+            assertEquals(order.right(), dataSource.playOrder())
+        }
+    }
+
+    @Test
+    fun noOrder_isStoredAsNone() = runTest {
+        dataSource.storeOrder(PlayOrder(listOf(PlaybackItemId.Song(SongId(1))), ShuffledBy.Songs))
+
+        dataSource.storeOrder(null)
+
+        assertEquals(null.right(), dataSource.playOrder())
+    }
+
+    @Test
+    fun theOrder_isWrittenApartFromThePoint() = runTest {
+        val order = PlayOrder(listOf(PlaybackItemId.Song(SongId(2))), ShuffledBy.ShuffleSongs)
+        dataSource.storeOrder(order)
+
+        dataSource.store(ResumePoint(PlaybackSource.AllSongs, PlaybackItemId.Song(SongId(2)), 0, 1.seconds))
+
+        assertEquals(order.right(), dataSource.playOrder())
+    }
+
+    @Test
+    fun clear_forgetsThePointAndTheOrder() = runTest {
+        dataSource.store(ResumePoint(PlaybackSource.AllSongs, PlaybackItemId.Song(SongId(1)), 0, 1.seconds))
+        dataSource.storeOrder(PlayOrder(listOf(PlaybackItemId.Song(SongId(1))), ShuffledBy.Albums))
+
+        dataSource.clear()
+
+        assertEquals(null.right(), dataSource.resumePoint())
+        assertEquals(null.right(), dataSource.playOrder())
+    }
+
+    @Test
+    fun anOrderThatCantBeRead_isNoOrder() = runTest {
+        listOf("nonsense", "songs", "songs|song:1|song:1", "artists|song:1", "songs|song:1|episode:2").forEach {
+            preferences.setString("playback_play_order", it)
+
+            assertEquals(null.right(), dataSource.playOrder())
         }
     }
 }

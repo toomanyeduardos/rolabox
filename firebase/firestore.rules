@@ -49,16 +49,18 @@ service cloud.firestore {
           && data[field].updatedAt <= request.time + duration.value(1, 'd'));
     }
 
-    // The device's settings are preferences too (ADR-011): Clicker, and each row of the main menu
-    // that can be hidden, as a field of its own.
+    // The device's settings are preferences too (ADR-011): Clicker, Shuffle and Repeat (ADR-028),
+    // and each row of the main menu that can be hidden, as a field of its own.
     function isValidPreferences(data) {
       return data.keys().hasOnly([
-          'darkThemeConfig', 'accentColor', 'clicker',
+          'darkThemeConfig', 'accentColor', 'clicker', 'shuffle', 'repeat',
           'mainMenuMusic', 'mainMenuPodcasts', 'mainMenuAudiobooks', 'mainMenuShuffleSongs'
         ])
         && isValidSyncedField(data, 'darkThemeConfig', ['FOLLOW_SYSTEM', 'LIGHT', 'DARK'])
         && isValidSyncedField(data, 'accentColor', ['BLUE', 'GREEN', 'PURPLE', 'PINK'])
         && isValidSyncedField(data, 'clicker', ['ON', 'OFF'])
+        && isValidSyncedField(data, 'shuffle', ['OFF', 'SONGS', 'ALBUMS'])
+        && isValidSyncedField(data, 'repeat', ['OFF', 'ONE', 'ALL'])
         && isValidSyncedField(data, 'mainMenuMusic', ['SHOWN', 'HIDDEN'])
         && isValidSyncedField(data, 'mainMenuPodcasts', ['SHOWN', 'HIDDEN'])
         && isValidSyncedField(data, 'mainMenuAudiobooks', ['SHOWN', 'HIDDEN'])
@@ -79,6 +81,8 @@ service cloud.firestore {
         && isNotOlder('darkThemeConfig')
         && isNotOlder('accentColor')
         && isNotOlder('clicker')
+        && isNotOlder('shuffle')
+        && isNotOlder('repeat')
         && isNotOlder('mainMenuMusic')
         && isNotOlder('mainMenuPodcasts')
         && isNotOlder('mainMenuAudiobooks')

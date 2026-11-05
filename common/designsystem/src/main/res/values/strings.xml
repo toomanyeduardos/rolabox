@@ -1,5 +1,9 @@
 <resources>
     <string name="ds_back">Back</string>
+    <!-- What the icons after the place in the queue say to TalkBack, on Now Playing. -->
+    <string name="ds_shuffle_on">Shuffle on</string>
+    <string name="ds_repeat_all">Repeat all</string>
+    <string name="ds_repeat_one">Repeat one</string>
     <string name="ds_show_password">SHOW</string>
     <string name="ds_hide_password">HIDE</string>
     <string name="ds_show_password_description">Show password</string>

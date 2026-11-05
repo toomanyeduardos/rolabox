@@ -7,6 +7,10 @@ import com.eduardoflores.rolabox.device.settings.api.SettingsRow
  * contributed sections in the order of their slots (ADR-020, rule 16).
  */
 internal sealed interface SettingsListRow {
+    data object Shuffle : SettingsListRow
+
+    data object Repeat : SettingsListRow
+
     data object Clicker : SettingsListRow
 
     data object Theme : SettingsListRow
@@ -21,6 +25,8 @@ internal sealed interface SettingsListRow {
 }
 
 internal fun settingsListRows(sections: List<SettingsRow>): List<SettingsListRow> = listOf(
+    SettingsListRow.Shuffle,
+    SettingsListRow.Repeat,
     SettingsListRow.Clicker,
     SettingsListRow.Theme,
     SettingsListRow.OnlineArtwork,

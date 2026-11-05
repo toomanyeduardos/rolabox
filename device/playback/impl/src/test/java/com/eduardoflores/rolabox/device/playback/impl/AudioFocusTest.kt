@@ -15,6 +15,7 @@ import androidx.media3.test.utils.robolectric.ShadowMediaCodecConfig
 import androidx.media3.test.utils.robolectric.TestPlayerRunHelper
 import androidx.test.core.app.ApplicationProvider
 import arrow.core.right
+import com.eduardoflores.rolabox.common.userdata.testing.FakeUserDataRepository
 import com.eduardoflores.rolabox.device.library.api.Album
 import com.eduardoflores.rolabox.device.library.api.AlbumId
 import com.eduardoflores.rolabox.device.library.api.Artist
@@ -32,6 +33,7 @@ import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
 import com.eduardoflores.rolabox.device.playback.testing.FakePlaybackLocalDataSource
 import java.io.File
 import kotlin.coroutines.ContinuationInterceptor
+import kotlin.random.Random
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.first
@@ -103,6 +105,8 @@ class AudioFocusTest {
                 scope.backgroundScope,
                 scope.testScheduler.timeSource,
                 FakeArtworkRepository(),
+                FakeUserDataRepository(),
+                PlayOrders(Random(0)),
             )
     }
 

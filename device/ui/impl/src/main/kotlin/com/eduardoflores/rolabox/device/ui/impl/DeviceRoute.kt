@@ -87,9 +87,11 @@ internal fun DeviceRoute(
         clicks = clicks,
         entryProvider = entryProvider {
             mainMenuEntry(
-                shownRows = shownMenuRows(nowPlayingShown, mainMenuRows),
+                // Read inside the entry, which reads the state each time it composes (see mainMenuEntry).
+                shownRows = { shownMenuRows(nowPlayingShown, mainMenuRows) },
                 onNowPlayingClick = { stack.push(NowPlayingKey) },
                 onMusicClick = { stack.push(MusicMenuKey) },
+                onShuffleSongsClick = { viewModel.onShuffleSongsClick { stack.push(NowPlayingKey) } },
                 onSettingsClick = { stack.push(SettingsKey) },
             )
             musicEntries.screenStackEntries(

@@ -150,6 +150,31 @@ class DeviceViewModelTest {
         assertEquals(1, playing)
     }
 
+    // ADR-028, rule 5: Shuffle Songs shuffles the whole library, as a play of its own.
+    @Test
+    fun shuffleSongs_shufflesEverySong_andThenReportsIt() = runTest {
+        val viewModel = observedViewModel()
+        var playing = 0
+
+        viewModel.onShuffleSongsClick { playing++ }
+
+        assertEquals(listOf<PlaybackSource>(PlaybackSource.AllSongs), playback.shuffleCalls)
+        assertEquals(emptyList<FakePlayback.PlayCall>(), playback.playCalls)
+        assertEquals(1, playing)
+    }
+
+    @Test
+    fun shuffleSongsWithNothingToPlay_doesNothing_andSaysNothing() = runTest {
+        val viewModel = observedViewModel()
+        playback.playResult = PlaybackError.NothingToPlay(PlaybackSource.AllSongs).left()
+        var playing = 0
+
+        viewModel.onShuffleSongsClick { playing++ }
+
+        assertEquals(0, playing)
+        assertEquals(null, viewModel.playFailure.value)
+    }
+
     @Test
     fun aSongClickThatFails_doesNotReportPlaying_andSaysTheSongIsNotInTheList() = runTest {
         val viewModel = observedViewModel()

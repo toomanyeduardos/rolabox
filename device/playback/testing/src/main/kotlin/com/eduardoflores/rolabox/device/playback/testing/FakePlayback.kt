@@ -8,6 +8,7 @@ import com.eduardoflores.rolabox.device.playback.api.PlaybackItem
 import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
 import com.eduardoflores.rolabox.device.playback.api.PlaybackState
+import com.eduardoflores.rolabox.device.playback.api.RepeatMode
 import com.eduardoflores.rolabox.device.playback.api.SeekDirection
 import com.eduardoflores.rolabox.device.playback.api.SkippedItems
 import javax.inject.Inject
@@ -19,8 +20,8 @@ import kotlinx.coroutines.flow.combine
 
 /**
  * Playback that tests drive: [load], [restarted], [unload], [playing], [positionAt] and [volumeAt] set what the
- * observed flows emit. The actions change nothing. They are recorded, so a test can check what a ViewModel asked for.
- * [play] answers with [playResult].
+ * observed flows emit, and [order] the order and the repeat mode. The actions change nothing. They are recorded, so a
+ * test can check what a ViewModel asked for. [play] and [shuffle] answer with [playResult].
  */
 // One function for each action of the controller, and one for each part of the state a test sets.
 @Suppress("TooManyFunctions")
@@ -36,6 +37,8 @@ class FakePlayback @Inject constructor() :
     private val volumeState = MutableStateFlow(INITIAL_VOLUME)
     private val skippedState = MutableStateFlow<SkippedItems?>(null)
     private val unplayableQueueState = MutableStateFlow<SkippedItems?>(null)
+    private val shuffledState = MutableStateFlow(false)
+    private val repeatModeState = MutableStateFlow(RepeatMode.Off)
 
     /** What [play] answers with. */
     var playResult: Either<PlaybackError, Unit> = Unit.right()
@@ -43,6 +46,9 @@ class FakePlayback @Inject constructor() :
     data class PlayCall(val source: PlaybackSource, val from: PlaybackItemId)
 
     val playCalls = mutableListOf<PlayCall>()
+
+    /** The sources of each [shuffle]. */
+    val shuffleCalls = mutableListOf<PlaybackSource>()
     val seekCalls = mutableListOf<Duration>()
     val startSeekingCalls = mutableListOf<SeekDirection>()
 
@@ -69,6 +75,14 @@ class FakePlayback @Inject constructor() :
     override val volume: Flow<Int> = volumeState
     override val skipped: Flow<SkippedItems?> = skippedState
     override val unplayableQueue: Flow<SkippedItems?> = unplayableQueueState
+    override val isShuffled: Flow<Boolean> = shuffledState
+    override val repeatMode: Flow<RepeatMode> = repeatModeState
+
+    /** Whether the queue plays shuffled, and which repeat mode applies (ADR-028). */
+    fun order(shuffled: Boolean, repeat: RepeatMode) {
+        shuffledState.value = shuffled
+        repeatModeState.value = repeat
+    }
 
     /** What [skipped] says, or `null` once its time is over. */
     fun skippedItems(items: SkippedItems?) {
@@ -119,6 +133,11 @@ class FakePlayback @Inject constructor() :
 
     override suspend fun play(source: PlaybackSource, from: PlaybackItemId): Either<PlaybackError, Unit> {
         playCalls += PlayCall(source, from)
+        return playResult
+    }
+
+    override suspend fun shuffle(source: PlaybackSource): Either<PlaybackError, Unit> {
+        shuffleCalls += source
         return playResult
     }
 

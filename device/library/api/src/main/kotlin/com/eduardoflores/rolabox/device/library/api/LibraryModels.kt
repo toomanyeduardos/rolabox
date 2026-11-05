@@ -22,10 +22,11 @@ data class Artist(val id: ArtistId, val name: String?, val isVarious: Boolean = 
 data class Album(val id: AlbumId, val artistId: ArtistId, val title: String?, val year: Int?, val artwork: ArtworkRef)
 
 /**
- * A song of the library. [uri] is where its audio is, the `content://` URI MediaStore gives it, which playback
- * hands to the player as it is (ADR-023, rule 5, and ADR-024). It is a string, since this module has no
- * `android.net.Uri`. [artistId] is the song's own artist, who may not be the artist of its album. [duration] is
- * zero when the library doesn't know it.
+ * A song of the library. [uri] is where its audio is, the `content://` URI MediaStore gives it, which playback hands to
+ * the player as it is (ADR-023, rule 5, and ADR-024). It is a string, since this module has no `android.net.Uri`.
+ * [artistId] is the song's own artist, who may not be the artist of its album. [duration] is zero when the library
+ * doesn't know it. [discNumber] and [trackNumber] are where it is in its album, which is the order of the album's list:
+ * disc, then track.
  */
 data class Song(
     val id: SongId,
@@ -35,6 +36,7 @@ data class Song(
     val trackNumber: Int?,
     val duration: Duration,
     val uri: String,
+    val discNumber: Int? = null,
 )
 
 /** How far a long piece of work has come: [done] of [total]. */

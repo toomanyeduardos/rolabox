@@ -8,6 +8,8 @@ import com.eduardoflores.rolabox.common.userdata.api.Clicker
 import com.eduardoflores.rolabox.common.userdata.api.DarkThemeConfig
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRow
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRowVisibility
+import com.eduardoflores.rolabox.common.userdata.api.Repeat
+import com.eduardoflores.rolabox.common.userdata.api.Shuffle
 import com.eduardoflores.rolabox.common.userdata.api.SyncedPreferences
 import kotlinx.coroutines.flow.Flow
 
@@ -29,6 +31,12 @@ interface PreferencesLocalDataSource {
 
     /** Stores [clicker] with its timestamp, in one atomic write. */
     suspend fun setClicker(clicker: SyncedValue<Clicker>): Either<StorageError, Unit>
+
+    /** Stores [shuffle] with its timestamp, in one atomic write. */
+    suspend fun setShuffle(shuffle: SyncedValue<Shuffle>): Either<StorageError, Unit>
+
+    /** Stores [repeat] with its timestamp, in one atomic write. */
+    suspend fun setRepeat(repeat: SyncedValue<Repeat>): Either<StorageError, Unit>
 
     /** Stores the [visibility] of [row] with its timestamp, in one atomic write. Each row is a field of its own. */
     suspend fun setMainMenuRowVisibility(

@@ -55,8 +55,11 @@ internal class PlaybackService : MediaSessionService() {
                 setSmallIcon(R.drawable.ds_ic_notification)
             },
         )
-        session = MediaSession.Builder(this, buildPlayer(this))
-            .setCallback(SessionCallback(resumption.orElse(null)))
+        val player = buildPlayer(this)
+        // The play order that Rolabox's controller sends, which only the ExoPlayer can take (ADR-028, rule 6).
+        player.addListener(PlayOrderKeeper(player))
+        session = MediaSession.Builder(this, player)
+            .setCallback(SessionCallback(resumption.orElse(null), packageName))
             .apply { artwork.ifPresent { setBitmapLoader(artworkLoader(it)) } }
             .apply { theApp()?.let(::setSessionActivity) }
             .build()
@@ -137,6 +140,9 @@ internal fun buildPlayer(context: Context, configure: ExoPlayer.Builder.() -> Un
 internal fun Player.playsOn(): Boolean =
     playWhenReady && (playbackState == Player.STATE_READY || playbackState == Player.STATE_BUFFERING)
 
+/** The connection hint that marks Rolabox's own controller, which [SessionConnection] sends (ADR-028, rule 8). */
+internal const val OWN_CONTROLLER = "com.eduardoflores.rolabox.OWN_CONTROLLER"
+
 private val MusicAttributes = AudioAttributes.Builder()
     .setUsage(C.USAGE_MEDIA)
     .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
@@ -146,8 +152,35 @@ private val MusicAttributes = AudioAttributes.Builder()
  * A controller sends its items to the session without where their audio is, unless it's in the same process.
  * The URI goes along in the request metadata, as Media3 expects, and is put back here. A play with nothing loaded, from
  * a media button or the system's controls, gets what [resumption] restores.
+ *
+ * Shuffle and repeat are the device's settings, which change only in its Settings (ADR-028, rule 8): only Rolabox's
+ * own controller, from [packageName] and with [OWN_CONTROLLER] in its hints, may set them, and only it may set the
+ * playlist's metadata, which carries the play order (setPlayOrder). Every other controller, the notification's and the
+ * system's among them, is offered none of the three, so the system's controls show no button for them.
  */
-private class SessionCallback(private val resumption: SessionResumption?) : MediaSession.Callback {
+internal class SessionCallback(private val resumption: SessionResumption?, private val packageName: String) :
+    MediaSession.Callback {
+    @OptIn(UnstableApi::class)
+    override fun onConnect(
+        session: MediaSession,
+        controller: MediaSession.ControllerInfo,
+    ): MediaSession.ConnectionResult {
+        val isOwn = controller.packageName == packageName && controller.connectionHints.getBoolean(OWN_CONTROLLER)
+        val result = MediaSession.ConnectionResult.AcceptedResultBuilder(session)
+        if (!isOwn) {
+            result.setAvailablePlayerCommands(
+                MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS.buildUpon()
+                    .removeAll(
+                        Player.COMMAND_SET_SHUFFLE_MODE,
+                        Player.COMMAND_SET_REPEAT_MODE,
+                        Player.COMMAND_SET_PLAYLIST_METADATA,
+                    )
+                    .build(),
+            )
+        }
+        return result.build()
+    }
+
     @OptIn(UnstableApi::class)
     override fun onPlaybackResumption(
         mediaSession: MediaSession,

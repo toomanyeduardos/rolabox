@@ -13,6 +13,8 @@ import com.eduardoflores.rolabox.common.userdata.api.DarkThemeConfig
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRow
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRowVisibility.HIDDEN
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRowVisibility.SHOWN
+import com.eduardoflores.rolabox.common.userdata.api.Repeat
+import com.eduardoflores.rolabox.common.userdata.api.Shuffle
 import com.eduardoflores.rolabox.common.userdata.api.SyncedPreferences
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
@@ -55,6 +57,36 @@ class DefaultPreferencesLocalDataSourceTest {
 
         assertEquals("DARK".right(), preferencesStore.observeString("dark_theme_config").first())
         assertEquals("$NOW".right(), preferencesStore.observeString("dark_theme_config_updated_at").first())
+    }
+
+    @Test
+    fun setShuffleAndRepeat_areStoredUnderTheirTwoKeys() = runTest {
+        assertEquals(Unit.right(), dataSource.setShuffle(synced(Shuffle.SONGS, NOW)))
+        assertEquals(Unit.right(), dataSource.setRepeat(synced(Repeat.ALL, NOW + 1)))
+
+        assertEquals("SONGS".right(), preferencesStore.observeString("shuffle").first())
+        assertEquals("$NOW".right(), preferencesStore.observeString("shuffle_updated_at").first())
+        assertEquals("ALL".right(), preferencesStore.observeString("repeat").first())
+        assertEquals("${NOW + 1}".right(), preferencesStore.observeString("repeat_updated_at").first())
+        assertEquals(
+            SyncedPreferences(shuffle = synced(Shuffle.SONGS, NOW), repeat = synced(Repeat.ALL, NOW + 1)).right(),
+            dataSource.getSyncedPreferences(),
+        )
+    }
+
+    @Test
+    fun applySyncedPreferences_resolvesShuffleAndRepeatEachOnItsOwn() = runTest {
+        dataSource.setShuffle(synced(Shuffle.SONGS, NOW))
+        dataSource.setRepeat(synced(Repeat.ONE, NOW))
+
+        dataSource.applySyncedPreferences(
+            SyncedPreferences(shuffle = synced(Shuffle.ALBUMS, NOW - 1), repeat = synced(Repeat.ALL, NOW + 1)),
+        )
+
+        assertEquals(
+            SyncedPreferences(shuffle = synced(Shuffle.SONGS, NOW), repeat = synced(Repeat.ALL, NOW + 1)).right(),
+            dataSource.getSyncedPreferences(),
+        )
     }
 
     @Test
