@@ -81,6 +81,7 @@
 <div><div style="font-weight:700;color:#1a1a1a;margin-bottom:4px">Two parts</div>The display (top) is the only area that changes. The aluminum body and the wheel stay fixed. Menus slide in from the right when you go deeper and slide out when you press MENU.</div>
 <div><div style="font-weight:700;color:#1a1a1a;margin-bottom:4px">Wheel</div>Turn: move the highlight (in menus) or change the volume (on Now Playing). Center: select. MENU: back. ⏮ ⏭: previous/next track. ⏯: play/pause. A haptic tick fires on each highlight change.</div>
 <div><div style="font-weight:700;color:#1a1a1a;margin-bottom:4px">Status</div>The display stays white on both finishes, so text reads the same on either. The vinyl in the display header spins while audio plays. It's hidden before anything is loaded. Playback continues while you browse (see 09).</div>
+<div><div style="font-weight:700;color:#1a1a1a;margin-bottom:4px">Shuffle and Repeat (22, 23)</div>Icons sit right after "3 OF 10", since both describe the queue, in display ink at 12px tall. The header already holds the vinyl, title and battery, and under the bar are the times. VOLUME and SCRUB keep the right side. Shuffle shows while Shuffle is Songs or Albums, and on a queue started by Shuffle Songs whatever the setting says. Repeat One replaces Repeat. Off shows nothing.</div>
 <div><div style="font-weight:700;color:#1a1a1a;margin-bottom:4px">Orange</div>The highlighted row is glossy blue, with a lighter top half and a darker bottom half. Orange, the brand color, is only used for unplayed dots, the scrub knob and the vinyl label.</div>
 </div>
 <sc-for list="{{ themes }}" as="th" hint-placeholder-count="2">
@@ -122,7 +123,11 @@
 </sc-if>
 <sc-if value="{{ s.isPlayer }}" hint-placeholder-val="{{ false }}">
 <div style="flex:1;display:flex;flex-direction:column;padding:10px 12px 12px;gap:12px">
-<div style="display:flex;justify-content:space-between;font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.06em;color:{{ th.t.sMuted }}"><span>{{ s.pos }}</span><span style="color:{{ s.tagC }}">{{ s.tag }}</span></div>
+<div style="display:flex;justify-content:space-between;font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.06em;color:{{ th.t.sMuted }}"><span style="display:flex;align-items:center;gap:8px"><span>{{ s.pos }}</span><span style="display:flex;align-items:center;gap:6px;color:{{ th.t.sInk }}">
+<svg aria-label="Shuffle on" width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:{{ s.shufD }}"><path d="M1 2.5h3c1 0 1.6.4 2.2 1.2l3.2 4.6c.6.8 1.2 1.2 2.2 1.2H14"></path><path d="M1 9.5h3c1 0 1.6-.4 2.2-1.2l.5-.7"></path><path d="M9.3 4.4l.5-.7c.6-.8 1.2-1.2 2.2-1.2H14"></path><path d="M12.4 1l1.8 1.5-1.8 1.5"></path><path d="M12.4 8l1.8 1.5-1.8 1.5"></path></svg>
+<svg aria-label="Repeat all" width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:{{ s.repD }}"><path d="M2 6.5V4.5C2 3.7 2.7 3 3.5 3H13"></path><path d="M11.4 1.2L13.3 3l-1.9 1.8"></path><path d="M14 5.5v2c0 .8-.7 1.5-1.5 1.5H3"></path><path d="M4.6 10.8L2.7 9l1.9-1.8"></path></svg>
+<svg aria-label="Repeat one" width="21" height="12" viewBox="0 0 21 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:{{ s.rep1D }}"><path d="M2 6.5V4.5C2 3.7 2.7 3 3.5 3H13"></path><path d="M11.4 1.2L13.3 3l-1.9 1.8"></path><path d="M14 5.5v2c0 .8-.7 1.5-1.5 1.5H3"></path><path d="M4.6 10.8L2.7 9l1.9-1.8"></path><path d="M17.2 3.6L19 2.2v8.6"></path></svg>
+</span></span><span style="color:{{ s.tagC }}">{{ s.tag }}</span></div>
 <div style="display:flex;gap:12px;align-items:center">
 <sc-if value="{{ s.noCover }}" hint-placeholder-val="{{ false }}">
 <div style="width:108px;height:108px;flex:none;border-radius:4px;display:flex;flex-direction:column;gap:4px;align-items:center;justify-content:center;padding:6px;box-sizing:border-box;text-align:center;background:{{ th.t.art }};box-shadow:0 0 0 1px {{ th.t.sRule }},0 4px 10px -4px rgba(0,0,0,.35)"><div style="font-size:13px;font-weight:700;line-height:1.2">{{ s.noticeTitle }}</div><div style="font-size:11px;line-height:1.25;color:{{ th.t.sMuted }}">{{ s.noticeBody }}</div></div>
@@ -219,7 +224,9 @@ class Component extends DCLogic {
       { num: '13', label: 'Settings · About', how: 'Center on About. The app, its version and the number of songs in the library. Nothing is highlighted: there is nothing to open or change, and MENU goes back.', title: 'About', items: about, hi: -1, play: null, w: 'menu' },
       { num: '14', label: 'Artists · fast turning', how: 'Spin fast through a long list sorted by name. The first letter of the highlighted row shows over the list and fades out shortly after the turning slows. A name that starts with a digit or a symbol shows #. "The Beatles" shows T, as the list sorts it. Menus and an album\'s songs never show it.', title: 'Artists', items: manyArtists, hi: 9, top: 6, total: 240, overlay: 'M', play: null, w: 'turn' },
       { num: '20', label: 'Now Playing · song skipped', how: 'A song that can\'t be played is skipped and the next one starts. For 4s the message takes the cover art\'s place, with the reason under it, and nothing else moves. A skip in that time adds to the count and starts the 4s again. The wheel works as usual. Long titles end in an ellipsis after two lines.', player: 1, ...P, song: 'Tin Can Summer', pos: '4 OF 10', lt: '0:02', rt: '-3:12', pct: '1%', mode: 'play', play: true, w: 'none', notice: ['Skipped Glasshouse and 2 more', 'This file is damaged'] },
-      { num: '21', label: 'Now Playing · nothing left to play', how: 'No song left in the queue can be played. Nothing is loaded, so the record and the main menu\'s row go away, and Now Playing stays with this until MENU goes back. It uses the display\'s message, as 17 and 18 do. A queue that ends normally still pops Now Playing.', player: 1, stopped: ['Nothing left can be played', 'Skipped Glasshouse and 2 more'], play: null, w: 'menu' }
+      { num: '21', label: 'Now Playing · nothing left to play', how: 'No song left in the queue can be played. Nothing is loaded, so the record and the main menu\'s row go away, and Now Playing stays with this until MENU goes back. It uses the display\'s message, as 17 and 18 do. A queue that ends normally still pops Now Playing.', player: 1, stopped: ['Nothing left can be played', 'Skipped Glasshouse and 2 more'], play: null, w: 'menu' },
+      { num: '22', label: 'Now Playing · Shuffle, Repeat All', how: 'Shuffle is Songs or Albums, or the queue came from Shuffle Songs. Repeat is All. Both icons follow the position.', player: 1, ...P, pos: '4 OF 10', lt: '0:38', rt: '-3:05', pct: '17%', mode: 'play', play: true, shuf: 1, rep: 'all', w: 'center' },
+      { num: '23', label: 'Now Playing · Repeat One', how: 'Repeat is One and Shuffle is Off. The Repeat One icon takes the place of Repeat, and ⏭ still moves to the next song.', player: 1, ...P, lt: '2:51', rt: '-0:50', pct: '77%', mode: 'play', play: true, rep: 'one', w: 'center' }
     ];
     const V = 8;
     const build = (t, bg) => defs.map(d => {
@@ -231,7 +238,8 @@ class Component extends DCLogic {
         return { ...s, isList: false, isPlayer: true, title: 'Now Playing', song: d.song, artist: d.artist, album: d.album, pos: d.pos,
           hasCover: !d.notice, noCover: !!d.notice, noticeTitle: d.notice ? d.notice[0] : '', noticeBody: d.notice ? d.notice[1] : '',
           tag: d.tag || '', tagC: scrub ? '#E4572E' : t.sMuted, lt: d.lt, rt: d.rt, pct: d.pct,
-          barH: scrub ? '8px' : '6px', fillC: scrub ? '#E4572E' : vol ? t.sInk : t.fill, knobD: scrub ? 'block' : 'none' };
+          barH: scrub ? '8px' : '6px', fillC: scrub ? '#E4572E' : vol ? t.sInk : t.fill, knobD: scrub ? 'block' : 'none',
+          shufD: d.shuf ? 'block' : 'none', repD: d.rep === 'all' ? 'block' : 'none', rep1D: d.rep === 'one' ? 'block' : 'none' };
       }
       // total stands for a list longer than the rows drawn, so the scrollbar reads as a long one.
       const top = d.top || 0, n = d.total || d.items.length, scroll = n > V;

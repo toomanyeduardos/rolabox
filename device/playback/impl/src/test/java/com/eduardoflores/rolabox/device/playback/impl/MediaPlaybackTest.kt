@@ -17,6 +17,7 @@ import androidx.test.core.app.ApplicationProvider
 import arrow.core.left
 import arrow.core.right
 import com.eduardoflores.rolabox.common.storage.api.StorageError
+import com.eduardoflores.rolabox.common.userdata.testing.FakeUserDataRepository
 import com.eduardoflores.rolabox.device.library.api.Album
 import com.eduardoflores.rolabox.device.library.api.AlbumId
 import com.eduardoflores.rolabox.device.library.api.Artist
@@ -38,6 +39,7 @@ import com.eduardoflores.rolabox.device.playback.testing.FakePlaybackLocalDataSo
 import java.io.File
 import kotlin.coroutines.ContinuationInterceptor
 import kotlin.math.abs
+import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -65,6 +67,8 @@ import org.robolectric.Shadows.shadowOf
  * behind [MediaPlayback]. The coroutines, the ticks and the holds run on the test's clock, and the player plays on
  * its own, so a test lets the player play with [playTo] and then lets a [Tick] read it.
  */
+// One test for each behavior of ADR-023 the engine has, and the helpers that drive the player.
+@Suppress("LargeClass")
 @RunWith(RobolectricTestRunner::class)
 @OptIn(UnstableApi::class)
 class MediaPlaybackTest {
@@ -120,6 +124,8 @@ class MediaPlaybackTest {
                 scope.backgroundScope,
                 scope.testScheduler.timeSource,
                 FakeArtworkRepository(),
+                FakeUserDataRepository(),
+                PlayOrders(Random(0)),
             )
     }
 

@@ -9,6 +9,8 @@ import com.eduardoflores.rolabox.common.userdata.api.Clicker
 import com.eduardoflores.rolabox.common.userdata.api.DarkThemeConfig
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRow
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRowVisibility
+import com.eduardoflores.rolabox.common.userdata.api.Repeat
+import com.eduardoflores.rolabox.common.userdata.api.Shuffle
 import com.eduardoflores.rolabox.common.userdata.api.SyncedPreferences
 import com.eduardoflores.rolabox.common.userdata.network.api.PreferencesNetworkDataSource
 import com.eduardoflores.rolabox.common.util.catchNamed
@@ -89,6 +91,8 @@ private val DarkThemeConfigField =
     RemoteField("darkThemeConfig", DarkThemeConfig.entries, DarkThemeConfig.FOLLOW_SYSTEM)
 private val AccentColorField = RemoteField("accentColor", AccentColor.entries, AccentColor.BLUE)
 private val ClickerField = RemoteField("clicker", Clicker.entries, Clicker.ON)
+private val ShuffleField = RemoteField("shuffle", Shuffle.entries, Shuffle.OFF)
+private val RepeatField = RemoteField("repeat", Repeat.entries, Repeat.OFF)
 
 // Each row is a field of its own (ADR-011, rule 9). The names are written out, not derived from the
 // enum, since the rules check them and renaming a row in code must never move its field.
@@ -106,6 +110,8 @@ private fun DocumentSnapshot.toSyncedPreferences() = SyncedPreferences(
     darkThemeConfig = DarkThemeConfigField.read(this),
     accentColor = AccentColorField.read(this),
     clicker = ClickerField.read(this),
+    shuffle = ShuffleField.read(this),
+    repeat = RepeatField.read(this),
     mainMenuRows = MainMenuRowFields
         .mapNotNull { (row, field) -> field.read(this)?.let { row to it } }
         .toMap(),
@@ -115,6 +121,8 @@ private fun changedFields(remote: SyncedPreferences, merged: SyncedPreferences):
     putAll(DarkThemeConfigField.changes(remote.darkThemeConfig, merged.darkThemeConfig))
     putAll(AccentColorField.changes(remote.accentColor, merged.accentColor))
     putAll(ClickerField.changes(remote.clicker, merged.clicker))
+    putAll(ShuffleField.changes(remote.shuffle, merged.shuffle))
+    putAll(RepeatField.changes(remote.repeat, merged.repeat))
     MainMenuRowFields.forEach { (row, field) ->
         putAll(field.changes(remote.mainMenuRows[row], merged.mainMenuRows[row]))
     }

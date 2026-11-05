@@ -11,6 +11,8 @@ import com.eduardoflores.rolabox.common.userdata.api.Clicker
 import com.eduardoflores.rolabox.common.userdata.api.DarkThemeConfig
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRow
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRowVisibility
+import com.eduardoflores.rolabox.common.userdata.api.Repeat
+import com.eduardoflores.rolabox.common.userdata.api.Shuffle
 import com.eduardoflores.rolabox.device.host.DeviceScreen
 import com.eduardoflores.rolabox.device.settings.api.SettingsRow
 
@@ -31,12 +33,30 @@ private fun DevicePreview(title: String, content: @Composable () -> Unit) {
 private fun SettingsPreview() = DevicePreview(title = "Settings") {
     SettingsList(
         state = SettingsUiState(
+            shuffle = Shuffle.OFF,
+            repeat = Repeat.ALL,
             clicker = Clicker.ON,
             darkTheme = DarkThemeConfig.FOLLOW_SYSTEM,
             onlineArtwork = true,
             sections = listOf(SettingsRow(title = { "Account" }, opens = PreviewKey)),
         ),
         highlightedIndex = 0,
+    )
+}
+
+// The other values of Shuffle and Repeat (ADR-028), stepped in place on center.
+@PreviewLightDark
+@Composable
+private fun SettingsShuffleAndRepeatPreview() = DevicePreview(title = "Settings") {
+    SettingsList(
+        state = SettingsUiState(
+            shuffle = Shuffle.ALBUMS,
+            repeat = Repeat.ONE,
+            clicker = Clicker.ON,
+            darkTheme = DarkThemeConfig.FOLLOW_SYSTEM,
+            onlineArtwork = true,
+        ),
+        highlightedIndex = 1,
     )
 }
 

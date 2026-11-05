@@ -14,6 +14,7 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.eduardoflores.rolabox.common.userdata.testing.FakeUserDataRepository
 import com.eduardoflores.rolabox.device.library.api.Album
 import com.eduardoflores.rolabox.device.library.api.AlbumId
 import com.eduardoflores.rolabox.device.library.api.Artist
@@ -32,6 +33,7 @@ import com.eduardoflores.rolabox.device.playback.testing.FakePlaybackLocalDataSo
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import java.io.File
+import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
@@ -182,6 +184,8 @@ class PlaybackServiceTest {
             scope,
             TimeSource.Monotonic,
             FakeArtworkRepository(),
+            FakeUserDataRepository(),
+            PlayOrders(Random(0)),
         )
         playback.play(PlaybackSource.AllSongs, PlaybackItemId.Song(song.id))
         val started = playback.startCount.first()
@@ -228,6 +232,8 @@ class PlaybackServiceTest {
                 scope,
                 TimeSource.Monotonic,
                 FakeArtworkRepository(),
+                FakeUserDataRepository(),
+                PlayOrders(Random(0)),
             )
 
         playback.changeVolume(-2)

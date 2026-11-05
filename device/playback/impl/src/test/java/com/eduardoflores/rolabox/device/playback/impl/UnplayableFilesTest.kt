@@ -12,6 +12,9 @@ import androidx.media3.test.utils.robolectric.RobolectricUtil
 import androidx.media3.test.utils.robolectric.ShadowMediaCodecConfig
 import androidx.test.core.app.ApplicationProvider
 import arrow.core.right
+import com.eduardoflores.rolabox.common.userdata.api.Repeat
+import com.eduardoflores.rolabox.common.userdata.api.Shuffle
+import com.eduardoflores.rolabox.common.userdata.testing.FakeUserDataRepository
 import com.eduardoflores.rolabox.device.library.api.Album
 import com.eduardoflores.rolabox.device.library.api.AlbumId
 import com.eduardoflores.rolabox.device.library.api.Artist
@@ -32,6 +35,7 @@ import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
 import com.eduardoflores.rolabox.device.playback.testing.FakePlaybackLocalDataSource
 import java.io.File
 import kotlin.coroutines.ContinuationInterceptor
+import kotlin.random.Random
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.first
@@ -68,6 +72,7 @@ class UnplayableFilesTest {
     private val artist = Artist(ArtistId(1), "Artist")
     private val album = Album(AlbumId(1), artist.id, "Album", 2000, ArtworkRef(SongId(1)))
     private val library = FakeLibraryRepository()
+    private val userData = FakeUserDataRepository()
     private val scope = TestScope()
     private lateinit var player: ExoPlayer
     private lateinit var playback: MediaPlayback
@@ -92,6 +97,8 @@ class UnplayableFilesTest {
                 scope.backgroundScope,
                 scope.testScheduler.timeSource,
                 FakeArtworkRepository(),
+                userData,
+                PlayOrders(Random(0)),
             )
     }
 
@@ -204,6 +211,54 @@ class UnplayableFilesTest {
         untilStopped()
 
         assertEquals(2L, playback.unplayableQueue.first()?.last?.number)
+    }
+
+    // ADR-028: under Repeat All the skip wraps, from the last song of the play order to its first.
+    @Test
+    fun underRepeatAll_aBadLastFile_wrapsToTheFirst() = scope.runTest {
+        userData.setRepeat(Repeat.ALL)
+        songs(GOOD, GOOD, TEXT)
+        playFrom(3)
+        untilPlaying(1)
+
+        assertEquals(3L, playback.skipped.first()?.last?.number)
+        assertNull(playback.unplayableQueue.first())
+    }
+
+    // ADR-028: the wrapping search still stops when every song has failed.
+    @Test
+    fun underRepeatAll_everyFileBad_stillStops() = scope.runTest {
+        userData.setRepeat(Repeat.ALL)
+        songs(TEXT, TEXT, TEXT)
+        playFrom(2)
+        untilStopped()
+
+        assertNull(playback.currentItem.first())
+        assertEquals(3, playback.unplayableQueue.first()?.count)
+    }
+
+    // ADR-028: a song that fails under Repeat One is skipped as without repeat, never started again.
+    @Test
+    fun underRepeatOne_aBadFile_isSkippedToTheNext() = scope.runTest {
+        userData.setRepeat(Repeat.ONE)
+        songs(GOOD, TEXT, GOOD)
+        playFrom(2)
+        untilPlaying(3)
+
+        assertEquals(2L, playback.skipped.first()?.last?.number)
+    }
+
+    // ADR-028: a shuffled queue skips to the next song in the play order, not in the list's.
+    @Test
+    fun shuffled_aBadFile_isSkippedToTheNextInThePlayOrder() = scope.runTest {
+        userData.setShuffle(Shuffle.SONGS)
+        songs(TEXT, GOOD, GOOD, GOOD, GOOD)
+        playFrom(1)
+        val next = playback.queue.first()[1].number
+        untilPlaying(next)
+
+        assertEquals(1L, playback.skipped.first()?.last?.number)
+        assertEquals(1, playback.queueIndex.first())
     }
 
     @Test

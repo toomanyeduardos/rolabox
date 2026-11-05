@@ -2,6 +2,7 @@ package com.eduardoflores.rolabox.device.playback.impl
 
 import android.content.ComponentName
 import android.content.Context
+import android.os.Bundle
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
@@ -48,7 +49,10 @@ internal class SessionConnection @Inject constructor(
         controller = null
         val token = SessionToken(context, ComponentName(context, PlaybackService::class.java))
         return try {
-            MediaController.Builder(context, token).buildAsync().await().also { controller = it }.right()
+            MediaController.Builder(context, token)
+                .setConnectionHints(Bundle().apply { putBoolean(OWN_CONTROLLER, true) })
+                .buildAsync()
+                .await().also { controller = it }.right()
         } catch (_: SecurityException) {
             PlaybackError.PlayerUnavailable.left()
         }

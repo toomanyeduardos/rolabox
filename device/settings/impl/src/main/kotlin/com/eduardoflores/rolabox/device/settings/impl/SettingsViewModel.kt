@@ -3,10 +3,16 @@ package com.eduardoflores.rolabox.device.settings.impl
 import androidx.lifecycle.ViewModel
 import com.eduardoflores.rolabox.common.userdata.api.Clicker
 import com.eduardoflores.rolabox.common.userdata.api.DarkThemeConfig
+import com.eduardoflores.rolabox.common.userdata.api.Repeat
+import com.eduardoflores.rolabox.common.userdata.api.Shuffle
 import com.eduardoflores.rolabox.device.settings.api.SettingsRow
 import kotlinx.coroutines.flow.StateFlow
 
 internal data class SettingsUiState(
+    /** Shuffle (ADR-028), or null until it has loaded, or if it can't be read, like [clicker]. */
+    val shuffle: Shuffle? = null,
+    /** Repeat (ADR-028), or null until it has loaded, or if it can't be read, like [clicker]. */
+    val repeat: Repeat? = null,
     /** Clicker, or null until it has loaded, or if it can't be read: then the row shows no value. */
     val clicker: Clicker? = null,
     /** The theme, or null until it has loaded, or if it can't be read, like [clicker]. */
@@ -25,6 +31,12 @@ internal data class SettingsUiState(
 /** What the settings list shows, and what the wheel does on it (ADR-021). [SettingsViewModelImpl] implements it. */
 internal abstract class SettingsViewModel : ViewModel() {
     abstract val uiState: StateFlow<SettingsUiState>
+
+    /** Center on Shuffle: steps to the next of Off, Songs and Albums, and around. Nothing until it has loaded. */
+    abstract fun onShuffleChange()
+
+    /** Center on Repeat: steps to the next of Off, One and All, and around. Nothing until it has loaded. */
+    abstract fun onRepeatChange()
 
     /** Center on Clicker: turns it Off when it is On, and On when it is Off. Nothing until it has loaded. */
     abstract fun onClickerChange()

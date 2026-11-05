@@ -24,6 +24,8 @@ dependencies {
     // What is restored after the app is killed (ADR-023, rule 11).
     implementation(project(":device:playback:local:api"))
     implementation(project(":common:storage:api")) // required by its errors
+    // The Shuffle and Repeat settings, which playback reads itself (ADR-028, rule 1).
+    implementation(project(":common:userdata:api"))
     // Stores when the app goes to the background, and restores when it comes back.
     implementation(libs.androidx.lifecycle.process)
     // The engine, its session and the service (ADR-023). Only this module may depend on Media3 (rule 9).
@@ -35,6 +37,7 @@ dependencies {
 
     testImplementation(project(":device:playback:testing"))
     testImplementation(project(":device:library:testing"))
+    testImplementation(project(":common:userdata:testing"))
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     // A real ExoPlayer on the JVM, with Media3's fake clock, playing library/02's fixtures (ADR-023).
@@ -47,6 +50,7 @@ dependencies {
     androidTestImplementation(project(":common:testing"))
     androidTestImplementation(project(":device:library:testing"))
     androidTestImplementation(project(":device:playback:testing"))
+    androidTestImplementation(project(":common:userdata:testing"))
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.test.runner)
 }

@@ -56,6 +56,7 @@ internal data class SongRow(
     val trackNumber: Int?,
     val durationMillis: Long?,
     val uri: String,
+    val discNumber: Int?,
 )
 
 /** Where a song's audio is. */

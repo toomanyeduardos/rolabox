@@ -7,6 +7,8 @@ import com.eduardoflores.rolabox.common.userdata.api.Clicker
 import com.eduardoflores.rolabox.common.userdata.api.DarkThemeConfig
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRow
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRowVisibility
+import com.eduardoflores.rolabox.common.userdata.api.Repeat
+import com.eduardoflores.rolabox.common.userdata.api.Shuffle
 import com.eduardoflores.rolabox.common.userdata.api.UserData
 import com.eduardoflores.rolabox.common.userdata.testing.FakeUserDataRepository
 import kotlinx.coroutines.flow.collect
@@ -36,6 +38,8 @@ class MainActivityViewModelTest {
                     darkThemeConfig = DarkThemeConfig.DARK,
                     accentColor = AccentColor.PINK,
                     clicker = Clicker.ON,
+                    shuffle = Shuffle.OFF,
+                    repeat = Repeat.OFF,
                     mainMenuRows = MainMenuRow.entries.associateWith { MainMenuRowVisibility.SHOWN },
                 ),
             ),

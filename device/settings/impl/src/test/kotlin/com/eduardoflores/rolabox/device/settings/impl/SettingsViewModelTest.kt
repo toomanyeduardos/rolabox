@@ -5,6 +5,8 @@ import com.eduardoflores.rolabox.common.storage.api.StorageError
 import com.eduardoflores.rolabox.common.testing.MainDispatcherRule
 import com.eduardoflores.rolabox.common.userdata.api.Clicker
 import com.eduardoflores.rolabox.common.userdata.api.DarkThemeConfig
+import com.eduardoflores.rolabox.common.userdata.api.Repeat
+import com.eduardoflores.rolabox.common.userdata.api.Shuffle
 import com.eduardoflores.rolabox.common.userdata.testing.FakeUserDataRepository
 import com.eduardoflores.rolabox.device.library.testing.FakeArtworkRepository
 import com.eduardoflores.rolabox.device.settings.api.SettingsRow
@@ -34,12 +36,16 @@ class SettingsViewModelTest {
     fun theValues_areLoaded_andWithNoSectionsThereAreOnlySettingsOwnRows() {
         val viewModel = viewModel()
 
+        assertEquals(Shuffle.OFF, viewModel.uiState.value.shuffle)
+        assertEquals(Repeat.OFF, viewModel.uiState.value.repeat)
         assertEquals(Clicker.ON, viewModel.uiState.value.clicker)
         assertEquals(DarkThemeConfig.FOLLOW_SYSTEM, viewModel.uiState.value.darkTheme)
         assertEquals(true, viewModel.uiState.value.onlineArtwork)
         assertEquals(emptyList<SettingsRow>(), viewModel.uiState.value.sections)
         assertEquals(
             listOf(
+                SettingsListRow.Shuffle,
+                SettingsListRow.Repeat,
                 SettingsListRow.Clicker,
                 SettingsListRow.Theme,
                 SettingsListRow.OnlineArtwork,
@@ -72,6 +78,36 @@ class SettingsViewModelTest {
         account.row.value = changed
 
         assertEquals(listOf(changed), viewModel.uiState.value.sections)
+    }
+
+    // ADR-028, rule 1: Off, Songs, Albums, Off, stored by :common:userdata.
+    @Test
+    fun shuffle_stepsThroughEveryValueAndAround_andIsStored() = runTest {
+        val viewModel = viewModel()
+
+        val seen = (1..Shuffle.entries.size).map {
+            viewModel.onShuffleChange()
+            viewModel.uiState.value.shuffle
+        }
+
+        assertEquals(listOf(Shuffle.SONGS, Shuffle.ALBUMS, Shuffle.OFF), seen)
+        assertEquals(Shuffle.OFF, userData.observeUserData().first().getOrNull()?.shuffle)
+    }
+
+    // ADR-028, rule 1: Off, One, All, Off, stored by :common:userdata.
+    @Test
+    fun repeat_stepsThroughEveryValueAndAround_andIsStored() = runTest {
+        val viewModel = viewModel()
+
+        viewModel.onRepeatChange()
+        assertEquals(Repeat.ONE, viewModel.uiState.value.repeat)
+        assertEquals(Repeat.ONE, userData.observeUserData().first().getOrNull()?.repeat)
+
+        viewModel.onRepeatChange()
+        assertEquals(Repeat.ALL, viewModel.uiState.value.repeat)
+
+        viewModel.onRepeatChange()
+        assertEquals(Repeat.OFF, viewModel.uiState.value.repeat)
     }
 
     @Test

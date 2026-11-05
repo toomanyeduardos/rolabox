@@ -290,9 +290,11 @@ describe('users/{uid}/settings/preferences last-write-wins', () => {
   });
 });
 
-// The device's settings (ADR-011, revised 2026-10-12): each field is checked like the theme.
+// The device's settings (ADR-011, revised 2026-10-12, and ADR-028): each field is checked like the theme.
 const DEVICE_SETTINGS = {
   clicker: { values: ['ON', 'OFF'], unknown: 'LOUD' },
+  shuffle: { values: ['OFF', 'SONGS', 'ALBUMS'], unknown: 'ARTISTS' },
+  repeat: { values: ['OFF', 'ONE', 'ALL'], unknown: 'TWICE' },
   mainMenuMusic: { values: ['SHOWN', 'HIDDEN'], unknown: 'GONE' },
   mainMenuPodcasts: { values: ['SHOWN', 'HIDDEN'], unknown: 'GONE' },
   mainMenuAudiobooks: { values: ['SHOWN', 'HIDDEN'], unknown: 'GONE' },

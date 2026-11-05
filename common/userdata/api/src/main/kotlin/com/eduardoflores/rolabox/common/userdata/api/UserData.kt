@@ -8,6 +8,8 @@ data class UserData(
     val darkThemeConfig: DarkThemeConfig,
     val accentColor: AccentColor,
     val clicker: Clicker,
+    val shuffle: Shuffle,
+    val repeat: Repeat,
     val mainMenuRows: Map<MainMenuRow, MainMenuRowVisibility>,
 )
 
@@ -29,6 +31,26 @@ enum class AccentColor {
 enum class Clicker {
     ON,
     OFF,
+}
+
+/**
+ * The order the queue plays a list in (ADR-028): the list's own, a random one by song, or a random one by album. The
+ * names are stored and synced, so they never change.
+ */
+enum class Shuffle {
+    OFF,
+    SONGS,
+    ALBUMS,
+}
+
+/**
+ * What happens at the ends of the queue (ADR-028): it ends, the song that ends starts again, or the queue starts again.
+ * The names are stored and synced, so they never change.
+ */
+enum class Repeat {
+    OFF,
+    ONE,
+    ALL,
 }
 
 /**

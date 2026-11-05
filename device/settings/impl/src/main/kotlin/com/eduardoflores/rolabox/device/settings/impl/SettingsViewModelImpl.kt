@@ -4,6 +4,8 @@ import androidx.lifecycle.viewModelScope
 import arrow.core.Either
 import com.eduardoflores.rolabox.common.userdata.api.Clicker
 import com.eduardoflores.rolabox.common.userdata.api.DarkThemeConfig
+import com.eduardoflores.rolabox.common.userdata.api.Repeat
+import com.eduardoflores.rolabox.common.userdata.api.Shuffle
 import com.eduardoflores.rolabox.common.userdata.api.UserDataRepository
 import com.eduardoflores.rolabox.device.library.api.ArtworkRepository
 import com.eduardoflores.rolabox.device.settings.api.SettingsRow
@@ -43,6 +45,8 @@ internal class SettingsViewModelImpl @Inject constructor(
         saveFailed,
     ) { userData, onlineArtwork, sections, saveFailed ->
         SettingsUiState(
+            shuffle = userData?.shuffle,
+            repeat = userData?.repeat,
             clicker = userData?.clicker,
             darkTheme = userData?.darkThemeConfig,
             onlineArtwork = onlineArtwork,
@@ -54,6 +58,17 @@ internal class SettingsViewModelImpl @Inject constructor(
         started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
         initialValue = SettingsUiState(),
     )
+
+    // Playback reads them itself (ADR-028), so Settings only stores them, as it does Clicker.
+    override fun onShuffleChange() {
+        val shuffle = uiState.value.shuffle ?: return
+        save { userDataRepository.setShuffle(shuffle.next()) }
+    }
+
+    override fun onRepeatChange() {
+        val repeat = uiState.value.repeat ?: return
+        save { userDataRepository.setRepeat(repeat.next()) }
+    }
 
     override fun onClickerChange() {
         val clicker = uiState.value.clicker ?: return
@@ -88,6 +103,10 @@ internal class SettingsViewModelImpl @Inject constructor(
 }
 
 // Center steps through the values in place, and around (the player the device is drawn after).
+private fun Shuffle.next(): Shuffle = Shuffle.entries.after(this)
+
+private fun Repeat.next(): Repeat = Repeat.entries.after(this)
+
 private fun Clicker.next(): Clicker = Clicker.entries.after(this)
 
 private fun DarkThemeConfig.next(): DarkThemeConfig = DarkThemeConfig.entries.after(this)

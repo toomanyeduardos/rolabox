@@ -52,6 +52,8 @@ internal class PreferencesSyncer @Inject constructor(
         darkThemeConfig = lastWriteWins.resolve(darkThemeConfig, remote.darkThemeConfig),
         accentColor = lastWriteWins.resolve(accentColor, remote.accentColor),
         clicker = lastWriteWins.resolve(clicker, remote.clicker),
+        shuffle = lastWriteWins.resolve(shuffle, remote.shuffle),
+        repeat = lastWriteWins.resolve(repeat, remote.repeat),
         mainMenuRows = MainMenuRow.entries
             .mapNotNull { row -> lastWriteWins.resolve(mainMenuRows[row], remote.mainMenuRows[row])?.let { row to it } }
             .toMap(),

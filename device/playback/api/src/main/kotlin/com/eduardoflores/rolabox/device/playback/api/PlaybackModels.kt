@@ -29,6 +29,12 @@ data class PlaybackItem(
 /** The items that couldn't be played in a run of skips, [count] of them: the [last] one, and why it failed. */
 data class SkippedItems(val last: PlaybackItem, val error: PlaybackError.Unplayable, val count: Int)
 
+/**
+ * What happens at the ends of the queue (ADR-028). [Off] ends it after its last item. [One] starts the item that ends
+ * again, and ⏮ and ⏭ move as with [Off]. [All] starts the first item after the last, and ⏮ and ⏭ wrap.
+ */
+enum class RepeatMode { Off, One, All }
+
 /** Which way [PlaybackController.startSeeking] moves the position. */
 enum class SeekDirection { Backward, Forward }
 

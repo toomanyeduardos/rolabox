@@ -65,6 +65,7 @@ class FakeLibraryIndexLocalDataSource : LibraryIndexLocalDataSource {
             artistId = artists.getValue(song.artistKey).id,
             title = song.metadata.title.value,
             trackNumber = song.metadata.trackNumber.value,
+            discNumber = song.metadata.discNumber.value,
             duration = song.metadata.durationMillis.value?.milliseconds ?: Duration.ZERO,
             uri = song.file.uri,
         )

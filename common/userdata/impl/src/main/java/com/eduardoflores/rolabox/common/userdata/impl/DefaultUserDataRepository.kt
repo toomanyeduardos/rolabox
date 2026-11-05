@@ -9,6 +9,8 @@ import com.eduardoflores.rolabox.common.userdata.api.Clicker
 import com.eduardoflores.rolabox.common.userdata.api.DarkThemeConfig
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRow
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRowVisibility
+import com.eduardoflores.rolabox.common.userdata.api.Repeat
+import com.eduardoflores.rolabox.common.userdata.api.Shuffle
 import com.eduardoflores.rolabox.common.userdata.api.SyncedPreferences
 import com.eduardoflores.rolabox.common.userdata.api.UserData
 import com.eduardoflores.rolabox.common.userdata.api.UserDataRepository
@@ -39,6 +41,12 @@ internal class DefaultUserDataRepository @Inject constructor(
     override suspend fun setClicker(clicker: Clicker): Either<StorageError, Unit> =
         local.setClicker(SyncedValue(clicker, now()))
 
+    override suspend fun setShuffle(shuffle: Shuffle): Either<StorageError, Unit> =
+        local.setShuffle(SyncedValue(shuffle, now()))
+
+    override suspend fun setRepeat(repeat: Repeat): Either<StorageError, Unit> =
+        local.setRepeat(SyncedValue(repeat, now()))
+
     override suspend fun setMainMenuRowVisibility(
         row: MainMenuRow,
         visibility: MainMenuRowVisibility,
@@ -57,5 +65,7 @@ private fun SyncedPreferences.toUserData() = UserData(
     darkThemeConfig = darkThemeConfig?.value ?: DarkThemeConfig.FOLLOW_SYSTEM,
     accentColor = accentColor?.value ?: AccentColor.BLUE,
     clicker = clicker?.value ?: Clicker.ON,
+    shuffle = shuffle?.value ?: Shuffle.OFF,
+    repeat = repeat?.value ?: Repeat.OFF,
     mainMenuRows = MainMenuRow.entries.associateWith { mainMenuRows[it]?.value ?: MainMenuRowVisibility.SHOWN },
 )

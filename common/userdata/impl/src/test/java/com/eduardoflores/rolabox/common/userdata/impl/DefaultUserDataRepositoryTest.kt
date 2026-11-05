@@ -10,6 +10,8 @@ import com.eduardoflores.rolabox.common.userdata.api.Clicker
 import com.eduardoflores.rolabox.common.userdata.api.DarkThemeConfig
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRow
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRowVisibility
+import com.eduardoflores.rolabox.common.userdata.api.Repeat
+import com.eduardoflores.rolabox.common.userdata.api.Shuffle
 import com.eduardoflores.rolabox.common.userdata.api.SyncedPreferences
 import com.eduardoflores.rolabox.common.userdata.api.UserData
 import com.eduardoflores.rolabox.common.userdata.testing.FakePreferencesLocalDataSource
@@ -65,6 +67,28 @@ class DefaultUserDataRepositoryTest {
 
         assertEquals(
             SyncedPreferences(accentColor = synced(AccentColor.GREEN, NOW)).right(),
+            local.getSyncedPreferences(),
+        )
+    }
+
+    @Test
+    fun setShuffle_isObservedAndStampedWithTheClock() = runTest {
+        assertEquals(Unit.right(), repository.setShuffle(Shuffle.ALBUMS))
+
+        assertEquals(DEFAULTS.copy(shuffle = Shuffle.ALBUMS).right(), repository.observeUserData().first())
+        assertEquals(
+            SyncedPreferences(shuffle = synced(Shuffle.ALBUMS, NOW)).right(),
+            local.getSyncedPreferences(),
+        )
+    }
+
+    @Test
+    fun setRepeat_isObservedAndStampedWithTheClock() = runTest {
+        assertEquals(Unit.right(), repository.setRepeat(Repeat.ONE))
+
+        assertEquals(DEFAULTS.copy(repeat = Repeat.ONE).right(), repository.observeUserData().first())
+        assertEquals(
+            SyncedPreferences(repeat = synced(Repeat.ONE, NOW)).right(),
             local.getSyncedPreferences(),
         )
     }
@@ -150,6 +174,8 @@ class DefaultUserDataRepositoryTest {
             darkThemeConfig = DarkThemeConfig.FOLLOW_SYSTEM,
             accentColor = AccentColor.BLUE,
             clicker = Clicker.ON,
+            shuffle = Shuffle.OFF,
+            repeat = Repeat.OFF,
             mainMenuRows = MainMenuRow.entries.associateWith { MainMenuRowVisibility.SHOWN },
         )
     }

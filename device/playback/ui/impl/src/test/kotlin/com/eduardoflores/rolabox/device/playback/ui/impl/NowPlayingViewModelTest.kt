@@ -10,6 +10,7 @@ import com.eduardoflores.rolabox.device.library.testing.FakeArtworkRepository
 import com.eduardoflores.rolabox.device.playback.api.PlaybackError
 import com.eduardoflores.rolabox.device.playback.api.PlaybackItem
 import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
+import com.eduardoflores.rolabox.device.playback.api.RepeatMode
 import com.eduardoflores.rolabox.device.playback.api.SkippedItems
 import com.eduardoflores.rolabox.device.playback.testing.FakePlayback
 import kotlin.time.Duration
@@ -77,6 +78,22 @@ class NowPlayingViewModelTest {
         playback.load(listOf(song(1, LONG_TITLE)), index = 0)
 
         assertEquals(LONG_TITLE, (viewModel.uiState.value as NowPlayingUiState.Playing).title)
+    }
+
+    // Shuffle and repeat (ADR-028)
+
+    @Test
+    fun aShuffledQueue_andItsRepeatMode_areShown() = runTest {
+        val viewModel = observedViewModel()
+        playback.load(Queue, index = 0)
+        val playing = { viewModel.uiState.value as NowPlayingUiState.Playing }
+        assertEquals(false, playing().shuffled)
+        assertEquals(RepeatMode.Off, playing().repeat)
+
+        playback.order(shuffled = true, repeat = RepeatMode.One)
+
+        assertEquals(true, playing().shuffled)
+        assertEquals(RepeatMode.One, playing().repeat)
     }
 
     // Artwork (ADR-026)

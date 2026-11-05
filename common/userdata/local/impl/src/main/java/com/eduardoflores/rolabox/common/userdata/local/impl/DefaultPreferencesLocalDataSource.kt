@@ -11,6 +11,8 @@ import com.eduardoflores.rolabox.common.userdata.api.Clicker
 import com.eduardoflores.rolabox.common.userdata.api.DarkThemeConfig
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRow
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRowVisibility
+import com.eduardoflores.rolabox.common.userdata.api.Repeat
+import com.eduardoflores.rolabox.common.userdata.api.Shuffle
 import com.eduardoflores.rolabox.common.userdata.api.SyncedPreferences
 import com.eduardoflores.rolabox.common.userdata.local.api.PreferencesLocalDataSource
 import javax.inject.Inject
@@ -20,6 +22,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 /** Stores the preferences in [PreferencesStore], each synced field under two keys (ADR-011). */
+// One setter for each preference of the data source, and the few they share.
+@Suppress("TooManyFunctions")
 internal class DefaultPreferencesLocalDataSource @Inject constructor(
     private val preferencesStore: PreferencesStore,
     private val lastWriteWins: LastWriteWins,
@@ -38,6 +42,11 @@ internal class DefaultPreferencesLocalDataSource @Inject constructor(
 
     override suspend fun setClicker(clicker: SyncedValue<Clicker>): Either<StorageError, Unit> =
         set(ClickerField, clicker)
+
+    override suspend fun setShuffle(shuffle: SyncedValue<Shuffle>): Either<StorageError, Unit> =
+        set(ShuffleField, shuffle)
+
+    override suspend fun setRepeat(repeat: SyncedValue<Repeat>): Either<StorageError, Unit> = set(RepeatField, repeat)
 
     override suspend fun setMainMenuRowVisibility(
         row: MainMenuRow,
@@ -60,6 +69,8 @@ internal class DefaultPreferencesLocalDataSource @Inject constructor(
         darkThemeConfig = lastWriteWins.resolve(darkThemeConfig, remote.darkThemeConfig),
         accentColor = lastWriteWins.resolve(accentColor, remote.accentColor),
         clicker = lastWriteWins.resolve(clicker, remote.clicker),
+        shuffle = lastWriteWins.resolve(shuffle, remote.shuffle),
+        repeat = lastWriteWins.resolve(repeat, remote.repeat),
         mainMenuRows = MainMenuRow.entries
             .mapNotNull { row -> lastWriteWins.resolve(mainMenuRows[row], remote.mainMenuRows[row])?.let { row to it } }
             .toMap(),
@@ -101,6 +112,8 @@ private val DarkThemeConfigField =
     StoredField("dark_theme_config", DarkThemeConfig.entries, DarkThemeConfig.FOLLOW_SYSTEM)
 private val AccentColorField = StoredField("accent_color", AccentColor.entries, AccentColor.BLUE)
 private val ClickerField = StoredField("clicker", Clicker.entries, Clicker.ON)
+private val ShuffleField = StoredField("shuffle", Shuffle.entries, Shuffle.OFF)
+private val RepeatField = StoredField("repeat", Repeat.entries, Repeat.OFF)
 
 // Each row is a field of its own (ADR-011, rule 9). The keys are written out, not derived from the
 // enum, so renaming a row in code never moves its stored value.
@@ -114,7 +127,9 @@ private val MainMenuRowFields = MainMenuRow.entries.associateWith { row ->
     StoredField(key, MainMenuRowVisibility.entries, MainMenuRowVisibility.SHOWN)
 }
 
-private val ALL_KEYS = (listOf(DarkThemeConfigField, AccentColorField, ClickerField) + MainMenuRowFields.values)
+private val ALL_KEYS = (
+    listOf(DarkThemeConfigField, AccentColorField, ClickerField, ShuffleField, RepeatField) + MainMenuRowFields.values
+    )
     .flatMap { listOf(it.key, it.updatedAtKey) }
     .toSet()
 
@@ -122,6 +137,8 @@ private fun Map<String, String?>.toSyncedPreferences() = SyncedPreferences(
     darkThemeConfig = DarkThemeConfigField.fromStored(this),
     accentColor = AccentColorField.fromStored(this),
     clicker = ClickerField.fromStored(this),
+    shuffle = ShuffleField.fromStored(this),
+    repeat = RepeatField.fromStored(this),
     mainMenuRows = MainMenuRowFields
         .mapNotNull { (row, field) -> field.fromStored(this)?.let { row to it } }
         .toMap(),
@@ -131,5 +148,7 @@ private fun SyncedPreferences.toStored(): Map<String, String> = buildMap {
     putAll(DarkThemeConfigField.toStored(darkThemeConfig))
     putAll(AccentColorField.toStored(accentColor))
     putAll(ClickerField.toStored(clicker))
+    putAll(ShuffleField.toStored(shuffle))
+    putAll(RepeatField.toStored(repeat))
     mainMenuRows.forEach { (row, visibility) -> putAll(MainMenuRowFields.getValue(row).toStored(visibility)) }
 }

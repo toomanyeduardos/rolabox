@@ -117,13 +117,13 @@ class SettingsNavigationTest {
 
         // A device screen: the wheel is still drawn, and the first row is highlighted.
         wheel().assertIsDisplayed()
-        assertHighlighted("Clicker")
+        assertHighlighted("Shuffle")
     }
 
     private fun openAccount() {
         highlightSettings()
         wheel().pressCenter()
-        assertHighlighted("Clicker")
+        assertHighlighted("Shuffle")
         wheel().turn(ACCOUNT_ROW_INDEX)
         assertHighlighted("Account")
         wheel().pressCenter()
@@ -157,7 +157,8 @@ class SettingsNavigationTest {
 // Settings is the last row of the main menu, after Music, Podcasts, Audiobooks and Shuffle Songs.
 private const val SETTINGS_ROW_INDEX = 4
 
-// Account is the last row of the settings list, after Clicker, Theme, Online Artwork, Main Menu and About.
-private const val ACCOUNT_ROW_INDEX = 5
+// Account is the last row of the settings list, after Shuffle, Repeat, Clicker, Theme, Online Artwork, Main Menu and
+// About.
+private const val ACCOUNT_ROW_INDEX = 7
 
 private const val SIGN_IN_SCREEN = "Sign in screen"

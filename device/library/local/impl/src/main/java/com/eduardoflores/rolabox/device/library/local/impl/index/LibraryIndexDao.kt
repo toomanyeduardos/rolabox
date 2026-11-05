@@ -11,7 +11,8 @@ import com.eduardoflores.rolabox.device.library.local.api.ArtistGroup
 import com.eduardoflores.rolabox.device.library.local.api.IndexBatch
 import kotlinx.coroutines.flow.Flow
 
-private const val SONG_COLUMNS = "s.id, s.albumId, s.artistId, s.title, s.trackNumber, s.durationMillis, s.uri"
+private const val SONG_COLUMNS =
+    "s.id, s.albumId, s.artistId, s.title, s.trackNumber, s.durationMillis, s.uri, s.discNumber"
 
 // A title without a leading "The", as the artists' sortName and the fast-scroll letter (ADR-024): "The Wall" is with
 // the W's. A title of only "The" sorts by that. LIKE ignores the case of ASCII letters.
