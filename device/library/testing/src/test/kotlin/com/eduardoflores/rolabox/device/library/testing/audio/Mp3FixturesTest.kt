@@ -82,7 +82,7 @@ class Mp3FixturesTest {
             .filter { it.path.startsWith("Genre Lab/") && it.content is FixtureContent.Mp3 }
             .map { Id3v2Tag.read(it.bytes())!!.text("TCON") }
 
-        assertEquals(listOf("(17)", "17", "Rock\u0000Pop\u0000Jazz", "Dream Pop"), genres)
+        assertEquals(listOf("(17)", "17", "Rock\u0000Pop\u0000Jazz", "Dream Pop", "dream  pop"), genres)
     }
 
     @Test

@@ -4,7 +4,7 @@ import arrow.core.Either
 import kotlinx.coroutines.flow.Flow
 
 /**
- * The music library: artists, their albums and the songs on them.
+ * The music library: artists, their albums and the songs on them, and the genres of the songs.
  *
  * Artists are sorted by name and songs by title, both without a leading "The", except the songs of one album, which
  * follow the disc and track order. A missing value sorts last.
@@ -40,6 +40,37 @@ interface LibraryRepository {
     fun observeSongsByAlbum(albumId: AlbumId): Flow<Either<LibraryError, List<Song>>>
 
     /**
+     * Every genre, sorted by name, with Unknown Genre, the one of songs with none, last. A song with several genres is
+     * in each of them.
+     */
+    fun observeGenres(): Flow<Either<LibraryError, List<Genre>>>
+
+    /**
+     * The artists with a song in the genre: the songs' own artists, and the artists of those songs' albums, as the
+     * list of every artist has both. Sorted as that list is. Emits [LibraryError.GenreNotFound] and ends when there
+     * is no such genre.
+     */
+    fun observeArtistsByGenre(genreId: GenreId): Flow<Either<LibraryError, List<Artist>>>
+
+    /**
+     * The albums of [observeAlbumsByArtist] that have a song in the genre, sorted the same way. Emits
+     * [LibraryError.GenreNotFound] or [LibraryError.ArtistNotFound] and ends when either is gone.
+     */
+    fun observeAlbumsByGenreAndArtist(genreId: GenreId, artistId: ArtistId): Flow<Either<LibraryError, List<Album>>>
+
+    /**
+     * The songs of [observeSongsByArtist] that are in the genre, sorted by title. Emits [LibraryError.GenreNotFound]
+     * or [LibraryError.ArtistNotFound] and ends when either is gone.
+     */
+    fun observeSongsByGenreAndArtist(genreId: GenreId, artistId: ArtistId): Flow<Either<LibraryError, List<Song>>>
+
+    /**
+     * The songs of the album that are in the genre, in disc and track order. Emits [LibraryError.GenreNotFound] or
+     * [LibraryError.AlbumNotFound] and ends when either is gone.
+     */
+    fun observeSongsByGenreAndAlbum(genreId: GenreId, albumId: AlbumId): Flow<Either<LibraryError, List<Song>>>
+
+    /**
      * Where the audio of every song is, for playback to follow a song that is gone or has moved. It has the songs no
      * list shows too: a song that became a duplicate is still a file that plays.
      */
@@ -48,6 +79,8 @@ interface LibraryRepository {
     suspend fun getArtist(id: ArtistId): Either<LibraryError, Artist>
 
     suspend fun getAlbum(id: AlbumId): Either<LibraryError, Album>
+
+    suspend fun getGenre(id: GenreId): Either<LibraryError, Genre>
 
     /** Emits the error and ends when a scan failed and the index is empty, since there is then nothing to show. */
     fun observeStatus(): Flow<Either<LibraryError, LibraryStatus>>

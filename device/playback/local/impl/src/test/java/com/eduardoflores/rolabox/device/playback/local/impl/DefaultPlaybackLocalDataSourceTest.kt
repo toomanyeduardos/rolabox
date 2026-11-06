@@ -4,6 +4,7 @@ import arrow.core.right
 import com.eduardoflores.rolabox.common.storage.testing.FakePreferencesStore
 import com.eduardoflores.rolabox.device.library.api.AlbumId
 import com.eduardoflores.rolabox.device.library.api.ArtistId
+import com.eduardoflores.rolabox.device.library.api.GenreId
 import com.eduardoflores.rolabox.device.library.api.SongId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
@@ -26,14 +27,19 @@ class DefaultPlaybackLocalDataSourceTest {
 
     @Test
     fun aPointComesBackAsItWasStored_fromEveryKindOfSource() = runTest {
-        listOf(PlaybackSource.AllSongs, PlaybackSource.ByArtist(ArtistId(7)), PlaybackSource.ByAlbum(AlbumId(8)))
-            .forEach { source ->
-                val point = ResumePoint(source, PlaybackItemId.Song(SongId(9)), 3, 65.seconds)
+        listOf(
+            PlaybackSource.AllSongs,
+            PlaybackSource.ByArtist(ArtistId(7)),
+            PlaybackSource.ByAlbum(AlbumId(8)),
+            PlaybackSource.ByGenreAndArtist(GenreId(5), ArtistId(7)),
+            PlaybackSource.ByGenreAndAlbum(GenreId(5), AlbumId(8)),
+        ).forEach { source ->
+            val point = ResumePoint(source, PlaybackItemId.Song(SongId(9)), 3, 65.seconds)
 
-                dataSource.store(point)
+            dataSource.store(point)
 
-                assertEquals(point.right(), dataSource.resumePoint())
-            }
+            assertEquals(point.right(), dataSource.resumePoint())
+        }
     }
 
     @Test

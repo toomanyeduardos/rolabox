@@ -42,7 +42,13 @@ internal data class SongEntity(
     val tagsReadAt: Long? = null,
     /** The same song as another row's, which is the one the lists show (ADR-024, Grouping). */
     val isDuplicate: Boolean = false,
+    /** The song's genres as its source gave them, separated by [GENRE_SEPARATOR], or null when it has none. */
+    val genres: String? = null,
+    val genreSource: FieldSource = FieldSource.Unknown,
 )
+
+/** Between the genres of [SongEntity.genres]. No tag holds it, since it is a control character. */
+internal const val GENRE_SEPARATOR = '\u001F'
 
 /** A song with the keys of its artist and album, for a scan to compare. */
 internal data class IndexedSongRow(@Embedded val song: SongEntity, val artistKey: String, val albumKey: String)
@@ -82,6 +88,18 @@ internal data class ArtistEntity(
     val sortName: String?,
     val isVarious: Boolean,
 )
+
+/** One row per genre, found by its grouping key. The genre of songs with none has a null [name]. */
+@Entity(tableName = "genres", indices = [Index("groupKey", unique = true)])
+internal data class GenreEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val groupKey: String,
+    val name: String?,
+)
+
+/** A song in a genre. Every song has a row here: in the unknown genre when it has no other. */
+@Entity(tableName = "song_genres", primaryKeys = ["songId", "genreId"], indices = [Index("genreId")])
+internal data class SongGenreEntity(val songId: Long, val genreId: Long)
 
 /** MediaStore's version and generation at the last scan, per volume. library/07 compares them. */
 @Entity(tableName = "scan_state")

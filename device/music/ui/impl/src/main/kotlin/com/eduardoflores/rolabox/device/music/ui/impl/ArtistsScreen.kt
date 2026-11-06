@@ -9,8 +9,8 @@ import com.eduardoflores.rolabox.common.designsystem.component.DeviceListRow
 import com.eduardoflores.rolabox.device.host.ScreenTitle
 
 /**
- * Connects the Artists list to its ViewModel, which the entry creates (ADR-021). Center on an artist
- * reports [onArtistClick] with its id.
+ * Connects a list of artists to its ViewModel, which the entry creates (ADR-021): every artist, or a genre's. Center
+ * on an artist reports [onArtistClick] with its id. The screen's title is Artists, or the genre's name.
  */
 @Composable
 internal fun ArtistsRoute(viewModel: ArtistsViewModel, onArtistClick: (artistId: Long) -> Unit) {
@@ -23,7 +23,8 @@ internal fun ArtistsRoute(viewModel: ArtistsViewModel, onArtistClick: (artistId:
             DeviceListRow(label, opensSubmenu = true)
         }
     }
-    ScreenTitle(stringResource(R.string.music_artists_title))
+    val title by viewModel.title.collectAsStateWithLifecycle()
+    ScreenTitle(title.label())
     WheelList(
         state = rows,
         emptyText = stringResource(R.string.music_no_artists),

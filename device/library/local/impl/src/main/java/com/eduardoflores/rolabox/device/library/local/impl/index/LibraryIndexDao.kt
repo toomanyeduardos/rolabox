@@ -8,6 +8,7 @@ import androidx.room.Update
 import androidx.room.Upsert
 import com.eduardoflores.rolabox.device.library.local.api.AlbumGroup
 import com.eduardoflores.rolabox.device.library.local.api.ArtistGroup
+import com.eduardoflores.rolabox.device.library.local.api.GenreGroup
 import com.eduardoflores.rolabox.device.library.local.api.IndexBatch
 import kotlinx.coroutines.flow.Flow
 
@@ -32,6 +33,13 @@ internal const val ARTWORK_SONG_OF_ALBUM = "(SELECT s.id FROM songs s WHERE s.al
 
 private const val ALBUM_COLUMNS = "a.*, $ARTWORK_SONG_OF_ALBUM AS artworkSongId"
 
+// The songs of a genre that a list shows, and the order of artists, as the list of every artist sorts them.
+private const val GENRE_SONGS =
+    "SELECT s.id FROM songs s JOIN song_genres g ON g.songId = s.id WHERE g.genreId = :genreId AND s.isDuplicate = 0"
+private const val BY_ARTIST_NAME = "ORDER BY sortName IS NULL, sortName, id"
+private const val BY_DISC_AND_TRACK = "ORDER BY s.discNumber IS NULL, s.discNumber, s.trackNumber IS NULL, " +
+    "s.trackNumber, s.title IS NULL, s.title COLLATE NOCASE, s.id"
+
 // One interface for one database: the observed lists, and what one batch of a scan writes.
 @Suppress("TooManyFunctions")
 @Dao
@@ -39,7 +47,7 @@ internal interface LibraryIndexDao {
     // The album of songs with no album belongs to the unknown artist, who isn't a row unless a song is theirs.
     @Query(
         "SELECT * FROM artists WHERE name IS NOT NULL OR isVarious OR id IN (SELECT artistId FROM songs) " +
-            "ORDER BY sortName IS NULL, sortName, id",
+            BY_ARTIST_NAME,
     )
     fun observeArtists(): Flow<List<ArtistEntity>>
 
@@ -67,12 +75,40 @@ internal interface LibraryIndexDao {
     )
     fun observeSongsByArtist(artistId: Long): Flow<List<SongRow>>
 
-    @Query(
-        "SELECT $SONG_COLUMNS FROM songs s WHERE s.albumId = :albumId AND s.isDuplicate = 0 " +
-            "ORDER BY s.discNumber IS NULL, s.discNumber, s.trackNumber IS NULL, s.trackNumber, " +
-            "s.title IS NULL, s.title COLLATE NOCASE, s.id",
-    )
+    @Query("SELECT $SONG_COLUMNS FROM songs s WHERE s.albumId = :albumId AND s.isDuplicate = 0 $BY_DISC_AND_TRACK")
     fun observeSongsByAlbum(albumId: Long): Flow<List<SongRow>>
+
+    // Unknown Genre, the one with no name, sorts last (ADR-024, Genre).
+    @Query("SELECT * FROM genres ORDER BY name IS NULL, name COLLATE NOCASE, id")
+    fun observeGenres(): Flow<List<GenreEntity>>
+
+    @Query("SELECT * FROM genres WHERE id = :id")
+    fun observeGenre(id: Long): Flow<GenreEntity?>
+
+    // The songs' own artists, and the artists of their albums, as the list of every artist has both. The album of
+    // songs with no album has no artist of its own, as on an artist's screen.
+    @Query(
+        "SELECT * FROM artists WHERE id IN (SELECT artistId FROM songs WHERE id IN ($GENRE_SONGS)) " +
+            "OR id IN (SELECT artistId FROM albums WHERE title IS NOT NULL " +
+            "AND id IN (SELECT albumId FROM songs WHERE id IN ($GENRE_SONGS))) $BY_ARTIST_NAME",
+    )
+    fun observeArtistsByGenre(genreId: Long): Flow<List<ArtistEntity>>
+
+    // The albums of observeAlbumsByArtist with a song in the genre: the artist's, or one with their song in it.
+    @Query(
+        "SELECT $ALBUM_COLUMNS FROM albums a WHERE a.title IS NOT NULL AND a.id IN (SELECT albumId FROM songs " +
+            "WHERE id IN ($GENRE_SONGS) AND (artistId = :artistId OR a.artistId = :artistId)) $BY_YEAR",
+    )
+    fun observeAlbumsByGenreAndArtist(genreId: Long, artistId: Long): Flow<List<AlbumRow>>
+
+    @Query(
+        "SELECT $SONG_COLUMNS FROM songs s WHERE s.id IN ($GENRE_SONGS) AND (s.artistId = :artistId " +
+            "OR s.albumId IN (SELECT id FROM albums WHERE artistId = :artistId AND title IS NOT NULL)) $BY_TITLE",
+    )
+    fun observeSongsByGenreAndArtist(genreId: Long, artistId: Long): Flow<List<SongRow>>
+
+    @Query("SELECT $SONG_COLUMNS FROM songs s WHERE s.albumId = :albumId AND s.id IN ($GENRE_SONGS) $BY_DISC_AND_TRACK")
+    fun observeSongsByGenreAndAlbum(genreId: Long, albumId: Long): Flow<List<SongRow>>
 
     @Query("SELECT COUNT(*) FROM songs")
     fun observeSongCount(): Flow<Int>
@@ -85,6 +121,9 @@ internal interface LibraryIndexDao {
 
     @Query("SELECT $ALBUM_COLUMNS FROM albums a WHERE a.id = :id")
     suspend fun getAlbum(id: Long): AlbumRow?
+
+    @Query("SELECT * FROM genres WHERE id = :id")
+    suspend fun getGenre(id: Long): GenreEntity?
 
     @Query("SELECT * FROM songs WHERE id = :id")
     suspend fun getSong(id: Long): SongEntity?
@@ -103,11 +142,20 @@ internal interface LibraryIndexDao {
         batch.writes.forEach { write ->
             val artistId = artistIdOf(write.artist)
             val albumId = albumIdOf(write.album)
-            upsertSong(write.toEntity(artistId, albumId))
+            val entity = write.toEntity(artistId, albumId)
+            // An update keeps the row's id, and Room answers -1 for it.
+            val songId = upsertSong(entity).takeIf { it != -1L } ?: entity.id
+            deleteGenresOfSongs(listOf(songId))
+            insertSongGenres(write.genres.map { SongGenreEntity(songId, genreIdOf(it)) })
         }
-        if (batch.removals.isNotEmpty()) deleteSongs(batch.removals.map { it.value })
+        if (batch.removals.isNotEmpty()) {
+            val removed = batch.removals.map { it.value }
+            deleteSongs(removed)
+            deleteGenresOfSongs(removed)
+        }
         deleteAlbumsWithoutSongs()
         deleteArtistsWithoutSongsOrAlbums()
+        deleteGenresWithoutSongs()
     }
 
     @Transaction
@@ -142,6 +190,32 @@ internal interface LibraryIndexDao {
         return existing.id
     }
 
+    private suspend fun genreIdOf(genre: GenreGroup): Long {
+        val wanted = GenreEntity(groupKey = genre.key, name = genre.name)
+        val existing = genreByKey(genre.key) ?: return insertGenre(wanted)
+        // The key stays, and the spelling the row shows follows the songs.
+        if (existing.name != genre.name) updateGenre(wanted.copy(id = existing.id))
+        return existing.id
+    }
+
+    @Query("SELECT * FROM genres WHERE groupKey = :key")
+    suspend fun genreByKey(key: String): GenreEntity?
+
+    @Insert
+    suspend fun insertGenre(genre: GenreEntity): Long
+
+    @Update
+    suspend fun updateGenre(genre: GenreEntity)
+
+    @Insert
+    suspend fun insertSongGenres(songGenres: List<SongGenreEntity>)
+
+    @Query("DELETE FROM song_genres WHERE songId IN (:songIds)")
+    suspend fun deleteGenresOfSongs(songIds: List<Long>)
+
+    @Query("DELETE FROM genres WHERE id NOT IN (SELECT genreId FROM song_genres)")
+    suspend fun deleteGenresWithoutSongs()
+
     @Query("SELECT * FROM artists WHERE groupKey = :key")
     suspend fun artistByKey(key: String): ArtistEntity?
 
@@ -161,7 +235,7 @@ internal interface LibraryIndexDao {
     suspend fun updateAlbum(album: AlbumEntity)
 
     @Upsert
-    suspend fun upsertSong(song: SongEntity)
+    suspend fun upsertSong(song: SongEntity): Long
 
     @Query("DELETE FROM songs WHERE id IN (:ids)")
     suspend fun deleteSongs(ids: List<Long>)

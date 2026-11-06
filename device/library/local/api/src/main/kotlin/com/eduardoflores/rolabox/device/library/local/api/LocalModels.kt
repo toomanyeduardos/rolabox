@@ -18,7 +18,10 @@ data class SongFile(
     val dateModified: Long,
 )
 
-/** A file as MediaStore lists it, with the system's reading of its tags. A value it doesn't have is null. */
+/**
+ * A file as MediaStore lists it, with the system's reading of its tags. A value it doesn't have is null, and [genres]
+ * is empty when it has none (or, before API 30, no column for it).
+ */
 data class AudioFile(
     val file: SongFile,
     val title: String?,
@@ -30,6 +33,7 @@ data class AudioFile(
     val year: Int?,
     val compilation: Boolean?,
     val durationMillis: Long?,
+    val genres: List<String> = emptyList(),
 )
 
 /** MediaStore's version and generation of one volume. Generations don't exist before API 30. */
@@ -45,8 +49,8 @@ data class AudioFileListing(val files: List<AudioFile>, val volumes: List<Volume
 data class AudioFileChanges(val changed: List<AudioFile>, val presentIds: Set<Long>)
 
 /**
- * What a file's tags say. A value they don't have is null. [hasEmbeddedPicture] is null when the format isn't one
- * the parser reads, so nobody knows.
+ * What a file's tags say. A value they don't have is null, and [genres] is empty when they have none.
+ * [hasEmbeddedPicture] is null when the format isn't one the parser reads, so nobody knows.
  */
 data class FileTags(
     val title: String? = null,
@@ -59,9 +63,10 @@ data class FileTags(
     val compilation: Boolean? = null,
     val durationMillis: Long? = null,
     val hasEmbeddedPicture: Boolean? = null,
+    val genres: List<String> = emptyList(),
 )
 
-/** A song's fields, each with its source. */
+/** A song's fields, each with its source. [genres] is a song's several genres, never an empty list. */
 data class SongMetadata(
     val title: Sourced<String>,
     val artist: Sourced<String>,
@@ -72,6 +77,7 @@ data class SongMetadata(
     val year: Sourced<Int>,
     val compilation: Sourced<Boolean>,
     val durationMillis: Sourced<Long>,
+    val genres: Sourced<List<String>> = Sourced(null, FieldSource.Unknown),
 )
 
 /**
@@ -85,6 +91,12 @@ data class ArtistGroup(
     val sortName: String? = name?.lowercase(),
     val isVarious: Boolean = false,
 )
+
+/**
+ * A genre as the index finds it: by [key], which keeps its id across rescans. [name] is null only for the genre of
+ * songs with none, which the screens call Unknown Genre (ADR-024, Genre).
+ */
+data class GenreGroup(val key: String, val name: String?)
 
 /** An album as the index finds it: by [key], which keeps its id across rescans. */
 data class AlbumGroup(val key: String, val title: String?, val year: Int?, val artist: ArtistGroup)
@@ -104,7 +116,10 @@ data class IndexedSong(
     val isDuplicate: Boolean = false,
 )
 
-/** A song to add, when [id] is null, or to update. An [isDuplicate] song keeps its row, and no list shows it. */
+/**
+ * A song to add, when [id] is null, or to update. An [isDuplicate] song keeps its row, and no list shows it. [genres]
+ * are the song's, each once: the unknown genre's alone when it has none.
+ */
 data class SongWrite(
     val id: SongId?,
     val file: SongFile,
@@ -114,6 +129,7 @@ data class SongWrite(
     val hasEmbeddedPicture: Boolean? = null,
     val tagsReadAt: Long? = null,
     val isDuplicate: Boolean = false,
+    val genres: List<GenreGroup> = emptyList(),
 )
 
 /** What one transaction of the index writes. Albums and artists left with no song go with it. */

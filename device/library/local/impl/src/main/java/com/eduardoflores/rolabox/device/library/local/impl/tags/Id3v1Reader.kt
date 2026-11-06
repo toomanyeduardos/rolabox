@@ -12,6 +12,7 @@ private const val ALBUM_AT = 63
 private const val YEAR_AT = 93
 private const val V11_ZERO_AT = 125
 private const val V11_TRACK_AT = 126
+private const val GENRE_AT = 127
 private const val NULL = '\u0000'
 
 /** ID3v1 and v1.1, the last 128 bytes of the file. Null when they aren't a tag. */
@@ -28,6 +29,7 @@ private fun ByteArray.toFileTags() = FileTags(
     // In v1.1, a zero before the comment's last byte makes that byte the track.
     trackNumber = if (this[V11_ZERO_AT] == 0.toByte()) u8(V11_TRACK_AT).takeIf { it > 0 } else null,
     hasEmbeddedPicture = false,
+    genres = listOfNotNull(id3v1Genre(u8(GENRE_AT))),
 )
 
 // A field ends at its first null, and what follows is whatever the tagger left there.

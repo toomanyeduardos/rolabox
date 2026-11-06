@@ -5,6 +5,8 @@ import com.eduardoflores.rolabox.device.library.api.AlbumId
 import com.eduardoflores.rolabox.device.library.api.Artist
 import com.eduardoflores.rolabox.device.library.api.ArtistId
 import com.eduardoflores.rolabox.device.library.api.ArtworkRef
+import com.eduardoflores.rolabox.device.library.api.Genre
+import com.eduardoflores.rolabox.device.library.api.GenreId
 import com.eduardoflores.rolabox.device.library.api.Song
 import com.eduardoflores.rolabox.device.library.api.SongId
 import com.eduardoflores.rolabox.device.library.local.api.FieldSource
@@ -17,6 +19,8 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
 internal fun ArtistEntity.toArtist() = Artist(ArtistId(id), name, isVarious)
+
+internal fun GenreEntity.toGenre() = Genre(GenreId(id), name)
 
 internal fun AlbumRow.toAlbum() =
     Album(AlbumId(album.id), ArtistId(album.artistId), album.title, album.year, ArtworkRef(SongId(artworkSongId)))
@@ -47,6 +51,7 @@ internal fun IndexedSongRow.toIndexedSong() = IndexedSong(
         year = sourced(song.year, song.yearSource),
         compilation = sourced(song.compilation, song.compilationSource),
         durationMillis = sourced(song.durationMillis, song.durationSource),
+        genres = sourced(song.genres?.split(GENRE_SEPARATOR), song.genreSource),
     ),
     artistKey = artistKey,
     albumKey = albumKey,
@@ -88,4 +93,6 @@ internal fun SongWrite.toEntity(artistId: Long, albumId: Long) = SongEntity(
     hasEmbeddedPicture = hasEmbeddedPicture,
     tagsReadAt = tagsReadAt,
     isDuplicate = isDuplicate,
+    genres = metadata.genres.value?.joinToString(GENRE_SEPARATOR.toString()),
+    genreSource = metadata.genres.source,
 )

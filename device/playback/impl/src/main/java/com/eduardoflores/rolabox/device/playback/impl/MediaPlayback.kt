@@ -868,7 +868,7 @@ private fun List<QueuedItem>.resumedAt(point: ResumePoint, order: StoredOrder?):
 }
 
 private fun PlaybackError.isListGone(): Boolean = this is PlaybackError.Library &&
-    (cause is LibraryError.ArtistNotFound || cause is LibraryError.AlbumNotFound)
+    (cause is LibraryError.ArtistNotFound || cause is LibraryError.AlbumNotFound || cause is LibraryError.GenreNotFound)
 
 /** The list of [source] as the queue shows it, with the names of each song's artist and album and its URI. */
 private suspend fun LibraryRepository.queueOf(source: PlaybackSource): Either<PlaybackError, List<QueuedItem>> =
@@ -877,6 +877,8 @@ private suspend fun LibraryRepository.queueOf(source: PlaybackSource): Either<Pl
             PlaybackSource.AllSongs -> observeSongs()
             is PlaybackSource.ByArtist -> observeSongsByArtist(source.artistId)
             is PlaybackSource.ByAlbum -> observeSongsByAlbum(source.albumId)
+            is PlaybackSource.ByGenreAndArtist -> observeSongsByGenreAndArtist(source.genreId, source.artistId)
+            is PlaybackSource.ByGenreAndAlbum -> observeSongsByGenreAndAlbum(source.genreId, source.albumId)
         }.first().mapLeft(PlaybackError::Library).bind()
         val artists = mutableMapOf<ArtistId, String?>()
         val albums = mutableMapOf<AlbumId, String?>()

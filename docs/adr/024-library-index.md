@@ -38,6 +38,14 @@
   tested migrations (What is stored, Changing the schema). A pass after each scan queues the albums with
   no cover on the phone, in WorkManager work of its own: rule 9 is about the scan, and the scan is
   unchanged.
+- **Revised 2026-11-05:** music/02 reads and stores the genre (Genre). The parser reads ID3's `TCON` and
+  ID3v1's number, and MP4's `©gen` and `gnre`, and a song can have several genres. MediaStore's genre is the
+  fallback, from API 30, since API 29 has no column for it and its table of genres isn't read. The folder
+  and the name say no genre. Genres are grouped as artists are, and songs with none are in Unknown Genre,
+  which isn't stored as text (rule 12). The songs table gains the genre with its source, and the index gains
+  a table of genres and one of each song's genres, as a change to cache tables: migration 3 to 4 drops and
+  recreates them, and the next start rescans. `LibraryRepository` gains the genre queries (What
+  `LibraryRepository` becomes), and playback's `PlaybackSource` gains a genre's artist and a genre's album.
 
 ## Context
 
@@ -148,13 +156,13 @@ files ──tags──────┘     pass 1, pass 2      (Room)   └─ So
 
   | Table | Holds | Kind |
   | --- | --- | --- |
-  | Songs | One row per file: the index's own id, the MediaStore id, the URI, the relative path, the file name, the size, the date modified; the title, artist, album artist, album, track and disc numbers, year, compilation flag and duration, each with its source; whether the file has an embedded picture; and the date modified at which its tags were last read | Cache |
+  | Songs | One row per file: the index's own id, the MediaStore id, the URI, the relative path, the file name, the size, the date modified; the title, artist, album artist, album, track and disc numbers, year, compilation flag, duration and genres, each with its source; whether the file has an embedded picture; and the date modified at which its tags were last read | Cache |
   | Albums | One row per album, found by its grouping key: title, artist, year | Cache |
   | Artists | One row per artist, found by its grouping key: name | Cache |
+  | Genres | One row per genre, found by its grouping key: name | Cache |
+  | Song genres | One row per song and genre it is in, Unknown Genre's for a song with none | Cache |
   | Scan state | MediaStore's version and generation at the last scan, for each volume | Cache |
   | Album artwork | One row per album, found by its grouping key: whether its cover is on the phone, downloaded (with the cached file) or not found (with the attempts), as [ADR-027](027-artwork-from-the-internet.md) says | User's data |
-
-  Genre is not stored yet. music/02 adds it as a change to cache tables.
 - **Artwork is a reference, not an image.** The index records whether a file has an embedded
   picture, once its tags have been read. How it is loaded and shown is
   [ADR-026](026-artwork.md)'s. A cover image next to the files (`cover.jpg`) is found by MediaStore's
@@ -236,6 +244,41 @@ The rules are in `:device:library:impl`, and run over the whole library after ea
 - **Rows move during pass 2.** A song can move to another album, and an album left with no song is gone. A
   screen showing it says so in the display, and MENU goes back. What is playing isn't affected, since the
   queue holds songs.
+
+### Genre
+
+The genre is the least reliable tag: often missing, left at an old tagger's default, or spelled several
+ways. It is read and grouped like the other fields, and nothing guesses past what the files say.
+
+- **A song can have several genres.** Only the standard forms hold several: ID3v2.4's values separated by
+  nulls, ID3v2.3's references (`(17)`, `(17)(13)`), and the data boxes of MP4's `©gen`. Any other text is one
+  genre, so "Rock; Pop" and "R&B/Soul" aren't split, as a name never is (Grouping).
+- **Numbers are ID3v1's list,** the standard's 0 to 79 and Winamp's extension to 191: ID3v1's byte, a
+  reference such as `(17)`, a bare `17`, and MP4's `gnre`, which counts from one. `(RX)` and `(CR)` are Remix
+  and Cover. 255 and any number past the list are no genre. Number 133, whose Winamp name is a slur, is
+  "Afro-Punk", as later taggers named it.
+- **What a tag says is kept as written.** ID3v1's 0 ("Blues"), which old taggers left as a default, and
+  "Other" are genres like any other: telling the default from real Blues would be a guess.
+- **The order is the fixed one (rule 7), with two sources.** The tags, then MediaStore's genre, read by the
+  same rules, since the system reads the same tags. API 29 has no genre column, and the genres table
+  MediaStore keeps there isn't read, so a song with no genre tag is in Unknown Genre on it. The folder and the
+  name say no genre. ID3v2's genre comes before ID3v1's, as the other fields do.
+- **Two names are one genre if they differ only in case or whitespace,** as with artists, and the row shows
+  the spelling on most songs. Related genres ("Alt Rock" and "Alternative") aren't grouped.
+- **Songs with no genre are in Unknown Genre,** a row with no name, sorted last, whose words are the
+  screens'. Genres are listed by name.
+- **A genre is browsed as the player the device is drawn after did:** its artists, then their albums, then
+  the songs, each showing only what is in the genre. Its artists are the songs' own artists and their albums'
+  artists, as the list of every artist has both. An artist's albums under a genre are those with a song in
+  it, and an album under a genre lists only its songs in it. A song with several genres is under each.
+- **A genre's name is library data, shown as written and not translated,** like an artist's or an album's.
+  This includes the names from ID3v1's list, which are English. Translating only the songs whose genre is a
+  number would split one genre in two, since most taggers write "Rock" as text, so a number and its text
+  would show different names and no longer group. This is a known limit while the app is English only. When
+  the app is localized, translation is a decision for the screens, made in its own ADR: the index keeps the
+  name and the key as they are, and a screen shows a translated string for a genre whose key is a known name,
+  whether it came from a number or from text. The parser and the index don't change. Unknown Genre's words
+  are already a string resource.
 
 ### Reading the tags: our own parser
 
@@ -327,6 +370,9 @@ A scan has **two passes**, so the device is usable within seconds of the first o
   index, as a string, since the `:api` is a JVM module with no `android.net.Uri`.
 - **It gains `observeSongLocations()`,** the URI of every song, those no list shows included, since a song
   that became a duplicate still plays. Playback reads it to follow what is in its queue.
+- **It gains the genre queries** (music/02): every genre, a genre's artists, an artist's albums and songs
+  in a genre, and an album's songs in a genre. A genre that is gone is `LibraryError.GenreNotFound`, which
+  ends the flow, as an artist or an album that is gone does.
 - **It gains `observeStatus()`,** which the device's permission and empty rows read (library/04):
 
   ```kotlin
@@ -372,8 +418,8 @@ A scan has **two passes**, so the device is usable within seconds of the first o
 - **library/06:** the grouping rules, and the albums' and artists' keys.
 - **library/07:** the `ContentObserver`, the comparison of MediaStore's generation at start-up, and
   the dirty flag. No WorkManager.
-- **music/02:** the genre, read by the parser and added to the songs table as a change to cache
-  tables.
+- **music/02:** the genre, read by the parser and MediaStore and added to the index as a change to cache
+  tables; the genre queries (Genre).
 - **library/08:** the album artwork table, the first of the user's data, with its migration tests;
   the network sub-part; the pass after each scan ([ADR-027](027-artwork-from-the-internet.md)).
 
@@ -517,8 +563,9 @@ misses.
     exported schema, which is in Git.
 11. `[enforced]` `fallbackToDestructiveMigration` is never called. It is in detekt's
     `ForbiddenMethodCall`.
-12. `[convention]` Songs are grouped by the rules under Grouping, in `:device:library:impl`. Keys ignore only
-    case and whitespace, and never hold a folder. Various Artists and Unknown are never stored as text.
+12. `[convention]` Songs are grouped by the rules under Grouping and Genre, in `:device:library:impl`. Keys
+    ignore only case and whitespace, and never hold a folder. Various Artists and Unknown (artist, album and
+    genre) are never stored as text.
 
 **Conformance.** Rule 2 is the detekt rule `MediaStoreOutsideLibrary` in `build-logic/detekt-rules`,
 with a violating and a passing case, which reports an import of `android.provider.MediaStore` or a
@@ -527,6 +574,6 @@ qualified use of it. That it runs everywhere but `:device:library:local:impl` is
 the `androidx.room` and `androidx.sqlite` groups, with a violating and a passing case in
 `ModuleRulesTest`. Rule 11 runs with type resolution, in `detektMain`, which `check` runs, and
 library/03 saw it report a call. The rest are reviewed. Rules 7, 8 and 12 are behavior,
-covered by the tests of the scanner and `GroupingTest` in `:device:library:impl` (library/03, library/05 and
-library/06),
-and rule 10 by Room's migration tests of the album artwork table, from library/08.
+covered by the tests of the scanner, `GroupingTest` and `GenresTest` in `:device:library:impl` (library/03,
+library/05, library/06 and music/02), and rule 10 by Room's migration tests of the album artwork table, from
+library/08, which music/02's migration of the cache tables leaves as it is.

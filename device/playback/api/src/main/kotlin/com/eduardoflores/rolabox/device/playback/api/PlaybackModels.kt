@@ -3,6 +3,7 @@ package com.eduardoflores.rolabox.device.playback.api
 import com.eduardoflores.rolabox.device.library.api.AlbumId
 import com.eduardoflores.rolabox.device.library.api.ArtistId
 import com.eduardoflores.rolabox.device.library.api.ArtworkRef
+import com.eduardoflores.rolabox.device.library.api.GenreId
 import com.eduardoflores.rolabox.device.library.api.SongId
 import kotlin.time.Duration
 
@@ -46,4 +47,10 @@ sealed interface PlaybackSource {
     data class ByArtist(val artistId: ArtistId) : PlaybackSource
 
     data class ByAlbum(val albumId: AlbumId) : PlaybackSource
+
+    /** An artist's songs in a genre, from "All Songs" under the genre. */
+    data class ByGenreAndArtist(val genreId: GenreId, val artistId: ArtistId) : PlaybackSource
+
+    /** An album's songs in a genre, from the album under the genre. */
+    data class ByGenreAndAlbum(val genreId: GenreId, val albumId: AlbumId) : PlaybackSource
 }

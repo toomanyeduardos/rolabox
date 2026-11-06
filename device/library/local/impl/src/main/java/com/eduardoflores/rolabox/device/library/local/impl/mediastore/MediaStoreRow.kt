@@ -2,6 +2,7 @@ package com.eduardoflores.rolabox.device.library.local.impl.mediastore
 
 import com.eduardoflores.rolabox.device.library.local.api.AudioFile
 import com.eduardoflores.rolabox.device.library.local.api.SongFile
+import com.eduardoflores.rolabox.device.library.local.impl.tags.genresOf
 
 /** What older versions of Android store in place of a missing artist or album. It is no value. */
 private const val UNKNOWN_MARKER = "<unknown>"
@@ -25,6 +26,7 @@ internal data class MediaStoreRow(
     val year: Int?,
     val compilation: String?,
     val durationMillis: Long?,
+    val genre: String? = null,
 )
 
 /** The index's reading of [this] row, with its content [uri]. Every field is MediaStore's value, or none. */
@@ -47,6 +49,8 @@ internal fun MediaStoreRow.toAudioFile(uri: String) = AudioFile(
     year = year.positive(),
     compilation = compilation?.trim()?.toIntOrNull()?.let { it != 0 },
     durationMillis = durationMillis?.takeIf { it > 0 },
+    // The system reads the same tags, so its genre is read by the same rules: "(17)" is Rock.
+    genres = genresOf(genre.text()),
 )
 
 private fun String?.text(): String? = this?.trim()?.takeIf { it.isNotEmpty() && it != UNKNOWN_MARKER }

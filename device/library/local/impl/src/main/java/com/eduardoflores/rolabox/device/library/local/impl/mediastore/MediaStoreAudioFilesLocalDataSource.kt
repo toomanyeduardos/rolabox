@@ -118,7 +118,8 @@ internal fun musicSelection(sdk: Int): String = buildList {
     if (sdk >= Build.VERSION_CODES.S) add("${AudioColumns.IS_RECORDING} = 0")
 }.joinToString(" AND ")
 
-// The columns that exist on every API this app runs on, then those added later.
+// The columns that exist on every API this app runs on, then those added later. The genre is one of those: on API 29
+// it is only in MediaStore's table of genres, which isn't read, so a song's genre there is its tags' (ADR-024, Genre).
 private val BaseColumns = listOf(
     AudioColumns._ID,
     AudioColumns.VOLUME_NAME,
@@ -135,7 +136,12 @@ private val BaseColumns = listOf(
 )
 
 private fun projection(sdk: Int): List<String> = if (sdk >= Build.VERSION_CODES.R) {
-    BaseColumns + listOf(AudioColumns.ALBUM_ARTIST, AudioColumns.DISC_NUMBER, AudioColumns.COMPILATION)
+    BaseColumns + listOf(
+        AudioColumns.ALBUM_ARTIST,
+        AudioColumns.DISC_NUMBER,
+        AudioColumns.COMPILATION,
+        AudioColumns.GENRE,
+    )
 } else {
     BaseColumns
 }
@@ -204,6 +210,7 @@ private fun Cursor.toAudioFile(): AudioFile {
         year = long(AudioColumns.YEAR)?.toInt(),
         compilation = text(AudioColumns.COMPILATION),
         durationMillis = long(AudioColumns.DURATION),
+        genre = text(AudioColumns.GENRE),
     ).toAudioFile(uri.toString())
 }
 

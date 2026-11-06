@@ -15,7 +15,7 @@ internal sealed interface ListUiState<out T> {
     data object Failed : ListUiState<Nothing>
 
     /**
-     * The album or artist this list is of is no longer in the library, as when a scan moves its songs to another
+     * The album, artist or genre this list is of is no longer in the library, as when a scan moves its songs to another
      * (ADR-024). The display says so, and MENU goes back.
      */
     data object Gone : ListUiState<Nothing>
@@ -25,7 +25,9 @@ internal fun <T> Flow<Either<LibraryError, List<T>>>.asListState(): Flow<ListUiS
     result.fold(
         ifLeft = { error ->
             when (error) {
-                is LibraryError.AlbumNotFound, is LibraryError.ArtistNotFound -> ListUiState.Gone
+                is LibraryError.AlbumNotFound, is LibraryError.ArtistNotFound, is LibraryError.GenreNotFound ->
+                    ListUiState.Gone
+
                 else -> ListUiState.Failed
             }
         },

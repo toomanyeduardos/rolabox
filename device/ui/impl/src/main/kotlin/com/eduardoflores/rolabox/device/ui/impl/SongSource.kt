@@ -3,8 +3,11 @@ package com.eduardoflores.rolabox.device.ui.impl
 import androidx.navigation3.runtime.NavKey
 import com.eduardoflores.rolabox.device.library.api.AlbumId
 import com.eduardoflores.rolabox.device.library.api.ArtistId
+import com.eduardoflores.rolabox.device.library.api.GenreId
 import com.eduardoflores.rolabox.device.music.ui.api.AlbumSongsKey
 import com.eduardoflores.rolabox.device.music.ui.api.ArtistSongsKey
+import com.eduardoflores.rolabox.device.music.ui.api.GenreAlbumSongsKey
+import com.eduardoflores.rolabox.device.music.ui.api.GenreArtistSongsKey
 import com.eduardoflores.rolabox.device.music.ui.api.SongsKey
 import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
 
@@ -16,5 +19,7 @@ internal fun playbackSourceOf(screen: NavKey): PlaybackSource? = when (screen) {
     is AlbumSongsKey -> PlaybackSource.ByAlbum(AlbumId(screen.albumId))
     is ArtistSongsKey -> PlaybackSource.ByArtist(ArtistId(screen.artistId))
     SongsKey -> PlaybackSource.AllSongs
+    is GenreArtistSongsKey -> PlaybackSource.ByGenreAndArtist(GenreId(screen.genreId), ArtistId(screen.artistId))
+    is GenreAlbumSongsKey -> PlaybackSource.ByGenreAndAlbum(GenreId(screen.genreId), AlbumId(screen.albumId))
     else -> null
 }

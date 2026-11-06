@@ -11,6 +11,8 @@ import com.eduardoflores.rolabox.device.library.api.Album
 import com.eduardoflores.rolabox.device.library.api.AlbumId
 import com.eduardoflores.rolabox.device.library.api.Artist
 import com.eduardoflores.rolabox.device.library.api.ArtistId
+import com.eduardoflores.rolabox.device.library.api.Genre
+import com.eduardoflores.rolabox.device.library.api.GenreId
 import com.eduardoflores.rolabox.device.library.api.LibraryError
 import com.eduardoflores.rolabox.device.library.api.LibraryRepository
 import com.eduardoflores.rolabox.device.library.api.LibraryStatus
@@ -65,6 +67,37 @@ internal class IndexLibraryRepository @Inject constructor(
         index.observeSongsByAlbum(albumId).ifPresent(index.observeAlbum(albumId)) {
             LibraryError.AlbumNotFound(albumId)
         }
+
+    override fun observeGenres(): Flow<Either<LibraryError, List<Genre>>> = index.observeGenres()
+
+    override fun observeArtistsByGenre(genreId: GenreId): Flow<Either<LibraryError, List<Artist>>> =
+        index.observeArtistsByGenre(genreId).ifPresent(index.observeGenre(genreId)) {
+            LibraryError.GenreNotFound(genreId)
+        }
+
+    override fun observeAlbumsByGenreAndArtist(
+        genreId: GenreId,
+        artistId: ArtistId,
+    ): Flow<Either<LibraryError, List<Album>>> = index.observeAlbumsByGenreAndArtist(genreId, artistId)
+        .ifPresent(index.observeGenre(genreId)) { LibraryError.GenreNotFound(genreId) }
+        .ifPresent(index.observeArtist(artistId)) { LibraryError.ArtistNotFound(artistId) }
+
+    override fun observeSongsByGenreAndArtist(
+        genreId: GenreId,
+        artistId: ArtistId,
+    ): Flow<Either<LibraryError, List<Song>>> = index.observeSongsByGenreAndArtist(genreId, artistId)
+        .ifPresent(index.observeGenre(genreId)) { LibraryError.GenreNotFound(genreId) }
+        .ifPresent(index.observeArtist(artistId)) { LibraryError.ArtistNotFound(artistId) }
+
+    override fun observeSongsByGenreAndAlbum(
+        genreId: GenreId,
+        albumId: AlbumId,
+    ): Flow<Either<LibraryError, List<Song>>> = index.observeSongsByGenreAndAlbum(genreId, albumId)
+        .ifPresent(index.observeGenre(genreId)) { LibraryError.GenreNotFound(genreId) }
+        .ifPresent(index.observeAlbum(albumId)) { LibraryError.AlbumNotFound(albumId) }
+
+    override suspend fun getGenre(id: GenreId): Either<LibraryError, Genre> =
+        index.getGenre(id).flatMap { it?.right() ?: LibraryError.GenreNotFound(id).left() }
 
     override suspend fun getArtist(id: ArtistId): Either<LibraryError, Artist> =
         index.getArtist(id).flatMap { it?.right() ?: LibraryError.ArtistNotFound(id).left() }

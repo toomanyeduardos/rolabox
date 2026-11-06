@@ -5,6 +5,7 @@ import com.eduardoflores.rolabox.common.storage.api.PreferencesStore
 import com.eduardoflores.rolabox.common.storage.api.StorageError
 import com.eduardoflores.rolabox.device.library.api.AlbumId
 import com.eduardoflores.rolabox.device.library.api.ArtistId
+import com.eduardoflores.rolabox.device.library.api.GenreId
 import com.eduardoflores.rolabox.device.library.api.SongId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
@@ -83,16 +84,21 @@ private fun PlaybackSource.encoded(): String = when (this) {
     PlaybackSource.AllSongs -> ALL_SONGS
     is PlaybackSource.ByArtist -> "$ARTIST:${artistId.value}"
     is PlaybackSource.ByAlbum -> "$ALBUM:${albumId.value}"
+    is PlaybackSource.ByGenreAndArtist -> "$GENRE_ARTIST:${genreId.value}:${artistId.value}"
+    is PlaybackSource.ByGenreAndAlbum -> "$GENRE_ALBUM:${genreId.value}:${albumId.value}"
 }
 
-private fun String.toSource(): PlaybackSource? = if (this == ALL_SONGS) {
-    PlaybackSource.AllSongs
-} else {
-    val id = substringAfter(':', "").toLongOrNull()
-    when {
-        id == null -> null
-        startsWith("$ARTIST:") -> PlaybackSource.ByArtist(ArtistId(id))
-        startsWith("$ALBUM:") -> PlaybackSource.ByAlbum(AlbumId(id))
+// The kind, then its ids: one, or a genre's and the artist's or album's in it.
+private fun String.toSource(): PlaybackSource? {
+    val kind = substringBefore(':')
+    val parts = split(':').drop(1)
+    val ids = parts.mapNotNull { it.toLongOrNull() }.takeIf { it.size == parts.size }.orEmpty()
+    return when {
+        this == ALL_SONGS -> PlaybackSource.AllSongs
+        kind == ARTIST && ids.size == 1 -> PlaybackSource.ByArtist(ArtistId(ids[0]))
+        kind == ALBUM && ids.size == 1 -> PlaybackSource.ByAlbum(AlbumId(ids[0]))
+        kind == GENRE_ARTIST && ids.size == 2 -> PlaybackSource.ByGenreAndArtist(GenreId(ids[0]), ArtistId(ids[1]))
+        kind == GENRE_ALBUM && ids.size == 2 -> PlaybackSource.ByGenreAndAlbum(GenreId(ids[0]), AlbumId(ids[1]))
         else -> null
     }
 }
@@ -117,4 +123,6 @@ private const val PART_COUNT = 4
 private const val ALL_SONGS = "all"
 private const val ARTIST = "artist"
 private const val ALBUM = "album"
+private const val GENRE_ARTIST = "genre-artist"
+private const val GENRE_ALBUM = "genre-album"
 private const val SONG = "song"

@@ -9,6 +9,7 @@ import com.eduardoflores.rolabox.device.library.api.SongId
 import com.eduardoflores.rolabox.device.library.local.api.AlbumGroup
 import com.eduardoflores.rolabox.device.library.local.api.ArtistGroup
 import com.eduardoflores.rolabox.device.library.local.api.FieldSource
+import com.eduardoflores.rolabox.device.library.local.api.GenreGroup
 import com.eduardoflores.rolabox.device.library.local.api.IndexBatch
 import com.eduardoflores.rolabox.device.library.local.api.SongFile
 import com.eduardoflores.rolabox.device.library.local.api.SongMetadata
@@ -63,6 +64,7 @@ class LibraryIndexDaoTest {
         disc: Int? = null,
         duration: Long? = 1000,
         picture: Boolean? = null,
+        genres: List<String?> = listOf(null),
     ): SongWrite {
         val artistGroup = ArtistGroup(artist.orEmpty(), artist)
         val albumArtistGroup = ArtistGroup(albumArtist.orEmpty(), albumArtist)
@@ -79,10 +81,13 @@ class LibraryIndexDaoTest {
                 year = known(year),
                 compilation = known(null),
                 durationMillis = known(duration),
+                genres = known(genres.filterNotNull().ifEmpty { null }),
             ),
             artist = artistGroup,
             album = AlbumGroup("${album.orEmpty()}|${albumArtist.orEmpty()}", album, year, albumArtistGroup),
             hasEmbeddedPicture = picture,
+            // A genre's key is its name in lower case, and no name is Unknown Genre's.
+            genres = genres.map { GenreGroup(it?.lowercase().orEmpty(), it) },
         )
     }
 
@@ -421,4 +426,94 @@ class LibraryIndexDaoTest {
         assertEquals(song.file, index.getSongFile(song.id).getOrNull())
         assertNull(index.getSongFile(SongId(99)).getOrNull())
     }
+
+    // Genres (ADR-024, Genre)
+
+    private suspend fun genres() = index.observeGenres().first().getOrNull().orEmpty()
+
+    private suspend fun genreId(name: String?) = genres().first { it.name == name }.id
+
+    @Test
+    fun genres_areByName_withUnknownGenreLast() = runTest {
+        fill(write(1, genres = listOf(null)), write(2, genres = listOf("rock")), write(3, genres = listOf("Ambient")))
+
+        assertEquals(listOf("Ambient", "rock", null), genres().map { it.name })
+    }
+
+    @Test
+    fun aSongWithSeveralGenres_isInEach() = runTest {
+        fill(write(1, genres = listOf("Rock", "Jazz")), write(2, genres = listOf("Rock")))
+
+        val inJazz = index.observeSongsByGenreAndArtist(genreId("Jazz"), artistId("Artist")).first().getOrNull()
+        val inRock = index.observeSongsByGenreAndArtist(genreId("Rock"), artistId("Artist")).first().getOrNull()
+        assertEquals(listOf("Song 1"), inJazz.orEmpty().map { it.title })
+        assertEquals(listOf("Song 1", "Song 2"), inRock.orEmpty().map { it.title })
+    }
+
+    @Test
+    fun aSongsGenres_areStoredWithTheirSource() = runTest {
+        val written = write(1, genres = listOf("Rock", "Jazz"))
+        fill(written)
+
+        assertEquals(written.metadata.genres, index.getIndexedSongs().getOrNull().orEmpty().single().metadata.genres)
+    }
+
+    @Test
+    fun aGenre_isTheArtistsOfItsSongs_andOfTheirAlbums() = runTest {
+        fill(
+            write(1, artist = "A", albumArtist = "Label", album = "Hits", genres = listOf("Rock")),
+            write(2, artist = "B", album = "Other", genres = listOf("Jazz")),
+        )
+
+        val artists = index.observeArtistsByGenre(genreId("Rock")).first().getOrNull().orEmpty()
+        assertEquals(listOf("A", "Label"), artists.map { it.name })
+    }
+
+    @Test
+    fun anArtistInAGenre_hasOnlyTheAlbumsWithASongInIt() = runTest {
+        fill(
+            write(1, album = "Loud", genres = listOf("Rock")),
+            write(2, album = "Quiet", genres = listOf("Jazz")),
+            write(3, album = "Both", genres = listOf("Rock")),
+            write(4, album = "Both", genres = listOf("Jazz")),
+        )
+
+        val albums = index.observeAlbumsByGenreAndArtist(genreId("Rock"), artistId("Artist")).first().getOrNull()
+        assertEquals(setOf("Loud", "Both"), albums.orEmpty().map { it.title }.toSet())
+    }
+
+    @Test
+    fun anAlbumInAGenre_isOnlyItsSongsInIt_inTrackOrder() = runTest {
+        fill(
+            write(1, track = 2, genres = listOf("Rock")),
+            write(2, track = 1, genres = listOf("Rock")),
+            write(3, track = 3, genres = listOf("Jazz")),
+        )
+        val album = index.observeAlbums().first().getOrNull().orEmpty().single()
+
+        val songs = index.observeSongsByGenreAndAlbum(genreId("Rock"), album.id).first().getOrNull().orEmpty()
+        assertEquals(listOf("Song 2", "Song 1"), songs.map { it.title })
+    }
+
+    @Test
+    fun aGenreLeftWithNoSong_isGone_andARewrittenSongLeavesItsOldGenres() = runTest {
+        fill(write(1, genres = listOf("Rock")), write(2, genres = listOf("Jazz")))
+        val rewritten = write(1, id = index.getIndexedSongs().getOrNull().orEmpty().first().id, genres = listOf("Pop"))
+
+        index.write(IndexBatch(writes = listOf(rewritten), removals = listOf(SongId(2))))
+
+        assertEquals(listOf("Pop"), genres().map { it.name })
+    }
+
+    @Test
+    fun aGenreKeepsItsId_whileItsSpellingFollowsTheSongs() = runTest {
+        fill(write(1, genres = listOf("rock")))
+        val before = genreId("rock")
+
+        fill(write(2, genres = listOf("Rock")))
+
+        assertEquals(listOf(GenreLike(before, "Rock")), genres().map { GenreLike(it.id, it.name) })
+    }
+
+    private data class GenreLike(val id: Any, val name: String?)
 }

@@ -36,6 +36,8 @@ internal fun AudioFile.toMetadata(): SongMetadata {
         year = firstOf(year to FieldSource.MediaStore),
         compilation = firstOf(compilation to FieldSource.MediaStore),
         durationMillis = firstOf(durationMillis to FieldSource.MediaStore),
+        // Neither the folder nor the name says a genre.
+        genres = firstOf(genres.ifEmpty { null } to FieldSource.MediaStore),
     )
 }
 
@@ -64,6 +66,7 @@ internal fun SongMetadata.withTags(tags: FileTags) = SongMetadata(
     } else {
         durationMillis.orTag(tags.durationMillis)
     },
+    genres = genres.orTag(tags.genres.ifEmpty { null }),
 )
 
 private fun <T : Any> Sourced<T>.orTag(tag: T?): Sourced<T> = if (tag != null) Sourced(tag, FieldSource.Tags) else this
@@ -83,6 +86,7 @@ private fun SongMetadata.keepingStronger(read: SongMetadata) = SongMetadata(
     year = year.orStronger(read.year),
     compilation = compilation.orStronger(read.compilation),
     durationMillis = if (durationMillis.value != null) durationMillis else read.durationMillis,
+    genres = genres.orStronger(read.genres),
 )
 
 // The sources are declared strongest first.

@@ -81,7 +81,7 @@ internal class FakeMediaProvider : ContentProvider() {
                 "CREATE TABLE audio (_id INTEGER PRIMARY KEY, volume_name TEXT, relative_path TEXT, " +
                     "_display_name TEXT, _size INTEGER, date_modified INTEGER, title TEXT, artist TEXT, album TEXT, " +
                     "track INTEGER, year INTEGER, duration INTEGER, album_artist TEXT, disc_number TEXT, " +
-                    "compilation TEXT, is_music INTEGER DEFAULT 1, is_ringtone INTEGER DEFAULT 0, " +
+                    "compilation TEXT, genre TEXT, is_music INTEGER DEFAULT 1, is_ringtone INTEGER DEFAULT 0, " +
                     "is_notification INTEGER DEFAULT 0, is_alarm INTEGER DEFAULT 0, is_recording INTEGER DEFAULT 0, " +
                     "generation_modified INTEGER DEFAULT 0)",
             )

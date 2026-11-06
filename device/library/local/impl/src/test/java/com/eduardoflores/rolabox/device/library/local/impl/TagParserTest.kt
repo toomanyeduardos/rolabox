@@ -7,6 +7,8 @@ import com.eduardoflores.rolabox.device.library.local.impl.tags.ChannelByteSourc
 import com.eduardoflores.rolabox.device.library.local.impl.tags.parseTags
 import com.eduardoflores.rolabox.device.library.testing.audio.AudioFixture
 import com.eduardoflores.rolabox.device.library.testing.audio.AudioFixtures
+import com.eduardoflores.rolabox.device.library.testing.audio.FixtureContent
+import com.eduardoflores.rolabox.device.library.testing.audio.Tags
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.RandomAccessFile
@@ -420,4 +422,133 @@ class TagParserTest {
             file.delete()
         }
     }
+
+    // Genres (ADR-024, Genre)
+
+    private fun genresOf(name: String) = parse(fixture(broken, name))!!.genres
+
+    @Test
+    fun anId3v1Genre_isItsNameInTheList() {
+        assertEquals(listOf("Rock"), genresOf("05 Static Bloom.mp3"))
+    }
+
+    @Test
+    fun anId3v1GenreOf255_isNoGenre() {
+        assertEquals(emptyList<String>(), parse(id3v1WithGenre(255))!!.genres)
+    }
+
+    @Test
+    fun anId3v2ReferenceInParentheses_isTheNameInId3v1sList() {
+        assertEquals(listOf("Rock"), genresOf("01 - Parenthesised.mp3"))
+    }
+
+    @Test
+    fun anId3v2BareNumber_isTheNameInId3v1sList() {
+        assertEquals(listOf("Rock"), genresOf("02 - Number.mp3"))
+    }
+
+    @Test
+    fun id3v24sNullSeparatedValues_areSeveralGenres() {
+        assertEquals(listOf("Rock", "Pop", "Jazz"), genresOf("03 - Several.mp3"))
+    }
+
+    @Test
+    fun freeText_isOneGenre() {
+        assertEquals(listOf("Dream Pop"), genresOf("04 - Text.mp3"))
+    }
+
+    @Test
+    fun id3v2_winsOverId3v1sGenre() {
+        val tags = parse(id3(3, v23Frame("TCON", latin1Text("Shoegaze"))) + id3v1WithGenre(17))!!
+
+        assertEquals(listOf("Shoegaze"), tags.genres)
+    }
+
+    @Test
+    fun id3v1sGenre_fillsAnId3v2TagWithout() {
+        val tags = parse(id3(3, v23Frame("TIT2", latin1Text("Title"))) + id3v1WithGenre(8))!!
+
+        assertEquals(listOf("Jazz"), tags.genres)
+    }
+
+    @Test
+    fun anId3v22Genre_isRead() {
+        assertEquals(listOf("Rock"), parse(id3(2, v22Frame("TCO", latin1Text("(17)"))))!!.genres)
+    }
+
+    @Test
+    fun anM4aGnre_isId3v1sListCountedFromOne() {
+        assertEquals(listOf("Pop"), genresOf("05 - Numbered M4A.m4a"))
+    }
+
+    @Test
+    fun anM4aGenAtom_isItsText() {
+        val bytes = AudioFixture("x.m4a", FixtureContent.M4a(Tags(title = "x", genre = "Dream Pop")), "").bytes()
+
+        assertEquals(listOf("Dream Pop"), parse(bytes)!!.genres)
+    }
+
+    @Test
+    fun anM4aGenAtomWithSeveralDataBoxes_isSeveralGenres() {
+        val ilst = atom("ilst", atom("\u00A9gen", dataBox("Rock") + dataBox("Jazz")))
+        val meta = atom("meta", bytes(0, 0, 0, 0) + ilst)
+        val file = atom("ftyp", "M4A ".toByteArray(latin1)) + atom("moov", atom("udta", meta))
+
+        assertEquals(listOf("Rock", "Jazz"), parse(file)!!.genres)
+    }
+
+    @Test
+    fun id3v23ReferencesWithARefinement_areEachOnce() {
+        assertEquals(listOf("Rock", "Pop"), parse(id3(3, v23Frame("TCON", latin1Text("(17)(13)Rock"))))!!.genres)
+    }
+
+    @Test
+    fun remixAndCover_areTheirNames() {
+        assertEquals(listOf("Remix", "Cover"), parse(id3(3, v23Frame("TCON", latin1Text("(RX)(CR)"))))!!.genres)
+    }
+
+    @Test
+    fun aDoubleParenthesis_escapesANameStartingWithOne() {
+        assertEquals(listOf("(Live) Sets"), parse(id3(3, v23Frame("TCON", latin1Text("((Live) Sets"))))!!.genres)
+    }
+
+    @Test
+    fun aParenthesisThatIsntAReference_isPartOfTheName() {
+        assertEquals(listOf("(Live) Rock"), parse(id3(3, v23Frame("TCON", latin1Text("(Live) Rock"))))!!.genres)
+    }
+
+    @Test
+    fun aNumberPastTheList_isNoGenre() {
+        assertEquals(emptyList<String>(), parse(id3(3, v23Frame("TCON", latin1Text("(255)"))))!!.genres)
+        assertEquals(emptyList<String>(), parse(id3(4, v24Frame("TCON", latin1Text("300"))))!!.genres)
+    }
+
+    @Test
+    fun punctuationInFreeText_doesntSplitIt() {
+        assertEquals(listOf("Rock; Pop"), parse(id3(3, v23Frame("TCON", latin1Text("Rock; Pop"))))!!.genres)
+        assertEquals(listOf("R&B/Soul"), parse(id3(3, v23Frame("TCON", latin1Text("R&B/Soul"))))!!.genres)
+    }
+
+    @Test
+    fun junkGenres_areKeptAsWritten() {
+        assertEquals(listOf("Blues"), parse(id3v1WithGenre(0))!!.genres)
+        assertEquals(listOf("Other"), parse(id3(3, v23Frame("TCON", latin1Text("Other"))))!!.genres)
+    }
+
+    @Test
+    fun theSameGenreTwice_isOnce() {
+        val tags = parse(id3(4, v24Frame("TCON", latin1Text("Rock\u0000rock\u0000(17)"))))!!
+
+        assertEquals(listOf("Rock"), tags.genres)
+    }
+
+    private fun id3v1WithGenre(number: Int) = ByteArray(128).also {
+        "TAG".toByteArray(latin1).copyInto(it)
+        it[127] = number.toByte()
+    }
+
+    private fun atom(type: String, payload: ByteArray) = plain(8 + payload.size) + type.toByteArray(latin1) + payload
+
+    // A data box of UTF-8 text: its type, then a locale of zero.
+    private fun dataBox(text: String) = atom("data", plain(1) + plain(0) + text.toByteArray(Charsets.UTF_8))
 }
