@@ -1,0 +1,24 @@
+{
+  "release-groups": [
+    {
+      "id": "071e274e-ac5c-301b-8476-affc8e6f55fa",
+      "score": 100,
+      "title": "Live at Radio City",
+      "primary-type": "Album",
+      "secondary-types": [
+        "Live"
+      ],
+      "first-release-date": "2007-08-13",
+      "artist-credit": [
+        {
+          "name": "Dave Matthews & Tim Reynolds",
+          "joinphrase": "",
+          "artist": {
+            "id": "9c92d62c-1d8b-404e-8766-e4d9300486e5",
+            "name": "Dave Matthews & Tim Reynolds"
+          }
+        }
+      ]
+    }
+  ]
+}

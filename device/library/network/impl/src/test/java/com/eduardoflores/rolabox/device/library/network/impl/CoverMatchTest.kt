@@ -35,8 +35,60 @@ class CoverMatchTest {
     }
 
     @Test
-    fun anotherTitle_isNoMatch_soAnEditionIsntTakenForTheAlbum() {
-        assertNull(match("live-2012.json", "Live 2012 (Deluxe Edition)", CoverArtist.Named("Coldplay")))
+    fun aStoresEditionNote_isDropped_soTheEditionMatchesItsAlbum() {
+        assertEquals(
+            "2f215175-266c-4945-b622-8c4f8cb0d4fb",
+            match("live-2012.json", "Live 2012 (Deluxe Edition)", CoverArtist.Named("Coldplay")),
+        )
+    }
+
+    @Test
+    fun anotherTitle_isNoMatch() {
+        assertNull(match("live-2012.json", "Live 2013", CoverArtist.Named("Coldplay")))
+        assertNull(match("live-2012.json", "Live 2012 (Live)", CoverArtist.Named("Coldplay")))
+    }
+
+    @Test
+    fun theStoresNotes_areDroppedFromTheEnd_untilNoneIsLeft() {
+        val notes = mapOf(
+            "Avenged Sevenfold (Bonus Track Version)" to "Avenged Sevenfold",
+            "Collision Course (Bonus Video Version) - EP" to "Collision Course",
+            "Invisible (RED) Edit Version" to "Invisible",
+            "Abbey Road (Remastered 2009)" to "Abbey Road",
+            "Abbey Road - 2019 Remaster" to "Abbey Road",
+            "Rumours [Super Deluxe Edition]" to "Rumours",
+            "Hello - Single" to "Hello",
+        )
+
+        notes.forEach { (title, album) -> assertEquals(title, album, withoutStoreNotes(title)) }
+    }
+
+    @Test
+    fun aNoteThatNamesOtherMusic_staysPartOfTheTitle() {
+        listOf(
+            "Skin and Bones (Live)",
+            "Unplugged (Acoustic)",
+            "Experience Hendrix - The Best of Jimi Hendrix",
+            "Live 2012",
+            "(Deluxe Edition)",
+            "Version",
+            "Sleep (Deep)",
+        ).forEach { title -> assertEquals(title, withoutStoreNotes(title)) }
+    }
+
+    @Test
+    fun aTitleWithANote_matchesAReleaseGroupNamedWithout() {
+        val group = ReleaseGroup("id", 100, "Avenged Sevenfold", listOf(Credit("Avenged Sevenfold", "", "a", "A7X")))
+        val album = CoverQuery("Avenged Sevenfold (Bonus Track Version)", CoverArtist.Named("Avenged Sevenfold"))
+
+        assertEquals("id", matchOf(listOf(group), album)?.id)
+    }
+
+    @Test
+    fun accents_areFolded_onTheArtistAndTheTitle() {
+        val group = ReleaseGroup("id", 100, "Déjà Vu", listOf(Credit("Jay‐Z", "", "a", "JAY-Z")))
+
+        assertEquals("id", matchOf(listOf(group), CoverQuery("Deja Vu", CoverArtist.Named("JAŸ-Z")))?.id)
     }
 
     @Test
@@ -102,6 +154,14 @@ class CoverMatchTest {
         assertEquals(
             "releasegroup:\"Hits\" AND arid:$VARIOUS_ARTISTS_ID",
             searchQueryOf(CoverQuery("Hits", CoverArtist.Various)),
+        )
+    }
+
+    @Test
+    fun theQuery_sendsTheTitleWithoutItsNotes() {
+        assertEquals(
+            "releasegroup:\"Collision Course\" AND artist:\"JAŸ-Z\"",
+            searchQueryOf(CoverQuery("Collision Course (Bonus Video Version) - EP", CoverArtist.Named("JAŸ-Z"))),
         )
     }
 }

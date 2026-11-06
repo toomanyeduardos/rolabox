@@ -46,8 +46,35 @@ internal fun readMp4(source: ByteSource): FileTags? {
         hasEmbeddedPicture = "covr" in values,
         genres = values["©gen"]?.let { source.genreTexts(it) }?.ifEmpty { null }
             ?: values["gnre"]?.let { source.itemData(it) }?.standardGenre().orEmpty(),
+        isProtected = source.soundSampleEntry(children) == FAIR_PLAY_AUDIO,
     )
 }
+
+/** The sample entry of FairPlay's audio, the DRM of iTunes Store purchases, which Android can't decrypt. */
+private const val FAIR_PLAY_AUDIO = "drms"
+
+/** Where a handler box's type is: after its version and flags, and four bytes of `pre_defined`. */
+private const val HANDLER_TYPE_OFFSET = 8L
+
+/** Where `stsd`'s first sample entry is: after its version and flags, and its count of entries. */
+private const val SAMPLE_ENTRIES_OFFSET = 8L
+
+// The type of the first sample entry of the first sound track: moov/trak/mdia (hdlr "soun")/minf/stbl/stsd (ADR-024,
+// Reading the tags). `mp4a` is plain AAC, and `drms` FairPlay's.
+private fun ByteSource.soundSampleEntry(moovChildren: List<Atom>): String? = moovChildren
+    .asSequence()
+    .filter { it.type == "trak" }
+    .mapNotNull { trak -> child(trak, "mdia") }
+    .filter { mdia ->
+        val handler = child(mdia, "hdlr")?.let { read(it.start + HANDLER_TYPE_OFFSET, 4) }
+        handler?.size == 4 && handler.ascii(0, 4) == "soun"
+    }
+    .mapNotNull { mdia -> child(mdia, "minf")?.let { child(it, "stbl") }?.let { child(it, "stsd") } }
+    .mapNotNull { stsd -> atoms(stsd.start + SAMPLE_ENTRIES_OFFSET, stsd.end).firstOrNull()?.type }
+    .firstOrNull()
+
+private fun ByteSource.child(parent: Atom, type: String): Atom? =
+    atoms(parent.start, parent.end).firstOrNull { it.type == type }
 
 // iTunes writes a genre of ID3v1's list as gnre, and any other as ©gen. Each of ©gen's data boxes is one value.
 private fun ByteSource.genreTexts(item: Atom): List<String> = atoms(item.start, item.end)

@@ -68,3 +68,23 @@ internal val MIGRATION_3_4 = object : Migration(3, 4) {
         CACHE_TABLES_OF_VERSION_4.forEach(db::execSQL)
     }
 }
+
+/** The cache tables of version 5 as Room exported them: version 4's, with whether each song is protected. */
+@Suppress("MaxLineLength") // Room's own statements, to compare with the exported schema as they are.
+internal val CACHE_TABLES_OF_VERSION_5 = listOf(
+    "CREATE TABLE IF NOT EXISTS `songs` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `artistId` INTEGER NOT NULL, `albumId` INTEGER NOT NULL, `mediaStoreId` INTEGER NOT NULL, `uri` TEXT NOT NULL, `relativePath` TEXT NOT NULL, `fileName` TEXT NOT NULL, `size` INTEGER NOT NULL, `dateModified` INTEGER NOT NULL, `title` TEXT, `titleSource` TEXT NOT NULL, `artist` TEXT, `artistSource` TEXT NOT NULL, `albumArtist` TEXT, `albumArtistSource` TEXT NOT NULL, `album` TEXT, `albumSource` TEXT NOT NULL, `trackNumber` INTEGER, `trackNumberSource` TEXT NOT NULL, `discNumber` INTEGER, `discNumberSource` TEXT NOT NULL, `year` INTEGER, `yearSource` TEXT NOT NULL, `compilation` INTEGER, `compilationSource` TEXT NOT NULL, `durationMillis` INTEGER, `durationSource` TEXT NOT NULL, `hasEmbeddedPicture` INTEGER, `tagsReadAt` INTEGER, `isDuplicate` INTEGER NOT NULL, `genres` TEXT, `genreSource` TEXT NOT NULL, `isProtected` INTEGER NOT NULL)",
+) + CACHE_TABLES_OF_VERSION_4.drop(1)
+
+/**
+ * Whether a song is protected (ADR-024, Reading the tags), a change to cache tables: they are dropped and recreated,
+ * and the next start rescans, which reads every file's tags again (rule 10). The record of downloaded covers is the
+ * user's data, and stays as it is.
+ */
+internal val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        listOf("songs", "albums", "artists", "scan_state", "genres", "song_genres").forEach {
+            db.execSQL("DROP TABLE IF EXISTS `$it`")
+        }
+        CACHE_TABLES_OF_VERSION_5.forEach(db::execSQL)
+    }
+}

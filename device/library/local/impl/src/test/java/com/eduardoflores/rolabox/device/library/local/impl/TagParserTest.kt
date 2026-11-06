@@ -5,6 +5,7 @@ import com.eduardoflores.rolabox.device.library.local.impl.tags.ArrayByteSource
 import com.eduardoflores.rolabox.device.library.local.impl.tags.ByteSource
 import com.eduardoflores.rolabox.device.library.local.impl.tags.ChannelByteSource
 import com.eduardoflores.rolabox.device.library.local.impl.tags.parseTags
+import com.eduardoflores.rolabox.device.library.testing.audio.AacStream
 import com.eduardoflores.rolabox.device.library.testing.audio.AudioFixture
 import com.eduardoflores.rolabox.device.library.testing.audio.AudioFixtures
 import com.eduardoflores.rolabox.device.library.testing.audio.FixtureContent
@@ -211,6 +212,22 @@ class TagParserTest {
         assertEquals("Title", tags.title)
         assertEquals(true, tags.hasEmbeddedPicture)
         assertTrue("Read $read bytes", read < 1_000)
+    }
+
+    // ADR-024, Reading the tags: an iTunes Store purchase's audio is FairPlay's `drms`, which Android can't play.
+    @Test
+    fun anMp4WithFairPlayAudio_isProtected_andItsTagsAreStillRead() {
+        val protected = FixtureContent.M4a(Tags(title = "Bought"), AacStream(fairPlay = true)).bytes()
+
+        val tags = parse(protected)!!
+        assertTrue(tags.isProtected)
+        assertEquals("Bought", tags.title)
+    }
+
+    @Test
+    fun anMp4WithPlainAac_andAnMp3_areNotProtected() {
+        assertFalse(parse(FixtureContent.M4a(Tags(title = "Plain"), AacStream()).bytes())!!.isProtected)
+        assertFalse(parse(id3(3, v23Frame("TIT2", latin1Text("Title"))))!!.isProtected)
     }
 
     @Test

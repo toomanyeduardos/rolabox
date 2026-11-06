@@ -1,0 +1,44 @@
+{
+  "releases": [
+    {
+      "id": "2f03fc86-c2ee-43ff-8f2c-e6ae079fb8ad",
+      "track-count": 16,
+      "date": "2006-11-07"
+    },
+    {
+      "id": "a82bfdff-3f20-4009-b028-4a64b3837093",
+      "track-count": 15,
+      "date": "2006-11-20"
+    },
+    {
+      "id": "4542d2cb-b1f7-4517-be55-36328059b3e9",
+      "track-count": 15,
+      "date": "2006-11-01"
+    },
+    {
+      "id": "aa073967-b0a2-453d-8923-0f68682303b4",
+      "track-count": 15,
+      "date": "2006"
+    },
+    {
+      "id": "54d8a4ab-4173-412f-b974-32618893aeb6",
+      "track-count": 15,
+      "date": "2006"
+    },
+    {
+      "id": "c8443b4e-c208-4189-960d-6bd2a7c3a050",
+      "track-count": 15,
+      "date": "2011-11-21"
+    },
+    {
+      "id": "6db54de8-cdd7-4238-a8fd-9458cccbaf52",
+      "track-count": 15,
+      "date": "2006-11-22"
+    },
+    {
+      "id": "a660f44b-aacf-4eb8-bb4f-fd416af4beb8",
+      "track-count": 21,
+      "date": "2006"
+    }
+  ]
+}

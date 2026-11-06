@@ -23,6 +23,13 @@
   mode and a shuffle order of the `:impl`, so the state's queue is in the order it plays, a skip follows that order
   and wraps with Repeat All, and the restored point also stores a shuffled queue's order, which the library can't
   give again. playback/07 decided it, and playback/08 builds it.
+- **Revised 2026-11-06:** A queue holds only songs that can be played (The service, the session and the controller,
+  From the engine's state to `PlaybackState`). The library knows which songs are protected by FairPlay
+  ([ADR-024](024-library-index.md)), and they never enter a queue. A song that fails while it plays leaves the
+  queue after it is skipped. A real library of iTunes purchases showed why: shuffled, a protected song played as
+  silence, its skip was told over the next song, ⏮ could never get back past it, and the count ("4 of 150", then "9
+  of 150") counted songs that would never play. A song that plays with no audio track is skipped too, as Media3
+  reports no error for it.
 
 ## Context
 
@@ -115,6 +122,12 @@ notification, lock screen, headset, Bluetooth ───────────�
 - **The queue is Media3's playlist.** `play` resolves the list through the library and gives the
   whole queue to the player, so the next song is prepared before the current one ends and albums play
   without gaps (MP3 with its encoder's gapless header, and AAC).
+- **A queue holds only songs that can be played.** A song the library says is protected (ADR-024) is left out of
+  every queue: a list, an album, an artist, a genre, Shuffle Songs, and a restored queue. So the count, ⏮ and ⏭,
+  and the shuffle order see only songs that play, and no skip is told for it. Selecting a protected song plays the
+  list from the next song after it that can be played, in the list's order, and from the one before it when none
+  comes after. A list with none that can be played loads nothing, and `unplayableQueue` says so (below), with the
+  last protected song, `Protected`, and their count.
 - **The queue follows the library.** While something is loaded, the singleton observes where the library says
   each song is. A song that is gone leaves the queue at once. When it was the current one the next one starts,
   as playing or as paused as it was, and when none comes after it nothing is loaded. A song that moved is given
@@ -190,11 +203,17 @@ data class PlaybackItem(
   `PlaybackException` never leaves the `:impl`.
 - **The cases are `PlaybackError.Unplayable`:** `Missing`, `Damaged`, `Unsupported`, `Protected`, `Unreadable`, and
   `EngineFailed` for a failure that isn't the file's. No call returns them.
-- **A song that fails is skipped.** The singleton moves to the nearest item of the queue that hasn't failed, as
-  playing or as paused as it was. It goes forward, unless ⏮ brought it there: then it goes on backward, and forward
-  once nothing before it can be played, so ⏮ can get past a bad song. "Nearest" is in the order the queue plays
-  in, and the search wraps only with Repeat All, where it still stops once every item has failed
-  ([ADR-028](028-shuffle-and-repeat.md)). Otherwise the queue doesn't wrap.
+- **A song that fails is skipped, and leaves the queue.** The singleton moves to the nearest item of the queue that
+  hasn't failed, as playing or as paused as it was. It goes forward, unless ⏮ brought it there: then it goes on
+  backward, and forward once nothing before it can be played, so ⏮ can get past a bad song. ⏮'s direction lasts
+  until an item plays, not until one is ready, since one with no audio is ready too. "Nearest" is in the order the
+  queue plays in, and the search wraps only with Repeat All, where it still stops once every item has failed
+  ([ADR-028](028-shuffle-and-repeat.md)). Otherwise the queue doesn't wrap. Then the song leaves the queue and
+  the player's playlist, so the count drops and ⏮ and ⏭ never reach it again in this queue. The skip is still
+  told, once.
+- **A song that plays with no audio has failed.** Media3 drops a track it can't decode, a protected one among them,
+  and plays the item anyway with no error: ready, with its time moving. A song that is ready, or ended, with no
+  audio track the phone can play is skipped as `Unsupported`, since Media3 doesn't say why.
 - **`PlaybackState.skipped` is state, not an event.** It holds the last item, its error and the count of the run for
   4 s after a skip, and a skip in that time adds to it. A one-shot event would be missed by Now Playing, since the
   first file of a list can fail before the screen that was pushed for it observes anything, and state kept longer
@@ -347,6 +366,10 @@ phone's music stream.
 - A restored queue shows a paused media notification after a reboot or background work, with the app never opened. The
   stored file is opened at each start of the process.
 - A kill loses up to the few seconds since the last store, and a write at the moment the process dies may not land.
+- A queue can be shorter than the list it was played from: the count is of the songs that play, so an album of 11
+  with 2 protected songs is "1 of 9". A song that fails leaves the queue, so the count can drop while it plays.
+- A protected song is known only once the scan's pass 2 has read its tags. Until then it is in queues, and fails
+  when it is reached, as any song that can't be played.
 
 ## Rules
 

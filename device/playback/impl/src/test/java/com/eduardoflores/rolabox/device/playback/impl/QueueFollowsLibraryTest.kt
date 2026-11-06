@@ -171,12 +171,16 @@ class QueueFollowsLibraryTest {
     }
 
     @Test
-    fun aFileGoneBeforeTheLibraryLearnsOfIt_isSkipped_andLeavesTheQueueWhenItDoes() = scope.runTest {
+    fun aFileGoneBeforeTheLibraryLearnsOfIt_isSkipped_andLeavesTheQueueAtOnce() = scope.runTest {
         File(folder.root, "1.mp3").delete()
         playFromAlbum(1)
-        RobolectricUtil.runMainLooperUntil { player.currentMediaItemIndex == 1 }
+        RobolectricUtil.runMainLooperUntil {
+            player.currentMediaItem?.mediaId == PlaybackItemId.Song(SongId(2)).mediaId
+        }
         runCurrent()
         assertEquals(2L, playback.currentItem.first()?.songNumber)
+        // A song that failed leaves the queue as it is skipped (ADR-023).
+        assertEquals(4, playback.queue.first().size)
 
         library.songs = library.songs.filterNot { it.id == SongId(1) }
         runCurrent()

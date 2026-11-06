@@ -34,6 +34,7 @@ internal fun SongRow.toSong() = Song(
     discNumber = discNumber,
     duration = durationMillis?.milliseconds ?: Duration.ZERO,
     uri = uri,
+    isProtected = isProtected,
 )
 
 internal fun SongEntity.toSongFile() = SongFile(mediaStoreId, uri, relativePath, fileName, size, dateModified)
@@ -58,6 +59,7 @@ internal fun IndexedSongRow.toIndexedSong() = IndexedSong(
     hasEmbeddedPicture = song.hasEmbeddedPicture,
     tagsReadAt = song.tagsReadAt,
     isDuplicate = song.isDuplicate,
+    isProtected = song.isProtected,
 )
 
 private fun <T : Any> sourced(value: T?, source: FieldSource) = Sourced(value, source)
@@ -95,4 +97,5 @@ internal fun SongWrite.toEntity(artistId: Long, albumId: Long) = SongEntity(
     isDuplicate = isDuplicate,
     genres = metadata.genres.value?.joinToString(GENRE_SEPARATOR.toString()),
     genreSource = metadata.genres.source,
+    isProtected = isProtected,
 )

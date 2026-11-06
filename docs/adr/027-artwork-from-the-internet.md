@@ -4,6 +4,17 @@
 - **Date:** 2026-11-03
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review
+- **Revised 2026-11-06:** The match drops a store's edition notes from the end of a title ("(Bonus
+  Track Version)", " - EP") and folds accents, on both sides ("How a match is judged"). A real
+  library of iTunes purchases got no cover for 6 of 14 albums, and 4 of the 6 failed on the title
+  alone: MusicBrainz names the album without the store's note. The rest of the match stays strict.
+- **Revised 2026-11-06 (second):** An album the strict match misses gets a second, looser pass that
+  compares the first part of the title, and picks the closest of several by ranked hints, so a wrong
+  cover is no longer always worse than none ("How a match is judged"). The artist can also be one
+  of the album's song artists. Of the same library, *Skin and Bones (Live)* and *Experience Hendrix*
+  each had two equal release groups on MusicBrainz, and *Live at Radio City* is tagged "Dave
+  Matthews" as its album artist and "Dave Matthews & Tim Reynolds" on every song, the artist
+  MusicBrainz credits.
 
 ## Context
 
@@ -77,8 +88,12 @@ ArtworkRepository: thumbnail of the song ─▶ else the album's Found file ─�
 - **A search of release groups** on `musicbrainz.org/ws/2/release-group`, by the album's title and
   artist, and then the archive's `coverartarchive.org/release-group/{mbid}/front-500`: a JPEG of
   500 pixels, a few dozen kilobytes.
-- **What is sent is the album's title and artist name,** and nothing else about the user or the
-  phone. Neither is private, so downloading is on by default.
+- **When the match needs them (How a match is judged), a second search** with the first part of the
+  title, and **a search of releases** on `musicbrainz.org/ws/2/release` by a release group's MBID
+  (`rgid:`), for the track counts of its releases.
+- **What is sent is the album's title and artist name,** and MusicBrainz's own ids, and nothing else
+  about the user or the phone. None of it is private, so downloading is on by default. The year,
+  the track numbers and the song artists that the match reads stay on the phone.
 - **The `User-Agent` is `Rolabox/<versionName> ( https://github.com/toomanyeduardos/rolabox )`.**
 - **At most one request a second,** to either host, for the whole app. A `503` is MusicBrainz asking
   to slow down, and counts as a server error (Retries).
@@ -86,17 +101,79 @@ ArtworkRepository: thumbnail of the song ─▶ else the album's Found file ─�
 
 ### How a match is judged
 
-A wrong cover is worse than none, so the match is strict:
+In two passes. The first is strict, since a cover found by it is certain. The second runs only when
+the first finds no release group or several, and takes the closest one: a cover of the same artist's
+album with the same first words is better than none, and a near miss is the risk accepted for it.
 
-- **The title and the artist must be equal** to what is in the index, after the same normalization on
-  both sides: Unicode NFKC, case, whitespace collapsed, punctuation dropped, and a leading "The" on
-  the artist. The artist is the release group's artist credit as one name, or its first artist.
+```
+pass 1: search title ─▶ exactly one equal? ─ yes ─▶ its cover
+                            └─ none, or several ─▶ pass 2: search first part of the title
+                                                      ─▶ candidates of both answers, ranked
+                                                      ─▶ the first one with a cover, of at most 3
+```
+
+**What both passes compare.**
+
+- **Names are compared after the same normalization on both sides:** Unicode NFKC, accents folded
+  (NFD with the combining marks dropped, so "JAŸ-Z" is "jay z"), case, whitespace collapsed,
+  punctuation dropped, and a leading "The" on an artist.
+- **The artist matches** when the release group's artist credit, as one name or its first artist,
+  is the album's artist, or the artist of any of the album's songs. *Live at Radio City* is "Dave
+  Matthews" as an album and "Dave Matthews & Tim Reynolds" on its songs, which is MusicBrainz's
+  credit.
+- **A store's edition note is dropped from the end of a title** before it is searched and compared,
+  on both sides. A note is the end of the title from its last opening bracket (`(` or `[`), or from
+  its last ` - `, when the note's last word is `Version`, `Edition`, `Remaster`, `Remastered`
+  (with or without a year after it), `EP` or `Single`. It is dropped again until none is left, and
+  never when nothing would be left of the title. So "Collision Course (Bonus Video Version) - EP"
+  is "Collision Course", "Invisible (RED) Edit Version" is "Invisible", and "Avenged Sevenfold
+  (Bonus Track Version)" is "Avenged Sevenfold". A note that names other music stays: "(Live)",
+  "(Acoustic)", "(Soundtrack)" and "- The Best of …" are part of the title, since MusicBrainz often
+  keeps a live or acoustic album as a release group of its own. Pass 2 is what looks past those.
 - **MusicBrainz's score is at least 95.**
-- **Exactly one release group passes.** Several that pass are an ambiguous answer, and are no cover.
 - **A Various Artists album** matches MusicBrainz's Various Artists.
+
+**Pass 1: equal.**
+
+- **The search sends the title without its store's notes,** and the album's artist.
+- **The title must be equal,** without its store's notes, on both sides.
+- **Exactly one release group passes.** Its cover is the album's, or the album has none: when the
+  archive has no front image for it, pass 2 doesn't run.
+
+**Pass 2: the first part of the title, and the closest one.**
+
+- **It runs when pass 1 finds no release group, or several.**
+- **The first part of a title** is what comes before its first `(`, `[`, `:` or ` - `, after its
+  store's notes are dropped, and the whole title when nothing would be left before it. "Skin and
+  Bones (Live)" is "Skin and Bones", and "Experience Hendrix - The Best of Jimi Hendrix" and
+  MusicBrainz's "Experience Hendrix: The Best of Jimi Hendrix" are both "Experience Hendrix".
+- **The search sends the first part,** and the album's artist. A first part that is the whole title,
+  as pass 1 sent it, isn't sent again.
+- **The candidates** are the release groups of either answer whose first part is equal to the
+  album's, by an artist that matches, with a score of at least 95.
+- **They are ranked by these hints, in order,** each one deciding only between the candidates the
+  ones before it left equal:
+  1. **The full title closest to the album's:** the fewest words, after normalization and without
+     store's notes, that are in one title and not in the other.
+  2. **Live, when the album says so:** when the part of the album's title after its first part has
+     "live", "concert" or "unplugged", a release group whose secondary types have Live comes first.
+  3. **Enough tracks:** a release group with a release of at least as many tracks as the album's
+     highest track number comes first. The track counts come from a search of the release group's
+     releases, asked only for the candidates still equal at this hint, and an album with no track
+     numbers skips it.
+  4. **The same year:** a release group first released in the album's year comes first. The year is
+     a weak hint: a compilation's songs often carry the year each was recorded, so an album with no
+     single year, or a year no candidate has, skips it.
+  5. **An album:** a primary type of Album comes before EP, Single and the rest.
+  6. **The earliest:** the earliest first release date, then MusicBrainz's order.
+- **The first ranked candidate whose archive has a front image is the album's cover.** At most 3 are
+  asked. When none has one, it is an answer of no cover (Retries).
 - **An album with no title, or by the unknown artist, is never searched.**
 - **The match is the source's to judge,** in `:device:library:network:impl`, since it reads the
-  source's answer. The `:network:api` takes an album's names and returns a cover or none.
+  source's answer. The `:network:api` takes an album's names, the artists of its songs, its highest
+  track number and its year, and returns a cover or none.
+- **An album takes at most 2 searches, 3 searches of releases and 3 requests to the archive,** all
+  at one request a second.
 
 ### What is recorded: a table of the user's data
 
@@ -154,8 +231,9 @@ A wrong cover is worse than none, so the match is strict:
 
 ### Retries
 
-- **Only "the source answered and has no cover" is an attempt:** no match, an ambiguous answer, or a
-  release group with no front image. The row becomes `NotFound` with one more attempt.
+- **Only "the source answered and has no cover" is an attempt:** no candidate in either pass, or no
+  front image for the one pass 1 found or for the ones pass 2 asked. The row becomes `NotFound`
+  with one more attempt.
 - **An attempt is tried again after at least a day, then after at least a week, and not after the
   third.** A due retry is picked up by the pass after the next scan, so the phone isn't woken for it.
 - **No network, a timeout and a server error (`5xx`, `503` included) aren't attempts.** The work
@@ -209,13 +287,16 @@ A wrong cover is worse than none, so the match is strict:
 ```
 :device:library:api            ArtworkRepository gains observeArtwork and the setting
 :device:library:impl           the pass after the scan, the work, the order of the sources
-:device:library:network:api    the cover source, as an interface, and CoverSourceError
+:device:library:network:api    the cover source, as an interface, its CoverQuery, and CoverSourceError
 :device:library:network:impl   MusicBrainz and the Cover Art Archive over OkHttp, the match
 :device:library:local:api      the record of each album, the cached file, the setting
 :device:library:local:impl     the table, its migrations, the files in filesDir/artwork
 ```
 
 - **The library gains its network sub-part** (ADR-022, rule 1). ADR-024 said it had none.
+- **`CoverQuery` holds what the match reads of an album:** its title, its artist, the artists of its
+  songs, its highest track number and its year, the last two `null` when the index has none. The
+  library's `:impl` builds it from the index.
 - **OkHttp and kotlinx-serialization-json** are new in the stack, as dependencies of `:network:impl`
   modules only. OkHttp follows the archive's redirect. The tests serve recorded answers of MusicBrainz
   from an OkHttp interceptor, so no request leaves them. JSON is read as a tree, with no compiler
@@ -235,10 +316,25 @@ A wrong cover is worse than none, so the match is strict:
 - **Last.fm or Discogs.** Large catalogs, and Last.fm matches loosely. But both need a key that an app
   can't keep secret, and both have terms of their own to keep. They can be a second source later,
   behind the same `:network:api`.
-- **A looser match:** dropping "(Deluxe Edition)" or "Remastered", or taking the best score. More
-  albums would get a cover, and some would get the wrong one, which the user can't fix while
-  replacing a cover is out of scope. The strict match can be loosened when real misses show what to
-  allow.
+- **Only the strict match, as first decided.** No wrong cover, ever. But on a real library of iTunes
+  purchases it left 6 of 14 albums with none, each with its cover on MusicBrainz: store notes in the
+  title, two equal release groups, an artist credited on the songs and not on the album. The user
+  can't fix a missing cover any more than a wrong one, and a missing one is far more common.
+- **Taking the best score, with no pass 1.** One search, and every album gets the closest answer. But
+  MusicBrainz's score is about the words searched, and two release groups of one name both score
+  100: it would pick by the source's order where the album's own tags can tell them apart. Pass 1
+  keeps the certain answers certain, and pass 2's hints are the album's.
+- **Pass 2 ignoring only a list of words: "live", "acoustic", "bonus …".** It couldn't pick a wrong
+  album by a title's first words alone. But the variations are open-ended ("- The Best of …",
+  ": Volume 2", a city's name), and the list would grow with every library. The first part of the
+  title, the same artist, and the ranking are the guard instead.
+- **The year as the main hint.** The index has it, with no request. But it is a year, not a date, so
+  two editions of one year are equal (*Skin and Bones*'s album and EP are both 2006), and a
+  compilation's songs often carry the years they were recorded (*Experience Hendrix*'s say 1966 to
+  1971). The highest track number tells an album from its EP or its deluxe edition better, for one
+  more request in a tie.
+- **Trying the next candidate when pass 1's has no front image.** But pass 1's answer is the album,
+  so another release group's cover would be another album's.
 - **Download when Now Playing opens an album, with no queue.** No pass, no table of attempts, and only
   albums that are played. But the first play would show the placeholder, the notification would too,
   a failure would be tried again on every play, and an album played offline would never get one.
@@ -265,8 +361,16 @@ A wrong cover is worse than none, so the match is strict:
 - *Live 2012*, and albums like it, show their cover on Now Playing, the notification and the lock
   screen, once the phone has been online.
 - An album's title and artist go to MusicBrainz and the Cover Art Archive. The setting turns it off.
-- Some albums with a cover online won't get it: a title that differs from MusicBrainz's ("Deluxe
-  Edition"), an artist credited differently, or two release groups of one name.
+- Some albums with a cover online won't get it: a first part of the title that differs from
+  MusicBrainz's, or an artist credited differently on MusicBrainz and in every tag of the album.
+- **Pass 2 can show a near miss:** the cover of another album by the same artist whose title starts
+  the same way, such as *Greatest Hits: Volume 2* for a *Greatest Hits* that MusicBrainz doesn't
+  have, or the EP of an album with no track numbers. Replacing a cover is still out of scope, so
+  the user can't correct it yet.
+- An album needs up to 8 requests instead of 2, at one a second, only when pass 1 misses. A first
+  download of a large library takes longer.
+- An album already `NotFound` before the 2026-11-06 revisions is searched again with the new match
+  only when its retry is due (rule 5).
 - The library has its first table of the user's data. From now on, every change to its schema says
   whether it touches it, and the migrations of that table are tested.
 - The library has a network side, and OkHttp and kotlinx-serialization-json are in the stack.
@@ -282,8 +386,9 @@ A wrong cover is worse than none, so the match is strict:
    thumbnail of the song), then a downloaded cover, then the placeholder. Each load asks for the
    thumbnail first, and a cover on the phone replaces a downloaded one.
 2. `[convention]` Covers are downloaded only from the Cover Art Archive, matched through MusicBrainz by
-   the rules under "How a match is judged". Only an album's title and artist are sent, with the
-   `User-Agent` above, at most one request a second.
+   the rules under "How a match is judged": pass 1 equal, then pass 2 only when it misses. Only an
+   album's title and artist, and MusicBrainz's own ids, are sent, with the `User-Agent` above, at most
+   one request a second.
 3. `[convention]` No artwork request is made in offline mode or while the setting is off. The work
    checks both before each request. Tests cover both.
 4. `[convention]` Downloads run only in the library's `artwork-download` WorkManager work, one album at a
@@ -305,7 +410,8 @@ A wrong cover is worse than none, so the match is strict:
 artifacts, with a violating and a passing case in `ModuleRulesTest`. The rest are reviewed, and
 covered by tests: the order and the corrections of a record by the tests of `ArtworkRepository` in
 `:device:library:impl`; the states, the retries and giving up, offline mode and the setting, by the
-tests of the pass and the work against a fake cover source; the match by the tests of
-`:device:library:network:impl` against recorded responses, with no network; the table by Room's
+tests of the pass and the work against a fake cover source; the match, both passes and each hint of
+the ranking, by the tests of `:device:library:network:impl` against recorded responses, with no
+network (*Skin and Bones*, *Experience Hendrix* and *Live at Radio City* among them); the table by Room's
 migration tests; rule 8 by `NowPlayingViewModelTest` and the tests of playback's artwork watcher.
 Rule 2's request rate and the device behavior are checked by hand with *Live 2012*.

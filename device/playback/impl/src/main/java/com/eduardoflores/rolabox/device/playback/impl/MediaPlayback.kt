@@ -84,6 +84,14 @@ internal val SkipNotice: Duration = 4.seconds
 /** How often the resume point is stored while an item plays, which is the most a kill can lose. */
 internal val StoreEvery: Duration = 5.seconds
 
+/** The events after which the current item can be ready with no audio: it became ready, or its tracks or it changed. */
+// Each is checked once: a skip moves the player on, and the next item's own events decide for it.
+private val SILENT_EVENTS = intArrayOf(
+    Player.EVENT_PLAYBACK_STATE_CHANGED,
+    Player.EVENT_TRACKS_CHANGED,
+    Player.EVENT_MEDIA_ITEM_TRANSITION,
+)
+
 /**
  * [PlaybackState] and [PlaybackController] on Media3 (ADR-023). Every action is a command on the player that
  * [connection] gives, a `MediaController` of [PlaybackService]'s session, and the state is built from its events.
@@ -178,11 +186,22 @@ internal class MediaPlayback @Inject constructor(
         }
 
         override fun onPlaybackStateChanged(playbackState: Int) {
-            if (playbackState == Player.STATE_READY) goingBack = false
-            if (playbackState == Player.STATE_ENDED) listenedTo?.let(::unload)
+            // ⏮'s direction lasts until an item plays: one with no audio is ready too, and is skipped on backward
+            // (ADR-023).
+            if (playbackState == Player.STATE_READY && listenedTo?.hasNoAudio() != true) goingBack = false
+            // An item with no audio can end without ever being ready, at once: it didn't play, it failed.
+            if (playbackState == Player.STATE_ENDED) {
+                listenedTo?.let { if (it.hasNoAudio()) skip(it, PlaybackError.Unplayable.Unsupported) else unload(it) }
+            }
         }
 
-        override fun onEvents(player: Player, events: Player.Events) = refresh(player)
+        override fun onEvents(player: Player, events: Player.Events) {
+            if (player === listenedTo && player.isReadyWithNoAudio(events)) {
+                skip(player, PlaybackError.Unplayable.Unsupported)
+            } else {
+                refresh(player)
+            }
+        }
     }
 
     init {
@@ -271,18 +290,43 @@ internal class MediaPlayback @Inject constructor(
     override val isShuffled: Flow<Boolean> = state.map { it.isShuffled }.distinctUntilChanged()
     override val repeatMode: Flow<RepeatMode> = state.map { it.repeatMode }.distinctUntilChanged()
 
+    // The queue holds only the songs that can be played: a protected one selected plays from the nearest that can be
+    // (ADR-023).
     override suspend fun play(source: PlaybackSource, from: PlaybackItemId): Either<PlaybackError, Unit> = either {
-        val list = library.queueOf(source).bind()
-        val index = list.indexOfFirst { it.item.id == from }
-        if (index < 0) raise(PlaybackError.ItemNotInSource(from, source))
-        start(source, list, currentSettings().shuffle.shuffledBy, index).bind()
+        val all = library.queueOf(source).bind()
+        val at = all.indexOfFirst { it.item.id == from }
+        if (at < 0) raise(PlaybackError.ItemNotInSource(from, source))
+        val list = all.playable()
+        val first = all.playableFrom(at)
+        if (first == null) {
+            loadNothingPlayable(all).bind()
+        } else {
+            start(source, list, currentSettings().shuffle.shuffledBy, list.indexOf(first)).bind()
+        }
     }
 
-    // Shuffle Songs: shuffled by songs whatever the setting says, from a random item (ADR-028, rule 5).
+    // Shuffle Songs: shuffled by songs whatever the setting says, from a random item, of those that can be played
+    // (ADR-028, rule 5).
     override suspend fun shuffle(source: PlaybackSource): Either<PlaybackError, Unit> = either {
-        val list = library.queueOf(source).bind()
-        ensure(list.isNotEmpty()) { PlaybackError.NothingToPlay(source) }
-        start(source, list, ShuffledBy.ShuffleSongs, orders.randomIndex(list.size)).bind()
+        val all = library.queueOf(source).bind()
+        ensure(all.isNotEmpty()) { PlaybackError.NothingToPlay(source) }
+        val list = all.playable()
+        if (list.isEmpty()) {
+            loadNothingPlayable(all).bind()
+        } else {
+            start(source, list, ShuffledBy.ShuffleSongs, orders.randomIndex(list.size)).bind()
+        }
+    }
+
+    /**
+     * A list none of whose songs can be played, since all are protected: nothing is loaded, and the state says why
+     * (ADR-023, ADR-018 rule 8), with the last of them and their count.
+     */
+    private suspend fun loadNothingPlayable(all: List<QueuedItem>): Either<PlaybackError, Unit> = onPlayer { player ->
+        unload(player)
+        val stopped = SkippedItems(all.last().item, PlaybackError.Unplayable.Protected, all.size)
+        state.update { it.copy(startCount = it.startCount + 1, skipped = null, unplayableQueue = stopped) }
+        refresh(player)
     }
 
     /** Loads [list] in place of what was loaded, in an order shuffled [by] a value or in its own, and plays [index]. */
@@ -451,7 +495,9 @@ internal class MediaPlayback @Inject constructor(
                 if (error.isListGone()) local.clear()
                 null
             },
-            ifRight = { list ->
+            ifRight = { all ->
+                // A song found protected since it was stored is left out, as it is of any queue (ADR-023).
+                val list = all.playable()
                 val stored = list.resumedAt(point, order?.roundIn(list, point))
                 if (stored == null) local.clear()
                 stored
@@ -586,8 +632,9 @@ internal class MediaPlayback @Inject constructor(
     }
 
     /**
-     * The current item couldn't be played: says so, and moves past it as playing or as paused as it was. When nothing
-     * is left to move to, the queue stops, and says that before nothing is loaded, so Now Playing isn't popped for it.
+     * The current item couldn't be played: says so, moves past it as playing or as paused as it was, and it leaves the
+     * queue (ADR-023). When nothing is left to move to, the queue stops, and says that before nothing is loaded, so Now
+     * Playing isn't popped for it.
      */
     private fun skip(player: Player, error: PlaybackError.Unplayable) {
         val index = player.currentMediaItemIndex
@@ -607,12 +654,38 @@ internal class MediaPlayback @Inject constructor(
             goingBack = goingBack && playQueue.positionOf(next) < playQueue.positionOf(index)
             player.seekTo(next, 0)
             // A skip past the end of a shuffled round under Repeat All started the next round (ADR-028).
-            if (playQueue.order !== round) storeOrder()
+            val startedRound = playQueue.order !== round
+            leaveQueue(index, player)
+            if (startedRound || playQueue.shuffledBy != null) storeOrder()
             applyOrder(player)
             player.prepare()
         }
         refresh(player)
     }
+
+    /**
+     * The item at [index], which failed and isn't the current one any more, leaves the queue and the player's
+     * playlist, so the count and ⏮ and ⏭ see only items that play (ADR-023). Its place in a shuffled order goes with
+     * it, and the items after it keep theirs (ADR-028).
+     */
+    private fun leaveQueue(index: Int, player: Player) {
+        items = items.filterIndexed { itemIndex, _ -> itemIndex != index }
+        playQueue.remove(index)
+        player.removeMediaItem(index)
+        playerOrder = null
+    }
+
+    /**
+     * Whether the current item has no audio the phone can play. Media3 drops a track it can't read, such as an iTunes
+     * Store purchase's FairPlay one, and plays the item anyway, with no error: ready, the time moves with no end and
+     * nothing is heard. That item is as unplayable as one that fails (ADR-023). Media3 doesn't say why, so it is
+     * `Unsupported`. Asked only once the item is ready or ended, when its tracks are known.
+     */
+    private fun Player.isReadyWithNoAudio(events: Player.Events): Boolean =
+        SILENT_EVENTS.any(events::contains) && playbackState == Player.STATE_READY && hasNoAudio()
+
+    private fun Player.hasNoAudio(): Boolean =
+        items.getOrNull(currentMediaItemIndex) != null && !currentTracks.isTypeSupported(C.TRACK_TYPE_AUDIO)
 
     private fun endHold(player: Player) {
         hold?.let { if (it.wasPlaying) player.play() }
@@ -825,9 +898,16 @@ private data class Snapshot(
 
 /**
  * An item of the queue, where its audio is, which the player needs and the `:api` doesn't show, and where it is in its
- * album, which the Albums order needs (ADR-028).
+ * album, which the Albums order needs (ADR-028). A [isProtected] song is in the library's list, and never in a queue
+ * (ADR-023).
  */
-private class QueuedItem(val item: PlaybackItem, val uri: String, val place: AlbumPlace, val artworkVersion: Int = 0) {
+private class QueuedItem(
+    val item: PlaybackItem,
+    val uri: String,
+    val place: AlbumPlace,
+    val artworkVersion: Int = 0,
+    val isProtected: Boolean = false,
+) {
     fun toMediaItem(): MediaItem = MediaItem.Builder()
         .setMediaId(item.id.mediaId)
         .setUri(uri)
@@ -870,7 +950,10 @@ private fun List<QueuedItem>.resumedAt(point: ResumePoint, order: StoredOrder?):
 private fun PlaybackError.isListGone(): Boolean = this is PlaybackError.Library &&
     (cause is LibraryError.ArtistNotFound || cause is LibraryError.AlbumNotFound || cause is LibraryError.GenreNotFound)
 
-/** The list of [source] as the queue shows it, with the names of each song's artist and album and its URI. */
+/**
+ * The list of [source] as the library shows it, with the names of each song's artist and album and its URI. Its
+ * protected songs are in it, and [playable] leaves them out.
+ */
 private suspend fun LibraryRepository.queueOf(source: PlaybackSource): Either<PlaybackError, List<QueuedItem>> =
     either {
         val songs = when (source) {
@@ -897,10 +980,20 @@ private suspend fun LibraryRepository.queueOf(source: PlaybackSource): Either<Pl
                 duration = song.duration,
                 artwork = ArtworkRef(song.id),
             )
-            QueuedItem(item, song.uri, song.place)
+            QueuedItem(item, song.uri, song.place, isProtected = song.isProtected)
         }
     }
 
 private val Song.place get() = AlbumPlace(albumId, discNumber, trackNumber)
+
+/** What of a list a queue holds: its songs that can be played (ADR-023). */
+private fun List<QueuedItem>.playable(): List<QueuedItem> = filterNot { it.isProtected }
+
+/**
+ * Where a queue of [list]'s songs that can be played starts, for a selected [at]: that song, or the next one after it
+ * that can be played, or the one before it when none comes after (ADR-023). `null` when none can be played.
+ */
+private fun List<QueuedItem>.playableFrom(at: Int): QueuedItem? =
+    drop(at).firstOrNull { !it.isProtected } ?: take(at).lastOrNull { !it.isProtected }
 
 private const val MAX_VOLUME = 100

@@ -45,6 +45,8 @@ internal data class SongEntity(
     /** The song's genres as its source gave them, separated by [GENRE_SEPARATOR], or null when it has none. */
     val genres: String? = null,
     val genreSource: FieldSource = FieldSource.Unknown,
+    /** An MP4 whose audio is FairPlay's, which Android can't play (ADR-024, Reading the tags). */
+    val isProtected: Boolean = false,
 )
 
 /** Between the genres of [SongEntity.genres]. No tag holds it, since it is a control character. */
@@ -63,6 +65,7 @@ internal data class SongRow(
     val durationMillis: Long?,
     val uri: String,
     val discNumber: Int?,
+    val isProtected: Boolean,
 )
 
 /** Where a song's audio is. */
@@ -141,4 +144,8 @@ internal data class ArtworkAlbumRow(
     val foundAt: Long?,
     val attempts: Int?,
     val lastAttemptAt: Long?,
+    // The distinct artists of its songs, joined by a unit separator, since a row has no list.
+    val songArtists: String?,
+    val highestTrackNumber: Int?,
+    val year: Int?,
 )

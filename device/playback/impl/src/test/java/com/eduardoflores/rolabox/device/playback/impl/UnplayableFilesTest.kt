@@ -140,6 +140,132 @@ class UnplayableFilesTest {
         assertEquals(PlaybackError.Unplayable.Missing, playback.skipped.first()?.error)
     }
 
+    // An iTunes Store purchase: Media3 drops its FairPlay track and plays the item anyway, with no error. On a phone it
+    // is ready and its time moves with no sound; here, with no audio to wait for, it can also end at once. Either way
+    // it failed, and the last one says so instead of ending the queue as queues do.
+    @Test
+    fun aFairPlayFileLastInTheQueue_stops_andSaysItIsUnsupported() = scope.runTest {
+        songs(GOOD, FAIR_PLAY)
+        playFrom(2)
+        untilStopped()
+
+        val stopped = playback.unplayableQueue.first()
+        assertEquals(2L, stopped?.last?.number)
+        assertEquals(PlaybackError.Unplayable.Unsupported, stopped?.error)
+    }
+
+    @Test
+    fun anAlbumOfFairPlayFiles_stops_andTheStateSaysSo() = scope.runTest {
+        songs(FAIR_PLAY, FAIR_PLAY)
+        playFrom(1)
+        untilStopped()
+
+        assertEquals(2L, playback.unplayableQueue.first()?.last?.number)
+    }
+
+    @Test
+    fun aFairPlayFile_isNotWhatPlays_theNextOneIs() = scope.runTest {
+        songs(FAIR_PLAY, GOOD)
+        playFrom(1)
+        untilPlaying(2)
+
+        assertEquals(2L, playback.currentItem.first()?.number)
+        assertTrue(playback.isPlaying.first())
+    }
+
+    // ADR-023: a song that fails leaves the queue, so the count is of songs that play.
+    @Test
+    fun aBadFile_leavesTheQueue_soTheCountDrops() = scope.runTest {
+        songs(GOOD, TEXT, GOOD)
+        playFrom(2)
+        untilPlaying(3)
+
+        assertEquals(listOf(1L, 3L), playback.queue.first().map { it.number })
+        assertEquals(1, playback.queueIndex.first())
+        assertEquals(2, player.mediaItemCount)
+    }
+
+    // ADR-023: ⏮ after a skip goes to the song before the bad one, which isn't in the queue any more.
+    @Test
+    fun previousAfterASkip_goesBackPastTheBadFile() = scope.runTest {
+        songs(GOOD, TEXT, GOOD)
+        playFrom(1)
+        untilPlaying(1)
+        playback.next()
+        untilPlaying(3)
+
+        playback.previous()
+        untilPlaying(1)
+
+        assertEquals(1L, playback.currentItem.first()?.number)
+    }
+
+    // ADR-023: the library knows a protected song, and no queue holds it: no skip, and a count of the songs that play.
+    @Test
+    fun protectedSongs_neverEnterTheQueue() = scope.runTest {
+        songs(GOOD, GOOD, GOOD, GOOD)
+        protect(2, 3)
+        playFrom(1)
+        untilPlaying(1)
+
+        assertEquals(listOf(1L, 4L), playback.queue.first().map { it.number })
+        assertEquals(2, player.mediaItemCount)
+        playback.next()
+        untilPlaying(4)
+        assertNull(playback.skipped.first())
+    }
+
+    @Test
+    fun aProtectedSongSelected_playsFromTheNextThatCan_orTheOneBefore() = scope.runTest {
+        songs(GOOD, GOOD, GOOD)
+        protect(2)
+        playFrom(2)
+        untilPlaying(3)
+        assertEquals(3L, playback.currentItem.first()?.number)
+
+        protect(2, 3)
+        playFrom(3)
+        untilPlaying(1)
+        assertEquals(1L, playback.currentItem.first()?.number)
+    }
+
+    @Test
+    fun anAlbumOfProtectedSongs_loadsNothing_andSaysWhy() = scope.runTest {
+        songs(GOOD, GOOD, GOOD)
+        protect(1, 2, 3)
+        playFrom(2)
+        runCurrent()
+
+        assertNull(playback.currentItem.first())
+        assertEquals(0, player.mediaItemCount)
+        val stopped = playback.unplayableQueue.first()
+        assertEquals(PlaybackError.Unplayable.Protected, stopped?.error)
+        assertEquals(3, stopped?.count)
+    }
+
+    // ADR-028, rule 5: Shuffle Songs shuffles only the songs that can be played.
+    @Test
+    fun shuffleSongs_leavesProtectedSongsOut() = scope.runTest {
+        songs(GOOD, GOOD, GOOD, GOOD, GOOD)
+        protect(2, 4)
+        playback.shuffle(PlaybackSource.ByAlbum(album.id))
+        RobolectricUtil.runMainLooperUntil { player.playbackState == Player.STATE_READY }
+        runCurrent()
+
+        assertEquals(setOf(1L, 3L, 5L), playback.queue.first().map { it.number }.toSet())
+        assertEquals(3, player.mediaItemCount)
+    }
+
+    @Test
+    fun anM4aThatCanBePlayed_isNotSkipped() = scope.runTest {
+        songs(GOOD_M4A, GOOD)
+        playFrom(1)
+        untilPlaying(1)
+
+        assertNull(playback.skipped.first())
+        assertEquals(1L, playback.currentItem.first()?.number)
+    }
+
     @Test
     fun theNotice_endsOnItsOwn() = scope.runTest {
         songs(TEXT, GOOD)
@@ -258,7 +384,9 @@ class UnplayableFilesTest {
         untilPlaying(next)
 
         assertEquals(1L, playback.skipped.first()?.last?.number)
-        assertEquals(1, playback.queueIndex.first())
+        // The bad file left the queue and its place in the order: the next one is first, of 4 (ADR-028).
+        assertEquals(0, playback.queueIndex.first())
+        assertEquals(4, playback.queue.first().size)
     }
 
     @Test
@@ -293,7 +421,7 @@ class UnplayableFilesTest {
         playback.previous()
         // It lands on the bad file, fails there, and comes back.
         RobolectricUtil.runMainLooperUntil {
-            player.currentMediaItemIndex == 1 &&
+            player.currentMediaItem?.mediaId == songMediaId(2) &&
                 player.playbackState == Player.STATE_READY
         }
         runCurrent()
@@ -310,7 +438,7 @@ class UnplayableFilesTest {
         playback.pause()
 
         playback.next()
-        RobolectricUtil.runMainLooperUntil { player.currentMediaItemIndex == 2 }
+        RobolectricUtil.runMainLooperUntil { player.currentMediaItem?.mediaId == songMediaId(3) }
         runCurrent()
 
         assertEquals(3L, playback.currentItem.first()?.number)
@@ -334,6 +462,11 @@ class UnplayableFilesTest {
         kinds.forEach { (code, kind) -> assertEquals(kind, PlaybackException("", null, code).toUnplayable()) }
     }
 
+    /** The library says the songs [numbers] are protected, and no other (ADR-024). */
+    private fun protect(vararg numbers: Long) {
+        library.songs = library.songs.map { it.copy(isProtected = it.id.value in numbers) }
+    }
+
     private suspend fun playFrom(number: Long) {
         playback.play(PlaybackSource.ByAlbum(album.id), PlaybackItemId.Song(SongId(number)))
     }
@@ -341,7 +474,7 @@ class UnplayableFilesTest {
     /** Lets the player run until it plays song [number], and the state has caught up with it. */
     private fun TestScope.untilPlaying(number: Long) {
         RobolectricUtil.runMainLooperUntil {
-            player.playbackState == Player.STATE_READY && player.currentMediaItemIndex == (number - 1).toInt()
+            player.playbackState == Player.STATE_READY && player.currentMediaItem?.mediaId == songMediaId(number)
         }
         runCurrent()
     }
@@ -350,6 +483,8 @@ class UnplayableFilesTest {
         RobolectricUtil.runMainLooperUntil { player.mediaItemCount == 0 }
         runCurrent()
     }
+
+    private fun songMediaId(number: Long) = PlaybackItemId.Song(SongId(number)).mediaId
 
     private val PlaybackItem.number: Long
         get() = (id as PlaybackItemId.Song).id.value
@@ -372,6 +507,8 @@ class UnplayableFilesTest {
 
     private companion object {
         val GOOD = FixtureContent.Mp3(Mp3Tags.None, Mp3Stream(durationMs = 1_000))
+        val GOOD_M4A = FixtureContent.M4a(tags = null, stream = AacStream(durationMs = 1_000))
+        val FAIR_PLAY = FixtureContent.M4a(tags = null, stream = AacStream(durationMs = 1_000, fairPlay = true))
         val TEXT = FixtureContent.Text("This is a text file with an .mp3 extension.\n")
         val TRUNCATED_M4A = FixtureContent.Truncated(
             FixtureContent.M4a(tags = null, stream = AacStream(moovFirst = false)),

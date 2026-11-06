@@ -250,6 +250,34 @@ class ArtworkDownloadTest {
         assertEquals(listOf(CoverQuery("Hits", CoverArtist.Various)), source.requests)
     }
 
+    // What the match reads of the songs goes with the album (ADR-027, How a match is judged).
+    @Test
+    fun anAlbum_isAskedForWithWhatItsSongsSay() = runTest {
+        albums.albums = listOf(
+            album("city", title = "Radio City", artist = "Dave Matthews").copy(
+                songArtists = listOf("Dave Matthews & Tim Reynolds"),
+                highestTrackNumber = 14,
+                year = 2007,
+            ),
+        )
+        albums.records.value = mapOf("city" to ArtworkRecord.Pending)
+
+        downloader.run()
+
+        assertEquals(
+            listOf(
+                CoverQuery(
+                    "Radio City",
+                    CoverArtist.Named("Dave Matthews"),
+                    listOf("Dave Matthews & Tim Reynolds"),
+                    highestTrackNumber = 14,
+                    year = 2007,
+                ),
+            ),
+            source.requests,
+        )
+    }
+
     @Test
     fun inOfflineMode_noRequestIsMade() = runTest {
         albums.albums = listOf(live2012)

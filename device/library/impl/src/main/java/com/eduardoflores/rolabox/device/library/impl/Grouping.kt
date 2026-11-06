@@ -39,6 +39,7 @@ internal data class SongDraft(
     val metadata: SongMetadata,
     val hasEmbeddedPicture: Boolean?,
     val tagsReadAt: Long?,
+    val isProtected: Boolean = false,
 )
 
 /**
@@ -77,6 +78,7 @@ internal fun groupSongs(drafts: List<SongDraft>): List<SongWrite> {
             tagsReadAt = draft.tagsReadAt,
             isDuplicate = duplicateKeyOf(draft, album)?.let { shown[it] !== draft } == true,
             genres = genreKeysOf(draft.metadata).map(spellings::genre).ifEmpty { listOf(UNKNOWN_GENRE) },
+            isProtected = draft.isProtected,
         )
     }
 }

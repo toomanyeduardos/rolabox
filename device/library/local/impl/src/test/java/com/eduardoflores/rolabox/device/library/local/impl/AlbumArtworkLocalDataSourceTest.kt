@@ -69,17 +69,19 @@ class AlbumArtworkLocalDataSourceTest {
         artist: ArtistGroup,
         track: Int? = id.toInt(),
         picture: Boolean? = false,
+        songArtist: String? = artist.name,
+        year: Int? = null,
     ) = SongWrite(
         id = null,
         file = SongFile(id, "content://song/$id", "Music/", "$id.m4a", 1, 2),
         metadata = SongMetadata(
             title = known("Song $id"),
-            artist = known(artist.name),
+            artist = known(songArtist),
             albumArtist = known(artist.name),
             album = known(album),
             trackNumber = known(track),
             discNumber = known(null),
-            year = known(null),
+            year = known(year),
             compilation = known(null),
             durationMillis = known(1000L),
         ),
@@ -103,10 +105,48 @@ class AlbumArtworkLocalDataSourceTest {
 
         assertEquals(
             listOf(
-                ArtworkAlbum("Live 2012|coldplay", "Live 2012", "Coldplay", false, "content://song/2", null),
+                ArtworkAlbum(
+                    "Live 2012|coldplay",
+                    "Live 2012",
+                    "Coldplay",
+                    false,
+                    "content://song/2",
+                    null,
+                    songArtists = listOf("Coldplay"),
+                    highestTrackNumber = 2,
+                ),
             ).right(),
             artwork.getAlbums(),
         )
+    }
+
+    // What the match reads of the songs (ADR-027, How a match is judged).
+    @Test
+    fun anAlbum_comesWithItsSongsArtists_highestTrack_andTheYearTheyShare() = runTest {
+        val dmb = ArtistGroup("dave matthews", "Dave Matthews")
+        val duo = "Dave Matthews & Tim Reynolds"
+        val hendrix = ArtistGroup("jimi hendrix", "Jimi Hendrix")
+        index.write(
+            IndexBatch(
+                listOf(
+                    song(1, "Radio City", dmb, track = 3, songArtist = duo, year = 2007),
+                    song(2, "Radio City", dmb, track = 14, songArtist = duo, year = 2007),
+                    song(3, "Radio City", dmb, track = null, songArtist = "Dave Matthews", year = null),
+                    song(4, "Experience", hendrix, track = 20, year = 1967),
+                    song(5, "Experience", hendrix, track = 4, year = 1971),
+                ),
+            ),
+        )
+
+        val albums = artwork.getAlbums().getOrNull().orEmpty().associateBy { it.title }
+        val radioCity = checkNotNull(albums["Radio City"])
+        assertEquals(setOf(duo, "Dave Matthews"), radioCity.songArtists.toSet())
+        assertEquals(14, radioCity.highestTrackNumber)
+        assertEquals(2007, radioCity.year)
+        val experience = checkNotNull(albums["Experience"])
+        assertEquals(20, experience.highestTrackNumber)
+        // Its songs carry the years they were recorded: no single year.
+        assertEquals(null, experience.year)
     }
 
     @Test
