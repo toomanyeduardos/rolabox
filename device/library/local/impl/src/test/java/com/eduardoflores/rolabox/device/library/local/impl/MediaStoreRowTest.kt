@@ -102,4 +102,16 @@ class MediaStoreRowTest {
     fun textIsNotReinterpreted() {
         assertEquals("U2 & Coldplay", full.copy(artist = "U2 & Coldplay").file().artist)
     }
+
+    @Test
+    fun aGenre_isReadByTheParsersRules() {
+        assertEquals(listOf("Rock"), full.copy(genre = "(17)").file().genres)
+        assertEquals(listOf("Dream Pop"), full.copy(genre = "Dream Pop").file().genres)
+    }
+
+    @Test
+    fun noGenre_orOnApi29_isNone() {
+        assertEquals(emptyList<String>(), full.copy(genre = null).file().genres)
+        assertEquals(emptyList<String>(), full.copy(genre = "<unknown>").file().genres)
+    }
 }

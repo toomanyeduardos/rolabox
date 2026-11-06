@@ -142,28 +142,33 @@ private fun genres(): List<AudioFixture> {
     return listOf(
         AudioFixture(
             "$folder/01 - Parenthesised.mp3",
-            id3v23(album.copy(title = "Parenthesised", track = "1/5", genre = "(17)")),
+            id3v23(album.copy(title = "Parenthesised", track = "1/6", genre = "(17)")),
             "genre (17), ID3v1's Rock",
         ),
         AudioFixture(
             "$folder/02 - Number.mp3",
-            id3v24(album.copy(title = "Number", track = "2/5", genre = "17")),
+            id3v24(album.copy(title = "Number", track = "2/6", genre = "17")),
             "genre 17, as a bare number",
         ),
         AudioFixture(
             "$folder/03 - Several.mp3",
-            id3v24(album.copy(title = "Several", track = "3/5", genre = "Rock\u0000Pop\u0000Jazz")),
+            id3v24(album.copy(title = "Several", track = "3/6", genre = "Rock\u0000Pop\u0000Jazz")),
             "several genres, separated as ID3v2.4 separates them",
         ),
         AudioFixture(
             "$folder/04 - Text.mp3",
-            id3v23(album.copy(title = "Text", track = "4/5", genre = "Dream Pop")),
+            id3v23(album.copy(title = "Text", track = "4/6", genre = "Dream Pop")),
             "a genre as free text",
         ),
         AudioFixture(
             "$folder/05 - Numbered M4A.m4a",
-            M4a(album.copy(title = "Numbered M4A", track = "5/5", genre = "13")),
+            M4a(album.copy(title = "Numbered M4A", track = "5/6", genre = "13")),
             "m4a: genre 13 (Pop), written as gnre",
+        ),
+        AudioFixture(
+            "$folder/06 - Spelled Apart.mp3",
+            id3v23(album.copy(title = "Spelled Apart", track = "6/6", genre = "dream  pop")),
+            "a genre that differs from another only in case and whitespace",
         ),
     )
 }

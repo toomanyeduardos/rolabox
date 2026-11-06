@@ -25,8 +25,8 @@ private enum class MusicMenuRow { Artists, Albums, Songs, Genres, Playlists }
 
 /**
  * Music: its menu, or why there is none. Turning moves the highlight, which stops at the first and last
- * rows. Center on Artists, Albums or Songs reports [onArtistsClick], [onAlbumsClick] or [onSongsClick];
- * Genres and Playlists do nothing until their screens exist.
+ * rows. Center on Artists, Albums, Songs or Genres reports [onArtistsClick], [onAlbumsClick],
+ * [onSongsClick] or [onGenresClick]; Playlists does nothing until its screen exists.
  * The first time it opens, it asks for the audio permission (ADR-024). Center on the row that takes the
  * menu's place asks again, or opens system settings when Android won't.
  */
@@ -36,6 +36,7 @@ internal fun MusicMenuRoute(
     onArtistsClick: () -> Unit,
     onAlbumsClick: () -> Unit,
     onSongsClick: () -> Unit,
+    onGenresClick: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val highlight = rememberListHighlight()
@@ -55,7 +56,7 @@ internal fun MusicMenuRoute(
                 is WheelEvent.Turn -> highlight.move(event.steps, MusicMenuRow.entries.size)
 
                 WheelEvent.Center -> MusicMenuRow.entries[highlight.index]
-                    .exit(onArtistsClick, onAlbumsClick, onSongsClick)
+                    .exit(onArtistsClick, onAlbumsClick, onSongsClick, onGenresClick)
                     ?.invoke()
 
                 else -> Unit
@@ -78,11 +79,13 @@ private fun MusicMenuRow.exit(
     onArtistsClick: () -> Unit,
     onAlbumsClick: () -> Unit,
     onSongsClick: () -> Unit,
+    onGenresClick: () -> Unit,
 ): (() -> Unit)? = when (this) {
     MusicMenuRow.Artists -> onArtistsClick
     MusicMenuRow.Albums -> onAlbumsClick
     MusicMenuRow.Songs -> onSongsClick
-    MusicMenuRow.Genres, MusicMenuRow.Playlists -> null
+    MusicMenuRow.Genres -> onGenresClick
+    MusicMenuRow.Playlists -> null
 }
 
 /** The stateless screen that previews and screenshot tests call (ADR-021, rule 4). */

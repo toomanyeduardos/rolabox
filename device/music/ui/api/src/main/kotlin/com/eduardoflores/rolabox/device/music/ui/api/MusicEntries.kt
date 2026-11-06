@@ -14,12 +14,16 @@ import androidx.navigation3.runtime.NavKey
 interface MusicEntries {
     /**
      * Adds the entries of [MusicMenuKey], [ArtistsKey], [AlbumsKey], [SongsKey], [ArtistAlbumsKey],
-     * [AlbumSongsKey] and [ArtistSongsKey], for the screen stack inside the display.
+     * [AlbumSongsKey], [ArtistSongsKey], [GenresKey], [GenreArtistsKey], [GenreArtistAlbumsKey],
+     * [GenreArtistSongsKey] and [GenreAlbumSongsKey], for the screen stack inside the display.
      *
-     * The exits: center on Artists, Albums or Songs in the Music menu is [onArtistsClick],
-     * [onAlbumsClick] or [onSongsClick]; on an artist, [onArtistClick]; on "All Songs" in an artist's
-     * albums, [onAllSongsClick] with that artist; on an album, in an artist's albums or in Albums,
-     * [onAlbumClick]; on a song, [onSongClick]. Genres and Playlists do nothing yet.
+     * The exits: center on Artists, Albums, Songs or Genres in the Music menu is [onArtistsClick],
+     * [onAlbumsClick], [onSongsClick] or [onGenresClick]; on an artist, [onArtistClick]; on "All Songs"
+     * in an artist's albums, [onAllSongsClick] with that artist; on an album, in an artist's albums or
+     * in Albums, [onAlbumClick]; on a song, [onSongClick]. Under a genre, the same screens show only
+     * what is in it: center on a genre is [onGenreClick], and then on an artist, "All Songs" and an
+     * album, [onGenreArtistClick], [onGenreAllSongsClick] and [onGenreAlbumClick], with the genre.
+     * Playlists does nothing yet.
      */
     @Suppress("LongParameterList") // One lambda per exit, so the contract lists how its screens are left.
     fun screenStackEntries(
@@ -31,5 +35,10 @@ interface MusicEntries {
         onAllSongsClick: (artistId: Long) -> Unit,
         onAlbumClick: (albumId: Long) -> Unit,
         onSongClick: (songId: Long) -> Unit,
+        onGenresClick: () -> Unit,
+        onGenreClick: (genreId: Long) -> Unit,
+        onGenreArtistClick: (genreId: Long, artistId: Long) -> Unit,
+        onGenreAllSongsClick: (genreId: Long, artistId: Long) -> Unit,
+        onGenreAlbumClick: (genreId: Long, albumId: Long) -> Unit,
     )
 }

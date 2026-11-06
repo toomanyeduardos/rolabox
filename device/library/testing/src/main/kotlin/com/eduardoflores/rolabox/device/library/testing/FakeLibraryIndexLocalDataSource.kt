@@ -9,6 +9,8 @@ import com.eduardoflores.rolabox.device.library.api.AlbumId
 import com.eduardoflores.rolabox.device.library.api.Artist
 import com.eduardoflores.rolabox.device.library.api.ArtistId
 import com.eduardoflores.rolabox.device.library.api.ArtworkRef
+import com.eduardoflores.rolabox.device.library.api.Genre
+import com.eduardoflores.rolabox.device.library.api.GenreId
 import com.eduardoflores.rolabox.device.library.api.LibraryError
 import com.eduardoflores.rolabox.device.library.api.Song
 import com.eduardoflores.rolabox.device.library.api.SongId
@@ -34,6 +36,8 @@ class FakeLibraryIndexLocalDataSource : LibraryIndexLocalDataSource {
         val songs: Map<SongId, IndexedSong> = emptyMap(),
         val artists: Map<String, Artist> = emptyMap(),
         val albums: Map<String, Album> = emptyMap(),
+        val genres: Map<String, Genre> = emptyMap(),
+        val songGenres: Map<SongId, List<String>> = emptyMap(),
     )
 
     private val state = MutableStateFlow(Index())
@@ -57,6 +61,12 @@ class FakeLibraryIndexLocalDataSource : LibraryIndexLocalDataSource {
     val artists: List<Artist> get() = state.value.artists.values.toList()
 
     val albums: List<Album> get() = state.value.albums.values.toList()
+
+    val genres: List<Genre> get() = state.value.genres.values.toList()
+
+    /** The names of the genres each song is in, `null` for Unknown Genre. */
+    val genresOfSongs: Map<SongId, List<String?>>
+        get() = state.value.run { songGenres.mapValues { (_, keys) -> keys.map { genres.getValue(it).name } } }
 
     private fun Index.songList(): List<Song> = songs.values.filterNot { it.isDuplicate }.map { song ->
         Song(
@@ -98,6 +108,39 @@ class FakeLibraryIndexLocalDataSource : LibraryIndexLocalDataSource {
 
     override fun observeSongsByAlbum(albumId: AlbumId) = read { songList().filter { it.albumId == albumId } }
 
+    override fun observeGenres() = read { genres.values.toList() }
+
+    override fun observeGenre(id: GenreId) = read { genres.values.firstOrNull { it.id == id } }
+
+    override fun observeArtistsByGenre(genreId: GenreId) = read {
+        val inGenre = songsIn(genreId)
+        val ids = inGenre.map { it.artistId } +
+            albums.values.filter { album -> album.title != null && inGenre.any { it.albumId == album.id } }
+                .map { it.artistId }
+        artists.values.filter { it.id in ids }
+    }
+
+    override fun observeAlbumsByGenreAndArtist(genreId: GenreId, artistId: ArtistId) = read {
+        val inGenre = songsIn(genreId)
+        albums.values.filter { album ->
+            album.title != null &&
+                inGenre.any { it.albumId == album.id && (it.artistId == artistId || album.artistId == artistId) }
+        }
+    }
+
+    override fun observeSongsByGenreAndArtist(genreId: GenreId, artistId: ArtistId) = read {
+        val ownAlbums = albums.values.filter { it.artistId == artistId && it.title != null }.map { it.id }
+        songsIn(genreId).filter { it.artistId == artistId || it.albumId in ownAlbums }
+    }
+
+    override fun observeSongsByGenreAndAlbum(genreId: GenreId, albumId: AlbumId) =
+        read { songsIn(genreId).filter { it.albumId == albumId } }
+
+    private fun Index.songsIn(genreId: GenreId): List<Song> {
+        val key = genres.entries.firstOrNull { it.value.id == genreId }?.key
+        return songList().filter { key in songGenres[it.id].orEmpty() }
+    }
+
     override fun observeSongCount() = read { songs.size }
 
     override suspend fun getArtist(id: ArtistId): Either<LibraryError, Artist?> =
@@ -105,6 +148,9 @@ class FakeLibraryIndexLocalDataSource : LibraryIndexLocalDataSource {
 
     override suspend fun getAlbum(id: AlbumId): Either<LibraryError, Album?> =
         state.value.albums.values.firstOrNull { it.id == id }.right()
+
+    override suspend fun getGenre(id: GenreId): Either<LibraryError, Genre?> =
+        state.value.genres.values.firstOrNull { it.id == id }.right()
 
     override suspend fun getSongFile(id: SongId): Either<LibraryError, SongFile?> = state.value.songs[id]?.file.right()
 
@@ -123,6 +169,8 @@ class FakeLibraryIndexLocalDataSource : LibraryIndexLocalDataSource {
         val songs = songs.toMutableMap()
         val artists = artists.toMutableMap()
         val albums = albums.toMutableMap()
+        val genres = genres.toMutableMap()
+        val songGenres = songGenres.toMutableMap()
         batch.writes.forEach { write ->
             val artistIdOf = { group: ArtistGroup ->
                 val id = artists[group.key]?.id ?: ArtistId(nextId++)
@@ -151,15 +199,22 @@ class FakeLibraryIndexLocalDataSource : LibraryIndexLocalDataSource {
                 write.tagsReadAt,
                 write.isDuplicate,
             )
+            write.genres.forEach { group ->
+                genres[group.key] = Genre(genres[group.key]?.id ?: GenreId(nextId++), group.name)
+            }
+            songGenres[id] = write.genres.map { it.key }
         }
         batch.removals.forEach(songs::remove)
+        songGenres.keys.retainAll(songs.keys)
+        val usedGenres = songGenres.values.flatten().toSet()
+        genres.keys.retainAll(usedGenres)
         val usedAlbums = songs.values.mapTo(HashSet()) { it.albumKey }
         albums.keys.retainAll(usedAlbums)
         albums.replaceAll { key, album -> album.copy(artwork = songs.values.artworkOf(key)) }
         val albumArtists = albums.values.mapTo(HashSet()) { it.artistId }
         val songArtists = songs.values.mapTo(HashSet()) { it.artistKey }
         artists.entries.retainAll { (key, artist) -> key in songArtists || artist.id in albumArtists }
-        return Index(songs, artists, albums)
+        return Index(songs, artists, albums, genres, songGenres)
     }
 
     override suspend fun getScanState(): Either<LibraryError, List<VolumeScanState>> = savedScanState.orEmpty().right()

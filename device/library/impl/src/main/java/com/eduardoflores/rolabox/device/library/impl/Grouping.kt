@@ -4,6 +4,7 @@ import com.eduardoflores.rolabox.device.library.api.SongId
 import com.eduardoflores.rolabox.device.library.local.api.AlbumGroup
 import com.eduardoflores.rolabox.device.library.local.api.ArtistGroup
 import com.eduardoflores.rolabox.device.library.local.api.FieldSource
+import com.eduardoflores.rolabox.device.library.local.api.GenreGroup
 import com.eduardoflores.rolabox.device.library.local.api.SongFile
 import com.eduardoflores.rolabox.device.library.local.api.SongMetadata
 import com.eduardoflores.rolabox.device.library.local.api.SongWrite
@@ -27,6 +28,9 @@ private val VARIOUS_ARTISTS = ArtistGroup(
     sortName = "various artists",
     isVarious = true,
 )
+
+/** The genre of songs with none, which the screens call Unknown Genre and sort last. */
+private val UNKNOWN_GENRE = GenreGroup(key = "", name = null)
 
 /** A song with its fields resolved, before the rules have placed it. [id] is null for a file new to the index. */
 internal data class SongDraft(
@@ -72,6 +76,7 @@ internal fun groupSongs(drafts: List<SongDraft>): List<SongWrite> {
             hasEmbeddedPicture = draft.hasEmbeddedPicture,
             tagsReadAt = draft.tagsReadAt,
             isDuplicate = duplicateKeyOf(draft, album)?.let { shown[it] !== draft } == true,
+            genres = genreKeysOf(draft.metadata).map(spellings::genre).ifEmpty { listOf(UNKNOWN_GENRE) },
         )
     }
 }
@@ -82,6 +87,10 @@ private data class Placed(val draft: SongDraft, val artist: ArtistGroup, val alb
 private fun normalized(name: String?): String? = name?.let(::cleaned)?.lowercase(Locale.ROOT)?.ifEmpty { null }
 
 private fun cleaned(name: String): String = name.trim().replace(WHITESPACE, " ")
+
+/** A song's genres by their keys, each once: two names are one genre as two artists' are. */
+private fun genreKeysOf(metadata: SongMetadata): List<String> =
+    metadata.genres.value.orEmpty().mapNotNull(::normalized).distinct()
 
 /** A song's own artist: its tag, or the album's artist when it has none. A tag of "Various Artists" names no one. */
 private fun songArtistKeyOf(metadata: SongMetadata): String =
@@ -127,6 +136,7 @@ private fun looseArtistsByAlbumAndFolder(drafts: List<SongDraft>): Map<LooseAlbu
 private class Spellings(drafts: List<SongDraft>, looseArtists: Map<LooseAlbum, Set<String>>) {
     private val artists = HashMap<String, MutableMap<String, Int>>()
     private val albums = HashMap<String, MutableMap<String, Int>>()
+    private val genres = HashMap<String, MutableMap<String, Int>>()
     private val years: Map<Pair<String, String>, Int>
 
     init {
@@ -134,6 +144,7 @@ private class Spellings(drafts: List<SongDraft>, looseArtists: Map<LooseAlbum, S
             count(artists, draft.metadata.artist.value)
             count(artists, draft.metadata.albumArtist.value)
             count(albums, draft.metadata.album.value)
+            draft.metadata.genres.value.orEmpty().distinctBy(::normalized).forEach { count(genres, it) }
         }
         years = drafts.mapNotNull { draft ->
             val title = normalized(draft.metadata.album.value)
@@ -154,6 +165,8 @@ private class Spellings(drafts: List<SongDraft>, looseArtists: Map<LooseAlbum, S
     }
 
     fun album(key: String): String = spelling(albums, key)
+
+    fun genre(key: String): GenreGroup = GenreGroup(key, spelling(genres, key))
 
     fun yearOf(title: String, artistKey: String): Int? = years[title to artistKey]
 

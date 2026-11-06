@@ -7,6 +7,8 @@ sealed interface LibraryError {
 
     data class AlbumNotFound(val id: AlbumId) : LibraryError
 
+    data class GenreNotFound(val id: GenreId) : LibraryError
+
     /** Wherever the library is kept, it couldn't be read. */
     data class Storage(val cause: StorageError) : LibraryError
 

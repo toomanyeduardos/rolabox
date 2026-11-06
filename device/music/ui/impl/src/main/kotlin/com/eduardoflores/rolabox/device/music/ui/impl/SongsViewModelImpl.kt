@@ -22,6 +22,8 @@ internal class SongsViewModelImpl @AssistedInject constructor(
         is SongsSource.Album -> libraryRepository.observeSongsByAlbum(source.id)
         is SongsSource.Artist -> libraryRepository.observeSongsByArtist(source.id)
         SongsSource.All -> libraryRepository.observeSongs()
+        is SongsSource.GenreAlbum -> libraryRepository.observeSongsByGenreAndAlbum(source.genreId, source.albumId)
+        is SongsSource.GenreArtist -> libraryRepository.observeSongsByGenreAndArtist(source.genreId, source.artistId)
     }
         .asListState()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ListUiState.Loading)
@@ -35,6 +37,14 @@ internal class SongsViewModelImpl @AssistedInject constructor(
                 }
 
                 is SongsSource.Artist -> libraryRepository.getArtist(source.id).getOrNull()?.let {
+                    ListTitle.Artist(it.name, it.isVarious)
+                }
+
+                is SongsSource.GenreAlbum -> libraryRepository.getAlbum(source.albumId).getOrNull()?.let {
+                    ListTitle.Album(it.title)
+                }
+
+                is SongsSource.GenreArtist -> libraryRepository.getArtist(source.artistId).getOrNull()?.let {
                     ListTitle.Artist(it.name, it.isVarious)
                 }
 

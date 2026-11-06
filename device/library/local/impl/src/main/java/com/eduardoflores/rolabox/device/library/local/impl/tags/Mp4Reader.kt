@@ -44,8 +44,18 @@ internal fun readMp4(source: ByteSource): FileTags? {
         compilation = values["cpil"]?.let { source.itemData(it) }?.flag(),
         durationMillis = duration,
         hasEmbeddedPicture = "covr" in values,
+        genres = values["©gen"]?.let { source.genreTexts(it) }?.ifEmpty { null }
+            ?: values["gnre"]?.let { source.itemData(it) }?.standardGenre().orEmpty(),
     )
 }
+
+// iTunes writes a genre of ID3v1's list as gnre, and any other as ©gen. Each of ©gen's data boxes is one value.
+private fun ByteSource.genreTexts(item: Atom): List<String> = atoms(item.start, item.end)
+    .filter { it.type == "data" }
+    .mapNotNull { box -> itemData(Atom(item.type, box.start - ATOM_HEADER, box.end, box.next)) }
+    .flatMap { genresOf(it.rawText()) }
+    .distinctBy { it.lowercase() }
+    .toList()
 
 private fun ByteSource.atoms(start: Long, end: Long): Sequence<Atom> = sequence {
     var position = start
@@ -98,10 +108,16 @@ private fun ByteSource.durationMillis(mvhd: Atom): Long? {
 }
 
 private class ItemData(val type: Int, val payload: ByteArray) {
-    fun text(): String? = when (type) {
+    fun text(): String? = rawText().cleanTagText()
+
+    fun rawText(): String = when (type) {
         DATA_UTF_16 -> payload.decodeUtf16Be()
         else -> payload.toString(Charsets.UTF_8)
-    }.cleanTagText()
+    }
+
+    // gnre: ID3v1's number plus one, as a 16-bit integer.
+    fun standardGenre(): List<String> =
+        if (payload.size >= 2) listOfNotNull(id3v1Genre(payload.bigEndian(0, 2).toInt() - 1)) else emptyList()
 
     // trkn and disk: two reserved bytes, the number and the total, as 16-bit integers.
     fun number(): Int? = if (payload.size >= 4) payload.bigEndian(2, 2).toInt().takeIf { it > 0 } else null

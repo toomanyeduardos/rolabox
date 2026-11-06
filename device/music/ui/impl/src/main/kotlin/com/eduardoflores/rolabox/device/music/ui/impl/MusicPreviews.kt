@@ -171,3 +171,56 @@ private fun EmptyPreview() = DevicePreview(title = "Artists") {
 private fun FailedPreview() = DevicePreview(title = "Artists") {
     MusicList(ListUiState.Failed, highlightedIndex = 0, emptyText = stringResource(R.string.music_no_artists))
 }
+
+// Every genre by name, and the genre of songs with none last.
+private val Genres = listOf(
+    "Alternative", "Ambient", "Blues", "Classical", "Dream Pop", "Electronic", "Folk", "Hip-Hop", "Jazz", "Pop",
+    "R&B", "Rock", "Soundtrack",
+).map { DeviceListRow(it, opensSubmenu = true) }
+
+@PreviewLightDark
+@Composable
+private fun GenresPreview() = DevicePreview(title = "Genres") {
+    val unknownGenre = DeviceListRow(stringResource(R.string.music_unknown_genre), opensSubmenu = true)
+    val rows = Genres + unknownGenre
+    MusicList(
+        ListUiState.Loaded(rows),
+        highlightedIndex = rows.lastIndex,
+        emptyText = stringResource(R.string.music_no_genres),
+    )
+}
+
+@PreviewLightDark
+@Composable
+private fun GenresFastTurningPreview() = DevicePreview(title = "Genres") {
+    MusicList(
+        ListUiState.Loaded(Genres),
+        highlightedIndex = 8,
+        emptyText = stringResource(R.string.music_no_genres),
+        letter = "J",
+    )
+}
+
+@PreviewLightDark
+@Composable
+private fun GenreArtistsPreview() = DevicePreview(title = "Rock") {
+    MusicList(
+        ListUiState.Loaded(
+            listOf("Blue Harbor", "Fern & Iron", "Hollow Pines", "Maren Holt").map {
+                DeviceListRow(it, true)
+            },
+        ),
+        highlightedIndex = 1,
+        emptyText = stringResource(R.string.music_no_artists),
+    )
+}
+
+@PreviewLightDark
+@Composable
+private fun NoGenresPreview() = DevicePreview(title = "Genres") {
+    MusicList(
+        ListUiState.Loaded(emptyList()),
+        highlightedIndex = 0,
+        emptyText = stringResource(R.string.music_no_genres),
+    )
+}

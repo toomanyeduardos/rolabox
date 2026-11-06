@@ -33,3 +33,23 @@ data class AlbumSongsKey(val albumId: Long) : NavKey
 /** All the songs of an artist, across their albums. */
 @Serializable
 data class ArtistSongsKey(val artistId: Long) : NavKey
+
+/** Every genre of the library, by name, with Unknown Genre last. */
+@Serializable
+data object GenresKey : NavKey
+
+/** The artists with a song in a genre. */
+@Serializable
+data class GenreArtistsKey(val genreId: Long) : NavKey
+
+/** An artist's albums with a song in a genre, after "All Songs". */
+@Serializable
+data class GenreArtistAlbumsKey(val genreId: Long, val artistId: Long) : NavKey
+
+/** An artist's songs in a genre, across their albums. */
+@Serializable
+data class GenreArtistSongsKey(val genreId: Long, val artistId: Long) : NavKey
+
+/** An album's songs in a genre, in track order. */
+@Serializable
+data class GenreAlbumSongsKey(val genreId: Long, val albumId: Long) : NavKey

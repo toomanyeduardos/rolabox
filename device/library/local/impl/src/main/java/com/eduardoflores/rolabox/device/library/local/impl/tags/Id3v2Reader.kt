@@ -31,9 +31,13 @@ private val V22_IDS = mapOf(
     "TYE" to "TYER",
     "TCP" to "TCMP",
     "TLE" to "TLEN",
+    "TCO" to "TCON",
     "PIC" to "APIC",
 )
-private val TEXT_IDS = setOf("TIT2", "TPE1", "TPE2", "TALB", "TRCK", "TPOS", "TYER", "TDRC", "TCMP", "TLEN")
+private val TEXT_IDS = setOf("TIT2", "TPE1", "TPE2", "TALB", "TRCK", "TPOS", "TYER", "TDRC", "TCMP", "TLEN", "TCON")
+
+// The one frame whose several values are all read: a song can have several genres.
+private const val GENRE = "TCON"
 
 /** ID3v2.2 to v2.4, at the start of the file. Null when there's no tag this can read. */
 internal fun readId3v2(source: ByteSource): FileTags? {
@@ -147,7 +151,9 @@ private class FrameReader(private val frames: ByteSource, private val major: Int
             hasPicture = true
         } else if (id in TEXT_IDS && size in 1..MAX_TEXT_FRAME && id !in texts) {
             val flags = if (major == 2) 0 else header.u8(9)
-            frames.read(payloadAt, size.toInt()).withoutFrameFlags(flags)?.decodeTextFrame()?.let { texts[id] = it }
+            val text = frames.read(payloadAt, size.toInt()).withoutFrameFlags(flags)?.decodeTextFrame()
+            val value = if (id == GENRE) text else text?.cleanTagText()
+            value?.let { texts[id] = it }
         }
     }
 
@@ -174,6 +180,7 @@ private class FrameReader(private val frames: ByteSource, private val major: Int
 
     private fun ByteArray.drop(count: Int) = copyOfRange(minOf(count, size), size)
 
+    // The whole text, every value of it, since only the genre's are all read.
     private fun ByteArray.decodeTextFrame(): String? {
         if (isEmpty()) return null
         val text = copyOfRange(1, size)
@@ -182,7 +189,7 @@ private class FrameReader(private val frames: ByteSource, private val major: Int
             2 -> text.decodeUtf16Be()
             3 -> text.toString(Charsets.UTF_8)
             else -> text.decodeLegacy()
-        }.cleanTagText()
+        }
     }
 
     private fun toFileTags() = FileTags(
@@ -196,5 +203,6 @@ private class FrameReader(private val frames: ByteSource, private val major: Int
         compilation = texts["TCMP"]?.tagFlag(),
         durationMillis = texts["TLEN"]?.trim()?.toLongOrNull()?.takeIf { it > 0 },
         hasEmbeddedPicture = hasPicture,
+        genres = genresOf(texts[GENRE]),
     )
 }

@@ -5,6 +5,8 @@ import com.eduardoflores.rolabox.device.library.api.Album
 import com.eduardoflores.rolabox.device.library.api.AlbumId
 import com.eduardoflores.rolabox.device.library.api.Artist
 import com.eduardoflores.rolabox.device.library.api.ArtistId
+import com.eduardoflores.rolabox.device.library.api.Genre
+import com.eduardoflores.rolabox.device.library.api.GenreId
 import com.eduardoflores.rolabox.device.library.api.LibraryError
 import com.eduardoflores.rolabox.device.library.api.Song
 import com.eduardoflores.rolabox.device.library.api.SongId
@@ -33,11 +35,25 @@ interface LibraryIndexLocalDataSource {
 
     fun observeSongsByAlbum(albumId: AlbumId): Flow<Either<LibraryError, List<Song>>>
 
+    fun observeGenres(): Flow<Either<LibraryError, List<Genre>>>
+
+    fun observeGenre(id: GenreId): Flow<Either<LibraryError, Genre?>>
+
+    fun observeArtistsByGenre(genreId: GenreId): Flow<Either<LibraryError, List<Artist>>>
+
+    fun observeAlbumsByGenreAndArtist(genreId: GenreId, artistId: ArtistId): Flow<Either<LibraryError, List<Album>>>
+
+    fun observeSongsByGenreAndArtist(genreId: GenreId, artistId: ArtistId): Flow<Either<LibraryError, List<Song>>>
+
+    fun observeSongsByGenreAndAlbum(genreId: GenreId, albumId: AlbumId): Flow<Either<LibraryError, List<Song>>>
+
     fun observeSongCount(): Flow<Either<LibraryError, Int>>
 
     suspend fun getArtist(id: ArtistId): Either<LibraryError, Artist?>
 
     suspend fun getAlbum(id: AlbumId): Either<LibraryError, Album?>
+
+    suspend fun getGenre(id: GenreId): Either<LibraryError, Genre?>
 
     /** The file of a song, a duplicate included, or `null` when it isn't in the index. */
     suspend fun getSongFile(id: SongId): Either<LibraryError, SongFile?>

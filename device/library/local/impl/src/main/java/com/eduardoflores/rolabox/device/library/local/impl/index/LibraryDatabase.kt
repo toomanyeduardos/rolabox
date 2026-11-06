@@ -15,8 +15,10 @@ import androidx.room.RoomDatabase
         ArtistEntity::class,
         ScanStateEntity::class,
         AlbumArtworkEntity::class,
+        GenreEntity::class,
+        SongGenreEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 internal abstract class LibraryDatabase : RoomDatabase() {

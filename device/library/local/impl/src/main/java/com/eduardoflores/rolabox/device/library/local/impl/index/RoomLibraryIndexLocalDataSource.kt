@@ -11,6 +11,8 @@ import com.eduardoflores.rolabox.device.library.api.Album
 import com.eduardoflores.rolabox.device.library.api.AlbumId
 import com.eduardoflores.rolabox.device.library.api.Artist
 import com.eduardoflores.rolabox.device.library.api.ArtistId
+import com.eduardoflores.rolabox.device.library.api.Genre
+import com.eduardoflores.rolabox.device.library.api.GenreId
 import com.eduardoflores.rolabox.device.library.api.LibraryError
 import com.eduardoflores.rolabox.device.library.api.Song
 import com.eduardoflores.rolabox.device.library.api.SongId
@@ -57,6 +59,36 @@ internal class RoomLibraryIndexLocalDataSource @Inject constructor(
     override fun observeSongsByAlbum(albumId: AlbumId): Flow<Either<LibraryError, List<Song>>> =
         dao.observeSongsByAlbum(albumId.value).map { rows -> rows.map(SongRow::toSong) }.asRead()
 
+    override fun observeGenres(): Flow<Either<LibraryError, List<Genre>>> =
+        dao.observeGenres().map { rows -> rows.map(GenreEntity::toGenre) }.asRead()
+
+    override fun observeGenre(id: GenreId): Flow<Either<LibraryError, Genre?>> =
+        dao.observeGenre(id.value).map { it?.toGenre() }.asRead()
+
+    override fun observeArtistsByGenre(genreId: GenreId): Flow<Either<LibraryError, List<Artist>>> =
+        dao.observeArtistsByGenre(genreId.value).map { rows -> rows.map(ArtistEntity::toArtist) }.asRead()
+
+    override fun observeAlbumsByGenreAndArtist(
+        genreId: GenreId,
+        artistId: ArtistId,
+    ): Flow<Either<LibraryError, List<Album>>> = dao.observeAlbumsByGenreAndArtist(genreId.value, artistId.value)
+        .map { rows -> rows.map(AlbumRow::toAlbum) }
+        .asRead()
+
+    override fun observeSongsByGenreAndArtist(
+        genreId: GenreId,
+        artistId: ArtistId,
+    ): Flow<Either<LibraryError, List<Song>>> = dao.observeSongsByGenreAndArtist(genreId.value, artistId.value)
+        .map { rows -> rows.map(SongRow::toSong) }
+        .asRead()
+
+    override fun observeSongsByGenreAndAlbum(
+        genreId: GenreId,
+        albumId: AlbumId,
+    ): Flow<Either<LibraryError, List<Song>>> = dao.observeSongsByGenreAndAlbum(genreId.value, albumId.value)
+        .map { rows -> rows.map(SongRow::toSong) }
+        .asRead()
+
     override fun observeSongCount(): Flow<Either<LibraryError, Int>> = dao.observeSongCount().asRead()
 
     override suspend fun getArtist(id: ArtistId): Either<LibraryError, Artist?> =
@@ -64,6 +96,9 @@ internal class RoomLibraryIndexLocalDataSource @Inject constructor(
 
     override suspend fun getAlbum(id: AlbumId): Either<LibraryError, Album?> =
         catchNamed(::toLibraryError) { dao.getAlbum(id.value)?.toAlbum() }
+
+    override suspend fun getGenre(id: GenreId): Either<LibraryError, Genre?> =
+        catchNamed(::toLibraryError) { dao.getGenre(id.value)?.toGenre() }
 
     override suspend fun getSongFile(id: SongId): Either<LibraryError, SongFile?> =
         catchNamed(::toLibraryError) { dao.getSong(id.value)?.toSongFile() }

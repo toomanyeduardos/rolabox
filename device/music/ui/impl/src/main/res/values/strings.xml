@@ -3,6 +3,7 @@
     <string name="music_artists_title">Artists</string>
     <string name="music_albums_title">Albums</string>
     <string name="music_songs_title">Songs</string>
+    <string name="music_genres_title">Genres</string>
     <string name="music_menu_artists">Artists</string>
     <string name="music_menu_albums">Albums</string>
     <string name="music_menu_songs">Songs</string>
@@ -14,9 +15,11 @@
     <string name="music_no_longer_here">No longer in your library</string>
     <string name="music_unknown_album">Unknown album</string>
     <string name="music_unknown_song">Unknown song</string>
+    <string name="music_unknown_genre">Unknown Genre</string>
     <string name="music_no_artists">No artists</string>
     <string name="music_no_albums">No albums</string>
     <string name="music_no_songs">No songs</string>
+    <string name="music_no_genres">No genres</string>
     <string name="music_permission_denied">Allow music access to browse your songs. Select to ask again.</string>
     <string name="music_permission_permanently_denied">Allow music access in Settings. Select to open Settings.</string>
     <string name="music_scanning_title">Looking for music</string>

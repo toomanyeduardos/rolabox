@@ -86,6 +86,11 @@ private object NoMusicEntries : MusicEntries {
         onAllSongsClick: (artistId: Long) -> Unit,
         onAlbumClick: (albumId: Long) -> Unit,
         onSongClick: (songId: Long) -> Unit,
+        onGenresClick: () -> Unit,
+        onGenreClick: (genreId: Long) -> Unit,
+        onGenreArtistClick: (genreId: Long, artistId: Long) -> Unit,
+        onGenreAllSongsClick: (genreId: Long, artistId: Long) -> Unit,
+        onGenreAlbumClick: (genreId: Long, albumId: Long) -> Unit,
     ) = Unit
 }
 

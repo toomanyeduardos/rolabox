@@ -11,12 +11,21 @@ value class AlbumId(val value: Long)
 @JvmInline
 value class SongId(val value: Long)
 
+@JvmInline
+value class GenreId(val value: Long)
+
 /**
  * What the library knows about a value can be nothing, whatever the file says: a name, a title, a year or a track
  * number is `null` then, and the words the user sees ("Unknown artist") are the screens' (ADR-024). [isVarious] is
  * the row of Various Artists, whose [name] is `null` too, for the screens to give the words of.
  */
 data class Artist(val id: ArtistId, val name: String?, val isVarious: Boolean = false)
+
+/**
+ * A genre of the library. Names that differ only in case or whitespace are one genre, which shows the spelling on most
+ * songs. [name] is `null` for the genre of songs with none, Unknown Genre, whose words are the screens' (ADR-024).
+ */
+data class Genre(val id: GenreId, val name: String?)
 
 /** [artwork] is where the album's cover is: one of its songs, whose picture stands for the album (ADR-026). */
 data class Album(val id: AlbumId, val artistId: ArtistId, val title: String?, val year: Int?, val artwork: ArtworkRef)

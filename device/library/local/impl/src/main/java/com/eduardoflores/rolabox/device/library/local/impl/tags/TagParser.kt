@@ -41,4 +41,5 @@ private fun FileTags.orElse(other: FileTags) = FileTags(
     compilation = compilation ?: other.compilation,
     durationMillis = durationMillis ?: other.durationMillis,
     hasEmbeddedPicture = hasEmbeddedPicture,
+    genres = genres.ifEmpty { other.genres },
 )

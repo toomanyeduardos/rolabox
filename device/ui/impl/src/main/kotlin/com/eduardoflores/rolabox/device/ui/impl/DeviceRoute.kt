@@ -11,11 +11,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import com.eduardoflores.rolabox.common.designsystem.wheel.HoldState
 import com.eduardoflores.rolabox.common.designsystem.wheel.WheelEvent
 import com.eduardoflores.rolabox.device.host.DeviceHost
+import com.eduardoflores.rolabox.device.host.ScreenStack
 import com.eduardoflores.rolabox.device.host.rememberScreenStack
 import com.eduardoflores.rolabox.device.library.api.SongId
 import com.eduardoflores.rolabox.device.music.ui.api.AlbumSongsKey
@@ -23,6 +25,11 @@ import com.eduardoflores.rolabox.device.music.ui.api.AlbumsKey
 import com.eduardoflores.rolabox.device.music.ui.api.ArtistAlbumsKey
 import com.eduardoflores.rolabox.device.music.ui.api.ArtistSongsKey
 import com.eduardoflores.rolabox.device.music.ui.api.ArtistsKey
+import com.eduardoflores.rolabox.device.music.ui.api.GenreAlbumSongsKey
+import com.eduardoflores.rolabox.device.music.ui.api.GenreArtistAlbumsKey
+import com.eduardoflores.rolabox.device.music.ui.api.GenreArtistSongsKey
+import com.eduardoflores.rolabox.device.music.ui.api.GenreArtistsKey
+import com.eduardoflores.rolabox.device.music.ui.api.GenresKey
 import com.eduardoflores.rolabox.device.music.ui.api.MusicEntries
 import com.eduardoflores.rolabox.device.music.ui.api.MusicMenuKey
 import com.eduardoflores.rolabox.device.music.ui.api.SongsKey
@@ -94,20 +101,7 @@ internal fun DeviceRoute(
                 onShuffleSongsClick = { viewModel.onShuffleSongsClick { stack.push(NowPlayingKey) } },
                 onSettingsClick = { stack.push(SettingsKey) },
             )
-            musicEntries.screenStackEntries(
-                scope = this,
-                onArtistsClick = { stack.push(ArtistsKey) },
-                onAlbumsClick = { stack.push(AlbumsKey) },
-                onSongsClick = { stack.push(SongsKey) },
-                onArtistClick = { artistId -> stack.push(ArtistAlbumsKey(artistId)) },
-                onAllSongsClick = { artistId -> stack.push(ArtistSongsKey(artistId)) },
-                onAlbumClick = { albumId -> stack.push(AlbumSongsKey(albumId)) },
-                onSongClick = { songId ->
-                    playbackSourceOf(stack.top)?.let { source ->
-                        viewModel.onSongClick(source, SongId(songId)) { stack.push(NowPlayingKey) }
-                    }
-                },
-            )
+            musicScreens(musicEntries, stack, viewModel)
             playbackEntries.screenStackEntries(scope = this)
             settingsEntries.screenStackEntries(
                 scope = this,
@@ -120,6 +114,34 @@ internal fun DeviceRoute(
         modifier = modifier,
     )
 }
+
+/**
+ * The music screens, with each exit mapped to its key and pushed. A song click plays the list of the screen it was
+ * on, and Now Playing comes up once it plays.
+ */
+private fun EntryProviderScope<NavKey>.musicScreens(
+    musicEntries: MusicEntries,
+    stack: ScreenStack,
+    viewModel: DeviceViewModel,
+) = musicEntries.screenStackEntries(
+    scope = this,
+    onArtistsClick = { stack.push(ArtistsKey) },
+    onAlbumsClick = { stack.push(AlbumsKey) },
+    onSongsClick = { stack.push(SongsKey) },
+    onArtistClick = { artistId -> stack.push(ArtistAlbumsKey(artistId)) },
+    onAllSongsClick = { artistId -> stack.push(ArtistSongsKey(artistId)) },
+    onAlbumClick = { albumId -> stack.push(AlbumSongsKey(albumId)) },
+    onSongClick = { songId ->
+        playbackSourceOf(stack.top)?.let { source ->
+            viewModel.onSongClick(source, SongId(songId)) { stack.push(NowPlayingKey) }
+        }
+    },
+    onGenresClick = { stack.push(GenresKey) },
+    onGenreClick = { genreId -> stack.push(GenreArtistsKey(genreId)) },
+    onGenreArtistClick = { genreId, artistId -> stack.push(GenreArtistAlbumsKey(genreId, artistId)) },
+    onGenreAllSongsClick = { genreId, artistId -> stack.push(GenreArtistSongsKey(genreId, artistId)) },
+    onGenreAlbumClick = { genreId, albumId -> stack.push(GenreAlbumSongsKey(genreId, albumId)) },
+)
 
 /**
  * What each playback button does (ADR-018, the control table). ⏯ arrives here only when the top screen
