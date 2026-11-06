@@ -50,7 +50,8 @@ data class AudioFileChanges(val changed: List<AudioFile>, val presentIds: Set<Lo
 
 /**
  * What a file's tags say. A value they don't have is null, and [genres] is empty when they have none.
- * [hasEmbeddedPicture] is null when the format isn't one the parser reads, so nobody knows.
+ * [hasEmbeddedPicture] is null when the format isn't one the parser reads, so nobody knows. [isProtected] is an MP4
+ * whose audio is FairPlay's, which Android can't play (ADR-024, Reading the tags).
  */
 data class FileTags(
     val title: String? = null,
@@ -64,6 +65,7 @@ data class FileTags(
     val durationMillis: Long? = null,
     val hasEmbeddedPicture: Boolean? = null,
     val genres: List<String> = emptyList(),
+    val isProtected: Boolean = false,
 )
 
 /** A song's fields, each with its source. [genres] is a song's several genres, never an empty list. */
@@ -114,6 +116,7 @@ data class IndexedSong(
     val hasEmbeddedPicture: Boolean? = null,
     val tagsReadAt: Long? = null,
     val isDuplicate: Boolean = false,
+    val isProtected: Boolean = false,
 )
 
 /**
@@ -130,6 +133,7 @@ data class SongWrite(
     val tagsReadAt: Long? = null,
     val isDuplicate: Boolean = false,
     val genres: List<GenreGroup> = emptyList(),
+    val isProtected: Boolean = false,
 )
 
 /** What one transaction of the index writes. Albums and artists left with no song go with it. */

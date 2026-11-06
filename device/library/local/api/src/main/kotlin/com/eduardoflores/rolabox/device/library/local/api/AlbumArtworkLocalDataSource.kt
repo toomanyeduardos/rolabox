@@ -51,7 +51,9 @@ interface AlbumArtworkLocalDataSource {
 /**
  * An album as the download of covers sees it. [key] is its grouping key, which the record is kept by, since its id is
  * a row of a cache table. [artistName] is `null` for Various Artists, when [isVarious] is set, and for the unknown
- * artist. [artworkSongUri] is the file of the song whose cover stands for the album (ADR-026).
+ * artist. [artworkSongUri] is the file of the song whose cover stands for the album (ADR-026). [songArtists],
+ * [highestTrackNumber] and [year] are what the match reads of its songs (ADR-027, How a match is judged): their
+ * distinct artists, their highest track number, and the one year they share, `null` when they have none or disagree.
  */
 data class ArtworkAlbum(
     val key: String,
@@ -60,6 +62,9 @@ data class ArtworkAlbum(
     val isVarious: Boolean,
     val artworkSongUri: String,
     val record: ArtworkRecord?,
+    val songArtists: List<String> = emptyList(),
+    val highestTrackNumber: Int? = null,
+    val year: Int? = null,
 )
 
 /** What is known of an album's cover beyond the phone (ADR-027, What is recorded). */

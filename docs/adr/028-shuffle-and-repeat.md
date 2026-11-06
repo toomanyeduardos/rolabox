@@ -4,6 +4,10 @@
 - **Date:** 2026-11-04
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review
+- **Revised 2026-11-06:** Shuffle orders only the songs that can be played (rule 5, Decision). A protected song never
+  enters the queue, and a song that fails leaves it ([ADR-023](023-playback-engine.md)), so a shuffled queue's order,
+  its rounds and its count hold only songs that play. Shuffle Songs over a library of iTunes purchases had counted
+  73 protected songs that never played, and skipped them one by one.
 
 ## Context
 
@@ -137,6 +141,9 @@ it is.
   nearest one in the play order (ADR-023). With Repeat All the search wraps, and it still stops: when
   every song of the queue has failed, nothing is loaded and `unplayableQueue` says so. With Repeat One
   a song that fails is skipped as with Off, never started again.
+- **Only songs that can be played are shuffled.** The queue holds no protected song (ADR-023), so the order is made
+  of songs that play. A song that fails leaves the queue and its place in the order, and the round goes on without
+  it: the songs after it keep their order, and the next round doesn't have it.
 - **The state shows the play order.** `PlaybackState.queue` is the list in the order it plays, and
   `queueIndex` is where the loaded song is in it, so Now Playing's "3 of 10" counts what has played.
   The settings' values are in the state too, for Now Playing's icons.
@@ -246,8 +253,8 @@ back as it was. It stays on the phone and is never synced (ADR-023, rule 11).
    on each round has a new order that doesn't start with the song that just played.
 4. `[convention]` A change of Shuffle or Repeat applies to the queue that plays, at once, without
    interrupting the loaded song, except that a queue started by Shuffle Songs stays shuffled by songs.
-5. `[convention]` Shuffle Songs plays every song of the library in a random order from a random song,
-   and doesn't read or change the Shuffle setting. Repeat applies to it.
+5. `[convention]` Shuffle Songs plays every song of the library that can be played (no protected song, ADR-023) in a
+   random order from a random one of them, and doesn't read or change the Shuffle setting. Repeat applies to it.
 6. `[convention]` The repeat mode and the shuffle order are the player's: Media3's repeat mode, and a
    `ShuffleOrder` of `:device:playback:impl` with the player's shuffle mode on. The playlist stays in
    the list's order.

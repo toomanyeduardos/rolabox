@@ -8,12 +8,16 @@ package com.eduardoflores.rolabox.device.library.testing.audio
  *
  * [moovFirst] puts the index (`moov`) before the audio (`mdat`), as a "fast start" file has it, or
  * after it, as most encoders first write it.
+ *
+ * [fairPlay] names the sample entry `drms` instead of `mp4a`, as an iTunes Store purchase (`.m4p`) has it: its frames
+ * are encrypted with Apple's FairPlay, so a player that can't decrypt them has no audio track it can play.
  */
 data class AacStream(
     val sampleRate: Int = 44_100,
     val channels: Int = 2,
     val durationMs: Int = 2_000,
     val moovFirst: Boolean = true,
+    val fairPlay: Boolean = false,
 ) {
     init {
         require(sampleRate in SAMPLE_RATES) { "AAC has no sample rate $sampleRate" }

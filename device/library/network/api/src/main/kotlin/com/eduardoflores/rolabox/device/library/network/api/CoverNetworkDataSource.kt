@@ -3,19 +3,31 @@ package com.eduardoflores.rolabox.device.library.network.api
 import arrow.core.Either
 
 /**
- * Where the covers missing from the phone are found online (ADR-027). Only the album's title and its artist are sent.
+ * Where the covers missing from the phone are found online (ADR-027). Only the album's title and its artist are sent,
+ * and the source's own ids: the rest of a [CoverQuery] is read on the phone.
  */
 interface CoverNetworkDataSource {
     /**
-     * The cover of [album], or `null` when the source answered and has none: no album matched, more than one did, or
-     * the one that matched has no front image. Only that answer counts as an attempt. A `Left` is a source that
-     * couldn't be asked, which says nothing about the album.
+     * The cover of [album], or `null` when the source answered and has none: no album matched, or the ones that did
+     * have no front image. Only that answer counts as an attempt. A `Left` is a source that couldn't be asked, which
+     * says nothing about the album.
      */
     suspend fun findCover(album: CoverQuery): Either<CoverSourceError, Cover?>
 }
 
-/** An album, as the source is asked for it. [title] is never blank, and an album with no title isn't asked for. */
-data class CoverQuery(val title: String, val artist: CoverArtist)
+/**
+ * An album, as the source is asked for it and its answer is judged (ADR-027, How a match is judged). [title] is never
+ * blank, and an album with no title isn't asked for. [songArtists] are the artists of its songs, [highestTrackNumber]
+ * the highest of their track numbers, and [year] the one year all of its songs that have one share: `null` when the
+ * index has none, or the songs don't agree.
+ */
+data class CoverQuery(
+    val title: String,
+    val artist: CoverArtist,
+    val songArtists: List<String> = emptyList(),
+    val highestTrackNumber: Int? = null,
+    val year: Int? = null,
+)
 
 /** Who an album is by, as the source is asked for it. The unknown artist is never asked for. */
 sealed interface CoverArtist {

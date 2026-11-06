@@ -18,7 +18,7 @@ import androidx.room.RoomDatabase
         GenreEntity::class,
         SongGenreEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 internal abstract class LibraryDatabase : RoomDatabase() {

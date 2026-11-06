@@ -20,6 +20,7 @@ import com.eduardoflores.rolabox.device.library.local.impl.index.AlbumArtworkDao
 import com.eduardoflores.rolabox.device.library.local.impl.index.AlbumArtworkEntity
 import com.eduardoflores.rolabox.device.library.local.impl.index.ArtworkAlbumRow
 import com.eduardoflores.rolabox.device.library.local.impl.index.ArtworkState
+import com.eduardoflores.rolabox.device.library.local.impl.index.SONG_ARTIST_SEPARATOR
 import com.eduardoflores.rolabox.device.library.local.impl.index.toLibraryError
 import com.eduardoflores.rolabox.device.library.local.impl.mediastore.toArtworkImage
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -161,6 +162,9 @@ private fun ArtworkAlbumRow.toArtworkAlbum(): ArtworkAlbum? = artworkSongUri?.le
                 lastAttemptAt,
             ).toRecord()
         },
+        songArtists = songArtists?.split(SONG_ARTIST_SEPARATOR)?.filter { it.isNotBlank() }.orEmpty(),
+        highestTrackNumber = highestTrackNumber,
+        year = year,
     )
 }
 

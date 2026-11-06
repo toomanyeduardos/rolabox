@@ -6,10 +6,12 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.eduardoflores.rolabox.device.library.local.impl.index.AlbumArtworkEntity
 import com.eduardoflores.rolabox.device.library.local.impl.index.ArtworkState
+import com.eduardoflores.rolabox.device.library.local.impl.index.CACHE_TABLES_OF_VERSION_4
 import com.eduardoflores.rolabox.device.library.local.impl.index.LibraryDatabase
 import com.eduardoflores.rolabox.device.library.local.impl.index.MIGRATION_1_2
 import com.eduardoflores.rolabox.device.library.local.impl.index.MIGRATION_2_3
 import com.eduardoflores.rolabox.device.library.local.impl.index.MIGRATION_3_4
+import com.eduardoflores.rolabox.device.library.local.impl.index.MIGRATION_4_5
 import com.eduardoflores.rolabox.device.library.local.impl.index.TABLES_OF_VERSION_2
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -36,7 +38,7 @@ class LibraryMigrationTest {
 
         // Opening fails if the migrated tables aren't the ones the entities expect.
         val database = Room.databaseBuilder(context, LibraryDatabase::class.java, file.path)
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
             .allowMainThreadQueries()
             .build()
 
@@ -64,9 +66,9 @@ class LibraryMigrationTest {
             db.version = 2
         }
 
-        // Opening fails if the migrated tables aren't the ones the entities expect, which are exported as 4.json.
+        // Opening fails if the migrated tables aren't the ones the entities expect, which are exported as 5.json.
         val database = Room.databaseBuilder(context, LibraryDatabase::class.java, file.path)
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
             .allowMainThreadQueries()
             .build()
 
@@ -103,9 +105,47 @@ class LibraryMigrationTest {
             db.version = 3
         }
 
-        // Opening fails if the migrated tables aren't the ones the entities expect, which are exported as 4.json.
+        // Opening fails if the migrated tables aren't the ones the entities expect, which are exported as 5.json.
         val database = Room.databaseBuilder(context, LibraryDatabase::class.java, file.path)
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+            .allowMainThreadQueries()
+            .build()
+
+        assertEquals(emptyList<Any>(), database.libraryIndexDao().getIndexedSongs())
+        assertEquals(emptyList<Any>(), database.libraryIndexDao().observeGenres().first())
+        assertEquals(record, database.albumArtworkDao().observe("live 2012|coldplay").first())
+        database.close()
+    }
+
+    @Test
+    fun version4_dropsItsCacheForProtectedSongs_andKeepsTheRecordsOfDownloadedCovers() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val file = context.getDatabasePath("migration-4-test.db").apply { parentFile?.mkdirs() }
+        val record = AlbumArtworkEntity("live 2012|coldplay", ArtworkState.Found, fileName = "c.jpg", sourceId = "s")
+        SQLiteDatabase.openOrCreateDatabase(file, null).use { db ->
+            // Version 4 as Room exported it, in schemas/…/4.json: its cache tables and the covers' records.
+            db.execSQL("CREATE TABLE room_master_table (id INTEGER PRIMARY KEY, identity_hash TEXT)")
+            db.execSQL("INSERT INTO room_master_table VALUES (42, 'f8b4080eab344bc2fb7527ea0d8491ef')")
+            CACHE_TABLES_OF_VERSION_4.forEach(db::execSQL)
+            @Suppress("MaxLineLength") // Room's own statement, as 4.json has it.
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `album_artwork` (`albumKey` TEXT NOT NULL, `state` TEXT NOT NULL, `fileName` TEXT, `sourceId` TEXT, `foundAt` INTEGER, `attempts` INTEGER NOT NULL, `lastAttemptAt` INTEGER, PRIMARY KEY(`albumKey`))",
+            )
+            db.execSQL(
+                "INSERT INTO artists (groupKey, name, sortName, isVarious) " +
+                    "VALUES ('coldplay', 'Coldplay', 'coldplay', 0)",
+            )
+            db.execSQL("INSERT INTO genres (groupKey, name) VALUES ('rock', 'Rock')")
+            db.execSQL(
+                "INSERT INTO album_artwork (albumKey, state, fileName, sourceId, attempts) " +
+                    "VALUES ('live 2012|coldplay', 'Found', 'c.jpg', 's', 0)",
+            )
+            db.version = 4
+        }
+
+        // Opening fails if the migrated tables aren't the ones the entities expect, which are exported as 5.json.
+        val database = Room.databaseBuilder(context, LibraryDatabase::class.java, file.path)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
             .allowMainThreadQueries()
             .build()
 

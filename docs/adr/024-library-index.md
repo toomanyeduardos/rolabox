@@ -46,6 +46,12 @@
   a table of genres and one of each song's genres, as a change to cache tables: migration 3 to 4 drops and
   recreates them, and the next start rescans. `LibraryRepository` gains the genre queries (What
   `LibraryRepository` becomes), and playback's `PlaybackSource` gains a genre's artist and a genre's album.
+- **Revised 2026-11-06:** The parser records whether an MP4's audio is protected by FairPlay, the DRM of iTunes
+  Store purchases (`.m4p`), from its sample entry (Reading the tags), and `Song` says so (What
+  `LibraryRepository` becomes). Android can't play those files, and playback leaves them out of its queues
+  ([ADR-023](023-playback-engine.md)). A real library of iTunes purchases had 73 of them, which shuffle played as
+  silence, then skipped one by one. The songs table gains `isProtected`, as a change to cache tables, so the next
+  start rescans. The lists still show protected songs: they are the user's files.
 
 ## Context
 
@@ -303,6 +309,11 @@ ways. It is read and grouped like the other fields, and nothing guesses past wha
   do in most players.
 - **ID3v2 comes before ID3v1, field by field,** since ID3v1 is cut at 30 characters. Of several values in
   one frame, the first is used.
+- **An MP4 whose audio is protected says so.** The parser reads the sample entry of the sound track (`trak`
+  with a `soun` handler, then `stsd`). `drms` is FairPlay, the DRM of iTunes Store purchases, which Android
+  can't decrypt, so the song is protected. `mp4a` and anything else is not. Only the tags say it: a song whose
+  tags aren't read yet, and a format the parser doesn't read, are not protected, and fail when played
+  (ADR-023) if they can't be.
 - **What can't be read fails only that file.** It is a typed `LibraryError`, logged, and never shown.
   Tags that make no sense count as read, so they aren't tried on each start. A file that couldn't be
   opened stays unread, and the next scan tries it again.
@@ -368,6 +379,8 @@ A scan has **two passes**, so the device is usable within seconds of the first o
   queries' `ORDER BY`.
 - **`Song` gains its URI,** as ADR-023 says and playback/02 adds: the `content://` URI from the
   index, as a string, since the `:api` is a JVM module with no `android.net.Uri`.
+- **`Song` gains `isProtected`,** from the parser (Reading the tags). Lists show a protected song as any
+  other, since it is the user's file, and playback leaves it out of every queue (ADR-023).
 - **It gains `observeSongLocations()`,** the URI of every song, those no list shows included, since a song
   that became a duplicate still plays. Playback reads it to follow what is in its queue.
 - **It gains the genre queries** (music/02): every genre, a genre's artists, an artist's albums and songs

@@ -1,0 +1,64 @@
+{
+  "release-groups": [
+    {
+      "id": "578a8246-a9e7-35cb-b7e9-bb799aba44cc",
+      "score": 100,
+      "title": "Skin and Bones",
+      "primary-type": "Album",
+      "secondary-types": [
+        "Live"
+      ],
+      "first-release-date": "2006-11-01",
+      "artist-credit": [
+        {
+          "name": "Foo Fighters",
+          "joinphrase": "",
+          "artist": {
+            "id": "67f66c07-6e61-4026-ade5-7e782fad3a5d",
+            "name": "Foo Fighters"
+          }
+        }
+      ]
+    },
+    {
+      "id": "1b6c2ac6-e178-3044-b787-97be2d933ca1",
+      "score": 100,
+      "title": "Skin and Bones",
+      "primary-type": "EP",
+      "secondary-types": [
+        "Live"
+      ],
+      "first-release-date": "2006-10-16",
+      "artist-credit": [
+        {
+          "name": "Foo Fighters",
+          "joinphrase": "",
+          "artist": {
+            "id": "67f66c07-6e61-4026-ade5-7e782fad3a5d",
+            "name": "Foo Fighters"
+          }
+        }
+      ]
+    },
+    {
+      "id": "dd1cb9ef-5066-475c-98c6-58f5f988309a",
+      "score": 86,
+      "title": "Skin and Bones + Hyde Park",
+      "primary-type": "Album",
+      "secondary-types": [
+        "Live"
+      ],
+      "first-release-date": "2006-11-07",
+      "artist-credit": [
+        {
+          "name": "Foo Fighters",
+          "joinphrase": "",
+          "artist": {
+            "id": "67f66c07-6e61-4026-ade5-7e782fad3a5d",
+            "name": "Foo Fighters"
+          }
+        }
+      ]
+    }
+  ]
+}

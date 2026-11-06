@@ -89,7 +89,7 @@ internal fun regroupAfterReading(indexed: List<IndexedSong>, read: List<SongDraf
     return groupSongs(indexed.map { readById[it.id] ?: it.toDraft() }).changedFrom(indexed)
 }
 
-private fun IndexedSong.toDraft() = SongDraft(id, file, metadata, hasEmbeddedPicture, tagsReadAt)
+private fun IndexedSong.toDraft() = SongDraft(id, file, metadata, hasEmbeddedPicture, tagsReadAt, isProtected)
 
 /** A song is written only if something changed. */
 private fun List<SongWrite>.changedFrom(indexed: List<IndexedSong>): List<SongWrite> {
@@ -99,4 +99,5 @@ private fun List<SongWrite>.changedFrom(indexed: List<IndexedSong>): List<SongWr
 
 private fun SongWrite.isSameAs(song: IndexedSong) =
     file == song.file && metadata == song.metadata && artist.key == song.artistKey &&
-        album.key == song.albumKey && tagsReadAt == song.tagsReadAt && isDuplicate == song.isDuplicate
+        album.key == song.albumKey && tagsReadAt == song.tagsReadAt && isDuplicate == song.isDuplicate &&
+        isProtected == song.isProtected

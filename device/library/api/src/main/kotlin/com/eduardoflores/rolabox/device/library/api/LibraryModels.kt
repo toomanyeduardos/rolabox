@@ -35,7 +35,8 @@ data class Album(val id: AlbumId, val artistId: ArtistId, val title: String?, va
  * the player as it is (ADR-023, rule 5, and ADR-024). It is a string, since this module has no `android.net.Uri`.
  * [artistId] is the song's own artist, who may not be the artist of its album. [duration] is zero when the library
  * doesn't know it. [discNumber] and [trackNumber] are where it is in its album, which is the order of the album's list:
- * disc, then track.
+ * disc, then track. [isProtected] is a song Android can't play, FairPlay's (ADR-024): the lists show it, and playback
+ * leaves it out of every queue (ADR-023).
  */
 data class Song(
     val id: SongId,
@@ -46,6 +47,7 @@ data class Song(
     val duration: Duration,
     val uri: String,
     val discNumber: Int? = null,
+    val isProtected: Boolean = false,
 )
 
 /** How far a long piece of work has come: [done] of [total]. */

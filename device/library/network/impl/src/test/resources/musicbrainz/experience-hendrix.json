@@ -1,0 +1,44 @@
+{
+  "release-groups": [
+    {
+      "id": "0a40e56c-a1c2-3994-876c-eface3d253af",
+      "score": 100,
+      "title": "Experience Hendrix: The Best of Jimi Hendrix",
+      "primary-type": "Album",
+      "secondary-types": [
+        "Compilation"
+      ],
+      "first-release-date": "1997",
+      "artist-credit": [
+        {
+          "name": "Jimi Hendrix",
+          "joinphrase": "",
+          "artist": {
+            "id": "06fb1c8b-566e-4cb2-985b-b467c90781d4",
+            "name": "Jimi Hendrix"
+          }
+        }
+      ]
+    },
+    {
+      "id": "c398cd29-bd3a-3dca-bea2-e5d93d6e2778",
+      "score": 100,
+      "title": "Experience Hendrix: The Best of Jimi Hendrix",
+      "primary-type": "Album",
+      "secondary-types": [
+        "Compilation"
+      ],
+      "first-release-date": "1997-09-16",
+      "artist-credit": [
+        {
+          "name": "Jimi Hendrix",
+          "joinphrase": "",
+          "artist": {
+            "id": "06fb1c8b-566e-4cb2-985b-b467c90781d4",
+            "name": "Jimi Hendrix"
+          }
+        }
+      ]
+    }
+  ]
+}

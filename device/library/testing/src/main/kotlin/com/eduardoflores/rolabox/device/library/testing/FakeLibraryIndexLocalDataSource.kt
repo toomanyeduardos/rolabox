@@ -78,6 +78,7 @@ class FakeLibraryIndexLocalDataSource : LibraryIndexLocalDataSource {
             discNumber = song.metadata.discNumber.value,
             duration = song.metadata.durationMillis.value?.milliseconds ?: Duration.ZERO,
             uri = song.file.uri,
+            isProtected = song.isProtected,
         )
     }
 
@@ -198,6 +199,7 @@ class FakeLibraryIndexLocalDataSource : LibraryIndexLocalDataSource {
                 write.hasEmbeddedPicture,
                 write.tagsReadAt,
                 write.isDuplicate,
+                write.isProtected,
             )
             write.genres.forEach { group ->
                 genres[group.key] = Genre(genres[group.key]?.id ?: GenreId(nextId++), group.name)

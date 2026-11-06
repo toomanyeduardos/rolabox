@@ -100,7 +100,7 @@ private fun <T : Any> Sourced<T>.orStronger(read: Sourced<T>): Sourced<T> =
 internal fun AudioFile.toDraft(song: IndexedSong?): SongDraft {
     val read = song?.takeIf { it.tagsReadAt == file.dateModified }
     val metadata = if (read != null) toMetadata().keepingStronger(read.metadata) else toMetadata()
-    return SongDraft(song?.id, file, metadata, read?.hasEmbeddedPicture, read?.tagsReadAt)
+    return SongDraft(song?.id, file, metadata, read?.hasEmbeddedPicture, read?.tagsReadAt, read?.isProtected == true)
 }
 
 /** [this] song once its tags have been read, or [tags] null when they couldn't be. */
@@ -110,4 +110,5 @@ internal fun IndexedSong.toDraftAfterReading(tags: FileTags?) = SongDraft(
     metadata = if (tags != null) metadata.withTags(tags) else metadata,
     hasEmbeddedPicture = tags?.hasEmbeddedPicture,
     tagsReadAt = file.dateModified,
+    isProtected = tags?.isProtected == true,
 )

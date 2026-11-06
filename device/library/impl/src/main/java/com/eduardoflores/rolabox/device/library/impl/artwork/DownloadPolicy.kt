@@ -34,7 +34,11 @@ internal fun ArtworkAlbum.toQuery(): CoverQuery? {
         !name.isNullOrBlank() -> CoverArtist.Named(name)
         else -> null
     }
-    return if (title.isNullOrBlank() || artist == null) null else CoverQuery(title, artist)
+    return if (title.isNullOrBlank() || artist == null) {
+        null
+    } else {
+        CoverQuery(title, artist, songArtists, highestTrackNumber, year)
+    }
 }
 
 /** Whether the album is due a request at [nowMillis]: queued, or not found long enough ago and not given up on. */

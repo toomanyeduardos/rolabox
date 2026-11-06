@@ -114,7 +114,7 @@ internal object M4aFile {
     private fun Bytes.sampleTable(stream: AacStream, frameSize: Int, chunkOffset: Int) = box("stbl") {
         fullBox("stsd") {
             u32(1)
-            box("mp4a") {
+            box(if (stream.fairPlay) "drms" else "mp4a") {
                 zeros(6)
                 u16(1) // data reference index
                 zeros(8)
