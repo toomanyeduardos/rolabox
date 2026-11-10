@@ -16,14 +16,6 @@ android {
 
         testInstrumentationRunner = "com.eduardoflores.rolabox.common.testing.RolaboxTestRunner"
     }
-
-    buildTypes {
-        release {
-            optimization {
-                enable = false
-            }
-        }
-    }
 }
 
 dependencies {

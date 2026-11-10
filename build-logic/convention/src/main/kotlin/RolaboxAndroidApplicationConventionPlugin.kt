@@ -3,6 +3,8 @@ import com.android.build.api.variant.ApplicationAndroidComponentsExtension
 import com.eduardoflores.rolabox.buildlogic.DEFAULT_ANDROID_UNIT_TEST_TASK
 import com.eduardoflores.rolabox.buildlogic.ProjectConfig
 import com.eduardoflores.rolabox.buildlogic.applyStaticAnalysis
+import com.eduardoflores.rolabox.buildlogic.configureReleaseOptimization
+import com.eduardoflores.rolabox.buildlogic.enforceReleaseOptimization
 import com.eduardoflores.rolabox.buildlogic.enforceModuleRules
 import com.eduardoflores.rolabox.buildlogic.enforceNoProductFlavors
 import com.eduardoflores.rolabox.buildlogic.registerDesignSystemResourceCheck
@@ -23,6 +25,8 @@ class RolaboxAndroidApplicationConventionPlugin : Plugin<Project> {
             registerDesignSystemResourceCheck()
             registerReleaseAudioCheck()
             registerScreenshotPluginCheck()
+            configureReleaseOptimization()
+            enforceReleaseOptimization()
 
             extensions.configure<ApplicationExtension> {
                 compileSdk = ProjectConfig.COMPILE_SDK
