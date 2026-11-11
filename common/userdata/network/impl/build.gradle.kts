@@ -5,6 +5,11 @@ plugins {
 
 android {
     namespace = "com.eduardoflores.rolabox.common.userdata.network.impl"
+
+    testOptions {
+        // Firebase's exception classes call Android helpers that the unit-test android.jar doesn't implement.
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 dependencies {

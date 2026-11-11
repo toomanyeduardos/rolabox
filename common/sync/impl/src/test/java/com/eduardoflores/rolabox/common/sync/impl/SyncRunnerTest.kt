@@ -16,6 +16,7 @@ import org.junit.Test
 
 class SyncRunnerTest {
     private val syncUserProvider = FakeSyncUserProvider()
+    private val failureLog = RecordingSyncFailureLog()
 
     // Who there is to sync for, and so whether offline mode is on, is the provider's answer
     // (ADR-020, rule 18). What sync owns of ADR-008 rule 6 is obeying it, which these tests cover.
@@ -81,7 +82,31 @@ class SyncRunnerTest {
         assertEquals(emptyList<String>(), syncer.userIds)
     }
 
-    private fun runner(vararg syncers: Syncer) = SyncRunner(syncUserProvider, syncers.toSet())
+    // ADR-029, rule 1.
+    @Test
+    fun everyError_isLoggedWithTheOutcome() = runTest {
+        signIn()
+        val rejected = SyncError.Remote(RemoteError.Rejected)
+        val unavailable = SyncError.Local(StorageError.Unavailable)
+
+        runner(RecordingSyncer(rejected.left()), RecordingSyncer(unavailable.left()), RecordingSyncer()).sync()
+
+        assertEquals(
+            setOf(rejected to SyncOutcome.Retry, unavailable to SyncOutcome.Retry),
+            failureLog.logged.toSet(),
+        )
+    }
+
+    @Test
+    fun success_logsNothing() = runTest {
+        signIn()
+
+        runner(RecordingSyncer()).sync()
+
+        assertEquals(emptyList<Pair<SyncError, SyncOutcome>>(), failureLog.logged)
+    }
+
+    private fun runner(vararg syncers: Syncer) = SyncRunner(syncUserProvider, syncers.toSet(), failureLog)
 
     private suspend fun runWith(error: SyncError) = runner(RecordingSyncer(error.left())).sync()
 
@@ -97,6 +122,14 @@ class SyncRunnerTest {
         override suspend fun sync(userId: String): Either<SyncError, Unit> {
             userIds += userId
             return result
+        }
+    }
+
+    private class RecordingSyncFailureLog : SyncFailureLog {
+        val logged = mutableListOf<Pair<SyncError, SyncOutcome>>()
+
+        override fun failed(error: SyncError, outcome: SyncOutcome) {
+            logged += error to outcome
         }
     }
 

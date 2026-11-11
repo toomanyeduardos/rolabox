@@ -45,6 +45,9 @@
   `repeat`, now that [ADR-028](028-shuffle-and-repeat.md) decided their values (Decision). The text
   said they would be added when playback/07 (was 39.11) decided them. They follow rule 11 as the
   other settings do, and are not in the code until playback/08 builds them. No rule changes.
+- **Revised 2026-11-11:** Sync failures are logged ([ADR-029](029-sync-failures-are-logged.md))
+  (Consequences). Every sync had failed silently because the Firebase project had no Firestore
+  database, and nothing said why. No rule changes.
 
 ## Context
 
@@ -256,8 +259,8 @@ same user or another one, merges them with that user's cloud copy.
   it.
 - Applying a remote change is itself a local change, so it triggers one more sync, which reads and
   finds nothing to write. That costs a Firestore read, not a write.
-- Sync failures are invisible. There's no sync status in the UI, and no logging. A rejected write
-  shows up only in WorkManager's state.
+- Sync failures are invisible to the user. There's no sync status in the UI. Each failure is logged
+  to logcat, with the backend's reason ([ADR-029](029-sync-failures-are-logged.md)).
 - **A local read error stops the "after local changes" trigger** until the next sign-in, or until
   the app restarts. The observed flow ends on its first error (ADR-007), and resubscribing right
   away would loop on a corrupted file. Sign-in and foreground still trigger sync, and each sync
