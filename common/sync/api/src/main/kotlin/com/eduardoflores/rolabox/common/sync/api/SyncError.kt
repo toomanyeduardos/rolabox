@@ -14,6 +14,9 @@ sealed interface RemoteError {
     /** Offline, timed out, or contended. Trying again later can succeed. */
     data object Unavailable : RemoteError
 
-    /** The security rules turned the request down. That's a bug, and trying again won't help. */
+    /**
+     * The backend turned the request down: the security rules refused it, it was invalid, or the
+     * backend isn't set up (no database). That's a bug or a setup mistake, and trying again won't help.
+     */
     data object Rejected : RemoteError
 }

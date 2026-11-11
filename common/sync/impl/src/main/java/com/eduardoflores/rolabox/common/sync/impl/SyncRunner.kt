@@ -16,16 +16,20 @@ import kotlinx.coroutines.flow.first
 internal class SyncRunner @Inject constructor(
     private val syncUserProvider: SyncUserProvider,
     private val syncers: Set<@JvmSuppressWildcards Syncer>,
+    private val failureLog: SyncFailureLog,
 ) {
     suspend fun sync(): SyncOutcome {
         val userId = syncUserProvider.observeSyncUser().first() ?: return SyncOutcome.Done
         // Each kind of data syncs on its own, so one failing doesn't hold the others back.
         val errors = syncers.mapNotNull { it.sync(userId).leftOrNull() }
-        return when {
+        val outcome = when {
             errors.isEmpty() -> SyncOutcome.Done
             errors.any { it.isRetryable } -> SyncOutcome.Retry
             else -> SyncOutcome.Failed
         }
+        // Nobody sees a sync fail, so every error is logged (ADR-029, rule 1).
+        errors.forEach { failureLog.failed(it, outcome) }
+        return outcome
     }
 }
 

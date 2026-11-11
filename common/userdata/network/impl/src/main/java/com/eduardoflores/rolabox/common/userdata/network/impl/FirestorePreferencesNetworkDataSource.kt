@@ -38,7 +38,7 @@ internal class FirestorePreferencesNetworkDataSource @Inject constructor(
     override suspend fun merge(
         userId: String,
         merge: (remote: SyncedPreferences) -> SyncedPreferences,
-    ): Either<RemoteError, SyncedPreferences> = catchNamed(Throwable::asRemoteError) {
+    ): Either<RemoteError, SyncedPreferences> = catchNamed(Throwable::asLoggedRemoteError) {
         val db = firestore.get()
         val document = db.collection(USERS).document(userId).collection(SETTINGS).document(PREFERENCES)
         db.runTransaction { transaction ->

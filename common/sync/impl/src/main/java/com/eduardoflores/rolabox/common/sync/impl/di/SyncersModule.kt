@@ -3,6 +3,8 @@ package com.eduardoflores.rolabox.common.sync.impl.di
 import com.eduardoflores.rolabox.common.sync.api.LastWriteWins
 import com.eduardoflores.rolabox.common.sync.api.Syncer
 import com.eduardoflores.rolabox.common.sync.impl.DefaultLastWriteWins
+import com.eduardoflores.rolabox.common.sync.impl.LogcatSyncFailureLog
+import com.eduardoflores.rolabox.common.sync.impl.SyncFailureLog
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -19,6 +21,9 @@ abstract class SyncersModule {
     // Also injected by the parts that store synced data, to apply what a sync brings (ADR-011).
     @Binds
     internal abstract fun bindsLastWriteWins(lastWriteWins: DefaultLastWriteWins): LastWriteWins
+
+    @Binds
+    internal abstract fun bindsSyncFailureLog(log: LogcatSyncFailureLog): SyncFailureLog
 
     // Each part with synced data adds its Syncer to this set from its own :impl (ADR-022). Declared
     // here so that it may be empty.
