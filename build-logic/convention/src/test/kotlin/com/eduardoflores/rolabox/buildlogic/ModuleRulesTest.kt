@@ -117,6 +117,14 @@ class ModuleRulesTest {
     }
 
     @Test
+    fun `ADR-030 rule 2 - Crashlytics only in the crash reporting impl`() {
+        assertTrue(crashlyticsViolation(":app")!!.contains("ADR-030 rule 2"))
+        assertTrue(crashlyticsViolation(":common:util")!!.contains("ADR-030 rule 2"))
+        assertTrue(crashlyticsViolation(":device:playback:impl")!!.contains("ADR-030 rule 2"))
+        assertNull(crashlyticsViolation(":common:crashreporting:impl"))
+    }
+
+    @Test
     fun `ADR-022 rule 3 - Firestore only in a network impl`() {
         assertTrue(firestoreViolation(":common:sync:impl")!!.contains("ADR-022 rule 3"))
         assertTrue(firestoreViolation(":common:userdata:impl")!!.contains("ADR-022 rule 3"))
@@ -229,6 +237,9 @@ class ModuleRulesTest {
 
     private fun firestoreViolation(module: String) =
         externalDependencyViolation(module, "com.google.firebase", "firebase-firestore", false)
+
+    private fun crashlyticsViolation(module: String) =
+        externalDependencyViolation(module, "com.google.firebase", "firebase-crashlytics", false)
 
     private fun media3Violation(module: String) =
         externalDependencyViolation(module, "androidx.media3", "media3-exoplayer", false)

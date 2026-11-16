@@ -11,6 +11,7 @@ import androidx.test.core.app.ApplicationProvider
 import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
+import com.eduardoflores.rolabox.common.testing.FakeNonFatalReport
 import com.eduardoflores.rolabox.common.userdata.testing.FakeUserDataRepository
 import com.eduardoflores.rolabox.device.library.api.Album
 import com.eduardoflores.rolabox.device.library.api.AlbumId
@@ -94,6 +95,7 @@ class PlayerUnavailableTest {
                 FakeArtworkRepository(),
                 FakeUserDataRepository(),
                 PlayOrders(Random(0)),
+                FakeNonFatalReport(),
             )
     }
 

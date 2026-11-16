@@ -37,6 +37,7 @@ include(":auth:settings:impl")
 include(":auth:ui:api")
 include(":auth:ui:impl")
 
+include(":common:crashreporting:impl")
 include(":common:designsystem")
 include(":common:testing")
 include(":common:util")

@@ -1,0 +1,3 @@
+# ADR-030 rule 8: frames in Crashlytics' stack traces keep their file and line, which the mapping file
+# then maps back to the source. R8 drops both without this.
+-keepattributes SourceFile,LineNumberTable

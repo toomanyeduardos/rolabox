@@ -38,3 +38,4 @@ New ADR: copy [`template.md`](template.md), take the next number, and add it to 
 | [027](027-artwork-from-the-internet.md) | Covers missing from the phone are downloaded from the Cover Art Archive, in WorkManager, and kept as the user's data | Accepted |
 | [028](028-shuffle-and-repeat.md) | Shuffle and repeat are two settings that the queue follows, in Media3's own modes | Accepted |
 | [029](029-sync-failures-are-logged.md) | Sync failures are logged, with the backend's reason where the exception is converted | Accepted |
+| [030](030-crash-reporting.md) | Crashlytics reports crashes, ANRs and named non-fatal errors from every user, with nothing that identifies them | Accepted |

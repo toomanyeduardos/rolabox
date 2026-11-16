@@ -17,6 +17,7 @@ import arrow.core.Either
 import com.eduardoflores.rolabox.common.storage.api.PreferencesStore
 import com.eduardoflores.rolabox.common.storage.api.StorageError
 import com.eduardoflores.rolabox.common.util.Dispatcher
+import com.eduardoflores.rolabox.common.util.NonFatalReport
 import com.eduardoflores.rolabox.common.util.RolaboxDispatchers.IO
 import com.eduardoflores.rolabox.common.util.catchNamed
 import com.eduardoflores.rolabox.device.library.api.LibraryError
@@ -41,6 +42,7 @@ internal class MediaStoreAudioFilesLocalDataSource @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val preferences: PreferencesStore,
     @param:Dispatcher(IO) private val ioDispatcher: CoroutineDispatcher,
+    private val report: NonFatalReport,
 ) : AudioFilesLocalDataSource {
     override suspend fun getPermissionGranted(): Boolean = withContext(ioDispatcher) {
         context.checkSelfPermission(audioPermission(Build.VERSION.SDK_INT)) == PackageManager.PERMISSION_GRANTED
@@ -54,7 +56,9 @@ internal class MediaStoreAudioFilesLocalDataSource @Inject constructor(
     override suspend fun setPermissionAsked(): Either<LibraryError, Unit> =
         preferences.setString(PERMISSION_ASKED_KEY, "true").mapLeft(LibraryError::Storage)
 
-    override suspend fun getAudioFiles(): Either<LibraryError, AudioFileListing> = catchNamed(::toLibraryError) {
+    override suspend fun getAudioFiles(): Either<LibraryError, AudioFileListing> = catchNamed({
+        toLibraryError(it, report)
+    }) {
         withContext(ioDispatcher) {
             // The volumes first: a change during the query is then seen as a change by the next comparison.
             val volumes = volumeStates()
@@ -62,12 +66,14 @@ internal class MediaStoreAudioFilesLocalDataSource @Inject constructor(
         }
     }
 
-    override suspend fun getVolumes(): Either<LibraryError, List<VolumeScanState>> = catchNamed(::toLibraryError) {
+    override suspend fun getVolumes(): Either<LibraryError, List<VolumeScanState>> = catchNamed({
+        toLibraryError(it, report)
+    }) {
         withContext(ioDispatcher) { volumeStates() }
     }
 
     override suspend fun getAudioFileChanges(since: List<VolumeScanState>): Either<LibraryError, AudioFileChanges> =
-        catchNamed(::toLibraryError) {
+        catchNamed({ toLibraryError(it, report) }) {
             withContext(ioDispatcher) {
                 val sdk = Build.VERSION.SDK_INT
                 // Without generations, every file counts as changed.
@@ -221,9 +227,15 @@ private fun Cursor.text(column: String): String? =
 private fun Cursor.long(column: String): Long? =
     getColumnIndex(column).takeIf { it >= 0 && !isNull(it) }?.let(::getLong)
 
-private fun toLibraryError(error: Throwable): LibraryError? = when (error) {
-    // The permission went away, MediaStore's database failed, or it didn't answer.
-    is SecurityException, is SQLiteException, is IOException -> LibraryError.Storage(StorageError.Unavailable)
+internal fun toLibraryError(error: Throwable, report: NonFatalReport): LibraryError? = when (error) {
+    // The permission went away: the user's choice, so it isn't reported (ADR-030).
+    is SecurityException -> LibraryError.Storage(StorageError.Unavailable)
+
+    // MediaStore's database failed, or it didn't answer.
+    is SQLiteException, is IOException -> {
+        report.report("LibraryError.Storage MediaStore", error)
+        LibraryError.Storage(StorageError.Unavailable)
+    }
 
     else -> null
 }

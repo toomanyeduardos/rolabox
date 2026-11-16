@@ -125,6 +125,15 @@ sign-in and sync, use your own Firebase project:
 When you create the Firestore database in your project, start it in **production mode** (deny
 all), not test mode, then deploy the rules below.
 
+### Crash reporting
+
+Release builds report crashes, ANRs and a short list of non-fatal errors to Firebase Crashlytics,
+from every user, with nothing that identifies them
+([ADR-030](docs/adr/030-crash-reporting.md)). Debug builds send nothing. To see reports from your
+own release builds, open **Crashlytics** in your Firebase project. A release build with
+`app/google-services.json` uploads its mapping file, so stack traces are readable. With the
+placeholder, the upload is skipped and the build says so.
+
 ### Firestore security rules
 
 The Firebase config is public, so the rules in
@@ -279,6 +288,7 @@ graph TD
     auth_settings_impl[":auth:settings:impl"]
     auth_ui_api[":auth:ui:api"]
     auth_ui_impl[":auth:ui:impl"]
+    common_crashreporting_impl[":common:crashreporting:impl"]
     common_designsystem[":common:designsystem"]
     common_storage_api[":common:storage:api"]
     common_storage_impl[":common:storage:impl"]
@@ -321,6 +331,7 @@ graph TD
     app --> auth_settings_impl
     app --> auth_ui_api
     app --> auth_ui_impl
+    app --> common_crashreporting_impl
     app --> common_designsystem
     app --> common_storage_api
     app --> common_storage_impl
@@ -358,6 +369,7 @@ graph TD
     auth_ui_impl --> common_designsystem
     auth_ui_impl --> common_storage_api
     auth_ui_impl --> common_userdata_api
+    common_crashreporting_impl --> common_util
     common_storage_impl --> common_storage_api
     common_storage_impl --> common_util
     common_storage_testing --> common_storage_api
@@ -366,6 +378,7 @@ graph TD
     common_sync_impl --> common_sync_api
     common_sync_impl --> common_util
     common_sync_testing --> common_sync_api
+    common_testing --> common_util
     common_userdata_api --> common_storage_api
     common_userdata_api --> common_sync_api
     common_userdata_impl --> common_storage_api
@@ -417,6 +430,7 @@ graph TD
     device_playback_api --> device_library_api
     device_playback_impl --> common_designsystem
     device_playback_impl --> common_storage_api
+    device_playback_impl --> common_userdata_api
     device_playback_impl --> common_util
     device_playback_impl --> device_library_api
     device_playback_impl --> device_playback_api

@@ -7,6 +7,7 @@ import arrow.core.raise.either
 import com.eduardoflores.rolabox.common.storage.api.PreferencesStore
 import com.eduardoflores.rolabox.common.storage.api.StorageError
 import com.eduardoflores.rolabox.common.util.Dispatcher
+import com.eduardoflores.rolabox.common.util.NonFatalReport
 import com.eduardoflores.rolabox.common.util.RolaboxDispatchers.IO
 import com.eduardoflores.rolabox.common.util.catchNamed
 import com.eduardoflores.rolabox.device.library.api.ArtworkImage
@@ -52,6 +53,7 @@ internal class RoomAlbumArtworkLocalDataSource(
     private val folder: File,
     private val preferences: PreferencesStore,
     private val ioDispatcher: CoroutineDispatcher,
+    private val report: NonFatalReport,
 ) : AlbumArtworkLocalDataSource {
     @Inject
     constructor(
@@ -59,23 +61,26 @@ internal class RoomAlbumArtworkLocalDataSource(
         @ApplicationContext context: Context,
         preferences: PreferencesStore,
         @Dispatcher(IO) ioDispatcher: CoroutineDispatcher,
-    ) : this(dao, File(context.filesDir, ARTWORK_FOLDER), preferences, ioDispatcher)
+        report: NonFatalReport,
+    ) : this(dao, File(context.filesDir, ARTWORK_FOLDER), preferences, ioDispatcher, report)
 
-    override suspend fun getAlbums(): Either<LibraryError, List<ArtworkAlbum>> = catchNamed(::toLibraryError) {
+    override suspend fun getAlbums(): Either<LibraryError, List<ArtworkAlbum>> = catchNamed(::toError) {
         withContext(ioDispatcher) { dao.albums().mapNotNull(ArtworkAlbumRow::toArtworkAlbum) }
     }
 
     override suspend fun getAlbum(key: String): Either<LibraryError, ArtworkAlbum?> =
-        catchNamed(::toLibraryError) { dao.album(key)?.toArtworkAlbum() }
+        catchNamed(::toError) { dao.album(key)?.toArtworkAlbum() }
 
     override suspend fun getAlbumOfSong(song: SongId): Either<LibraryError, ArtworkAlbum?> =
-        catchNamed(::toLibraryError) { dao.albumOfSong(song.value)?.toArtworkAlbum() }
+        catchNamed(::toError) { dao.albumOfSong(song.value)?.toArtworkAlbum() }
 
     override fun observeRecord(key: String): Flow<Either<LibraryError, ArtworkRecord?>> =
-        dao.observe(key).map { it?.toRecord() }.flowOn(ioDispatcher).catchNamed(::toLibraryError)
+        dao.observe(key).map { it?.toRecord() }.flowOn(ioDispatcher).catchNamed(::toError)
 
     override suspend fun setRecord(key: String, record: ArtworkRecord): Either<LibraryError, Unit> =
-        catchNamed(::toLibraryError) { dao.upsert(record.toEntity(key)) }
+        catchNamed(::toError) { dao.upsert(record.toEntity(key)) }
+
+    private fun toError(error: Throwable): LibraryError? = toLibraryError(error, report)
 
     override suspend fun saveCover(
         key: String,

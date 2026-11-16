@@ -13,6 +13,7 @@ import androidx.media3.test.utils.robolectric.TestPlayerRunHelper
 import androidx.test.core.app.ApplicationProvider
 import arrow.core.left
 import arrow.core.right
+import com.eduardoflores.rolabox.common.testing.FakeNonFatalReport
 import com.eduardoflores.rolabox.common.userdata.api.Repeat
 import com.eduardoflores.rolabox.common.userdata.api.Shuffle
 import com.eduardoflores.rolabox.common.userdata.testing.FakeUserDataRepository
@@ -116,6 +117,7 @@ class ShuffleAndRepeatTest {
             FakeArtworkRepository(),
             userData,
             PlayOrders(Random(SEED)),
+            FakeNonFatalReport(),
         )
     }
 

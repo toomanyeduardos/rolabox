@@ -16,9 +16,11 @@ private const val RELEASE = "release"
  * - `optimization.enable` turns on both code and resource shrinking, with the default
  *   `proguard-android-optimize.txt` rules. Libraries bring their own consumer rules.
  * - The app's own keep rules, if it ever needs any, go in `app/src/main/keepRules/`, which AGP reads
- *   when it exists. Each rule carries a comment saying why. Today there are none.
+ *   when it exists. Each rule carries a comment saying why. Today the only one keeps line numbers
+ *   for Crashlytics (ADR-030).
  * - Each release's `mapping.txt` goes to Play inside the app bundle, so Play Console deobfuscates
- *   crashes. Nothing else is archived.
+ *   crashes, and to Crashlytics when the build has a real Firebase config (ADR-030). Nothing else is
+ *   archived.
  * - Instrumented tests stay on debug (ADR-008 allows only debug and release). A minified build is
  *   covered by a manual smoke test before each release, not by a test build type.
  *

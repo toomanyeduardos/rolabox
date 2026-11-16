@@ -17,6 +17,7 @@ dependencies {
 
     testImplementation(project(":device:library:testing"))
     testImplementation(project(":common:storage:testing"))
+    testImplementation(project(":common:testing"))
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     // The DAOs and the MediaStore query run on the JVM (ADR-024).

@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.emptyPreferences
 import arrow.core.left
 import arrow.core.right
 import com.eduardoflores.rolabox.common.storage.api.StorageError
+import com.eduardoflores.rolabox.common.testing.FakeNonFatalReport
 import java.io.IOException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,14 +19,30 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class DataStorePreferencesStoreTest {
+    private val report = FakeNonFatalReport()
+
+    @Test
+    fun corruptedFile_isReported() = runTest {
+        DataStorePreferencesStore(FailingDataStore(CorruptionException("bad file")), report).setString(KEY, "value")
+
+        assertEquals(listOf("StorageError.Corrupted DataStore"), report.kinds)
+    }
+
+    @Test
+    fun ioFailure_isNotReported() = runTest {
+        DataStorePreferencesStore(FailingDataStore(IOException("disk")), report).setString(KEY, "value")
+
+        assertEquals(emptyList<String>(), report.kinds)
+    }
+
     @Test
     fun observeString_missingKey_emitsNull() = runTest {
-        assertEquals(null.right(), DataStorePreferencesStore(InMemoryDataStore()).observeString(KEY).first())
+        assertEquals(null.right(), DataStorePreferencesStore(InMemoryDataStore(), report).observeString(KEY).first())
     }
 
     @Test
     fun setString_isObserved() = runTest {
-        val store = DataStorePreferencesStore(InMemoryDataStore())
+        val store = DataStorePreferencesStore(InMemoryDataStore(), report)
 
         assertEquals(Unit.right(), store.setString(KEY, "value"))
         assertEquals("value".right(), store.observeString(KEY).first())
@@ -33,7 +50,7 @@ class DataStorePreferencesStoreTest {
 
     @Test
     fun observeStrings_emitsEveryRequestedKey() = runTest {
-        val store = DataStorePreferencesStore(InMemoryDataStore())
+        val store = DataStorePreferencesStore(InMemoryDataStore(), report)
         store.setString(KEY, "value")
 
         assertEquals(
@@ -44,14 +61,14 @@ class DataStorePreferencesStoreTest {
 
     @Test
     fun observeStrings_corruptedFile_emitsCorruptedAndEnds() = runTest {
-        val store = DataStorePreferencesStore(FailingDataStore(CorruptionException("bad file")))
+        val store = DataStorePreferencesStore(FailingDataStore(CorruptionException("bad file")), report)
 
         assertEquals(listOf(StorageError.Corrupted.left()), store.observeStrings(setOf(KEY)).toList())
     }
 
     @Test
     fun updateStrings_passesCurrentValuesAndWritesTheResult() = runTest {
-        val store = DataStorePreferencesStore(InMemoryDataStore())
+        val store = DataStorePreferencesStore(InMemoryDataStore(), report)
         store.setString(KEY, "old")
         var seen: Map<String, String?> = emptyMap()
 
@@ -68,28 +85,28 @@ class DataStorePreferencesStoreTest {
 
     @Test
     fun updateStrings_ioFailure_isUnavailable() = runTest {
-        val store = DataStorePreferencesStore(FailingDataStore(IOException("disk")))
+        val store = DataStorePreferencesStore(FailingDataStore(IOException("disk")), report)
 
         assertEquals(StorageError.Unavailable.left(), store.updateStrings(setOf(KEY)) { mapOf(KEY to "value") })
     }
 
     @Test
     fun observeString_corruptedFile_emitsCorruptedAndEnds() = runTest {
-        val store = DataStorePreferencesStore(FailingDataStore(CorruptionException("bad file")))
+        val store = DataStorePreferencesStore(FailingDataStore(CorruptionException("bad file")), report)
 
         assertEquals(listOf(StorageError.Corrupted.left()), store.observeString(KEY).toList())
     }
 
     @Test
     fun setString_ioFailure_isUnavailable() = runTest {
-        val store = DataStorePreferencesStore(FailingDataStore(IOException("disk")))
+        val store = DataStorePreferencesStore(FailingDataStore(IOException("disk")), report)
 
         assertEquals(StorageError.Unavailable.left(), store.setString(KEY, "value"))
     }
 
     @Test(expected = IllegalStateException::class)
     fun setString_unnamedException_isRethrown() = runTest {
-        DataStorePreferencesStore(FailingDataStore(IllegalStateException("bug"))).setString(KEY, "value")
+        DataStorePreferencesStore(FailingDataStore(IllegalStateException("bug")), report).setString(KEY, "value")
     }
 
     private companion object {

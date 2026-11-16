@@ -7,6 +7,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import arrow.core.right
 import com.eduardoflores.rolabox.common.storage.testing.FakePreferencesStore
+import com.eduardoflores.rolabox.common.testing.FakeNonFatalReport
 import com.eduardoflores.rolabox.device.library.api.SongId
 import com.eduardoflores.rolabox.device.library.local.api.AlbumGroup
 import com.eduardoflores.rolabox.device.library.local.api.ArtistGroup
@@ -48,11 +49,18 @@ class AlbumArtworkLocalDataSourceTest {
     private val database = Room.inMemoryDatabaseBuilder(context, LibraryDatabase::class.java)
         .allowMainThreadQueries()
         .build()
-    private val index = RoomLibraryIndexLocalDataSource(database.libraryIndexDao(), UnconfinedTestDispatcher())
+    private val index =
+        RoomLibraryIndexLocalDataSource(database.libraryIndexDao(), UnconfinedTestDispatcher(), FakeNonFatalReport())
     private val folder = File(context.filesDir, "artwork-test").apply { deleteRecursively() }
     private val preferences = FakePreferencesStore()
     private val artwork =
-        RoomAlbumArtworkLocalDataSource(database.albumArtworkDao(), folder, preferences, UnconfinedTestDispatcher())
+        RoomAlbumArtworkLocalDataSource(
+            database.albumArtworkDao(),
+            folder,
+            preferences,
+            UnconfinedTestDispatcher(),
+            FakeNonFatalReport(),
+        )
 
     @After
     fun close() {

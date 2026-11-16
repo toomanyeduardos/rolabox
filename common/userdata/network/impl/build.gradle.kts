@@ -22,6 +22,7 @@ dependencies {
     implementation(libs.firebase.firestore)
     // Awaits Firebase's Tasks.
     implementation(libs.kotlinx.coroutines.play.services)
+    testImplementation(project(":common:testing"))
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
 }

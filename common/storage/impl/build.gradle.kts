@@ -11,6 +11,7 @@ dependencies {
     implementation(project(":common:storage:api"))
     implementation(project(":common:util"))
     implementation(libs.androidx.datastore.preferences)
+    testImplementation(project(":common:testing"))
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
 }

@@ -14,6 +14,7 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.eduardoflores.rolabox.common.testing.FakeNonFatalReport
 import com.eduardoflores.rolabox.common.userdata.testing.FakeUserDataRepository
 import com.eduardoflores.rolabox.device.library.api.Album
 import com.eduardoflores.rolabox.device.library.api.AlbumId
@@ -178,7 +179,7 @@ class PlaybackServiceTest {
         }
         val playback = MediaPlayback(
             library,
-            SessionConnection(context, Dispatchers.Main.immediate),
+            SessionConnection(context, Dispatchers.Main.immediate, FakeNonFatalReport()),
             PhoneVolume(context),
             FakePlaybackLocalDataSource(),
             scope,
@@ -186,6 +187,7 @@ class PlaybackServiceTest {
             FakeArtworkRepository(),
             FakeUserDataRepository(),
             PlayOrders(Random(0)),
+            FakeNonFatalReport(),
         )
         playback.play(PlaybackSource.AllSongs, PlaybackItemId.Song(song.id))
         val started = playback.startCount.first()
@@ -226,7 +228,7 @@ class PlaybackServiceTest {
         val playback =
             MediaPlayback(
                 FakeLibraryRepository(),
-                SessionConnection(context, Dispatchers.Main.immediate),
+                SessionConnection(context, Dispatchers.Main.immediate, FakeNonFatalReport()),
                 PhoneVolume(context),
                 FakePlaybackLocalDataSource(),
                 scope,
@@ -234,6 +236,7 @@ class PlaybackServiceTest {
                 FakeArtworkRepository(),
                 FakeUserDataRepository(),
                 PlayOrders(Random(0)),
+                FakeNonFatalReport(),
             )
 
         playback.changeVolume(-2)
