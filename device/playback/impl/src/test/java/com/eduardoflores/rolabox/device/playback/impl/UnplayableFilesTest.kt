@@ -12,6 +12,7 @@ import androidx.media3.test.utils.robolectric.RobolectricUtil
 import androidx.media3.test.utils.robolectric.ShadowMediaCodecConfig
 import androidx.test.core.app.ApplicationProvider
 import arrow.core.right
+import com.eduardoflores.rolabox.common.testing.FakeNonFatalReport
 import com.eduardoflores.rolabox.common.userdata.api.Repeat
 import com.eduardoflores.rolabox.common.userdata.api.Shuffle
 import com.eduardoflores.rolabox.common.userdata.testing.FakeUserDataRepository
@@ -74,6 +75,7 @@ class UnplayableFilesTest {
     private val library = FakeLibraryRepository()
     private val userData = FakeUserDataRepository()
     private val scope = TestScope()
+    private val report = FakeNonFatalReport()
     private lateinit var player: ExoPlayer
     private lateinit var playback: MediaPlayback
 
@@ -99,6 +101,7 @@ class UnplayableFilesTest {
                 FakeArtworkRepository(),
                 userData,
                 PlayOrders(Random(0)),
+                report,
             )
     }
 
@@ -121,6 +124,17 @@ class UnplayableFilesTest {
         assertNull(playback.unplayableQueue.first())
     }
 
+    // ADR-030: a file the engine couldn't play is reported, with Media3's code.
+    @Test
+    fun aBadFile_isReported() = scope.runTest {
+        songs(GOOD, TEXT, GOOD)
+        playFrom(2)
+        untilPlaying(3)
+
+        assertEquals(1, report.kinds.size)
+        assertTrue(report.kinds.single(), report.kinds.single().startsWith("Unplayable.Unsupported ERROR_CODE_"))
+    }
+
     @Test
     fun aTruncatedFileWithoutItsIndex_isSkipped() = scope.runTest {
         songs(TRUNCATED_M4A, GOOD)
@@ -138,6 +152,8 @@ class UnplayableFilesTest {
         untilPlaying(2)
 
         assertEquals(PlaybackError.Unplayable.Missing, playback.skipped.first()?.error)
+        // A deleted file is the phone's state, not a bug (ADR-030).
+        assertEquals(emptyList<String>(), report.kinds)
     }
 
     // An iTunes Store purchase: Media3 drops its FairPlay track and plays the item anyway, with no error. On a phone it

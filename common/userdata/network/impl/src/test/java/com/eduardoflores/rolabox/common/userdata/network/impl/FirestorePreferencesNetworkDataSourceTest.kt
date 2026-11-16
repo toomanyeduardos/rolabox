@@ -1,5 +1,6 @@
 package com.eduardoflores.rolabox.common.userdata.network.impl
 
+import com.eduardoflores.rolabox.common.testing.FakeNonFatalReport
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.Lazy
 import kotlinx.coroutines.runBlocking
@@ -19,14 +20,14 @@ class FirestorePreferencesNetworkDataSourceTest {
     // That a sync runs for nobody in offline mode is tested by the runner, in :common:sync:impl.
     @Test
     fun creatingTheDataSource_doesNotCreateFirestore() {
-        FirestorePreferencesNetworkDataSource(firestore)
+        FirestorePreferencesNetworkDataSource(firestore, FakeNonFatalReport())
 
         assertFalse(created)
     }
 
     @Test
     fun merging_createsFirestore() {
-        val dataSource = FirestorePreferencesNetworkDataSource(firestore)
+        val dataSource = FirestorePreferencesNetworkDataSource(firestore, FakeNonFatalReport())
 
         assertThrows(FirestoreCreated::class.java) { runBlocking { dataSource.merge(USER) { it } } }
         assertTrue(created)

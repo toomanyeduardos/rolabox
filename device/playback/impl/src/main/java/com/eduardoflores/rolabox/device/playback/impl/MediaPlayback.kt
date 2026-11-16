@@ -17,6 +17,7 @@ import com.eduardoflores.rolabox.common.userdata.api.Shuffle
 import com.eduardoflores.rolabox.common.userdata.api.UserData
 import com.eduardoflores.rolabox.common.userdata.api.UserDataRepository
 import com.eduardoflores.rolabox.common.util.ApplicationScope
+import com.eduardoflores.rolabox.common.util.NonFatalReport
 import com.eduardoflores.rolabox.device.library.api.AlbumId
 import com.eduardoflores.rolabox.device.library.api.ArtistId
 import com.eduardoflores.rolabox.device.library.api.ArtworkRef
@@ -125,6 +126,7 @@ internal class MediaPlayback @Inject constructor(
     private val artwork: ArtworkRepository,
     private val userData: UserDataRepository,
     private val orders: PlayOrders,
+    private val nonFatalReport: NonFatalReport,
 ) : PlaybackState,
     PlaybackController,
     SessionResumption {
@@ -169,9 +171,19 @@ internal class MediaPlayback @Inject constructor(
     /** Whether ⏮ brought the player to an item that hasn't played yet, so a skip goes on backward. */
     private var goingBack = false
 
+    // A deleted or protected file is the phone's state, not a bug, so only the others are reported (ADR-030). An
+    // Unplayable is a data object, whose toString() is its name.
+    private fun report(unplayable: PlaybackError.Unplayable, error: PlaybackException) {
+        if (unplayable != PlaybackError.Unplayable.Missing && unplayable != PlaybackError.Unplayable.Protected) {
+            nonFatalReport.report("Unplayable.$unplayable ${error.errorCodeName}", error)
+        }
+    }
+
     private val listener = object : Player.Listener {
         override fun onPlayerError(error: PlaybackException) {
-            listenedTo?.let { skip(it, error.toUnplayable()) }
+            val unplayable = error.toUnplayable()
+            report(unplayable, error)
+            listenedTo?.let { skip(it, unplayable) }
         }
 
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {

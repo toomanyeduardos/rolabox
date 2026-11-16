@@ -10,6 +10,7 @@ import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
 import com.eduardoflores.rolabox.common.util.Dispatcher
+import com.eduardoflores.rolabox.common.util.NonFatalReport
 import com.eduardoflores.rolabox.common.util.RolaboxDispatchers.Main
 import com.eduardoflores.rolabox.device.playback.api.PlaybackError
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -36,6 +37,7 @@ internal interface PlayerConnection {
 internal class SessionConnection @Inject constructor(
     @ApplicationContext private val context: Context,
     @Dispatcher(Main) override val dispatcher: CoroutineDispatcher,
+    private val report: NonFatalReport,
 ) : PlayerConnection {
     private val mutex = Mutex()
     private var controller: MediaController? = null
@@ -53,7 +55,9 @@ internal class SessionConnection @Inject constructor(
                 .setConnectionHints(Bundle().apply { putBoolean(OWN_CONTROLLER, true) })
                 .buildAsync()
                 .await().also { controller = it }.right()
-        } catch (_: SecurityException) {
+        } catch (error: SecurityException) {
+            // Our own session turned our own controller down, which should never happen (ADR-030).
+            report.report("PlaybackError.PlayerUnavailable", error)
             PlaybackError.PlayerUnavailable.left()
         }
     }

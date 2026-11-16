@@ -15,6 +15,7 @@ dependencies {
     implementation(libs.ktlint.gradlePlugin)
     implementation(libs.detekt.gradlePlugin)
     implementation(libs.googleServices.gradlePlugin)
+    implementation(libs.crashlytics.gradlePlugin)
     implementation(libs.paparazzi.gradlePlugin)
 
     testImplementation(libs.junit)

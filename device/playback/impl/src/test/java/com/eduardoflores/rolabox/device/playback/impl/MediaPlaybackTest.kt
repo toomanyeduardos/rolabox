@@ -17,6 +17,7 @@ import androidx.test.core.app.ApplicationProvider
 import arrow.core.left
 import arrow.core.right
 import com.eduardoflores.rolabox.common.storage.api.StorageError
+import com.eduardoflores.rolabox.common.testing.FakeNonFatalReport
 import com.eduardoflores.rolabox.common.userdata.testing.FakeUserDataRepository
 import com.eduardoflores.rolabox.device.library.api.Album
 import com.eduardoflores.rolabox.device.library.api.AlbumId
@@ -126,6 +127,7 @@ class MediaPlaybackTest {
                 FakeArtworkRepository(),
                 FakeUserDataRepository(),
                 PlayOrders(Random(0)),
+                FakeNonFatalReport(),
             )
     }
 

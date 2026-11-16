@@ -5,6 +5,7 @@ import android.database.sqlite.SQLiteException
 import arrow.core.Either
 import com.eduardoflores.rolabox.common.storage.api.StorageError
 import com.eduardoflores.rolabox.common.util.Dispatcher
+import com.eduardoflores.rolabox.common.util.NonFatalReport
 import com.eduardoflores.rolabox.common.util.RolaboxDispatchers.IO
 import com.eduardoflores.rolabox.common.util.catchNamed
 import com.eduardoflores.rolabox.device.library.api.Album
@@ -34,6 +35,7 @@ import kotlinx.coroutines.withContext
 internal class RoomLibraryIndexLocalDataSource @Inject constructor(
     private val dao: LibraryIndexDao,
     @param:Dispatcher(IO) private val ioDispatcher: CoroutineDispatcher,
+    private val report: NonFatalReport,
 ) : LibraryIndexLocalDataSource {
     override fun observeArtists(): Flow<Either<LibraryError, List<Artist>>> =
         dao.observeArtists().map { rows -> rows.map(ArtistEntity::toArtist) }.asRead()
@@ -92,25 +94,25 @@ internal class RoomLibraryIndexLocalDataSource @Inject constructor(
     override fun observeSongCount(): Flow<Either<LibraryError, Int>> = dao.observeSongCount().asRead()
 
     override suspend fun getArtist(id: ArtistId): Either<LibraryError, Artist?> =
-        catchNamed(::toLibraryError) { dao.getArtist(id.value)?.toArtist() }
+        catchNamed(::toError) { dao.getArtist(id.value)?.toArtist() }
 
     override suspend fun getAlbum(id: AlbumId): Either<LibraryError, Album?> =
-        catchNamed(::toLibraryError) { dao.getAlbum(id.value)?.toAlbum() }
+        catchNamed(::toError) { dao.getAlbum(id.value)?.toAlbum() }
 
     override suspend fun getGenre(id: GenreId): Either<LibraryError, Genre?> =
-        catchNamed(::toLibraryError) { dao.getGenre(id.value)?.toGenre() }
+        catchNamed(::toError) { dao.getGenre(id.value)?.toGenre() }
 
     override suspend fun getSongFile(id: SongId): Either<LibraryError, SongFile?> =
-        catchNamed(::toLibraryError) { dao.getSong(id.value)?.toSongFile() }
+        catchNamed(::toError) { dao.getSong(id.value)?.toSongFile() }
 
-    override suspend fun getIndexedSongs(): Either<LibraryError, List<IndexedSong>> = catchNamed(::toLibraryError) {
+    override suspend fun getIndexedSongs(): Either<LibraryError, List<IndexedSong>> = catchNamed(::toError) {
         withContext(ioDispatcher) { dao.getIndexedSongs().map(IndexedSongRow::toIndexedSong) }
     }
 
     override suspend fun write(batch: IndexBatch): Either<LibraryError, Unit> =
-        catchNamed(::toLibraryError) { dao.write(batch) }
+        catchNamed(::toError) { dao.write(batch) }
 
-    override suspend fun getScanState(): Either<LibraryError, List<VolumeScanState>> = catchNamed(::toLibraryError) {
+    override suspend fun getScanState(): Either<LibraryError, List<VolumeScanState>> = catchNamed(::toError) {
         dao.scanState().map { VolumeScanState(it.volume, it.version, it.generation) }
     }
 
@@ -118,15 +120,23 @@ internal class RoomLibraryIndexLocalDataSource @Inject constructor(
         dao.observeSongLocations().map { rows -> rows.associate { SongId(it.id) to it.uri } }.asRead()
 
     override suspend fun saveScanState(volumes: List<VolumeScanState>): Either<LibraryError, Unit> =
-        catchNamed(::toLibraryError) {
+        catchNamed(::toError) {
             dao.replaceScanState(volumes.map { ScanStateEntity(it.volume, it.version, it.generation) })
         }
 
-    private fun <T> Flow<T>.asRead(): Flow<Either<LibraryError, T>> = flowOn(ioDispatcher).catchNamed(::toLibraryError)
+    private fun <T> Flow<T>.asRead(): Flow<Either<LibraryError, T>> = flowOn(ioDispatcher).catchNamed(::toError)
+
+    private fun toError(error: Throwable): LibraryError? = toLibraryError(error, report)
 }
 
-internal fun toLibraryError(error: Throwable): LibraryError? = when (error) {
-    is SQLiteDatabaseCorruptException -> LibraryError.Storage(StorageError.Corrupted)
+/** The library database's exceptions as errors. A corrupt database is reported: it should never happen (ADR-030). */
+internal fun toLibraryError(error: Throwable, report: NonFatalReport): LibraryError? = when (error) {
+    is SQLiteDatabaseCorruptException -> {
+        report.report("StorageError.Corrupted Room", error)
+        LibraryError.Storage(StorageError.Corrupted)
+    }
+
     is SQLiteException -> LibraryError.Storage(StorageError.Unavailable)
+
     else -> null
 }

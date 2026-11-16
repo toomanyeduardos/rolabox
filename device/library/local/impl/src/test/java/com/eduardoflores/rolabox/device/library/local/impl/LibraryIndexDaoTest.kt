@@ -3,6 +3,7 @@ package com.eduardoflores.rolabox.device.library.local.impl
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import com.eduardoflores.rolabox.common.testing.FakeNonFatalReport
 import com.eduardoflores.rolabox.device.library.api.ArtistId
 import com.eduardoflores.rolabox.device.library.api.ArtworkRef
 import com.eduardoflores.rolabox.device.library.api.SongId
@@ -43,7 +44,7 @@ class LibraryIndexDaoTest {
         LibraryDatabase::class.java,
     ).allowMainThreadQueries().build()
     private val dao = database.libraryIndexDao()
-    private val index = RoomLibraryIndexLocalDataSource(dao, UnconfinedTestDispatcher())
+    private val index = RoomLibraryIndexLocalDataSource(dao, UnconfinedTestDispatcher(), FakeNonFatalReport())
 
     @After
     fun closeDatabase() = database.close()

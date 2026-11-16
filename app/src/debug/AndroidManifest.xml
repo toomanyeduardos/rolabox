@@ -1,11 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <application>
         <!-- Hosts the device in instrumented navigation tests (see HiltTestActivity). Debug builds only. -->
         <activity
             android:name="com.eduardoflores.rolabox.HiltTestActivity"
             android:exported="false" />
+
+        <!--
+            Debug builds don't start Crashlytics (ADR-030 rule 7). With collection off, it would still save each
+            crash on the phone, and a release build installed over this one would send them. Without its registrars,
+            Firebase never creates it, so nothing is saved. :common:crashreporting:impl binds NonFatalReport to
+            logcat in debug, so nothing asks for it either. The service is Firebase's, which :app reaches only
+            through its :impl modules, so lint can't see its class.
+        -->
+        <service
+            android:name="com.google.firebase.components.ComponentDiscoveryService"
+            android:exported="false"
+            tools:ignore="MissingClass"
+            tools:node="merge">
+            <meta-data
+                android:name="com.google.firebase.components:com.google.firebase.crashlytics.CrashlyticsRegistrar"
+                tools:node="remove" />
+            <meta-data
+                android:name="com.google.firebase.components:com.google.firebase.crashlytics.FirebaseCrashlyticsKtxRegistrar"
+                tools:node="remove" />
+        </service>
     </application>
 
 </manifest>

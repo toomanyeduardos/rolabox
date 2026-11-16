@@ -7,6 +7,7 @@ import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
 import com.eduardoflores.rolabox.common.util.Dispatcher
+import com.eduardoflores.rolabox.common.util.NonFatalReport
 import com.eduardoflores.rolabox.common.util.RolaboxDispatchers.IO
 import com.eduardoflores.rolabox.common.util.catchNamed
 import com.eduardoflores.rolabox.device.library.api.LibraryError
@@ -30,10 +31,11 @@ private const val TAG = "LibraryTags"
 internal class ContentResolverTagsLocalDataSource @Inject constructor(
     @param:ApplicationContext private val context: Context,
     @param:Dispatcher(IO) private val ioDispatcher: CoroutineDispatcher,
+    private val report: NonFatalReport,
 ) : TagsLocalDataSource {
     override suspend fun readTags(file: SongFile): Either<LibraryError, FileTags> = withContext(ioDispatcher) {
-        catchNamed({ error -> toFileUnreadable(error, file.uri) }) { parse(file.uri) }
-            .fold(ifLeft = { it.left() }, ifRight = { it?.right() ?: malformed(file.uri) })
+        catchNamed({ error -> toFileUnreadable(error, file.uri, report) }) { parse(file.uri) }
+            .fold(ifLeft = { it.left() }, ifRight = { it?.right() ?: malformed(file.uri, report) })
     }
 
     private fun parse(uri: String): FileTags? {
@@ -45,15 +47,21 @@ internal class ContentResolverTagsLocalDataSource @Inject constructor(
     }
 }
 
-private fun malformed(uri: String): Either<LibraryError, FileTags> {
+// Our own parser said no, so a parser bug shows up here too (ADR-030). The URI isn't reported.
+internal fun malformed(uri: String, report: NonFatalReport): Either<LibraryError, FileTags> {
     Log.w(TAG, "Malformed tags in $uri")
+    report.report("LibraryError.TagsMalformed", null)
     return LibraryError.TagsMalformed(uri).left()
 }
 
-private fun toFileUnreadable(error: Throwable, uri: String): LibraryError? = when (error) {
+internal fun toFileUnreadable(error: Throwable, uri: String, report: NonFatalReport): LibraryError? = when (error) {
     // The file went away, the permission did, or the system couldn't open it.
     is IOException, is SecurityException, is IllegalArgumentException -> {
         Log.w(TAG, "Couldn't read $uri", error)
+        // A file that went away, or a permission that did, is the phone's state, not a bug (ADR-030).
+        if (error !is FileNotFoundException && error !is SecurityException) {
+            report.report("LibraryError.FileUnreadable", error)
+        }
         LibraryError.FileUnreadable(uri)
     }
 

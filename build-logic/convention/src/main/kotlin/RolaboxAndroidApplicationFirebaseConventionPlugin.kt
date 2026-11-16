@@ -4,13 +4,17 @@ import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
+import com.eduardoflores.rolabox.buildlogic.configureCrashReporting
 import org.gradle.kotlin.dsl.named
 
 /**
  * Applies the google-services plugin with the Firebase config from ADR-008: the developer's own
  * `google-services.json` when it exists (git-ignored, never committed), and otherwise the committed
  * placeholder, which points at no real project. So a fresh clone builds and runs with no setup. With
- * the placeholder, Firebase requests fail and sign-in doesn't work, but offline mode does.
+ * the placeholder, Firebase requests fail and sign-in doesn't work, but no-account mode does.
+ *
+ * Also applies Crashlytics (ADR-030): collection only in release, and the mapping upload only with the
+ * real config.
  *
  * The placeholder has a different name, so the plugin never finds it by itself, and adding a real
  * file never changes a tracked one. It's handed to the plugin's tasks here, never copied into place.
@@ -40,9 +44,12 @@ class RolaboxAndroidApplicationFirebaseConventionPlugin : Plugin<Project> {
             } else {
                 logger.lifecycle(
                     "Firebase config: the placeholder (${config.relativeTo(rootDir).path}). The app works " +
-                        "offline, but sign-in and sync won't. See README, 'Building with Firebase'.",
+                        "without an account, but sign-in and sync won't, and a release build doesn't upload " +
+                        "its mapping file to Crashlytics. See README, 'Building with Firebase'.",
                 )
             }
+
+            configureCrashReporting(usesRealConfig = config == real)
 
             // The plugin registers each variant's task in its own onVariants callback, which was added
             // first, and sets the files there. Configuring the task from here runs after that.

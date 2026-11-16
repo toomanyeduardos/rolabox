@@ -23,6 +23,7 @@ dependencies {
     implementation(project(":auth:data:impl"))
     implementation(project(":auth:settings:impl"))
     implementation(project(":auth:ui:impl"))
+    implementation(project(":common:crashreporting:impl"))
     implementation(project(":common:storage:impl"))
     implementation(project(":common:sync:impl"))
     implementation(project(":common:userdata:impl"))

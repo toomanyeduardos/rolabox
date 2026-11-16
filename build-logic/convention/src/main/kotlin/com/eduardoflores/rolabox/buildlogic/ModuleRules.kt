@@ -44,6 +44,10 @@ private const val USERDATA_PREFIX = ":common:userdata:"
 private const val FIREBASE_GROUP = "com.google.firebase"
 private const val FIRESTORE_NAME_PREFIX = "firebase-firestore"
 
+// Crashlytics is a dependency of :common:crashreporting:impl only (ADR-030 rule 2).
+private const val CRASHLYTICS_NAME_PREFIX = "firebase-crashlytics"
+private const val CRASHREPORTING_IMPL_PATH = ":common:crashreporting:impl"
+
 // Media3 is a dependency of the playback engine's module only (ADR-023 rule 9).
 private const val MEDIA3_GROUP = "androidx.media3"
 
@@ -71,7 +75,7 @@ private const val DAGGER_GROUP = "com.google.dagger"
 private const val PAPARAZZI_GROUP = "app.cash.paparazzi"
 private const val PAPARAZZI_PLUGIN = "app.cash.paparazzi"
 
-/** Checks the `[enforced]` dependency rules of ADR-020, ADR-022, ADR-023, ADR-024, ADR-026, ADR-027, ADR-005 and ADR-016 while the build is configured. */
+/** Checks the `[enforced]` dependency rules of ADR-020, ADR-022, ADR-023, ADR-024, ADR-026, ADR-027, ADR-030, ADR-005 and ADR-016 while the build is configured. */
 internal fun Project.enforceModuleRules() {
     val modulePath = path
 
@@ -135,6 +139,10 @@ internal fun externalDependencyViolation(
         group == FIREBASE_GROUP && name.startsWith(FIRESTORE_NAME_PREFIX) && !modulePath.endsWith(NETWORK_IMPL_SUFFIX) ->
             "ADR-022 rule 3: Firestore is a dependency of :network:impl modules only. Map the data in the " +
                 "part's :network:impl, and reach it through its :network:api"
+
+        group == FIREBASE_GROUP && name.startsWith(CRASHLYTICS_NAME_PREFIX) && modulePath != CRASHREPORTING_IMPL_PATH ->
+            "ADR-030 rule 2: Crashlytics is a dependency of $CRASHREPORTING_IMPL_PATH only. Report a non-fatal " +
+                "error through NonFatalReport in :common:util"
 
         group == MEDIA3_GROUP && modulePath != PLAYBACK_IMPL_PATH ->
             "ADR-023 rule 9: Media3 is a dependency of $PLAYBACK_IMPL_PATH only. Reach playback through " +

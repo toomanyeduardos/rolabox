@@ -10,6 +10,7 @@ import androidx.media3.test.utils.robolectric.ShadowMediaCodecConfig
 import androidx.media3.test.utils.robolectric.TestPlayerRunHelper
 import androidx.test.core.app.ApplicationProvider
 import arrow.core.right
+import com.eduardoflores.rolabox.common.testing.FakeNonFatalReport
 import com.eduardoflores.rolabox.common.userdata.testing.FakeUserDataRepository
 import com.eduardoflores.rolabox.device.library.api.Album
 import com.eduardoflores.rolabox.device.library.api.AlbumId
@@ -92,6 +93,7 @@ class ArtworkFollowsPlaybackTest {
                 artwork,
                 FakeUserDataRepository(),
                 PlayOrders(Random(0)),
+                FakeNonFatalReport(),
             )
     }
 

@@ -35,6 +35,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.guava) // required by media3
 
+    testImplementation(project(":common:testing"))
     testImplementation(project(":device:playback:testing"))
     testImplementation(project(":device:library:testing"))
     testImplementation(project(":common:userdata:testing"))

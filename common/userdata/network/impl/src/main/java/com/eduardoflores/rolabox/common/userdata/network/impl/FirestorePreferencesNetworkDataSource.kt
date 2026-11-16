@@ -13,6 +13,7 @@ import com.eduardoflores.rolabox.common.userdata.api.Repeat
 import com.eduardoflores.rolabox.common.userdata.api.Shuffle
 import com.eduardoflores.rolabox.common.userdata.api.SyncedPreferences
 import com.eduardoflores.rolabox.common.userdata.network.api.PreferencesNetworkDataSource
+import com.eduardoflores.rolabox.common.util.NonFatalReport
 import com.eduardoflores.rolabox.common.util.catchNamed
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentSnapshot
@@ -29,16 +30,17 @@ import kotlinx.coroutines.tasks.await
  * `{ value: <enum name>, updatedAt: <timestamp> }`. The field names and values are checked by
  * `firebase/firestore.rules`, so they change only together with the rules.
  *
- * Firestore is created on the first sync, never before, so offline mode never creates it (ADR-008
+ * Firestore is created on the first sync, never before, so no-account mode never creates it (ADR-008
  * rule 8).
  */
 internal class FirestorePreferencesNetworkDataSource @Inject constructor(
     private val firestore: Lazy<FirebaseFirestore>,
+    private val report: NonFatalReport,
 ) : PreferencesNetworkDataSource {
     override suspend fun merge(
         userId: String,
         merge: (remote: SyncedPreferences) -> SyncedPreferences,
-    ): Either<RemoteError, SyncedPreferences> = catchNamed(Throwable::asLoggedRemoteError) {
+    ): Either<RemoteError, SyncedPreferences> = catchNamed({ it.asLoggedRemoteError(report) }) {
         val db = firestore.get()
         val document = db.collection(USERS).document(userId).collection(SETTINGS).document(PREFERENCES)
         db.runTransaction { transaction ->

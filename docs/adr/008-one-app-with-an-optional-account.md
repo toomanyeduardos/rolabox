@@ -78,6 +78,13 @@
   any kind" (search, feeds and downloads all need the internet), covers shouldn't be blocked either,
   and the choice on the Sign in screen was always about the account. "Offline" also reads as "no
   connection", which Rolabox already uses for that ([ADR-002](002-offline-first-data-flow.md)).
+- **Revised 2026-11-16:** Crashlytics is the second exception to rule 6
+  ([ADR-030](030-crash-reporting.md)): it sends crash reports, ANRs, the non-fatal errors ADR-030
+  lists, and a session event on every launch, from every user, in no-account mode and while signed
+  out (Decision, rules 6 and 9). Why: a crash report holds nothing of the account, the library or the
+  preferences, and reports only from signed-in users would miss most crashes, including every crash
+  on the Sign in screen. Rule 9 now points at ADR-030 as the ADR it asks for. No other Firebase
+  product is added.
 
 ## Context
 
@@ -202,9 +209,11 @@ screen's "You're offline", keep the word, since that's what they mean.
 
 **No-account mode makes no Firebase request.** While no-account mode is chosen, and while the user
 is signed out, nothing in the app talks to Firebase: nothing is fetched, nothing is saved to the
-cloud, and no calls are made or received. The one exception is the password reset email the user
-asks for from the Reset password screen, which asks Firebase Auth to send a link and reads nothing
-back about the account. Preferences are still saved locally, to DataStore. The code guarantees this
+cloud, and no calls are made or received. There are two exceptions. The password reset email the
+user asks for from the Reset password screen asks Firebase Auth to send a link and reads nothing back
+about the account. And Crashlytics sends crash reports and a session event from every user
+([ADR-030](030-crash-reporting.md)), holding nothing of the account, the library or the preferences.
+Preferences are still saved locally, to DataStore. The code guarantees this
 in four places:
 
 - **Sync checks before it runs.** `SyncRunner` runs its `Syncer`s only when the user is signed in
@@ -227,7 +236,8 @@ in four places:
 - **Only Firebase products that wait to be called.** Auth and Firestore make requests only when our
   code calls them. A product that sends data by itself (Analytics, Crashlytics, Cloud Messaging,
   Remote Config, Performance Monitoring) needs its own ADR, or a revision of this one, saying how it
-  stays silent in no-account mode.
+  stays silent in no-account mode, or why it doesn't. Crashlytics doesn't, and
+  [ADR-030](030-crash-reporting.md) says why and what it may send.
 
 Messages between the app and Google Play services on the device, such as checking that Play services
 is available, aren't network requests and aren't covered. Credential Manager's Google sign-in does
@@ -394,7 +404,8 @@ record:
    CI fails if a tracked file has that name.
 6. `[convention]` While no-account mode is chosen, or while the user is signed out, the app makes no
    Firebase request, except the password reset email that the user asks for from the Reset
-   password screen (`AuthRepository.sendPasswordResetEmail`). `SyncRunner` runs `Syncer`s only for a
+   password screen (`AuthRepository.sendPasswordResetEmail`), and Crashlytics, which sends what
+   [ADR-030](030-crash-reporting.md) allows from every user. `SyncRunner` runs `Syncer`s only for a
    signed-in user who hasn't chosen no-account mode, and the sync triggers request nothing in
    no-account mode. Requests that aren't Firebase (the Cover Art Archive,
    [ADR-027](027-artwork-from-the-internet.md), and later the podcast directory, feeds and episode
@@ -406,7 +417,9 @@ record:
    through `Provider` or `Lazy`, and are never created in no-account mode. Initializing
    `FirebaseApp` and reading `FirebaseAuth`'s cached user are allowed at any time.
 9. `[convention]` Only Firebase products that make requests when our code calls them are used. A
-   product that sends data by itself needs an ADR saying how it stays silent in no-account mode.
+   product that sends data by itself needs an ADR saying how it stays silent in no-account mode, or
+   why it doesn't and what it sends. Crashlytics is the one such product, under
+   [ADR-030](030-crash-reporting.md).
 10. `[convention]` The start destination is Home when signed in or when no-account mode is chosen,
     and Sign in otherwise. No build setting changes it.
 11. `[planned]` (account/02) The choice is called no-account mode: "Use without an account" in the
