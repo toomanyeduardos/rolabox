@@ -14,8 +14,8 @@
   that `SyncManager` was renamed `SyncRepository` ([ADR-011](011-preferences-sync.md)). The decision
   is unchanged.
 - **Revised 2026-09-28:** Conformance now reflects that there is one app with no flavors
-  ([ADR-008](008-one-app-with-offline-mode.md)): sync runs while signed in and not in offline mode,
-  and `AuthRepository` always observes the Firebase user. The decision is unchanged.
+  ([ADR-008](008-one-app-with-an-optional-account.md)): sync runs while signed in and not in offline
+  mode, and `AuthRepository` always observes the Firebase user. The decision is unchanged.
 - **Revised 2026-09-29:** Conformance now reflects that signing in with an email and password
   is built. The decision is unchanged.
 - **Revised 2026-10-06:** Module names updated for the layout of
@@ -35,6 +35,10 @@
 - **Revised 2026-10-31:** Conformance now reflects that the library's index and its first pass are
   built (library/03), so the gap it noted for the hard-coded library is closed. The decision is
   unchanged.
+- **Revised 2026-11-11:** Conformance uses ADR-008's new term: sync runs while signed in and not in
+  no-account mode ([ADR-008](008-one-app-with-an-optional-account.md), the old "offline mode").
+  "Offline-first" in this ADR's title and text is about having no connection, and is unchanged. The
+  decision is unchanged.
 
 ## Context
 
@@ -147,11 +151,11 @@ detailed conflict rules for each type of data.
 
 **Conformance.** The library is indexed from MediaStore into Room, and the device reads only the
 index ([ADR-024](024-library-index.md), library/03). `SyncRepository` syncs preferences from
-DataStore while the user is signed in and hasn't chosen offline mode
+DataStore while the user is signed in and hasn't chosen no-account mode
 ([ADR-011](011-preferences-sync.md)). The repository of the preferences reads and writes only
 their local side, `:common:userdata:local`, and only their `Syncer` uses the network side,
 `:common:userdata:network` (rules 1 and 2, [ADR-022](022-data-source-sub-parts.md)). Nothing in Room
 syncs yet. `AuthRepository` observes the
 Firebase user, and users can sign in with an email and password
-([ADR-008](008-one-app-with-offline-mode.md)). This
+([ADR-008](008-one-app-with-an-optional-account.md)). This
 ADR sets the constraints those implementations must meet.

@@ -15,6 +15,14 @@
   each had two equal release groups on MusicBrainz, and *Live at Radio City* is tagged "Dave
   Matthews" as its album artist and "Dave Matthews & Tim Reynolds" on every song, the artist
   MusicBrainz credits.
+- **Revised 2026-11-11:** Covers are downloaded in no-account mode too (the old "offline mode"), and
+  while signed out: only the Online Artwork setting stops them ("The setting, with or without an
+  account", rule 3). [ADR-008](008-one-app-with-an-optional-account.md) now says that no-account
+  mode makes no *Firebase* request, and that any other request is made as it is when signed in
+  (ADR-008, rule 6). Why: the choice was always about the account, and a cover request sends nothing
+  about one, only an album's title and artist (rule 2). The library's `:impl` no longer reads the
+  account choice, and the `OkHttpClient` stays lazy for its own sake, not for ADR-008's rule 8. The
+  code still skips no-account mode until account/02.
 
 ## Context
 
@@ -39,8 +47,8 @@ What the decision has to fit:
 - **Repositories use the local side only, and only a `Syncer` uses both**
   ([ADR-022](022-data-source-sub-parts.md), rule 2). A download isn't sync: nothing goes up, and
   there is no account.
-- **Offline mode makes no Firebase request** ([ADR-008](008-one-app-with-offline-mode.md), rule 6).
-  This is the first request that isn't Firebase.
+- **No-account mode makes no Firebase request** ([ADR-008](008-one-app-with-an-optional-account.md),
+  rule 6). This is the first request that isn't Firebase, so ADR-008's rule doesn't cover it.
 - **`ArtworkRepository` loads once** (ADR-026). A cover that arrives while Now Playing shows the
   album has to replace the placeholder there, on the notification and on the lock screen, without
   stopping the music.
@@ -202,8 +210,8 @@ pass 1: search title ─▶ exactly one equal? ─ yes ─▶ its cover
   local side for the thumbnail of the album's song (ADR-026), one song per album. An album with a
   cover gets `OnPhone`, and one without gets `Pending`.
 - **Then it enqueues the work** if any album is `Pending`, or `NotFound` and due again.
-- **The pass runs only while downloading is allowed** (Offline mode and the setting), since its
-  thumbnails are of use only to the download.
+- **The pass runs only while downloading is allowed** (The setting, with or without an account),
+  since its thumbnails are of use only to the download.
 - **A record is corrected when a load finds it wrong.** A load that finds a thumbnail makes the row
   `OnPhone` (and deletes a `Found` file). A load of an `OnPhone` album that finds none, for the song
   and for the song that stands for the album, makes it `Pending`: a song with no picture of its own
@@ -250,17 +258,19 @@ pass 1: search title ─▶ exactly one equal? ─ yes ─▶ its cover
   `ArtworkImage` at the size of ADR-026's thumbnails, and deletes it. The bytes cross the
   `:network:api` and the `:local:api` as a `ByteArray`.
 
-### Offline mode and the setting
+### The setting, with or without an account
 
-- **No artwork request is made in offline mode.** ADR-008's rule 6 is revised to say so.
+- **Covers are downloaded with or without an account.** In no-account mode, while signed out and
+  while signed in alike: the account choice is about Firebase (ADR-008, rule 6), and a cover request
+  sends nothing about an account (rule 2). The setting is the only switch.
 - **The setting is on by default,** kept on this phone and not synced, as the library's flag for the
   permission request is: in `:common:storage`, through the library's local side. The settings list
   (`:device:settings:impl`) shows it as Online Artwork, On or Off, after Theme, through
   `ArtworkRepository`. Center changes it in place, as it does Clicker.
-- **The work checks both before each request,** not only when it is enqueued, and stops when either
-  says no. Turning the setting off, or choosing offline mode, cancels the work. Covers already
-  downloaded are still shown.
-- **The library's `:impl` reads offline mode** from `UserDataRepository`, in `:common:userdata:api`.
+- **The work checks the setting before each request,** not only when it is enqueued, and stops when
+  it says no. Turning the setting off cancels the work. Covers already downloaded are still shown.
+- **The library's `:impl` doesn't read the account choice.** It needs nothing from
+  `UserDataRepository` for the download.
 
 ### What `ArtworkRepository` becomes
 
@@ -298,10 +308,10 @@ pass 1: search title ─▶ exactly one equal? ─ yes ─▶ its cover
   songs, its highest track number and its year, the last two `null` when the index has none. The
   library's `:impl` builds it from the index.
 - **OkHttp and kotlinx-serialization-json** are new in the stack, as dependencies of `:network:impl`
-  modules only. OkHttp follows the archive's redirect. The tests serve recorded answers of MusicBrainz
-  from an OkHttp interceptor, so no request leaves them. JSON is read as a tree, with no compiler
-  plugin. The `OkHttpClient` is injected lazily, so nothing opens a connection in offline mode
-  (ADR-008, rule 8).
+  modules only. OkHttp follows the archive's redirect. The tests serve recorded answers of
+  MusicBrainz from an OkHttp interceptor, so no request leaves them. JSON is read as a tree, with no
+  compiler plugin. The `OkHttpClient` is injected lazily, so it is created by the work's first
+  request and not at process start.
 - **`CoverSourceError`** is the network side's sealed error ([ADR-007](007-error-handling.md)):
   `Unreachable` (no network, a timeout), `Server(code)`, and `Malformed` for an answer that can't be
   read. The network's `:impl` maps `IOException`, `SocketTimeoutException` and the HTTP codes to it.
@@ -389,8 +399,9 @@ pass 1: search title ─▶ exactly one equal? ─ yes ─▶ its cover
    the rules under "How a match is judged": pass 1 equal, then pass 2 only when it misses. Only an
    album's title and artist, and MusicBrainz's own ids, are sent, with the `User-Agent` above, at most
    one request a second.
-3. `[convention]` No artwork request is made in offline mode or while the setting is off. The work
-   checks both before each request. Tests cover both.
+3. `[convention]` No artwork request is made while the setting is off. The work checks it before
+   each request. The account choice doesn't stop it: covers are downloaded in no-account mode and
+   while signed out as when signed in (ADR-008, rule 6). Tests cover both.
 4. `[convention]` Downloads run only in the library's `artwork-download` WorkManager work, one album at a
    time, with a network constraint: the album shown first, then the queued ones, then the ones due again.
    A request in flight is never cancelled to change the order. `ArtworkRepository` never calls the
@@ -409,9 +420,11 @@ pass 1: search title ─▶ exactly one equal? ─ yes ─▶ its cover
 **Conformance.** Rule 7 is checked by `ModuleRules.kt` when the build is configured, on those
 artifacts, with a violating and a passing case in `ModuleRulesTest`. The rest are reviewed, and
 covered by tests: the order and the corrections of a record by the tests of `ArtworkRepository` in
-`:device:library:impl`; the states, the retries and giving up, offline mode and the setting, by the
-tests of the pass and the work against a fake cover source; the match, both passes and each hint of
-the ranking, by the tests of `:device:library:network:impl` against recorded responses, with no
-network (*Skin and Bones*, *Experience Hendrix* and *Live at Radio City* among them); the table by Room's
-migration tests; rule 8 by `NowPlayingViewModelTest` and the tests of playback's artwork watcher.
-Rule 2's request rate and the device behavior are checked by hand with *Live 2012*.
+`:device:library:impl`; the states, the retries and giving up, the setting, and the download in
+no-account mode, by the tests of the pass and the work against a fake cover source; the match, both
+passes and each hint of the ranking, by the tests of `:device:library:network:impl` against recorded
+responses, with no network (*Skin and Bones*, *Experience Hendrix* and *Live at Radio City* among
+them); the table by Room's migration tests; rule 8 by `NowPlayingViewModelTest` and the tests of
+playback's artwork watcher. Rule 2's request rate and the device behavior are checked by hand with
+*Live 2012*. Rule 3's part about the account isn't in the code yet: the pass and the work still stop
+in no-account mode until account/02 removes the check and changes their tests.

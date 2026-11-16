@@ -19,8 +19,8 @@
 ## Context
 
 [ADR-002](002-offline-first-data-flow.md) allows an optional remote backend for user data, and
-[ADR-008](008-one-app-with-offline-mode.md) made that backend Firebase but left open which Firebase
-product stores synced data. That choice is needed now, together with how the stored data is
+[ADR-008](008-one-app-with-an-optional-account.md) made that backend Firebase but left open which
+Firebase product stores synced data. That choice is needed now, together with how the stored data is
 protected.
 
 Rolabox is public, and the Firebase config can't be kept from anyone:

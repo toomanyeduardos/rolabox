@@ -1,4 +1,4 @@
-# ADR-008: One app with Firebase built in, and offline mode as a user choice
+# ADR-008: One app with Firebase built in, and an optional account
 
 - **Status:** Accepted
 - **Date:** 2026-09-24
@@ -63,14 +63,29 @@
   says that offline mode makes no request of any kind: no Firebase request, and no artwork download.
   A signed-out user who hasn't chosen offline mode can still download covers, since nothing about
   their account is sent.
+- **Revised 2026-11-11:** "Offline mode" is renamed **no-account mode**, and it now means what it
+  was meant to mean: using Rolabox without an account, not without the network. In no-account mode
+  the app makes no Firebase request (no auth, no Firestore, no sync), exactly as before. Any other
+  request (Cover Art Archive, and later the podcast directory, feeds and episode downloads) is made
+  as it is when signed in, which reverses the revision of 2026-11-03 (Decision, rules 6 and 8 to 10,
+  new rules 11 and 12). The UI says "Use without an account", the code says `noAccountModeChosen`,
+  and the stored key is renamed from `offline_mode_chosen` to `no_account_mode_chosen` with a
+  one-time migration (The name, rule 11, `[planned]` for account/02). A new section lists what still
+  needs a connection. The title and file name changed (was "One app with Firebase built in, and
+  offline mode as a user choice", `008-one-app-with-offline-mode.md`). Context, Decision,
+  Consequences, Rules and Conformance use the new term; Migration is the record of
+  `m1/flavor-removal` and is left as it was written. Why: podcasts can't work under "no request of
+  any kind" (search, feeds and downloads all need the internet), covers shouldn't be blocked either,
+  and the choice on the Sign in screen was always about the account. "Offline" also reads as "no
+  connection", which Rolabox already uses for that ([ADR-002](002-offline-first-data-flow.md)).
 
 ## Context
 
 Rolabox is one product. A user can sign in, so their preferences follow them across devices
-([ADR-011](011-preferences-sync.md)), or use the app without an account. That second path is the
-"offline mode chosen" preference (`UserDataRepository.observeOfflineModeChosen`), set from the
-"Use offline without an account" link on the Sign in screen. Both paths are in the same app, and
-the user picks one at runtime.
+([ADR-011](011-preferences-sync.md)), or use the app without an account. That second path is
+**no-account mode** (`UserDataRepository.observeNoAccountModeChosen`), chosen from the "Use without
+an account" link on the Sign in screen. Both paths are in the same app, and the user picks one at
+runtime.
 
 The first version of this ADR modeled the two paths as two builds: an `offline` flavor with no
 Firebase code, and a `cloud` flavor with Firebase and the account screens. That kept Firebase out of
@@ -93,15 +108,23 @@ Firebase still has the constraints that led to the flavors:
   fork build against the maintainer's project and quota without noticing.
 - CI has no Firebase config, and shouldn't need a secret to build a pull request.
 
-And the product adds one: a user who chose offline mode expects the app to stay off the network.
-With Firebase always in the APK, that can't come from the build anymore. It has to come from the
-code.
+And the product adds one: a user who chose to use the app without an account expects nothing to
+reach Firebase: no account is created, nothing is stored in the cloud, and nothing is synced. With
+Firebase always in the APK, that can't come from the build anymore. It has to come from the code.
+
+That expectation is about the account, not about the network. Rolabox reaches other services that
+have nothing to do with an account: the Cover Art Archive for missing covers
+([ADR-027](027-artwork-from-the-internet.md)), and, with podcasts, a podcast directory, the shows'
+feeds and their episodes. None of them sends anything about the user's account, and a player with
+podcasts can't work without them. The choice was first called "offline mode", and on 2026-11-03 it
+was read literally, as "no request of any kind". That blocked covers, and would block podcasts
+entirely, for a user who only declined an account.
 
 ## Decision
 
 We will build **one app**. Firebase, Play services and the account features are always in it.
 Whether the app talks to Firebase is decided at runtime by the user's choice, and the app doesn't
-know at build time whether it will be used offline.
+know at build time whether it will be used with an account.
 
 **No product flavors.** The `backend` flavor dimension and the `offline` and `cloud` flavors are
 removed from the convention plugins ([ADR-004](004-convention-plugins.md)). Each module has only the
@@ -118,7 +141,7 @@ and `:common:sync:impl` binds `WorkManagerSyncRepository`. `SignedOutAuthReposit
 `accountsAvailable` parameter:
 
 - signed in → Home;
-- offline mode chosen → Home;
+- no-account mode chosen → Home;
 - otherwise → Sign in.
 
 **`google-services.json`: a committed placeholder, and an optional local real file.**
@@ -150,43 +173,90 @@ and `:common:sync:impl` binds `WorkManagerSyncRepository`. `SignedOutAuthReposit
 - **The real file is kept out of git twice.** `.gitignore` covers `google-services.json` at any
   path, and CI fails if any tracked file has that name. The ignore rule stops an accidental
   `git add`, and the CI check catches a forced one.
-- **With the placeholder, the app works offline and sign-in fails.** Firebase initializes from the
-  placeholder, so the app builds, starts, and works fully in offline mode. Any Firebase request
+- **With the placeholder, the app works without an account and sign-in fails.** Firebase
+  initializes from the placeholder, so the app builds, starts, and works fully in no-account mode,
+  covers included. Any Firebase request
   fails, because there's no backend behind `demo-rolabox`. Sign-in shows an error on the Sign in
   screen, and sync never runs because nobody is signed in. To use accounts, a developer adds their
   own real file (README, "Building with Firebase").
 
-**Offline mode makes no Firebase requests.** While offline mode is chosen, and while the user is
-signed out, nothing in the app talks to Firebase: nothing is fetched, nothing is saved to the
+**The name.** The choice is called **no-account mode**, because that is what it is: the user uses
+Rolabox without an account. "Offline" stays the word for having no connection, as in
+"offline-first" ([ADR-002](002-offline-first-data-flow.md)) and "a device is offline"
+([ADR-011](011-preferences-sync.md)), and is never used for the choice.
+
+| Where | Name |
+| --- | --- |
+| UI (the Sign in link) | "Use without an account" |
+| ADRs and docs | no-account mode |
+| Code | `observeNoAccountModeChosen()`, `setNoAccountModeChosen(chosen)`, `noAccountModeChosen` |
+| Stored key (DataStore) | `no_account_mode_chosen` |
+
+The stored key is renamed too, so the code, the ADRs and the stored data say the same thing. The
+local data source of the preferences migrates it once: when `offline_mode_chosen` is present, its
+value is written to `no_account_mode_chosen` and the old key is removed, before the choice is first
+read. A user who chose offline mode before the update is still in no-account mode after it, and
+opens on Home. The key is local-only ([ADR-011](011-preferences-sync.md), rule 10), so no synced
+data and no Firestore rule change. Messages about having no connection, such as the Reset password
+screen's "You're offline", keep the word, since that's what they mean.
+
+**No-account mode makes no Firebase request.** While no-account mode is chosen, and while the user
+is signed out, nothing in the app talks to Firebase: nothing is fetched, nothing is saved to the
 cloud, and no calls are made or received. The one exception is the password reset email the user
 asks for from the Reset password screen, which asks Firebase Auth to send a link and reads nothing
-back about the account. Preferences are still saved locally, to DataStore. The
-code guarantees this in four places:
+back about the account. Preferences are still saved locally, to DataStore. The code guarantees this
+in four places:
 
 - **Sync checks before it runs.** `SyncRunner` runs its `Syncer`s only when the user is signed in
-  and offline mode isn't chosen. It checks both, not just one. The sync triggers request no work
-  in offline mode. Sync already does nothing while signed out ([ADR-011](011-preferences-sync.md)).
-- **Offline mode and a signed-in user never coexist.** Offline mode can only be chosen while signed
-  out, from the Sign in screen. A sign-in the user starts turns offline mode off right before its
-  first Firebase request, and turns it back on if that sign-in fails, so a user who was offline
-  stays offline. A provider's account picker that comes first, such as Credential Manager's
-  ([ADR-009](009-ui-bound-sdks.md)), runs while offline mode may still be chosen, and cancelling it
-  changes nothing. So Firebase Auth never holds a user in offline mode, and never refreshes a token.
-- **Connections are created lazily.** Initializing the SDK isn't a request. `FirebaseInitProvider`
-  creates `FirebaseApp` from the config at process start, and that only reads resources. Creating
-  `FirebaseAuth` and reading its cached user, which the start destination and the sync triggers do,
-  only reads local storage. Both are allowed in offline mode. Anything that can open a connection
-  (today, `FirebaseFirestore`) is injected through `Provider` or `Lazy`, and created only by a sync
-  that passed the checks above.
+  and no-account mode isn't chosen. It checks both, not just one. The sync triggers request no work
+  in no-account mode. Sync already does nothing while signed out
+  ([ADR-011](011-preferences-sync.md)).
+- **No-account mode and a signed-in user never coexist.** No-account mode can only be chosen while
+  signed out, from the Sign in screen. A sign-in the user starts turns no-account mode off right
+  before its first Firebase request, and turns it back on if that sign-in fails, so a user who had
+  no account stays in no-account mode. A provider's account picker that comes first, such as
+  Credential Manager's ([ADR-009](009-ui-bound-sdks.md)), runs while no-account mode may still be
+  chosen, and cancelling it changes nothing. So Firebase Auth never holds a user in no-account
+  mode, and never refreshes a token.
+- **Firebase connections are created lazily.** Initializing the SDK isn't a request.
+  `FirebaseInitProvider` creates `FirebaseApp` from the config at process start, and that only
+  reads resources. Creating `FirebaseAuth` and reading its cached user, which the start destination
+  and the sync triggers do, only reads local storage. Both are allowed in no-account mode. Any
+  Firebase object that can open a connection (today, `FirebaseFirestore`) is injected through
+  `Provider` or `Lazy`, and created only by a sync that passed the checks above.
 - **Only Firebase products that wait to be called.** Auth and Firestore make requests only when our
   code calls them. A product that sends data by itself (Analytics, Crashlytics, Cloud Messaging,
   Remote Config, Performance Monitoring) needs its own ADR, or a revision of this one, saying how it
-  stays silent in offline mode.
+  stays silent in no-account mode.
 
 Messages between the app and Google Play services on the device, such as checking that Play services
 is available, aren't network requests and aren't covered. Credential Manager's Google sign-in does
 reach the network, but it isn't a Firebase request, and it only runs when the user starts it. The
 Firebase sign-in that follows it is what follows the sign-in rule above.
+
+**Every other request is made with or without an account.** A request that isn't Firebase, such as
+a cover from the Cover Art Archive ([ADR-027](027-artwork-from-the-internet.md)), or later a podcast
+search, a feed or an episode download, is made in no-account mode and while signed out, exactly as
+it is when signed in. Its own rules still apply (ADR-027's setting for covers, for example), but
+the account choice isn't one of them. Such a request never sends anything that identifies the
+account (the uid, the email or an ID token), whether or not the user is signed in, so what it
+sends is the same in both modes. Which services are used, and what each sends, is decided in the
+ADR of the area that calls it.
+
+**What needs a connection.** With no connection, everything on the phone keeps working: the
+library, playback, covers already on the phone or downloaded, and every preference. What needs one:
+
+| Needs | Works in no-account mode | Decided in |
+| --- | --- | --- |
+| Signing in, creating an account, the password reset email | Starting it ends no-account mode (rule 7), except the reset email | This ADR, [ADR-009](009-ui-bound-sdks.md), [ADR-013](013-account-linking.md) |
+| Syncing preferences, and later podcast follows | No: an account is what sync is for | [ADR-011](011-preferences-sync.md), [ADR-022](022-data-source-sub-parts.md) |
+| Downloading missing covers | Yes | [ADR-027](027-artwork-from-the-internet.md) |
+| Podcast search, feeds and episode downloads | Yes | podcasts/01 |
+
+How a screen tells the user that it has no connection is decided by the area that owns the screen,
+not here. Sync and the cover download wait for a connection in the background and say nothing. A
+screen the user is looking at, such as podcast search (frame 33 of the device designs), shows its
+own message, as podcasts/01 decides.
 
 **One CI build.** CI builds, tests and lints the one app with the placeholder, with no secrets, so
 pull requests from forks run everything. Hilt checks the full graph, Firebase bindings included,
@@ -197,7 +267,7 @@ on every run.
 - **Two build flavors, `offline` and `cloud` (this ADR's first version).** Chosen because it kept
   Firebase and Play services out of the default APK, let a fresh clone build with no config at all,
   and made "this build has no accounts" a fact of the classpath that CI could check. We changed
-  because it doesn't match the product: Rolabox is one app where offline is a user choice. The
+  because it doesn't match the product: Rolabox is one app where the account is a user choice. The
   default build hid the sign-in flow, backend code lived in two source sets per module, the start
   destination needed a build flag, and every module built and tested twice.
 - **One app, with account features hidden when the placeholder config is detected at runtime.**
@@ -222,9 +292,28 @@ on every run.
 - **A real `google-services.json` stored as a CI secret.** It adds nothing to a build check, since
   no test talks to Firebase, and secrets aren't available to pull requests from forks.
 - **Turn off Firebase's automatic initialization, and initialize it only when the user signs in.**
-  Stricter: no Firebase code would run in offline mode at all. But every Firebase entry point would
-  have to wait for initialization. And initializing makes no requests, so the rule "no requests in
-  offline mode" holds without it.
+  Stricter: no Firebase code would run in no-account mode at all. But every Firebase entry point
+  would have to wait for initialization. And initializing makes no requests, so the rule "no
+  Firebase request in no-account mode" holds without it.
+- **Keep "no request of any kind" in no-account mode (the revision of 2026-11-03).** Easy to state,
+  and a user who wants the phone silent gets it. But it ties two separate things to one switch: not
+  having an account, and not using the network. Podcasts can't work under it, covers stop for no
+  reason the user chose, and a user who wants an account-free player with podcasts can't have one.
+  A switch for "no network at all", if one is ever wanted, is its own setting and its own decision.
+- **Keep the name "offline mode", and only redefine it.** No rename and no migration. But the name
+  would say the opposite of the rule: an "offline mode" that downloads covers and podcasts. It
+  already misled the revision of 2026-11-03.
+- **Rename the code and the UI, but keep the stored key `offline_mode_chosen`.** No migration and
+  no risk of losing the choice. But the stored data would keep the old meaning's name forever, and
+  every reader of the local data source would need a comment explaining it. The migration is one
+  key in one local data source, with a test.
+- **A new ADR that partly supersedes this one,** instead of a revision. Cleaner when the meaning of
+  a rule changes. But before 1.0 [ADR-000](000-record-architecture-decisions.md) prefers revisions,
+  so the current rules aren't spread over two records, and this ADR already changed title once for
+  the same reason.
+- **Other names: "guest" or "local only".** "Guest" suggests something temporary or limited, and
+  no-account mode is neither. "Local only" describes where the data stays, but reads as "no network"
+  too, which is the confusion being removed.
 
 ## Consequences
 
@@ -235,13 +324,23 @@ on every run.
 - **There's no network-SDK-free build anymore.** A build with no Google libraries (for example, for
   F-Droid) would need a new decision.
 - **Every build carries a `google-services.json`**, the placeholder or a real one. A build from a
-  fork without its own config starts and works offline, but sign-in fails with an error.
-- **"Offline mode makes no Firebase requests" is now a property of the code, not of the build.** CI
-  used to prove the offline app had no Firebase on its classpath. Now the guarantee rests on the
+  fork without its own config starts and works without an account, but sign-in fails with an error.
+- **"No-account mode makes no Firebase request" is now a property of the code, not of the build.**
+  CI used to prove the offline app had no Firebase on its classpath. Now the guarantee rests on the
   checks in the sync and sign-in paths, their tests, and code review. A new Firebase call added
   without the checks would break it, and only a test or a reviewer would notice.
-- Devices without Google Play services get the same APK. Offline mode doesn't use Play services, so
-  it should work there, and sign-in won't. Nobody has tested it yet.
+- Devices without Google Play services get the same APK. No-account mode doesn't use Play services,
+  so it should work there, and sign-in won't. Nobody has tested it yet.
+- **No-account mode isn't a way to keep the phone off the network.** It downloads covers, and later
+  podcasts, whenever a connection is there. A user who wants no downloads turns off Online Artwork
+  ([ADR-027](027-artwork-from-the-internet.md)). There is no single "no network" switch, and adding
+  one would be a new decision.
+- **A non-Firebase service sees requests from users with and without an account alike,** and can't
+  tell them apart (rule 12). Each such service is chosen in its own area's ADR, which says what it
+  sends.
+- **The rename touches stored data.** A user upgrading from a build before account/02 keeps their
+  choice only because of the migration (rule 11). If it failed, they would open on Sign in once, and
+  could choose no-account mode again; nothing else is lost.
 - CI still proves only that the app builds and its Hilt graph is complete, not that it works
   against a real Firebase project. That needs a manual run with a real config.
 - Because the placeholder uses the `demo-rolabox` project, a later change could point debug builds
@@ -293,34 +392,50 @@ record:
    when it exists, and the placeholder otherwise.
 5. `[enforced]` `google-services.json` is never committed. `.gitignore` covers it at any path, and
    CI fails if a tracked file has that name.
-6. `[convention]` While offline mode is chosen, or while the user is signed out, the app makes no
-   Firebase requests, except the password reset email that the user asks for from the Reset
+6. `[convention]` While no-account mode is chosen, or while the user is signed out, the app makes no
+   Firebase request, except the password reset email that the user asks for from the Reset
    password screen (`AuthRepository.sendPasswordResetEmail`). `SyncRunner` runs `Syncer`s only for a
-   signed-in user who hasn't chosen offline mode, and the sync triggers request nothing in offline
-   mode. While offline mode is chosen, the app makes no other request either: the library downloads
-   no artwork ([ADR-027](027-artwork-from-the-internet.md)). Tests cover each.
-7. `[convention]` Offline mode can only be chosen while signed out. Every sign-in the user starts
+   signed-in user who hasn't chosen no-account mode, and the sync triggers request nothing in
+   no-account mode. Requests that aren't Firebase (the Cover Art Archive,
+   [ADR-027](027-artwork-from-the-internet.md), and later the podcast directory, feeds and episode
+   downloads) are made in no-account mode and while signed out as they are when signed in: the
+   account choice never stops them. Tests cover each.
+7. `[convention]` No-account mode can only be chosen while signed out. Every sign-in the user starts
    turns it off before its first Firebase request, and turns it back on if the sign-in fails.
-8. `[convention]` SDK objects that can open a connection (`FirebaseFirestore`) are injected through
-   `Provider` or `Lazy`, and are never created in offline mode. Initializing `FirebaseApp` and
-   reading `FirebaseAuth`'s cached user are allowed at any time.
+8. `[convention]` Firebase objects that can open a connection (`FirebaseFirestore`) are injected
+   through `Provider` or `Lazy`, and are never created in no-account mode. Initializing
+   `FirebaseApp` and reading `FirebaseAuth`'s cached user are allowed at any time.
 9. `[convention]` Only Firebase products that make requests when our code calls them are used. A
-   product that sends data by itself needs an ADR saying how it stays silent in offline mode.
-10. `[convention]` The start destination is Home when signed in or when offline mode is chosen, and
-    Sign in otherwise. No build setting changes it.
+   product that sends data by itself needs an ADR saying how it stays silent in no-account mode.
+10. `[convention]` The start destination is Home when signed in or when no-account mode is chosen,
+    and Sign in otherwise. No build setting changes it.
+11. `[planned]` (account/02) The choice is called no-account mode: "Use without an account" in the
+    UI, `noAccountModeChosen` in the code, and `no_account_mode_chosen` as its stored key. The local
+    data source of the preferences moves a stored `offline_mode_chosen` to the new key, and removes
+    it, before the choice is first read, with a test. "Offline" is used only for having no
+    connection.
+12. `[convention]` A request that isn't Firebase never sends anything that identifies the account
+    (the uid, the email or an ID token), whether or not the user is signed in.
 
 **Conformance.** Rule 1 is checked by the Android convention plugins when the build is configured
 (`enforceNoProductFlavors` in `ModuleRules.kt`). Rule 5 is checked by the "No Firebase config
 committed" step in [CI](../../.github/workflows/ci.yml). `rolabox.android.application.firebase`
 picks the config (rule 4), and fails the build on a `google-services.json` under `app/src/`. Rule 6
-is covered in two places, since auth decides who sync runs for ([ADR-020](020-modules-by-product-area.md),
-rule 18): `AuthSyncUserProviderTest` in `:auth:data:impl` covers that nobody is synced for while
-signed out or in offline mode, and `SyncTriggersTest` and `SyncRunnerTest` in `:common:sync:impl`
-cover that sync then requests and runs nothing. Rule 8 is covered by
-`FirestorePreferencesNetworkDataSourceTest` in `:common:userdata:network:impl`: Firestore is created
-by the data source's first call and not before, and only the `Syncer` that the runner runs calls it
+is covered in two places, since auth decides who sync runs for
+([ADR-020](020-modules-by-product-area.md), rule 18): `AuthSyncUserProviderTest` in
+`:auth:data:impl` covers that nobody is synced for while signed out or in no-account mode, and
+`SyncTriggersTest` and `SyncRunnerTest` in `:common:sync:impl` cover that sync then requests and
+runs nothing. Rule 8 is covered by `FirestorePreferencesNetworkDataSourceTest` in
+`:common:userdata:network:impl`: Firestore is created by the data source's first call and not
+before, and only the `Syncer` that the runner runs calls it
 ([ADR-022](022-data-source-sub-parts.md), rule 6). Firestore is a dependency of `:network:impl`
-modules only, which `ModuleRules.kt` checks (ADR-022, rule 3). They check the sync path, which is the
-only code that calls Firestore today. A new Firebase call elsewhere isn't covered by any test. Rule 7 is
-covered by `SignInUseCaseTest` and `SignUpUseCaseTest` in `:auth:data:impl`, which every sign-in goes
-through. Offline mode is chosen only from the Sign in screen, which is shown only while signed out.
+modules only, which `ModuleRules.kt` checks (ADR-022, rule 3). They check the sync path, which is
+the only code that calls Firestore today. A new Firebase call elsewhere isn't covered by any test.
+Rule 7 is covered by `SignInUseCaseTest` and `SignUpUseCaseTest` in `:auth:data:impl`, which every
+sign-in goes through. No-account mode is chosen only from the Sign in screen, which is shown only
+while signed out. Rule 6's non-Firebase part is covered by the tests of the cover download's pass
+and work in `:device:library:impl` (ADR-027, rule 3): they run in no-account mode as when signed in.
+Until account/02 they still check the old rule, and stop in offline mode. Rule 11 waits for
+account/02, which renames the code and adds the migration and its test. Rule 12 is reviewed: the one
+non-Firebase request today, MusicBrainz and the Cover Art Archive, sends only an album's title and
+artist and MusicBrainz's ids (ADR-027, rule 2).

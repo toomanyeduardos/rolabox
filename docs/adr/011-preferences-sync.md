@@ -5,12 +5,12 @@
 - **Date:** 2026-09-28
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review
-- **Revised 2026-09-28:** [ADR-008](008-one-app-with-offline-mode.md) replaced the offline and cloud
-  flavors with one app, where offline is a choice the user makes. Sync now runs for a signed-in user
-  who hasn't chosen offline mode, instead of "in the cloud flavor", and `SyncRunner` checks both
-  (Decision, new rule 8). The reason given for the Hilt entry point, keeping WorkManager out of the
-  offline app, no longer applies. The entry point stays, since it works, and moving to `@HiltWorker`
-  would be a separate change (Decision, Alternatives considered).
+- **Revised 2026-09-28:** [ADR-008](008-one-app-with-an-optional-account.md) replaced the offline
+  and cloud flavors with one app, where offline is a choice the user makes. Sync now runs for a
+  signed-in user who hasn't chosen offline mode, instead of "in the cloud flavor", and `SyncRunner`
+  checks both (Decision, new rule 8). The reason given for the Hilt entry point, keeping WorkManager
+  out of the offline app, no longer applies. The entry point stays, since it works, and moving to
+  `@HiltWorker` would be a separate change (Decision, Alternatives considered).
 - **Revised 2026-09-28:** Sync now checks offline mode (`m1/flavor-removal`), so rule 8 holds. The
   syncers are bound in their own Hilt module, `SyncersModule`, so a test that replaces the
   `SyncRepository` keeps the worker's graph complete (rule 5). The triggers are observed only while
@@ -48,6 +48,11 @@
 - **Revised 2026-11-11:** Sync failures are logged ([ADR-029](029-sync-failures-are-logged.md))
   (Consequences). Every sync had failed silently because the Firebase project had no Firestore
   database, and nothing said why. No rule changes.
+- **Revised 2026-11-11:** "Offline mode" is renamed no-account mode
+  ([ADR-008](008-one-app-with-an-optional-account.md), revised the same day), in Decision and rules
+  8 and 10. Sync still never runs in it, and the choice is still local and never synced. Its stored
+  key becomes `no_account_mode_chosen`, migrated locally, which changes no synced field. "A device
+  is offline" keeps its meaning: no connection. The decision is unchanged.
 
 ## Context
 
@@ -75,7 +80,7 @@ The constraints:
 
 We will sync each preference **field by field, with last-write-wins on a timestamp** that the
 changing device records. Sync runs as WorkManager work, for a signed-in user who hasn't chosen
-offline mode.
+no-account mode.
 
 **Every synced field carries when it last changed.** `SyncedValue<T>(value, updatedAt)` in
 `:common:sync:api` pairs a value with a `SyncTimestamp`: epoch milliseconds from the clock of the
@@ -121,9 +126,9 @@ Favorite artists wait for the library area, which will own their identity (`Arti
 **The device's settings are preferences.** The settings in the display
 ([ADR-018](018-device-navigation.md)) are stored like the theme: `:common:userdata` owns them, they
 are written to DataStore first, with their timestamp, and they sync as fields of the same document.
-So they work signed out and in offline mode, where nothing syncs
-([ADR-008](008-one-app-with-offline-mode.md)). `:device:settings` has the screens that change them
-and stores nothing. The parts of the device that use a setting read it from
+So they work signed out and in no-account mode, where nothing syncs
+([ADR-008](008-one-app-with-an-optional-account.md)). `:device:settings` has the screens that change
+them and stores nothing. The parts of the device that use a setting read it from
 `:common:userdata:api`.
 
 | Field | Values | Never set reads as |
@@ -153,7 +158,7 @@ user creates.
 
 **A preference syncs unless it belongs to this installation.** Clicker syncs: it is a taste, like
 the theme, and the click is silent anyway when the phone is. The one value that doesn't sync is
-whether offline mode was chosen, which says how this installation is used and not what the user
+whether no-account mode was chosen, which says how this installation is used and not what the user
 likes. A value like that has no timestamp and is never part of what sync reads.
 
 **When sync runs.** `SyncRepository.start()`, called from `Application.onCreate`, requests a sync:
@@ -178,12 +183,13 @@ killed.
 The worker is created by WorkManager like an Activity is by Android, so it's an Android entry point
 in the sense of [ADR-005](005-hilt-dependency-injection.md) rule 1. It was chosen over `@HiltWorker`
 to keep WorkManager out of the offline flavor, which no longer exists
-([ADR-008](008-one-app-with-offline-mode.md)). Moving to `@HiltWorker` is now possible, and is left
-to a separate change.
+([ADR-008](008-one-app-with-an-optional-account.md)). Moving to `@HiltWorker` is now possible, and
+is left to a separate change.
 
-**Sync never runs in offline mode.** `SyncRunner` runs the `Syncer`s only when the user is signed
-in and hasn't chosen offline mode, and the triggers request no work in offline mode. So offline
-mode makes no Firebase requests ([ADR-008](008-one-app-with-offline-mode.md), rule 6).
+**Sync never runs in no-account mode.** `SyncRunner` runs the `Syncer`s only when the user is signed
+in and hasn't chosen no-account mode, and the triggers request no work in no-account mode. So
+no-account mode makes no Firebase request ([ADR-008](008-one-app-with-an-optional-account.md), rule
+6).
 
 **Signing out keeps local preferences.** They're the device's settings. Signing in again, as the
 same user or another one, merges them with that user's cloud copy.
@@ -291,14 +297,14 @@ same user or another one, merges them with that user's cloud copy.
    of the server, a timestamp older than the stored one, or a removed field. The rules tests check
    this.
 7. `[convention]` Synced enum values are stored by name, and a name is never renamed or reused.
-8. `[convention]` `SyncRunner` runs `Syncer`s only for a signed-in user who hasn't chosen offline
-   mode, and the triggers request no work in offline mode (ADR-008, rule 6). Tests cover both.
+8. `[convention]` `SyncRunner` runs `Syncer`s only for a signed-in user who hasn't chosen no-account
+   mode, and the triggers request no work in no-account mode (ADR-008, rule 6). Tests cover both.
 9. `[convention]` A set of switches that the user can't add to or remove from, such as the rows of
    the main menu, is a synced field for each switch. `mergeById` is for collections whose items the
    user creates.
 10. `[convention]` A preference syncs unless it describes this installation and not the user's
-    choice, as offline mode does. A value that doesn't sync has no timestamp and isn't part of what
-    sync reads.
+    choice, as no-account mode does. A value that doesn't sync has no timestamp and isn't part of
+    what sync reads.
 11. `[convention]` The device's settings are preferences: `:common:userdata` stores them, and
     they sync as fields of `users/{uid}/settings/preferences`, with the names and values of the
     table in Decision. No `:device` module stores a setting. The rules tests cover each field as

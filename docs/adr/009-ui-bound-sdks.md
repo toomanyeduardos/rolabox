@@ -6,10 +6,10 @@
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review
 - **Revised 2026-09-28:** SDKs that bring Play services no longer have to stay out of an offline
-  app, because [ADR-008](008-one-app-with-offline-mode.md) now builds one app with Firebase and Play
-  services always in it. Instead, a UI step that reaches the network, such as Google sign-in, runs
-  only when the user starts it, and turns offline mode off first (Decision, rule 5). The
-  `cloudImplementation` requirement is gone.
+  app, because [ADR-008](008-one-app-with-an-optional-account.md) now builds one app with Firebase
+  and Play services always in it. Instead, a UI step that reaches the network, such as Google
+  sign-in, runs only when the user starts it, and turns offline mode off first (Decision, rule 5).
+  The `cloudImplementation` requirement is gone.
 - **Revised 2026-09-29:** The UI step now lives in the area's own `:core:<area>:ui` module
   ([ADR-014](014-area-ui-modules.md)), not in a feature, so that Sign in and Create account (and later
   other features) share it. That was the "shared UI module" alternative, and it is now adopted.
@@ -21,8 +21,8 @@
   already said it should, but no rule said the code doesn't match. The decision is unchanged.
 - **Revised 2026-09-29:** A UI step the user starts may now run while offline mode is chosen. The
   data step turns offline mode off before its Firebase request, and back on if the sign-in fails
-  ([ADR-008](008-one-app-with-offline-mode.md), rule 7) (Decision, rule 5). The data step may go
-  through a use case instead of the repository directly, when one exists for the operation
+  ([ADR-008](008-one-app-with-an-optional-account.md), rule 7) (Decision, rule 5). The data step may
+  go through a use case instead of the repository directly, when one exists for the operation
   (Decision). Why: turning offline mode off before the picker left a user who cancelled it signed
   out and no longer offline. A step that the user starts isn't a Firebase request, so ADR-008's
   guarantee holds.
@@ -32,6 +32,11 @@
   from a data part's `:impl`", as ADR-020 decided (Decision, rules 1 and 4). The configuration type
   `:app` provides is declared in that part's `:api`. Elsewhere, "the area's `:ui` module" reads as
   the SDK-step code inside that `:impl`. What the ADR decides is unchanged.
+- **Revised 2026-11-11:** "Offline mode" is renamed no-account mode
+  ([ADR-008](008-one-app-with-an-optional-account.md), revised the same day), in Decision and rule
+  5. A UI step still may run while it is chosen, and the data step still turns it off before its
+  Firebase request. ADR-008 now allows non-Firebase requests in no-account mode, which doesn't
+  change this ADR: a sign-in is a Firebase request. The decision is unchanged.
 
 ## Context
 
@@ -82,10 +87,11 @@ Credential Manager bottom sheet ──▶  SignInCredential   ──▶   Fireba
   `:app`. `:app` provides it in a plain configuration type declared in the `:api` of the part with
   screens, which the screen's ViewModel injects and passes on.
 - **UI steps that reach the network run only when the user starts them.** They may run while
-  offline mode is chosen, since they aren't Firebase requests. The data step that follows turns
-  offline mode off before its Firebase request, and back on if it fails
-  ([ADR-008](008-one-app-with-offline-mode.md), rule 7), so cancelling the step leaves offline mode
-  as it was. SDKs that bring Play services are ordinary dependencies, since there's only one app.
+  no-account mode is chosen, since they aren't Firebase requests. The data step that follows turns
+  no-account mode off before its Firebase request, and back on if it fails
+  ([ADR-008](008-one-app-with-an-optional-account.md), rule 7), so cancelling the step leaves
+  no-account mode as it was. SDKs that bring Play services are ordinary dependencies, since there's
+  only one app.
 - **Non-UI calls of the same SDK stay in the `:impl`.** Clearing Credential Manager's saved state on
   sign-out needs only the application context, so `:auth:data:impl` does it (rule 6, not built
   yet).
@@ -126,7 +132,7 @@ Credential Manager bottom sheet ──▶  SignInCredential   ──▶   Fireba
 4. `[convention]` Configuration the UI step needs from `:app` (such as the Web client ID) is provided
    by `:app` through Hilt, in a plain type declared in the `:api` of the part with screens.
 5. `[convention]` A UI step that reaches the network runs only when the user starts it. It doesn't
-   change offline mode: the data step does, as ADR-008 rule 7 says.
+   change no-account mode: the data step does, as ADR-008 rule 7 says.
 6. `[planned]` (Credential Manager sign-out ticket, TBD) Calls of the same SDK that don't need an
    `Activity` are made in the area's `:impl`. `:auth:data:impl` clears Credential Manager's saved
    state on sign-out.
