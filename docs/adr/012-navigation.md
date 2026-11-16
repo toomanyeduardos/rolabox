@@ -5,9 +5,9 @@
 - **Date:** 2026-09-28
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review
-- **Revised 2026-09-28:** [ADR-008](008-one-app-with-offline-mode.md) replaced the offline and cloud
-  flavors with one app, so every build has the same destinations. Entries no longer depend on the
-  flavor: all of them are in `src/main`, and whether the user starts on Sign in is decided at
+- **Revised 2026-09-28:** [ADR-008](008-one-app-with-an-optional-account.md) replaced the offline
+  and cloud flavors with one app, so every build has the same destinations. Entries no longer depend
+  on the flavor: all of them are in `src/main`, and whether the user starts on Sign in is decided at
   runtime by the start destination (Context, Decision, rule 8).
 - **Revised 2026-09-28:** The flavors are gone (`m1/flavor-removal`), so rule 8 holds, and it's a
   convention now. The decision is unchanged.
@@ -34,6 +34,9 @@
   longer on the system's back (Decision). On every device screen back leaves the app
   ([ADR-018](018-device-navigation.md), rule 9), so back acts on the app stack alone. Back on the
   app stack, and every rule, is unchanged.
+- **Revised 2026-11-11:** Context uses [ADR-008](008-one-app-with-an-optional-account.md)'s new
+  term: a user in no-account mode (the old "offline mode") never opens the account screens. The
+  decision is unchanged.
 
 ## Context
 
@@ -51,8 +54,8 @@ Rolabox needs one navigation model for the whole app:
 [ADR-003](003-module-boundaries.md) already settles part of this: features never depend on each
 other, and navigation between features is wired in `:app`. It doesn't say which navigation library
 to use, who owns the back stacks, or how one feature opens another's screen. There is one app
-([ADR-008](008-one-app-with-offline-mode.md)), so every build has the account screens, and a user
-in offline mode simply never opens them.
+([ADR-008](008-one-app-with-an-optional-account.md)), so every build has the account screens, and a
+user in no-account mode simply never opens them.
 
 Navigation 3 is stable and is Google's recommended navigation library for Compose apps. It works
 differently from Navigation Compose: a back stack is a plain list of keys held in Compose state,

@@ -21,6 +21,11 @@
   a part's WorkManager work may use both sides to fetch what the network side has and the local side
   keeps (The layout, rule 2). Its repositories still read and write the local side only. Rule 6 is
   about synced data, and doesn't apply to it.
+- **Revised 2026-11-11:** "Offline mode" is renamed no-account mode, and
+  [ADR-008](008-one-app-with-an-optional-account.md) now says it makes no *Firebase* request, where
+  it said no request of any kind (Decision, Consequences). This ADR only ever relied on the Firebase
+  part: the sync path is still the only path to Firebase. A part's non-sync WorkManager work, such
+  as the cover download, runs in no-account mode. The decision is unchanged.
 
 ## Context
 
@@ -103,9 +108,9 @@ data.
 - **Firestore is used only in `:network:impl` modules.** This replaces ADR-010's rule 7. The rest
   of ADR-010 holds: all data is under `users/{uid}`, and every document has rules and tests.
 - **A `:network:api` of synced data is called only by its part's `Syncer`,** and the runner is the
-  only caller of a `Syncer`. So the sync path is still the only path to Firebase, and offline mode
-  still makes no request ([ADR-008](008-one-app-with-offline-mode.md), rule 6). Firestore is
-  injected lazily in the `:network:impl` (ADR-008, rule 8).
+  only caller of a `Syncer`. So the sync path is still the only path to Firebase, and no-account
+  mode still makes no Firebase request ([ADR-008](008-one-app-with-an-optional-account.md), rule 6).
+  Firestore is injected lazily in the `:network:impl` (ADR-008, rule 8).
 - **ADR-011's mechanism is unchanged:** the timestamps, last-write-wins, the transaction, the
   atomic apply and the triggers.
 - **A missing `Syncer` doesn't fail the build.** `:app`'s test of the assembled graph asserts the
@@ -162,10 +167,10 @@ Each step leaves the build green.
 - **One part is seven modules,** and the app is near forty. `:app` lists two more `:impl`
   modules for each split part, and configuration time and the IDE's project view grow.
 - Data crosses two more boundaries, each with a mapping.
-- **Firebase is no longer in one module, but in one kind of module.** That offline mode makes no
-  request rests on rule 6 and on who may see a `:network:api`, where it rested on Firestore being
-  in sync alone. Its tests are in two places: the runner runs nothing when there is nobody to sync
-  for, and the `:network:impl` creates Firestore only when it is called.
+- **Firebase is no longer in one module, but in one kind of module.** That no-account mode makes no
+  Firebase request rests on rule 6 and on who may see a `:network:api`, where it rested on Firestore
+  being in sync alone. Its tests are in two places: the runner runs nothing when there is nobody to
+  sync for, and the `:network:impl` creates Firestore only when it is called.
 - Every `:network:impl` that uses Firestore turns its exceptions into errors. There is one today,
   and where that is shared is decided with the second.
 - **Two layouts live side by side.** `:auth:data:impl` still calls its SDK itself, and nothing says

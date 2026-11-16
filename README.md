@@ -37,18 +37,21 @@ wordmark. Think of a hardware player, not a streaming app.
 
 > [!NOTE]
 > **Rolabox is early and under very active development.** The foundations are in place (accounts,
-> offline mode, preference sync, the design system, and the architecture and tooling around them),
+> use without an account, preference sync, the design system, and the architecture and tooling around them),
 > and new UI is landing every few days. The library and playback screens come next, so Home is
 > still empty, and the screens and screenshots here will change often.
 
 ## How it behaves
 
-- **You choose online or offline on first launch.** The app opens on *Sign in*, where you can sign
-  in with email and password, continue with Google, create an account, or tap **Use offline
+- **You choose whether to have an account on first launch.** The app opens on *Sign in*, where you
+  can sign in with email and password, continue with Google, create an account, or tap **Use
   without an account**. Rolabox remembers the choice, and opens straight on Home from then on
-  ([ADR-008](docs/adr/008-one-app-with-offline-mode.md)).
-- **Offline means offline.** In offline mode the app makes no Firebase requests at all. It's a
-  choice that belongs to the device, not a separate build, and it never syncs anywhere.
+  ([ADR-008](docs/adr/008-one-app-with-an-optional-account.md)).
+- **No account means no Firebase.** In no-account mode the app makes no Firebase request at all:
+  nothing is stored in the cloud and nothing syncs. It's a choice that belongs to the device, not a
+  separate build. It isn't a way to stay off the network: missing covers are still downloaded from
+  the Cover Art Archive, as they are when signed in, and the Online Artwork setting turns that off
+  ([ADR-027](docs/adr/027-artwork-from-the-internet.md)).
 - **Your data lives on your phone first.** The local database is the single source of truth. The
   UI reads local data, and sync happens in the background when you're signed in
   ([ADR-002](docs/adr/002-offline-first-data-flow.md)).
@@ -81,8 +84,9 @@ wordmark. Think of a hardware player, not a streaming app.
 
 ## Getting started
 
-There is one app ([ADR-008](docs/adr/008-one-app-with-offline-mode.md)). It always includes Firebase
-and the account features, and "offline" is a choice the user makes in the app, not a build variant.
+There is one app ([ADR-008](docs/adr/008-one-app-with-an-optional-account.md)). It always includes Firebase
+and the account features, and using it without an account is a choice the user makes in the app,
+not a build variant.
 A fresh clone builds and runs with no setup:
 
 ```bash
@@ -98,8 +102,8 @@ configuration in Android Studio.
 
 With no setup, the build uses the committed placeholder Firebase config,
 [`app/google-services.placeholder.json`](app/google-services.placeholder.json). It points at
-`demo-rolabox`, which isn't a real Firebase project, so the app works in offline mode, but sign-in and
-sync fail. The build says so when it uses the placeholder.
+`demo-rolabox`, which isn't a real Firebase project, so the app works without an account, but sign-in
+and sync fail. The build says so when it uses the placeholder.
 
 ### Building with Firebase
 
@@ -165,7 +169,7 @@ and the rules that follow. Most rules are enforced by the build or by tests, not
 | [005](docs/adr/005-hilt-dependency-injection.md) | Use Hilt for dependency injection |
 | [006](docs/adr/006-async-api-shape.md) | Async API shape: `Flow` for observed state, `suspend` for single operations |
 | [007](docs/adr/007-error-handling.md) | Typed errors with Arrow `Either` for every fallible operation |
-| [008](docs/adr/008-one-app-with-offline-mode.md) | One app with Firebase built in, and offline mode as a user choice |
+| [008](docs/adr/008-one-app-with-an-optional-account.md) | One app with Firebase built in, and an optional account |
 | [009](docs/adr/009-ui-bound-sdks.md) | SDK steps that need an Activity live in the UI, and only their results cross the `:api` |
 | [010](docs/adr/010-firestore-security-rules.md) | Firestore for synced data, with per-user security rules tested against the emulator |
 | [011](docs/adr/011-preferences-sync.md) | Sync preferences through Firestore, field by field, with last-write-wins |
@@ -225,7 +229,7 @@ there is something to fake, a `:testing` module.
 | `:common:storage:impl` | `PreferencesStore` backed by DataStore |
 | `:common:storage:testing` | `FakePreferencesStore` |
 | `:common:sync:api` | Sync API: `SyncRepository`, `SyncUserProvider`, `Syncer`, `SyncError`, `SyncedValue`, `LastWriteWins` |
-| `:common:sync:impl` | Sync's mechanism: triggers, WorkManager and the runner of every `Syncer`, never in offline mode |
+| `:common:sync:impl` | Sync's mechanism: triggers, WorkManager and the runner of every `Syncer`, never in no-account mode |
 | `:common:sync:testing` | `FakeSyncRepository`, `FakeSyncUserProvider`, `FakeLastWriteWins` |
 | `:common:userdata:api` | User preferences API: `UserDataRepository`, `UserData`, `SyncedPreferences` |
 | `:common:userdata:impl` | User preferences, read from the local side, and the `Syncer` of the preferences |

@@ -74,6 +74,10 @@
   (playback/02) showed it. The decision is unchanged.
 - **Revised 2026-10-31:** The in-memory library is gone (Left open): library/03 replaced it with the
   index of [ADR-024](024-library-index.md). The decision is unchanged.
+- **Revised 2026-11-11:** "Offline mode" is renamed no-account mode
+  ([ADR-008](008-one-app-with-an-optional-account.md), revised the same day): the device is reached
+  by signing in or by choosing no-account mode, and `:auth:data:impl`'s check for sync is the
+  no-account-mode check. The decision is unchanged.
 
 ## Context
 
@@ -96,10 +100,10 @@ rejected it as a second composition root. With the code in place, the cost of th
   depends on auth and user data. A module named for what everything shares depends on a product
   area.
 
-Rolabox has two product areas. **Auth** decides whether the user may reach the device, by signing
-in or by choosing offline mode ([ADR-008](008-one-app-with-offline-mode.md)). **The device** is the
-music player, and it starts once auth has granted access, in whatever way. Each should be a unit
-with a public surface, and neither should need `:app` to know what it contains.
+Rolabox has two product areas. **Auth** decides whether the user may reach the device, by signing in
+or by choosing no-account mode ([ADR-008](008-one-app-with-an-optional-account.md)). **The device**
+is the music player, and it starts once auth has granted access, in whatever way. Each should be a
+unit with a public surface, and neither should need `:app` to know what it contains.
 
 ## Decision
 
@@ -209,7 +213,7 @@ Which `:api` modules a module is allowed to see:
   down into `:common`, never back. When a common module needs something from a product area, it
   declares an interface in its own `:api` and the area implements it. Sync needs "the user to sync
   for, or nobody": `:common:sync:api` declares that, and `:auth:data:impl` provides it, including
-  the offline-mode check of ADR-008.
+  the no-account-mode check of ADR-008.
 - **The device never depends on auth.** No `:device` module names an `:auth` module.
 - **Auth depends on the device in one place.** `:auth:settings:impl` depends on
   `:device:settings:api`, to contribute the account section. No other `:auth` module depends on

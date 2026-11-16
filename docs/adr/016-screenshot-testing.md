@@ -9,6 +9,10 @@
   the test fixtures of `:common:designsystem`, and the composite plugin that Paparazzi is not part
   of is `rolabox.android.screens` ([ADR-004](004-convention-plugins.md)). The goldens were renamed
   with their modules' packages, and none was recorded again. The decision is unchanged.
+- **Revised 2026-11-11:** The link to [ADR-008](008-one-app-with-an-optional-account.md) follows its
+  new file name. Context's "nothing talks to Firebase" is about CI having no Firebase project, not
+  about the account choice that ADR-008 renamed and redefined the same day, so it still holds. The
+  decision is unchanged.
 
 ## Context
 
@@ -22,8 +26,8 @@ Some facts shape the choice of tool:
 
 - Every screen is already split into a ViewModel-backed route and a stateless screen that takes its
   state, and the screens have `@PreviewLightDark` previews. The inputs for screenshots exist.
-- CI runs on `ubuntu-latest` with no emulator ([ADR-008](008-one-app-with-offline-mode.md): nothing
-  talks to Firebase, so nothing needs a device), and the developer also works on macOS.
+- CI runs on `ubuntu-latest` with no emulator ([ADR-008](008-one-app-with-an-optional-account.md):
+  nothing talks to Firebase, so nothing needs a device), and the developer also works on macOS.
 - Tests should sit with the code they test, in each module, like the unit tests.
 - The Android toolchain moves fast: Rolabox is on AGP 9.4, Kotlin 2.4 and JDK 25.
 

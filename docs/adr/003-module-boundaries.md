@@ -52,6 +52,10 @@
   makes. The module table is left as it was written, as the record of the layout that was replaced.
   Rules 12 to 15 still apply, with "area" read as a product area or `:common`, and a module named
   here read through the "What moved" table of ADR-020.
+- **Revised 2026-11-11:** The example of what a feature declares names
+  `observeNoAccountModeChosen()`, the new name of `observeOfflineModeChosen()`
+  ([ADR-008](008-one-app-with-an-optional-account.md), rule 11; the code is renamed in account/02).
+  The decision is unchanged.
 
 ## Context
 
@@ -157,7 +161,7 @@ Guidelines that go with the table:
   looked at again instead of reaching for `api`. External libraries that an `:api` exposes (Arrow,
   coroutines) still use `api` for now.
 - **Every module declares what it uses,** including types it only meets in the signatures of what
-  it calls. A feature that reads `observeOfflineModeChosen()` declares `:core:storage:api` for its
+  it calls. A feature that reads `observeNoAccountModeChosen()` declares `:core:storage:api` for its
   `StorageError`. `:app` declares `:core:userdata:api` for its ViewModel, not only
   `:core:userdata:impl`. So a build file lists every area the module's code touches, which is the
   point of this layout. Without `api`, the compiler catches most gaps. Hilt doesn't need an
