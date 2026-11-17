@@ -7,6 +7,7 @@ import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import com.eduardoflores.rolabox.device.music.ui.api.MusicEntries
 import com.eduardoflores.rolabox.device.playback.ui.api.PlaybackEntries
+import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastsEntries
 import com.eduardoflores.rolabox.device.settings.api.SettingsEntries
 import com.eduardoflores.rolabox.device.ui.api.DeviceKey
 import com.eduardoflores.rolabox.device.ui.api.DeviceUiEntries
@@ -22,6 +23,7 @@ internal class DefaultDeviceUiEntries @Inject constructor(
     private val settingsEntries: SettingsEntries,
     private val musicEntries: MusicEntries,
     private val playbackEntries: PlaybackEntries,
+    private val podcastsEntries: PodcastsEntries,
 ) : DeviceUiEntries {
     override fun appStackEntries(
         scope: EntryProviderScope<NavKey>,
@@ -33,6 +35,7 @@ internal class DefaultDeviceUiEntries @Inject constructor(
                 viewModel = hiltViewModel<DeviceViewModelImpl>(),
                 musicEntries = musicEntries,
                 playbackEntries = playbackEntries,
+                podcastsEntries = podcastsEntries,
                 settingsEntries = settingsEntries,
                 onOpenFullScreen = onOpenFullScreen,
                 modifier = Modifier.fillMaxSize(),

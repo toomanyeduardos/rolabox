@@ -1,0 +1,14 @@
+<resources>
+    <string name="podcasts_title">Podcasts</string>
+    <string name="podcasts_search">Search</string>
+    <string name="podcasts_none_title">No podcasts yet</string>
+    <string name="podcasts_none_body">Select Search to find a show.</string>
+    <string name="podcasts_unknown_owner">Unknown owner</string>
+    <string name="podcasts_unknown_episode">Unknown episode</string>
+    <string name="podcasts_follow">Follow</string>
+    <string name="podcasts_on">On</string>
+    <string name="podcasts_off">Off</string>
+    <string name="podcasts_follow_failed">Couldn\'t change Follow. Try again.</string>
+    <string name="podcasts_no_longer_here">No longer in your podcasts</string>
+    <string name="podcasts_unavailable">Can\'t read your podcasts</string>
+</resources>

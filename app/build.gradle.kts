@@ -39,6 +39,7 @@ dependencies {
     implementation(project(":device:podcasts:impl"))
     implementation(project(":device:podcasts:local:impl"))
     implementation(project(":device:podcasts:network:impl"))
+    implementation(project(":device:podcasts:ui:impl"))
     implementation(project(":device:settings:impl"))
     implementation(project(":device:ui:impl"))
 
@@ -72,6 +73,9 @@ dependencies {
     // The navigation test reads the rows it expects from the tests' own library.
     androidTestImplementation(project(":device:library:api"))
     androidTestImplementation(project(":device:playback:testing"))
+    // The podcasts test brings its own podcasts, and reads the rows it expects from them.
+    androidTestImplementation(project(":device:podcasts:testing"))
+    androidTestImplementation(project(":device:podcasts:api"))
     // Tests may also name the :api of a part whose assembly they assert or whose fake they use (ADR-020, rule 13).
     // The back test loads items into the fake playback, and checks on it that nothing was sought.
     androidTestImplementation(project(":device:playback:api"))

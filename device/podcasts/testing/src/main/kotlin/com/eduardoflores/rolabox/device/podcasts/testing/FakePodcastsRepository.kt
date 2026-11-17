@@ -26,7 +26,7 @@ import kotlinx.coroutines.flow.update
  * Podcasts that tests fill in: set [owners], [shows] and [episodes], or start from [PodcastSamples] with
  * [fillWithSamples], and the observed flows follow. The lists are returned as they are set: the fake neither sorts
  * nor filters by Follow. Like any repository, a `Left` ends its flow: a lookup of something that isn't there, or a
- * read error set with [setReadError].
+ * read error set with [setReadError]. A write error set with [setWriteError] makes the writes fail.
  */
 @Suppress("TooManyFunctions") // One for each function of the repository, and the fake's own setters.
 @Singleton
@@ -35,6 +35,7 @@ class FakePodcastsRepository @Inject constructor() : PodcastsRepository {
     private val showsState = MutableStateFlow<List<Show>>(emptyList())
     private val episodesState = MutableStateFlow<List<Episode>>(emptyList())
     private val readError = MutableStateFlow<StorageError?>(null)
+    private var writeError: StorageError? = null
 
     /** What [addEpisode] was called with, in order. */
     val added = mutableListOf<Pair<DirectoryShow, DirectoryEpisode>>()
@@ -72,6 +73,13 @@ class FakePodcastsRepository @Inject constructor() : PodcastsRepository {
         readError.value = error
     }
 
+    /**
+     * Makes [setFollowed] and [addEpisode] return `Left(Storage(error))` and change nothing, or stops it with `null`.
+     */
+    fun setWriteError(error: StorageError?) {
+        writeError = error
+    }
+
     override fun observeOwners(): Flow<Either<PodcastError, List<Owner>>> = read(ownersState) { it.right() }
 
     override fun observeShowsByOwner(ownerId: OwnerId): Flow<Either<PodcastError, List<Show>>> =
@@ -101,16 +109,21 @@ class FakePodcastsRepository @Inject constructor() : PodcastsRepository {
     override suspend fun getEpisode(episodeId: EpisodeId): Either<PodcastError, Episode> =
         readError.value?.let { PodcastError.Storage(it).left() } ?: episodeOf(episodes, episodeId)
 
-    override suspend fun setFollowed(showId: ShowId, followed: Boolean): Either<PodcastError, Unit> {
-        if (shows.none { it.id == showId }) return PodcastError.ShowNotFound(showId).left()
+    override suspend fun setFollowed(showId: ShowId, followed: Boolean): Either<PodcastError, Unit> = write {
+        if (shows.none { it.id == showId }) return@write PodcastError.ShowNotFound(showId).left()
         showsState.update { all -> all.map { if (it.id == showId) it.copy(isFollowed = followed) else it } }
-        return Unit.right()
+        Unit.right()
     }
 
-    override suspend fun addEpisode(show: DirectoryShow, episode: DirectoryEpisode): Either<PodcastError, EpisodeId> {
-        added += show to episode
-        return addedEpisodeId.right()
-    }
+    override suspend fun addEpisode(show: DirectoryShow, episode: DirectoryEpisode): Either<PodcastError, EpisodeId> =
+        write {
+            added += show to episode
+            addedEpisodeId.right()
+        }
+
+    /** Runs [change], unless a write error is set: then nothing changes, and the error is returned. */
+    private inline fun <T> write(change: () -> Either<PodcastError, T>): Either<PodcastError, T> =
+        writeError?.let { PodcastError.Storage(it).left() } ?: change()
 
     private fun episodeOf(all: List<Episode>, episodeId: EpisodeId): Either<PodcastError, Episode> =
         all.firstOrNull { it.id == episodeId }?.right() ?: PodcastError.EpisodeNotFound(episodeId).left()

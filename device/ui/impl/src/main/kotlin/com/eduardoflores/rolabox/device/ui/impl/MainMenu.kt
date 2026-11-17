@@ -23,10 +23,12 @@ import com.eduardoflores.rolabox.device.ui.api.MainMenuKey
  * stack keeps an entry for as long as its key is on the stack, so rows given as a value would stay as they
  * were when the main menu was pushed, and Now Playing wouldn't appear while it is showing.
  */
+@Suppress("LongParameterList") // One lambda per row that opens something, so the menu lists how it is left.
 internal fun EntryProviderScope<NavKey>.mainMenuEntry(
     shownRows: () -> List<MenuRow>,
     onNowPlayingClick: () -> Unit,
     onMusicClick: () -> Unit,
+    onPodcastsClick: () -> Unit,
     onShuffleSongsClick: () -> Unit,
     onSettingsClick: () -> Unit,
 ) {
@@ -35,6 +37,7 @@ internal fun EntryProviderScope<NavKey>.mainMenuEntry(
             shown = shownRows(),
             onNowPlayingClick = onNowPlayingClick,
             onMusicClick = onMusicClick,
+            onPodcastsClick = onPodcastsClick,
             onShuffleSongsClick = onShuffleSongsClick,
             onSettingsClick = onSettingsClick,
         )
@@ -43,8 +46,9 @@ internal fun EntryProviderScope<NavKey>.mainMenuEntry(
 
 /**
  * Turning moves the highlight, which stops at the first and last of the [shown] rows. Center on Now
- * Playing reports [onNowPlayingClick], on Music [onMusicClick], on Shuffle Songs [onShuffleSongsClick], which plays
- * (ADR-028), and on Settings [onSettingsClick]; the other rows do nothing until their screens exist.
+ * Playing reports [onNowPlayingClick], on Music [onMusicClick], on Podcasts [onPodcastsClick], on Shuffle Songs
+ * [onShuffleSongsClick], which plays (ADR-028), and on Settings [onSettingsClick]; Audiobooks does nothing until its
+ * screens exist.
  *
  * The highlight is the row, not its place: when Now Playing appears above it, the highlight stays on the
  * row it was on. It is saved with the entry like every list's (ADR-018, rule 7).
@@ -54,6 +58,7 @@ private fun MainMenu(
     shown: List<MenuRow>,
     onNowPlayingClick: () -> Unit,
     onMusicClick: () -> Unit,
+    onPodcastsClick: () -> Unit,
     onShuffleSongsClick: () -> Unit,
     onSettingsClick: () -> Unit,
 ) {
@@ -75,9 +80,10 @@ private fun MainMenu(
             WheelEvent.Center -> when (highlighted) {
                 MenuRow.NowPlaying -> onNowPlayingClick()
                 MenuRow.Music -> onMusicClick()
+                MenuRow.Podcasts -> onPodcastsClick()
                 MenuRow.ShuffleSongs -> onShuffleSongsClick()
                 MenuRow.Settings -> onSettingsClick()
-                MenuRow.Podcasts, MenuRow.Audiobooks -> Unit
+                MenuRow.Audiobooks -> Unit
             }
 
             else -> Unit

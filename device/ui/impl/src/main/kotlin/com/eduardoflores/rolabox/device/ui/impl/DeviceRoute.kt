@@ -36,6 +36,10 @@ import com.eduardoflores.rolabox.device.music.ui.api.SongsKey
 import com.eduardoflores.rolabox.device.playback.api.SeekDirection
 import com.eduardoflores.rolabox.device.playback.ui.api.NowPlayingKey
 import com.eduardoflores.rolabox.device.playback.ui.api.PlaybackEntries
+import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastOwnerKey
+import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastShowKey
+import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastsEntries
+import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastsKey
 import com.eduardoflores.rolabox.device.settings.api.AboutKey
 import com.eduardoflores.rolabox.device.settings.api.MainMenuSettingsKey
 import com.eduardoflores.rolabox.device.settings.api.SettingsEntries
@@ -52,6 +56,8 @@ import com.eduardoflores.rolabox.device.ui.api.MainMenuKey
  * [playbackEntries] adds Now Playing, which a song click and the main menu's row push. [viewModel] acts on
  * playback for them and for the playback buttons, and gives the host the state of the header's record. A song
  * click that couldn't play is told in a toast.
+ * [podcastsEntries] adds the podcasts screens, which the main menu's Podcasts row opens, and whose exits are mapped to
+ * keys here.
  * [settingsEntries] adds the settings screens, which the main menu's Settings row and their own rows push.
  * [onOpenFullScreen] is the generic exit, which leaves the display for a full screen on the app stack. Only a
  * contributed settings section's row uses it (ADR-020, rule 17).
@@ -61,6 +67,7 @@ internal fun DeviceRoute(
     viewModel: DeviceViewModel,
     musicEntries: MusicEntries,
     playbackEntries: PlaybackEntries,
+    podcastsEntries: PodcastsEntries,
     settingsEntries: SettingsEntries,
     onOpenFullScreen: (NavKey) -> Unit,
     modifier: Modifier = Modifier,
@@ -98,10 +105,19 @@ internal fun DeviceRoute(
                 shownRows = { shownMenuRows(nowPlayingShown, mainMenuRows) },
                 onNowPlayingClick = { stack.push(NowPlayingKey) },
                 onMusicClick = { stack.push(MusicMenuKey) },
+                onPodcastsClick = { stack.push(PodcastsKey) },
                 onShuffleSongsClick = { viewModel.onShuffleSongsClick { stack.push(NowPlayingKey) } },
                 onSettingsClick = { stack.push(SettingsKey) },
             )
             musicScreens(musicEntries, stack, viewModel)
+            podcastsEntries.screenStackEntries(
+                scope = this,
+                // Search and the Episode screen come with podcasts/08 and podcasts/06, with their entries.
+                onSearchClick = {},
+                onOwnerClick = { ownerId -> stack.push(PodcastOwnerKey(ownerId)) },
+                onShowClick = { showId -> stack.push(PodcastShowKey(showId)) },
+                onEpisodeClick = {},
+            )
             playbackEntries.screenStackEntries(scope = this)
             settingsEntries.screenStackEntries(
                 scope = this,
