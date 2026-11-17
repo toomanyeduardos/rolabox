@@ -78,6 +78,12 @@ include(":device:playback:testing")
 include(":device:playback:ui:api")
 include(":device:playback:ui:impl")
 
+include(":device:podcasts:api")
+include(":device:podcasts:impl")
+include(":device:podcasts:testing")
+include(":device:podcasts:local:api")
+include(":device:podcasts:local:impl")
+
 include(":device:settings:api")
 include(":device:settings:impl")
 include(":device:ui:api")

@@ -333,6 +333,11 @@ graph TD
     device_playback_testing[":device:playback:testing"]
     device_playback_ui_api[":device:playback:ui:api"]
     device_playback_ui_impl[":device:playback:ui:impl"]
+    device_podcasts_api[":device:podcasts:api"]
+    device_podcasts_impl[":device:podcasts:impl"]
+    device_podcasts_local_api[":device:podcasts:local:api"]
+    device_podcasts_local_impl[":device:podcasts:local:impl"]
+    device_podcasts_testing[":device:podcasts:testing"]
     device_settings_api[":device:settings:api"]
     device_settings_impl[":device:settings:impl"]
     device_ui_api[":device:ui:api"]
@@ -360,6 +365,8 @@ graph TD
     app --> device_playback_impl
     app --> device_playback_local_impl
     app --> device_playback_ui_impl
+    app --> device_podcasts_impl
+    app --> device_podcasts_local_impl
     app --> device_settings_impl
     app --> device_ui_api
     app --> device_ui_impl
@@ -461,6 +468,17 @@ graph TD
     device_playback_ui_impl --> device_library_api
     device_playback_ui_impl --> device_playback_api
     device_playback_ui_impl --> device_playback_ui_api
+    device_podcasts_api --> common_storage_api
+    device_podcasts_impl --> device_podcasts_api
+    device_podcasts_impl --> device_podcasts_local_api
+    device_podcasts_local_api --> device_podcasts_api
+    device_podcasts_local_impl --> common_storage_api
+    device_podcasts_local_impl --> common_util
+    device_podcasts_local_impl --> device_podcasts_api
+    device_podcasts_local_impl --> device_podcasts_local_api
+    device_podcasts_testing --> common_storage_api
+    device_podcasts_testing --> device_podcasts_api
+    device_podcasts_testing --> device_podcasts_local_api
     device_settings_impl --> common_designsystem
     device_settings_impl --> common_storage_api
     device_settings_impl --> common_userdata_api

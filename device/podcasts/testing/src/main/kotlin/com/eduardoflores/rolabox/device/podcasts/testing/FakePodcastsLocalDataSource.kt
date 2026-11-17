@@ -1,0 +1,187 @@
+package com.eduardoflores.rolabox.device.podcasts.testing
+
+import arrow.core.Either
+import arrow.core.flatMap
+import arrow.core.left
+import arrow.core.right
+import com.eduardoflores.rolabox.common.storage.api.StorageError
+import com.eduardoflores.rolabox.device.podcasts.api.DirectoryId
+import com.eduardoflores.rolabox.device.podcasts.api.EpisodeId
+import com.eduardoflores.rolabox.device.podcasts.api.Owner
+import com.eduardoflores.rolabox.device.podcasts.api.OwnerId
+import com.eduardoflores.rolabox.device.podcasts.api.PodcastError
+import com.eduardoflores.rolabox.device.podcasts.api.Show
+import com.eduardoflores.rolabox.device.podcasts.api.ShowId
+import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeProgressLocalDataSource
+import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeRecord
+import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeWrite
+import com.eduardoflores.rolabox.device.podcasts.local.api.PodcastsLocalDataSource
+import com.eduardoflores.rolabox.device.podcasts.local.api.ProgressRecord
+import com.eduardoflores.rolabox.device.podcasts.local.api.ShowWrite
+import java.time.Instant
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.update
+
+/**
+ * The podcasts' database in memory, for the tests of the part's `:impl`. It keeps what the Room database keeps, with
+ * the progress apart from the episodes and the follows apart from the shows, gives the ids in the order things are
+ * added, and lists them in the database's orders. The contract test in `:device:podcasts:local:impl` runs the same
+ * checks against this fake and the Room database. [readError] makes every call fail with `Left(Storage(error))`.
+ */
+@Suppress("TooManyFunctions") // One for each function of the two sources it fakes.
+@Singleton
+class FakePodcastsLocalDataSource @Inject constructor() :
+    PodcastsLocalDataSource,
+    EpisodeProgressLocalDataSource {
+    private val state = MutableStateFlow(Stored())
+    private val readErrorState = MutableStateFlow<StorageError?>(null)
+
+    var readError: StorageError?
+        get() = readErrorState.value
+        set(value) {
+            readErrorState.value = value
+        }
+
+    /** The follows as stored, by directory id, with when each was last set. */
+    val follows: Map<DirectoryId, Pair<Boolean, Instant>>
+        get() = state.value.follows
+
+    // Each owner's name is the spelling most of its shows have. Owners and shows are sorted by the sort keys they were
+    // written with, the owner with none last.
+    override fun observeOwners(): Flow<Either<PodcastError, List<Owner>>> = read { stored ->
+        stored.shows.groupBy { it.write.ownerKey }
+            .map { (key, shows) ->
+                Owner(key, mostCommonSpelling(shows.map { it.write.ownerName })) to
+                    shows.mapNotNull { it.write.ownerSortKey }.minOrNull()
+            }
+            .sortedWith(
+                compareBy<Pair<Owner, String?>> { it.second == null }
+                    .thenBy { it.second }
+                    .thenBy { it.first.id.value },
+            )
+            .map { it.first }
+    }
+
+    override fun observeShowsByOwner(ownerId: OwnerId): Flow<Either<PodcastError, List<Show>>> = read { stored ->
+        stored.shows.filter { it.write.ownerKey == ownerId }
+            .sortedWith(compareBy<StoredShow> { it.write.titleSortKey }.thenBy { it.id.value })
+            .map { stored.showOf(it) }
+    }
+
+    override fun observeShow(showId: ShowId): Flow<Either<PodcastError, Show?>> =
+        read { stored -> stored.shows.firstOrNull { it.id == showId }?.let(stored::showOf) }
+
+    override suspend fun getShow(showId: ShowId): Either<PodcastError, Show?> =
+        now { stored -> stored.shows.firstOrNull { it.id == showId }?.let(stored::showOf) }
+
+    override fun observeEpisodesByShow(showId: ShowId): Flow<Either<PodcastError, List<EpisodeRecord>>> =
+        read { stored ->
+            // Newest first, those with no date last, and the last added first among the same date.
+            stored.episodes.filter { it.showId == showId }
+                .sortedWith(
+                    compareBy<StoredEpisode> { it.write.publishedAt == null }
+                        .thenByDescending { it.write.publishedAt }
+                        .thenByDescending { it.id.value },
+                )
+                .map(stored::recordOf)
+        }
+
+    override fun observeEpisode(episodeId: EpisodeId): Flow<Either<PodcastError, EpisodeRecord?>> =
+        read { stored -> stored.episodes.firstOrNull { it.id == episodeId }?.let(stored::recordOf) }
+
+    override suspend fun getEpisode(episodeId: EpisodeId): Either<PodcastError, EpisodeRecord?> =
+        now { stored -> stored.episodes.firstOrNull { it.id == episodeId }?.let(stored::recordOf) }
+
+    override suspend fun setFollow(showId: ShowId, followed: Boolean, updatedAt: Instant): Either<PodcastError, Unit> =
+        now { stored -> stored.shows.firstOrNull { it.id == showId } }.flatMap { show ->
+            if (show == null) return@flatMap PodcastError.ShowNotFound(showId).left()
+            state.update { it.copy(follows = it.follows + (show.write.directoryId to (followed to updatedAt))) }
+            Unit.right()
+        }
+
+    override suspend fun addEpisode(
+        show: ShowWrite,
+        episode: EpisodeWrite,
+        addedAt: Instant,
+    ): Either<PodcastError, EpisodeId> {
+        readError?.let { return PodcastError.Storage(it).left() }
+        var added = EpisodeId(0)
+        state.update { stored ->
+            val existingShow = stored.shows.firstOrNull { it.write.directoryId == show.directoryId }
+            val storedShow = existingShow ?: StoredShow(ShowId(stored.shows.size + 1L), show)
+            val shows = if (existingShow == null) stored.shows + storedShow else stored.shows
+            val existingEpisode = stored.episodes.firstOrNull {
+                it.showId == storedShow.id && it.write.itemKey == episode.itemKey
+            }
+            val storedEpisode = existingEpisode ?: StoredEpisode(
+                EpisodeId(stored.episodes.size + 1L),
+                storedShow.id,
+                episode,
+            )
+            added = storedEpisode.id
+            stored.copy(
+                shows = shows,
+                episodes = if (existingEpisode == null) stored.episodes + storedEpisode else stored.episodes,
+            )
+        }
+        return added.right()
+    }
+
+    override suspend fun setProgress(episodeId: EpisodeId, progress: ProgressRecord): Either<PodcastError, Unit> =
+        now { stored -> stored.episodes.any { it.id == episodeId } }.flatMap { found ->
+            if (!found) return@flatMap PodcastError.EpisodeNotFound(episodeId).left()
+            state.update { it.copy(progress = it.progress + (episodeId to progress)) }
+            Unit.right()
+        }
+
+    private fun <T> read(answer: (Stored) -> T): Flow<Either<PodcastError, T>> =
+        combine(state, readErrorState) { stored, error ->
+            error?.let { PodcastError.Storage(it).left() } ?: answer(stored).right()
+        }
+
+    private fun <T> now(answer: (Stored) -> T): Either<PodcastError, T> =
+        readError?.let { PodcastError.Storage(it).left() } ?: answer(state.value).right()
+
+    private data class StoredShow(val id: ShowId, val write: ShowWrite)
+
+    private data class StoredEpisode(val id: EpisodeId, val showId: ShowId, val write: EpisodeWrite)
+
+    private data class Stored(
+        val shows: List<StoredShow> = emptyList(),
+        val episodes: List<StoredEpisode> = emptyList(),
+        val progress: Map<EpisodeId, ProgressRecord> = emptyMap(),
+        val follows: Map<DirectoryId, Pair<Boolean, Instant>> = emptyMap(),
+    ) {
+        fun showOf(show: StoredShow) = Show(
+            id = show.id,
+            directoryId = show.write.directoryId,
+            title = show.write.title,
+            ownerId = show.write.ownerKey,
+            ownerName = show.write.ownerName,
+            isFollowed = follows[show.write.directoryId]?.first == true,
+        )
+
+        fun recordOf(episode: StoredEpisode) = EpisodeRecord(
+            id = episode.id,
+            showId = episode.showId,
+            title = episode.write.title,
+            publishedAt = episode.write.publishedAt,
+            feedLength = episode.write.length,
+            description = episode.write.description,
+            audioUrl = episode.write.audioUrl,
+            audioSizeBytes = episode.write.audioSizeBytes,
+            progress = progress[episode.id],
+        )
+    }
+}
+
+/** The spelling most have, and the first A to Z among those tied, as the database picks it. */
+private fun mostCommonSpelling(names: List<String?>): String? = names.groupingBy { it }.eachCount()
+    .entries
+    .sortedWith(compareByDescending<Map.Entry<String?, Int>> { it.value }.thenBy(nullsFirst()) { it.key })
+    .first()
+    .key

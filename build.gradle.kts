@@ -11,7 +11,8 @@ val checkTextStyling by tasks.registering {
     description = "Fails if text appearance is set inline anywhere but the design system's Type.kt"
     val sources = fileTree(layout.projectDirectory) {
         include("**/src/**/*.kt")
-        exclude("**/build/**", "build-logic/**", "common/designsystem/src/main/**/theme/Type.kt")
+        // .claude/ holds Claude Code's worktrees: whole copies of the repository, which are checked in their own.
+        exclude("**/build/**", "build-logic/**", ".claude/**", "common/designsystem/src/main/**/theme/Type.kt")
     }
     inputs.files(sources)
     val root = layout.projectDirectory.asFile

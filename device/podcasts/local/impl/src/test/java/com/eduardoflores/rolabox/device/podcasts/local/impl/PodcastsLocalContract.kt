@@ -1,0 +1,265 @@
+package com.eduardoflores.rolabox.device.podcasts.local.impl
+
+import arrow.core.left
+import arrow.core.right
+import com.eduardoflores.rolabox.device.podcasts.api.DirectoryId
+import com.eduardoflores.rolabox.device.podcasts.api.EpisodeId
+import com.eduardoflores.rolabox.device.podcasts.api.Owner
+import com.eduardoflores.rolabox.device.podcasts.api.OwnerId
+import com.eduardoflores.rolabox.device.podcasts.api.PodcastError
+import com.eduardoflores.rolabox.device.podcasts.api.ShowId
+import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeProgressLocalDataSource
+import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeWrite
+import com.eduardoflores.rolabox.device.podcasts.local.api.PodcastsLocalDataSource
+import com.eduardoflores.rolabox.device.podcasts.local.api.ProgressRecord
+import com.eduardoflores.rolabox.device.podcasts.local.api.ShowWrite
+import java.time.Instant
+import kotlin.time.Duration.Companion.minutes
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Test
+
+/**
+ * What the podcasts' local sources promise, run against the Room database ([RoomPodcastsLocalContractTest]) and
+ * against the fake the repositories are tested with ([FakePodcastsLocalContractTest]). A check that passes for one
+ * and fails for the other is a fake that no longer behaves as the database does.
+ */
+abstract class PodcastsLocalContract {
+    protected abstract val local: PodcastsLocalDataSource
+    protected abstract val progress: EpisodeProgressLocalDataSource
+
+    // The sort keys are the :impl's to make. These stand for them: lower case, without a leading "The".
+    private fun show(
+        id: Long,
+        title: String,
+        owner: String?,
+        key: String = owner?.lowercase().orEmpty(),
+        titleSortKey: String = title.lowercase().removePrefix("the "),
+        ownerSortKey: String? = owner?.lowercase()?.removePrefix("the "),
+    ) = ShowWrite(
+        directoryId = DirectoryId.itunes(id),
+        feedUrl = "https://example.com/$id/feed",
+        title = title,
+        ownerName = owner,
+        ownerKey = OwnerId(key),
+        titleSortKey = titleSortKey,
+        ownerSortKey = ownerSortKey,
+    )
+
+    private fun episode(key: String, publishedAt: Long? = null, title: String = key) = EpisodeWrite(
+        itemKey = key,
+        guid = key,
+        title = title,
+        publishedAt = publishedAt?.let(Instant::ofEpochSecond),
+        length = 30.minutes,
+        description = null,
+        audioUrl = "https://example.com/$key.mp3",
+    )
+
+    protected suspend fun add(show: ShowWrite, episode: EpisodeWrite = episode("${show.directoryId.value}-1")) =
+        local.addEpisode(show, episode, NOW).getOrNull()!!
+
+    protected suspend fun addShow(id: Long, title: String = "The Daily", owner: String? = "NY Times"): ShowId =
+        local.getEpisode(add(show(id, title, owner))).getOrNull()!!.showId
+
+    @Test
+    fun owners_areSortedWithoutALeadingThe_andTheOneWithNoNameLast() = runTest {
+        add(show(1, "Unsigned", owner = null))
+        add(show(2, "The Daily", "NY Times"))
+        add(show(3, "Small Talk", "The Small Rooms"))
+        add(show(4, "Bench Notes", "harbor audio"))
+
+        val owners = local.observeOwners().first().getOrNull()!!
+
+        assertEquals(listOf("harbor audio", "NY Times", "The Small Rooms", null), owners.map { it.name })
+    }
+
+    @Test
+    fun anOwner_isOne_whatever_theCaseOfItsShows_withTheSpellingMostHave() = runTest {
+        add(show(1, "Hard Fork", "ny times", key = "ny times"))
+        add(show(2, "The Daily", "NY Times", key = "ny times"))
+        add(show(3, "The Ezra Klein Show", "NY Times", key = "ny times"))
+
+        assertEquals(listOf(Owner(OwnerId("ny times"), "NY Times")), local.observeOwners().first().getOrNull())
+    }
+
+    @Test
+    fun anOwnersSpelling_tiedBetweenShows_isTheFirstAToZ() = runTest {
+        add(show(1, "Hard Fork", "ny times", key = "ny times"))
+        add(show(2, "The Daily", "NY Times", key = "ny times"))
+
+        assertEquals(listOf(Owner(OwnerId("ny times"), "NY Times")), local.observeOwners().first().getOrNull())
+    }
+
+    @Test
+    fun anOwnersShows_areSortedWithoutALeadingThe() = runTest {
+        add(show(1, "The Ezra Klein Show", "NY Times"))
+        add(show(2, "The Daily", "NY Times"))
+        add(show(3, "Hard Fork", "NY Times"))
+        add(show(4, "Daily Dose of Design", "Field Notes Media"))
+
+        val shows = local.observeShowsByOwner(OwnerId("ny times")).first().getOrNull()!!
+
+        assertEquals(listOf("The Daily", "The Ezra Klein Show", "Hard Fork"), shows.map { it.title })
+    }
+
+    @Test
+    fun ownersAndShows_followTheirSortKeys_notTheirSpelling() = runTest {
+        add(show(1, "Daily Dose of Design", "Field Notes Media"))
+        add(show(2, "Écoute", "Écoute Média", titleSortKey = "ecoute", ownerSortKey = "ecoute media"))
+        add(show(3, "Daily Brief", "Écoute Média", key = "écoute média", titleSortKey = "daily brief"))
+        add(show(4, "Bench Notes", "Dans la Rue"))
+
+        val owners = local.observeOwners().first().getOrNull()!!
+        val shows = local.observeShowsByOwner(OwnerId("écoute média")).first().getOrNull()!!
+
+        assertEquals(listOf("Dans la Rue", "Écoute Média", "Field Notes Media"), owners.map { it.name })
+        assertEquals(listOf("Daily Brief", "Écoute"), shows.map { it.title })
+    }
+
+    @Test
+    fun anOwnerNoShowHas_hasNoShows() = runTest {
+        add(show(1, "The Daily", "NY Times"))
+
+        assertEquals(emptyList<Any>(), local.observeShowsByOwner(OwnerId("nobody")).first().getOrNull())
+    }
+
+    @Test
+    fun aShowsEpisodes_areNewestFirst_andThoseWithNoDateLast() = runTest {
+        val daily = show(1, "The Daily", "NY Times")
+        val showId = local.getEpisode(add(daily, episode("old", publishedAt = 100))).getOrNull()!!.showId
+        add(daily, episode("undated"))
+        add(daily, episode("new", publishedAt = 300))
+        add(daily, episode("middle", publishedAt = 200))
+        add(daily, episode("middle, added later", publishedAt = 200))
+        add(show(2, "Hard Fork", "NY Times"), episode("another show's", publishedAt = 250))
+
+        val episodes = local.observeEpisodesByShow(showId).first().getOrNull()!!
+
+        assertEquals(
+            listOf("new", "middle, added later", "middle", "old", "undated"),
+            episodes.map { it.title },
+        )
+    }
+
+    @Test
+    fun anEpisode_isReadAsItWasWritten() = runTest {
+        val written = episode("g1", publishedAt = 100).copy(audioSizeBytes = 42, description = "About the moon")
+        val id = add(show(1, "The Daily", "NY Times"), written)
+
+        val record = local.getEpisode(id).getOrNull()!!
+
+        assertEquals(written.title, record.title)
+        assertEquals(written.publishedAt, record.publishedAt)
+        assertEquals(written.length, record.feedLength)
+        assertEquals(written.description, record.description)
+        assertEquals(written.audioUrl, record.audioUrl)
+        assertEquals(written.audioSizeBytes, record.audioSizeBytes)
+        assertEquals(record, local.observeEpisode(id).first().getOrNull())
+    }
+
+    @Test
+    fun addingTheSameEpisodeTwice_keepsOneShowAndOneEpisode_asTheyWere() = runTest {
+        val daily = show(1, "The Daily", "NY Times")
+        val first = add(daily, episode("g1"))
+        val second = add(daily.copy(title = "Renamed"), episode("g1", title = "Retitled"))
+
+        assertEquals(first, second)
+        val record = local.getEpisode(first).getOrNull()!!
+        assertEquals("g1", record.title)
+        assertEquals("The Daily", local.getShow(record.showId).getOrNull()?.title)
+        assertEquals(1, local.observeEpisodesByShow(record.showId).first().getOrNull()?.size)
+    }
+
+    @Test
+    fun anotherEpisodeOfAShowInTheLibrary_joinsThatShow() = runTest {
+        val daily = show(1, "The Daily", "NY Times")
+        val first = local.getEpisode(add(daily, episode("g1"))).getOrNull()!!
+        val second = local.getEpisode(add(daily, episode("g2"))).getOrNull()!!
+
+        assertEquals(first.showId, second.showId)
+        assertEquals(1, local.observeOwners().first().getOrNull()?.size)
+    }
+
+    @Test
+    fun theSameItemKey_inTwoShows_isTwoEpisodes() = runTest {
+        val first = add(show(1, "The Daily", "NY Times"), episode("g1"))
+        val second = add(show(2, "Hard Fork", "NY Times"), episode("g1"))
+
+        assertEquals(false, first == second)
+    }
+
+    @Test
+    fun aShow_isReadAsItWasWritten() = runTest {
+        val showId = addShow(1, "The Daily", "NY Times")
+
+        val show = local.getShow(showId).getOrNull()!!
+
+        assertEquals(DirectoryId.itunes(1), show.directoryId)
+        assertEquals("The Daily", show.title)
+        assertEquals(OwnerId("ny times"), show.ownerId)
+        assertEquals("NY Times", show.ownerName)
+        assertEquals(show, local.observeShow(showId).first().getOrNull())
+    }
+
+    @Test
+    fun whatIsntThere_isNull() = runTest {
+        assertNull(local.getShow(ShowId(9)).getOrNull())
+        assertNull(local.observeShow(ShowId(9)).first().getOrNull())
+        assertNull(local.getEpisode(EpisodeId(9)).getOrNull())
+        assertNull(local.observeEpisode(EpisodeId(9)).first().getOrNull())
+        assertEquals(emptyList<Any>(), local.observeEpisodesByShow(ShowId(9)).first().getOrNull())
+        assertEquals(emptyList<Any>(), local.observeOwners().first().getOrNull())
+    }
+
+    @Test
+    fun follow_isOffUntilSet_andCanBeTurnedOffAgain() = runTest {
+        val showId = addShow(1)
+        assertEquals(false, local.getShow(showId).getOrNull()?.isFollowed)
+
+        assertEquals(Unit.right(), local.setFollow(showId, followed = true, NOW))
+        assertEquals(true, local.observeShow(showId).first().getOrNull()?.isFollowed)
+        assertEquals(true, local.observeShowsByOwner(OwnerId("ny times")).first().getOrNull()?.single()?.isFollowed)
+
+        local.setFollow(showId, followed = false, LATER)
+        assertEquals(false, local.getShow(showId).getOrNull()?.isFollowed)
+    }
+
+    @Test
+    fun follow_ofAShowThatIsntThere_isShowNotFound() = runTest {
+        assertEquals(PodcastError.ShowNotFound(ShowId(9)).left(), local.setFollow(ShowId(9), followed = true, NOW))
+    }
+
+    @Test
+    fun progress_isReadWithItsEpisode_andReplaced() = runTest {
+        val id = add(show(1, "The Daily", "NY Times"))
+        assertNull(local.getEpisode(id).getOrNull()?.progress)
+
+        val stored = ProgressRecord(12.minutes, isPlayed = false, playerLength = 31.minutes, lastPlayedAt = NOW)
+        assertEquals(Unit.right(), progress.setProgress(id, stored))
+        assertEquals(stored, local.getEpisode(id).getOrNull()?.progress)
+
+        val played = stored.copy(position = 30.minutes, isPlayed = true, playerLength = null, lastPlayedAt = LATER)
+        progress.setProgress(id, played)
+        assertEquals(played, local.observeEpisode(id).first().getOrNull()?.progress)
+        assertEquals(
+            played,
+            local.observeEpisodesByShow(local.getEpisode(id).getOrNull()!!.showId).first()
+                .getOrNull()?.single()?.progress,
+        )
+    }
+
+    @Test
+    fun progress_ofAnEpisodeThatIsntThere_isEpisodeNotFound() = runTest {
+        val stored = ProgressRecord(1.minutes, isPlayed = false, playerLength = null, lastPlayedAt = NOW)
+
+        assertEquals(PodcastError.EpisodeNotFound(EpisodeId(9)).left(), progress.setProgress(EpisodeId(9), stored))
+    }
+
+    protected companion object {
+        val NOW: Instant = Instant.ofEpochMilli(1_000)
+        val LATER: Instant = Instant.ofEpochMilli(2_000)
+    }
+}
