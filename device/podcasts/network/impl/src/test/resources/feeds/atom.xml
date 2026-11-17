@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Made by hand: an Atom feed, which podcasts don't use, and which isn't read. -->
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <title>Not RSS</title>
+    <entry>
+        <title>An entry</title>
+        <link rel="enclosure" href="https://example.com/a.mp3" type="audio/mpeg"/>
+    </entry>
+</feed>

@@ -10,6 +10,7 @@ android {
 dependencies {
     implementation(project(":device:podcasts:api"))
     implementation(project(":device:podcasts:local:api"))
+    implementation(project(":device:podcasts:network:api"))
 
     testImplementation(project(":device:podcasts:testing"))
     testImplementation(project(":common:storage:api"))

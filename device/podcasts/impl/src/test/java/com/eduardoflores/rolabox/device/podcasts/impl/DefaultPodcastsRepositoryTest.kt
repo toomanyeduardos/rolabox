@@ -50,6 +50,13 @@ class DefaultPodcastsRepositoryTest {
     }
 
     @Test
+    fun anEpisodeFromAFeed_keepsItsAudiosSize() = runTest {
+        val id = add(episode("g1").copy(audioSizeBytes = 35_000_000, audioType = "audio/mpeg"))
+
+        assertEquals(35_000_000L, repository.getEpisode(id).getOrNull()!!.audioSizeBytes)
+    }
+
+    @Test
     fun anEpisodeWithNoGuid_isIdentifiedByItsAudio() = runTest {
         val first = add(episode(guid = null, url = "https://example.com/a.mp3"))
         val again = add(episode(guid = " ", url = "https://example.com/a.mp3"))

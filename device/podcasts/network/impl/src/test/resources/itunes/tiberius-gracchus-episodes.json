@@ -1,0 +1,104 @@
+{
+  "resultCount": 3,
+  "results": [
+    {
+      "closedCaptioning": "none",
+      "collectionId": 850148806,
+      "collectionName": "Emperors of Rome",
+      "previewUrl": "https://www.mattsmithpodcast.com/emperors/191106-gracchi03.mp3",
+      "artistIds": [],
+      "genres": [
+        {
+          "name": "History",
+          "id": "1487"
+        }
+      ],
+      "episodeGuid": "F3540ADA-3743-4A09-90B5-3598EBA2DFD0",
+      "shortDescription": "Tiberius Gracchus had introduced property laws that, while unpopular with the ruling elite, went down well with the people of Rome.",
+      "releaseDate": "2019-11-06T07:19:36Z",
+      "trackId": 1000456060146,
+      "trackName": "Episode CXXX - Unpopular Reforms (Gracchi III)",
+      "feedUrl": "https://mattsmithpodcast.com/emperors/eor.xml",
+      "kind": "podcast-episode",
+      "wrapperType": "podcastEpisode",
+      "description": "Tiberius Gracchus had introduced property laws that, while unpopular with the ruling elite, went down well with the people of Rome. You can please some of the people all of the time and all of the people some of the time. But that’s just politics, isn’t it? Nothing to lose your head over.\n\n\nGuest: \n\nAssociate Professor Rhiannon Evans (Classics and Ancient History, La Trobe University)",
+      "country": "USA",
+      "collectionViewUrl": "https://itunes.apple.com/us/podcast/emperors-of-rome/id850148806?mt=2&uo=4",
+      "trackViewUrl": "https://podcasts.apple.com/us/podcast/episode-cxxx-unpopular-reforms-gracchi-iii/id850148806?i=1000456060146&uo=4",
+      "artworkUrl60": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/a6/66/e1/a666e1a4-3e65-adee-c935-b09a426263a8/mza_5939776117920499583.jpg/60x60bb.jpg",
+      "trackTimeMillis": 2201000,
+      "contentAdvisoryRating": "Clean",
+      "episodeUrl": "https://www.mattsmithpodcast.com/emperors/191106-gracchi03.mp3",
+      "episodeFileExtension": "mp3",
+      "artworkUrl600": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/a6/66/e1/a666e1a4-3e65-adee-c935-b09a426263a8/mza_5939776117920499583.jpg/600x600bb.jpg",
+      "episodeContentType": "audio",
+      "artworkUrl160": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/a6/66/e1/a666e1a4-3e65-adee-c935-b09a426263a8/mza_5939776117920499583.jpg/160x160bb.jpg"
+    },
+    {
+      "closedCaptioning": "none",
+      "collectionId": 1373812661,
+      "collectionName": "Behind the Bastards",
+      "previewUrl": "https://podtrac.com/pts/redirect.mp3/pscrb.fm/rss/p/traffic.omny.fm/d/clips/e73c998e-6e60-432f-8610-ae210140c5b1/e5f91208-cc7e-4726-a312-ae280140ad11/9e8574a3-c7ef-45f5-84d8-aef2017c81ac/audio.mp3?utm_source=Podcast&in_playlist=d64f756d-6d5e-4fae-b24f-ae280140ad36",
+      "artistIds": [],
+      "genres": [
+        {
+          "name": "Society & Culture",
+          "id": "1324"
+        }
+      ],
+      "episodeGuid": "9e8574a3-c7ef-45f5-84d8-aef2017c81ac",
+      "shortDescription": "",
+      "releaseDate": "2022-08-16T10:00:00Z",
+      "trackId": 1000576234367,
+      "trackName": "Part One: How The Roman Republic Became a Police State",
+      "feedUrl": "https://www.omnycontent.com/d/playlist/e73c998e-6e60-432f-8610-ae210140c5b1/e5f91208-cc7e-4726-a312-ae280140ad11/d64f756d-6d5e-4fae-b24f-ae280140ad36/podcast.rss",
+      "kind": "podcast-episode",
+      "wrapperType": "podcastEpisode",
+      "description": "Robert is joined by Andrew Ti to discuss The Roman Republic. \nSee omnystudio.com/listener for privacy information.",
+      "country": "USA",
+      "collectionViewUrl": "https://itunes.apple.com/us/podcast/behind-the-bastards/id1373812661?mt=2&uo=4",
+      "trackViewUrl": "https://podcasts.apple.com/us/podcast/part-one-how-the-roman-republic-became-a-police-state/id1373812661?i=1000576234367&uo=4",
+      "artworkUrl60": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/ee/82/58/ee8258d4-32a6-eae8-ddde-d13113a6baee/mza_2590417236454661582.jpg/60x60bb.jpg",
+      "trackTimeMillis": 4898000,
+      "contentAdvisoryRating": "Explicit",
+      "episodeUrl": "https://podtrac.com/pts/redirect.mp3/pscrb.fm/rss/p/traffic.omny.fm/d/clips/e73c998e-6e60-432f-8610-ae210140c5b1/e5f91208-cc7e-4726-a312-ae280140ad11/9e8574a3-c7ef-45f5-84d8-aef2017c81ac/audio.mp3?utm_source=Podcast&in_playlist=d64f756d-6d5e-4fae-b24f-ae280140ad36",
+      "episodeFileExtension": "mp3",
+      "artworkUrl600": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/ee/82/58/ee8258d4-32a6-eae8-ddde-d13113a6baee/mza_2590417236454661582.jpg/600x600bb.jpg",
+      "episodeContentType": "audio",
+      "artworkUrl160": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/ee/82/58/ee8258d4-32a6-eae8-ddde-d13113a6baee/mza_2590417236454661582.jpg/160x160bb.jpg"
+    },
+    {
+      "closedCaptioning": "none",
+      "collectionId": 1841717745,
+      "collectionName": "The Continuum",
+      "previewUrl": "https://api.substack.com/feed/podcast/175474570/2d3f32875fbdabd2dbe5975b3823fba9.mp3",
+      "artistIds": [],
+      "genres": [
+        {
+          "name": "History",
+          "id": "1487"
+        }
+      ],
+      "episodeGuid": "substack:post:175474570",
+      "shortDescription": "Part of The Political Besties Network\n(Part 1/2) He was born into privilege, but fought for the poor. In 133 BCE, Tiberius Gracchus defied the Roman Senate, passed the most radical reform in generations, and set off a political earthquake that would sha",
+      "releaseDate": "2025-10-07T12:03:14Z",
+      "trackId": 1000730608424,
+      "trackName": "Tiberius Gracchus – The Tribune Who Shook Rome",
+      "feedUrl": "https://api.substack.com/feed/podcast/4032686.rss",
+      "kind": "podcast-episode",
+      "wrapperType": "podcastEpisode",
+      "description": "(Part 1/2) He was born into privilege, but fought for the poor. In 133 BCE, Tiberius Gracchus defied the Roman Senate, passed the most radical reform in generations, and set off a political earthquake that would shatter the Republic. His call for justice became a cry for blood — and his death marked the moment Rome began to fall.\nThis is the story of one man’s vision, a society’s breaking point, and the day the Roman Republic turned against itself.\n#history #rome #currentevents\n \n\nThis is a public episode. If you would like to discuss this with other subscribers or get access to bonus episodes, visit rejil.substack.com",
+      "country": "USA",
+      "collectionViewUrl": "https://itunes.apple.com/us/podcast/the-continuum/id1841717745?mt=2&uo=4",
+      "trackViewUrl": "https://podcasts.apple.com/us/podcast/tiberius-gracchus-the-tribune-who-shook-rome/id1841717745?i=1000730608424&uo=4",
+      "artworkUrl60": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/c4/2c/b4/c42cb463-19a3-b360-b48e-3809bb46a518/mza_8133615245216842000.jpg/60x60bb.jpg",
+      "trackTimeMillis": 1200000,
+      "contentAdvisoryRating": "Clean",
+      "episodeUrl": "https://api.substack.com/feed/podcast/175474570/2d3f32875fbdabd2dbe5975b3823fba9.mp3",
+      "episodeFileExtension": "mp3",
+      "artworkUrl600": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/c4/2c/b4/c42cb463-19a3-b360-b48e-3809bb46a518/mza_8133615245216842000.jpg/600x600bb.jpg",
+      "episodeContentType": "audio",
+      "artworkUrl160": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/c4/2c/b4/c42cb463-19a3-b360-b48e-3809bb46a518/mza_8133615245216842000.jpg/160x160bb.jpg"
+    }
+  ]
+}
