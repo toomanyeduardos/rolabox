@@ -1,60 +1,35 @@
 package com.eduardoflores.rolabox.common.designsystem.component
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.scrollBy
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListItemInfo
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxMetal
 import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxTheme
-import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxType
 
-private val RowMinHeight = 32.dp
-private val RowStartPadding = 12.dp
-private val RowVerticalPadding = 4.dp
-private val RowGap = 8.dp
-private val ScrollbarEndPadding = 16.dp
 private val TrackWidth = 4.dp
 private val TrackEdgeInset = 3.dp
 private val TrackVerticalInset = 4.dp
 private val ThumbMinHeight = 12.dp
-private const val CHEVRON_ALPHA = 0.75f
-private const val SELECTION_UPPER_STOP = 0.48f
-private const val SELECTION_LOWER_STOP = 0.52f
-
-/**
- * A row of a [DeviceList]: its [label], whether it [opensSubmenu], which draws a `›` after it, and an
- * optional [value], such as a setting's "Off", drawn at the end of the row in place of the `›`.
- */
-@Immutable
-data class DeviceListRow(val label: String, val opensSubmenu: Boolean = false, val value: String? = null)
+private val MessageHorizontalPadding = 22.dp
+private val MessageVerticalPadding = 12.dp
 
 /**
  * The list of a device's display (ADR-018): one row per item, the row at [highlightedIndex] in the
@@ -68,116 +43,80 @@ data class DeviceListRow(val label: String, val opensSubmenu: Boolean = false, v
  * moment, to its end and around again, so its full text can be read. Where the system's animations
  * are off, the highlighted row wraps its label instead. A value or a `›` keeps its place, and a long
  * label gives way to it. A [highlightedIndex] below 0 highlights no row, for a screen that has
- * nothing to open or change, such as About.
+ * nothing to open or change, such as About, and so does one on a [DeviceListSection].
+ *
+ * A [message] sits under the rows, centered in the space they leave. When the rows don't fit with it,
+ * they scroll above it.
  */
 @Composable
-fun DeviceList(rows: List<DeviceListRow>, highlightedIndex: Int, modifier: Modifier = Modifier) {
+fun DeviceList(
+    rows: List<DeviceListEntry>,
+    highlightedIndex: Int,
+    modifier: Modifier = Modifier,
+    message: DeviceListMessage? = null,
+) {
+    if (message == null) {
+        ListRows(rows, highlightedIndex, fill = true, modifier = modifier.fillMaxSize())
+        return
+    }
+    Layout(
+        content = {
+            ListRows(rows, highlightedIndex, fill = false)
+            DeviceMessageLines(
+                message.title,
+                message.body,
+                Modifier.padding(horizontal = MessageHorizontalPadding, vertical = MessageVerticalPadding),
+            )
+        },
+        modifier = modifier.fillMaxSize(),
+    ) { (list, text), constraints ->
+        val width = constraints.maxWidth
+        val height = constraints.maxHeight
+        val messagePlaceable = text.measure(Constraints(minWidth = width, maxWidth = width, maxHeight = height))
+        val listMax = (height - messagePlaceable.height).coerceAtLeast(0)
+        val listPlaceable = list.measure(Constraints(minWidth = width, maxWidth = width, maxHeight = listMax))
+        layout(width, height) {
+            listPlaceable.place(0, 0)
+            val free = height - listPlaceable.height
+            messagePlaceable.place(0, listPlaceable.height + ((free - messagePlaceable.height) / 2).coerceAtLeast(0))
+        }
+    }
+}
+
+/** The rows and the scrollbar. [fill] makes them as tall as the space they get, and otherwise as tall as the rows. */
+@Composable
+private fun ListRows(rows: List<DeviceListEntry>, highlightedIndex: Int, fill: Boolean, modifier: Modifier = Modifier) {
     val animationsOff = rememberAnimationsOff()
     val colors = RolaboxMetal.colors
+    // The first row of a section brings its label into view with it.
+    val top = if (rows.getOrNull(highlightedIndex - 1) is DeviceListSection) highlightedIndex - 1 else highlightedIndex
     val state =
         rememberLazyListState(
-            initialFirstVisibleItemIndex = highlightedIndex.coerceIn(0, rows.lastIndex.coerceAtLeast(0)),
+            initialFirstVisibleItemIndex = top.coerceIn(0, rows.lastIndex.coerceAtLeast(0)),
         )
-    KeepInView(state, highlightedIndex)
-    Box(modifier.fillMaxSize()) {
-        LazyColumn(state = state, userScrollEnabled = false, modifier = Modifier.fillMaxSize()) {
-            itemsIndexed(rows) { index, row ->
-                DeviceListItem(row, selected = index == highlightedIndex, animationsOff = animationsOff)
+    KeepInView(state, highlightedIndex, top)
+    Box(modifier) {
+        LazyColumn(
+            state = state,
+            userScrollEnabled = false,
+            modifier = if (fill) Modifier.fillMaxSize() else Modifier.fillMaxWidth(),
+        ) {
+            itemsIndexed(rows) { index, entry ->
+                when (entry) {
+                    is DeviceListRow ->
+                        DeviceListItem(entry, selected = index == highlightedIndex, animationsOff = animationsOff)
+
+                    is DeviceListSection -> DeviceListSectionLabel(entry.label)
+                }
             }
         }
         Box(
-            Modifier.fillMaxSize().drawBehind {
+            Modifier.matchParentSize().drawBehind {
                 drawScrollbar(state, track = colors.displayRule, thumb = colors.displayMuted)
             },
         )
     }
 }
-
-@Composable
-private fun DeviceListItem(row: DeviceListRow, selected: Boolean, animationsOff: Boolean) {
-    val colors = RolaboxMetal.colors
-    val styles = RolaboxType.styles
-    val background = if (selected) {
-        Modifier.background(
-            Brush.verticalGradient(
-                0f to colors.selection[0],
-                SELECTION_UPPER_STOP to colors.selection[1],
-                SELECTION_LOWER_STOP to colors.selection[2],
-                1f to colors.selection[3],
-            ),
-        )
-    } else {
-        Modifier
-    }
-    val ink = if (selected) colors.onSelection else styles.displayRow.color
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .then(background)
-            .heightIn(min = RowMinHeight)
-            .padding(
-                start = RowStartPadding,
-                end = ScrollbarEndPadding,
-                top = RowVerticalPadding,
-                bottom = RowVerticalPadding,
-            )
-            .semantics { this.selected = selected },
-        horizontalArrangement = Arrangement.spacedBy(RowGap),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        RowLabel(
-            row.label,
-            style = styles.displayRow.copy(color = ink),
-            highlighted = selected,
-            animationsOff = animationsOff,
-            modifier = Modifier.weight(1f),
-        )
-        if (row.value != null) {
-            Text(row.value, style = styles.displayRowValue.copy(color = ink), maxLines = 1)
-        } else if (row.opensSubmenu) {
-            // Decorative: the row opens something whether or not the arrow is read out.
-            Text(
-                "›",
-                style = styles.displayChevron.copy(color = ink.copy(alpha = CHEVRON_ALPHA)),
-                modifier = Modifier.clearAndSetSemantics {},
-            )
-        }
-    }
-}
-
-/**
- * Scrolls [state] just enough for the row at [index] to be fully in view, and does nothing when it
- * already is. A row that comes from far away is put at the edge it came from, so a list that is
- * turned forward keeps the highlight at the bottom, as the wheel is moving down.
- */
-@Composable
-private fun KeepInView(state: LazyListState, index: Int) {
-    LaunchedEffect(state, index) {
-        // Nothing is highlighted, so there is nothing to keep in view.
-        if (index < 0) return@LaunchedEffect
-        val cameFromAbove = index > state.firstVisibleItemIndex
-        var item = state.visibleRow(index)
-        if (item == null) {
-            state.scrollToItem(index)
-            item = state.visibleRow(index) ?: return@LaunchedEffect
-            val viewport = state.layoutInfo.viewportEndOffset - state.layoutInfo.viewportStartOffset
-            if (cameFromAbove && item.offset <= state.layoutInfo.viewportStartOffset && item.size < viewport) {
-                state.scrollBy(-(viewport - item.size).toFloat())
-            }
-            return@LaunchedEffect
-        }
-        val info = state.layoutInfo
-        when {
-            item.offset < info.viewportStartOffset -> state.scrollBy((item.offset - info.viewportStartOffset).toFloat())
-
-            item.offset + item.size > info.viewportEndOffset ->
-                state.scrollBy((item.offset + item.size - info.viewportEndOffset).toFloat())
-        }
-    }
-}
-
-private fun LazyListState.visibleRow(index: Int): LazyListItemInfo? =
-    layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
 
 /** Draws the track and the thumb, only while the list has more rows than the viewport shows. */
 private fun DrawScope.drawScrollbar(state: LazyListState, track: Color, thumb: Color) {
@@ -229,15 +168,16 @@ private val Settings = listOf(
 @Composable
 internal fun DeviceListPreview(
     title: String,
-    rows: List<DeviceListRow>,
+    rows: List<DeviceListEntry>,
     highlightedIndex: Int,
     animationsOff: Boolean = false,
+    message: DeviceListMessage? = null,
 ) {
     RolaboxTheme {
         CompositionLocalProvider(LocalAnimationsOff provides animationsOff) {
             Box(Modifier.padding(16.dp)) {
                 DeviceDisplay(title, batteryLevel = 0.7f, modifier = Modifier.heightIn(max = DisplayPreviewHeight)) {
-                    DeviceList(rows, highlightedIndex)
+                    DeviceList(rows, highlightedIndex, message = message)
                 }
             }
         }

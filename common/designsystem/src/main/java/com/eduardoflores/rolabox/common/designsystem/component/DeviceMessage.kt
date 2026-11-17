@@ -42,8 +42,14 @@ fun DeviceMessage(text: String, modifier: Modifier = Modifier) {
  */
 @Composable
 fun DeviceMessage(title: String, body: String, modifier: Modifier = Modifier) {
+    DeviceMessageLines(title, body, modifier.fillMaxSize().padding(MessagePadding))
+}
+
+/** The [title] and [body] of a message, centered, as tall as they need: the message alone or under a list's rows. */
+@Composable
+internal fun DeviceMessageLines(title: String, body: String, modifier: Modifier = Modifier) {
     Column(
-        modifier.fillMaxSize().padding(MessagePadding),
+        modifier,
         verticalArrangement = Arrangement.spacedBy(TitleGap, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
