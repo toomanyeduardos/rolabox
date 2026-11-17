@@ -16,6 +16,7 @@ import com.eduardoflores.rolabox.device.music.ui.api.MusicEntries
 import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
 import com.eduardoflores.rolabox.device.playback.api.SeekDirection
 import com.eduardoflores.rolabox.device.playback.ui.api.PlaybackEntries
+import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastsEntries
 import com.eduardoflores.rolabox.device.settings.api.SettingsEntries
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Rule
@@ -43,6 +44,7 @@ class DeviceRouteMainMenuTest {
                     viewModel = viewModel,
                     musicEntries = NoMusicEntries,
                     playbackEntries = NoPlaybackEntries,
+                    podcastsEntries = NoPodcastsEntries,
                     settingsEntries = NoSettingsEntries,
                     onOpenFullScreen = {},
                 )
@@ -96,6 +98,16 @@ private object NoMusicEntries : MusicEntries {
 
 private object NoPlaybackEntries : PlaybackEntries {
     override fun screenStackEntries(scope: EntryProviderScope<NavKey>) = Unit
+}
+
+private object NoPodcastsEntries : PodcastsEntries {
+    override fun screenStackEntries(
+        scope: EntryProviderScope<NavKey>,
+        onSearchClick: () -> Unit,
+        onOwnerClick: (ownerId: String) -> Unit,
+        onShowClick: (showId: Long) -> Unit,
+        onEpisodeClick: (episodeId: Long) -> Unit,
+    ) = Unit
 }
 
 private object NoSettingsEntries : SettingsEntries {

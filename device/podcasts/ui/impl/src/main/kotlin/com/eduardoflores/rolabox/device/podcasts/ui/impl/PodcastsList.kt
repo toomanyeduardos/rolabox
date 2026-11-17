@@ -1,0 +1,83 @@
+package com.eduardoflores.rolabox.device.podcasts.ui.impl
+
+import androidx.compose.foundation.layout.Box
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.eduardoflores.rolabox.common.designsystem.component.DeviceLetterOverlay
+import com.eduardoflores.rolabox.common.designsystem.component.DeviceList
+import com.eduardoflores.rolabox.common.designsystem.component.DeviceListMessage
+import com.eduardoflores.rolabox.common.designsystem.component.DeviceListRow
+import com.eduardoflores.rolabox.common.designsystem.component.DeviceMessage
+import com.eduardoflores.rolabox.common.designsystem.component.rememberQuickScroll
+import com.eduardoflores.rolabox.common.designsystem.wheel.WheelEvent
+import com.eduardoflores.rolabox.device.host.HandleWheelEvents
+import com.eduardoflores.rolabox.device.host.rememberListHighlight
+
+/**
+ * A podcasts list on the display, driven by the wheel (ADR-018): turning moves the highlight, which stops at the first
+ * and last rows, and center reports the index of the highlighted row to [onCenter]. [message] is shown under the rows.
+ *
+ * The highlight is saved with the entry that calls this (ADR-018, rule 7), and belongs to the host's holder.
+ *
+ * [sortedFrom] is the index of the first row of a list sorted by its labels, after the rows that come first, such as
+ * Search: while it is turned fast, the first letter of the highlighted row is shown over it. `null` for a list that
+ * isn't sorted by name, such as a show's episodes.
+ */
+@Composable
+internal fun PodcastsWheelList(
+    state: ListUiState<List<DeviceListRow>>,
+    onCenter: (index: Int) -> Unit,
+    sortedFrom: Int? = null,
+    message: DeviceListMessage? = null,
+) {
+    val highlight = rememberListHighlight()
+    val quickScroll = rememberQuickScroll()
+    val rows = (state as? ListUiState.Loaded)?.value.orEmpty()
+    val rowCount = rows.size
+    HandleWheelEvents { event ->
+        when {
+            rowCount == 0 -> Unit
+
+            event is WheelEvent.Turn -> {
+                highlight.move(event.steps, rowCount)
+                if (sortedFrom != null && highlight.index >= sortedFrom) {
+                    quickScroll.turned(event.steps, rows[highlight.index].label, rowCount - sortedFrom)
+                }
+            }
+
+            event == WheelEvent.Center -> onCenter(highlight.index.coerceAtMost(rowCount - 1))
+        }
+    }
+    PodcastsList(state = state, highlightedIndex = highlight.index, message = message, letter = quickScroll.letter)
+}
+
+/**
+ * The stateless list that previews and screenshot tests call (ADR-021, rule 4). [letter] is shown over the rows while
+ * the list is turned fast, and null shows none.
+ */
+@Composable
+internal fun PodcastsList(
+    state: ListUiState<List<DeviceListRow>>,
+    highlightedIndex: Int,
+    message: DeviceListMessage? = null,
+    letter: String? = null,
+) {
+    when (state) {
+        // The podcasts are read from their database, so this is a frame. Nothing to say until it is slow.
+        ListUiState.Loading -> Unit
+
+        is ListUiState.Loaded -> Box {
+            val rows = state.value
+            DeviceList(
+                rows = rows,
+                highlightedIndex = highlightedIndex.coerceIn(0, rows.lastIndex.coerceAtLeast(0)),
+                message = message,
+            )
+            DeviceLetterOverlay(letter)
+        }
+
+        ListUiState.Failed -> DeviceMessage(stringResource(R.string.podcasts_unavailable))
+
+        ListUiState.Gone -> DeviceMessage(stringResource(R.string.podcasts_no_longer_here))
+    }
+}

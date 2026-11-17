@@ -23,6 +23,13 @@ import com.eduardoflores.rolabox.device.playback.api.PlaybackController
 import com.eduardoflores.rolabox.device.playback.api.PlaybackState
 import com.eduardoflores.rolabox.device.playback.impl.di.PlaybackModule
 import com.eduardoflores.rolabox.device.playback.testing.FakePlayback
+import com.eduardoflores.rolabox.device.podcasts.api.EpisodeProgressRepository
+import com.eduardoflores.rolabox.device.podcasts.api.PodcastDirectory
+import com.eduardoflores.rolabox.device.podcasts.api.PodcastsRepository
+import com.eduardoflores.rolabox.device.podcasts.impl.di.PodcastsModule
+import com.eduardoflores.rolabox.device.podcasts.testing.FakeEpisodeProgressRepository
+import com.eduardoflores.rolabox.device.podcasts.testing.FakePodcastDirectory
+import com.eduardoflores.rolabox.device.podcasts.testing.FakePodcastsRepository
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -87,6 +94,21 @@ object TestLibraryModule {
     // No song of the tests' library has a cover, so Now Playing shows the placeholder (ADR-026).
     @Provides
     fun providesArtworkRepository(fake: FakeArtworkRepository): ArtworkRepository = fake
+}
+
+// The real podcasts are a database on the phone and a directory on the internet, so the tests bring their own. Each
+// test fills the fake with what it needs.
+@Module
+@TestInstallIn(components = [SingletonComponent::class], replaces = [PodcastsModule::class])
+abstract class TestPodcastsModule {
+    @Binds
+    abstract fun bindsPodcastsRepository(fake: FakePodcastsRepository): PodcastsRepository
+
+    @Binds
+    abstract fun bindsEpisodeProgressRepository(fake: FakeEpisodeProgressRepository): EpisodeProgressRepository
+
+    @Binds
+    abstract fun bindsPodcastDirectory(fake: FakePodcastDirectory): PodcastDirectory
 }
 
 @Module
