@@ -1,0 +1,27 @@
+package com.eduardoflores.rolabox.device.podcasts.impl.di
+
+import com.eduardoflores.rolabox.device.podcasts.api.EpisodeProgressRepository
+import com.eduardoflores.rolabox.device.podcasts.api.PodcastsRepository
+import com.eduardoflores.rolabox.device.podcasts.impl.DefaultEpisodeProgressRepository
+import com.eduardoflores.rolabox.device.podcasts.impl.DefaultPodcastsRepository
+import com.eduardoflores.rolabox.device.podcasts.impl.EpisodeDownloads
+import com.eduardoflores.rolabox.device.podcasts.impl.NoEpisodeDownloads
+import dagger.Binds
+import dagger.Module
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class PodcastsModule {
+    @Binds
+    internal abstract fun bindsPodcastsRepository(repository: DefaultPodcastsRepository): PodcastsRepository
+
+    @Binds
+    internal abstract fun bindsEpisodeProgressRepository(
+        repository: DefaultEpisodeProgressRepository,
+    ): EpisodeProgressRepository
+
+    @Binds
+    internal abstract fun bindsEpisodeDownloads(downloads: NoEpisodeDownloads): EpisodeDownloads
+}

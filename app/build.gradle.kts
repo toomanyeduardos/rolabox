@@ -36,6 +36,8 @@ dependencies {
     implementation(project(":device:playback:impl"))
     implementation(project(":device:playback:local:impl"))
     implementation(project(":device:playback:ui:impl"))
+    implementation(project(":device:podcasts:impl"))
+    implementation(project(":device:podcasts:local:impl"))
     implementation(project(":device:settings:impl"))
     implementation(project(":device:ui:impl"))
 
