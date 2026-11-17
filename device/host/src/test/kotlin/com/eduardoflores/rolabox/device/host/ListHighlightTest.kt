@@ -46,6 +46,73 @@ class ListHighlightTest {
         assertEquals(2, highlight.index)
     }
 
+    // Search's results: a label, two shows, a label, two episodes.
+    private val labels = setOf(0, 3)
+    private val isSelectable = { index: Int -> index !in labels }
+
+    @Test
+    fun move_ofZeroSteps_fromALabel_goesToTheFirstRowAfterIt() {
+        highlight.move(steps = 0, rowCount = 6, isSelectable = isSelectable)
+
+        assertEquals(1, highlight.index)
+    }
+
+    @Test
+    fun move_forward_skipsALabel() {
+        highlight.move(steps = 0, rowCount = 6, isSelectable = isSelectable)
+
+        highlight.move(steps = 2, rowCount = 6, isSelectable = isSelectable)
+
+        assertEquals(4, highlight.index)
+    }
+
+    @Test
+    fun move_back_skipsALabel() {
+        highlight.move(steps = 4, rowCount = 6)
+
+        highlight.move(steps = -1, rowCount = 6, isSelectable = isSelectable)
+
+        assertEquals(2, highlight.index)
+    }
+
+    @Test
+    fun move_back_stopsAtTheFirstRowThatCanBeSelected() {
+        highlight.move(steps = 4, rowCount = 6, isSelectable = isSelectable)
+
+        highlight.move(steps = -20, rowCount = 6, isSelectable = isSelectable)
+
+        assertEquals(1, highlight.index)
+    }
+
+    @Test
+    fun move_fromALabel_takesOneStepToTheRowsOnEitherSide() {
+        highlight.move(steps = 3, rowCount = 6)
+        highlight.move(steps = 1, rowCount = 6, isSelectable = isSelectable)
+        assertEquals(4, highlight.index)
+
+        highlight.move(steps = -1, rowCount = 6)
+        highlight.move(steps = -1, rowCount = 6, isSelectable = isSelectable)
+        assertEquals(2, highlight.index)
+    }
+
+    @Test
+    fun move_fromALabelAtTheEnd_goesToTheLastRowThatCanBeSelected() {
+        highlight.move(steps = 3, rowCount = 6)
+
+        highlight.move(steps = 0, rowCount = 4, isSelectable = isSelectable)
+
+        assertEquals(2, highlight.index)
+    }
+
+    @Test
+    fun move_whenNoRowCanBeSelected_staysInsideTheList() {
+        highlight.move(steps = 5, rowCount = 6)
+
+        highlight.move(steps = 1, rowCount = 2, isSelectable = { false })
+
+        assertEquals(1, highlight.index)
+    }
+
     @Test
     fun saver_restoresTheRowTheUserLeft() {
         highlight.move(steps = 3, rowCount = 8)

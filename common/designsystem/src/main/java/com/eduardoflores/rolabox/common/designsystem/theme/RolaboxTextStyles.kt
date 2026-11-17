@@ -67,6 +67,12 @@ class RolaboxTextStyles internal constructor(
     /** The value at the end of a row, such as a setting's "Off". The selected row's is [MetalColors.onSelection]. */
     internal val displayRowValue = typography.displayRowValue.copy(color = colors.displayInk)
 
+    /** A row's secondary value, such as a show's creator, in the display's secondary ink. */
+    internal val displayRowSecondary = typography.displayRowSecondary.copy(color = colors.displayMuted)
+
+    /** The label over a section of a list, such as Shows, on the display header's gray. */
+    internal val displaySectionLabel = typography.displaySectionLabel.copy(color = colors.displayMuted)
+
     /** Small monospaced text on the display, such as the position and the times. It's the display's secondary ink. */
     val displayMeta = typography.displayMeta.copy(color = colors.displayMuted)
 
@@ -111,6 +117,8 @@ class RolaboxTextStyles internal constructor(
             "displayRow" to displayRow,
             "displayChevron" to displayChevron,
             "displayRowValue" to displayRowValue,
+            "displayRowSecondary" to displayRowSecondary,
+            "displaySectionLabel" to displaySectionLabel,
             "displayMeta" to displayMeta,
             "displayHeadline" to displayHeadline,
             "displayBody" to displayBody,

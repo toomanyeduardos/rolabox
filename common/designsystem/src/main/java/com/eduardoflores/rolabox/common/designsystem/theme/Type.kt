@@ -50,6 +50,8 @@ class RolaboxTypography internal constructor(
     internal val displayRow: TextStyle,
     internal val displayChevron: TextStyle,
     internal val displayRowValue: TextStyle,
+    internal val displayRowSecondary: TextStyle,
+    internal val displaySectionLabel: TextStyle,
     internal val displayMeta: TextStyle,
     internal val displayHeadline: TextStyle,
     internal val displayBody: TextStyle,
@@ -134,6 +136,17 @@ internal fun rolaboxTypography(
         displayChevron = body.copy(fontSize = 18.sp),
         // A setting's value, such as "Off": the row's size in the regular weight, so it reads apart from the label.
         displayRowValue = body.copy(fontSize = 16.sp, fontWeight = FontWeight.Normal, letterSpacing = (-0.01).em),
+        // Something about the row in a quieter voice, such as a show's creator in search: smaller than the value.
+        displayRowSecondary = body.copy(fontSize = 13.sp, fontWeight = FontWeight.Normal, letterSpacing = (-0.01).em),
+        // The label over a section of a list, such as Shows and Episodes in search. Monospaced and spaced out, as
+        // the display's other small labels are; the list draws it in capitals.
+        displaySectionLabel = body.copy(
+            fontFamily = monoFamily,
+            fontSize = 10.5.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 0.1.em,
+            lineHeight = 1.em,
+        ),
         // Small monospaced text on the display: the position, the mode tag and the times. Tabular digits, so
         // the times don't jitter as they change.
         displayMeta = body.copy(
