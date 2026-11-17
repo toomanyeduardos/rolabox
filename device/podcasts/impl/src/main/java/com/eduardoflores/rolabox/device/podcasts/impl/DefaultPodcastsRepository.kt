@@ -92,6 +92,8 @@ internal class DefaultPodcastsRepository @Inject constructor(
             length = episode.length,
             description = episode.description,
             audioUrl = episode.audioUrl,
+            audioSizeBytes = episode.audioSizeBytes,
+            audioType = episode.audioType,
         )
         return local.addEpisode(showWrite, episodeWrite, clock.instant())
     }

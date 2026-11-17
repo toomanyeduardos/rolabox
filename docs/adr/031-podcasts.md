@@ -8,6 +8,10 @@
   the feed of a show opened from search), [ADR-022](022-data-source-sub-parts.md) (rule 2, in the
   same part), [ADR-018](018-device-navigation.md) (rule 17, for episodes) and
   [ADR-026](026-artwork.md) (rules 1 and 6, for episodes)
+- **Revised 2026-11-17:** `PodcastDirectory.show` takes the show a search found, not its id ("The
+  directory and a show from search"). With only the id, opening a show needs a `lookup` request to
+  the directory for its feed URL before the feed is read, and each such request counts against
+  the directory's limit of about 20 a minute, which searches already share.
 
 ## Context
 
@@ -185,8 +189,11 @@ for while the user waits, and not kept. So they are an exception to
 rule 2, and the only one in the part:
 
 - **`PodcastDirectory`, in `:device:podcasts:api`, reads the network on each call:** `search(text)`
-  and `show(id)`, the show with every episode of its feed. It isn't a repository, and its answers
+  and `show(show)`, the show with every episode of its feed. It isn't a repository, and its answers
   are never written to the database.
+- **`show` takes the show a search found,** with its feed URL, not its id. A show is only opened
+  from search, so the caller has it, and the feed is the only request: opening a show asks nothing
+  of the directory, and doesn't count against its limit.
 - **Everything the library shows comes from the database:** Podcasts, an owner, a show in the
   library, an episode, its position and its dots. A show from search becomes the library's only when
   one of its episodes is played or it is followed.
@@ -458,6 +465,9 @@ Every call that can fail returns an `Either` ([ADR-007](007-error-handling.md)).
   run and pay for, which nothing else needs, and ADR-008 keeps Firebase for accounts only.
 - **Titles only for episodes,** as the ticket allowed if no free directory searched descriptions.
   Apple's does, so the design is met.
+- **Open a show from search by its id,** as `show(id)`. A key of one string for the Show screen,
+  and a show could be opened from an id alone. But the feed URL then comes from a `lookup` request to
+  the directory, one more request per show opened, against a limit that searches already use.
 
 **Feeds.**
 

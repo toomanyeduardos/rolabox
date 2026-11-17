@@ -1,8 +1,10 @@
 package com.eduardoflores.rolabox.device.podcasts.impl.di
 
 import com.eduardoflores.rolabox.device.podcasts.api.EpisodeProgressRepository
+import com.eduardoflores.rolabox.device.podcasts.api.PodcastDirectory
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastsRepository
 import com.eduardoflores.rolabox.device.podcasts.impl.DefaultEpisodeProgressRepository
+import com.eduardoflores.rolabox.device.podcasts.impl.DefaultPodcastDirectory
 import com.eduardoflores.rolabox.device.podcasts.impl.DefaultPodcastsRepository
 import com.eduardoflores.rolabox.device.podcasts.impl.EpisodeDownloads
 import com.eduardoflores.rolabox.device.podcasts.impl.NoEpisodeDownloads
@@ -21,6 +23,9 @@ abstract class PodcastsModule {
     internal abstract fun bindsEpisodeProgressRepository(
         repository: DefaultEpisodeProgressRepository,
     ): EpisodeProgressRepository
+
+    @Binds
+    internal abstract fun bindsPodcastDirectory(directory: DefaultPodcastDirectory): PodcastDirectory
 
     @Binds
     internal abstract fun bindsEpisodeDownloads(downloads: NoEpisodeDownloads): EpisodeDownloads

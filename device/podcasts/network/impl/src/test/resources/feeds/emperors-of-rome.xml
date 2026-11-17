@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss xmlns:atom="http://www.w3.org/2005/Atom" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:content="http://purl.org/rss/1.0/modules/content/" version="2.0">
+    <channel>
+        <title>Emperors of Rome</title>
+        <link>http://www.mattsmithpodcast.com</link>
+        <description>“Great empires are not maintained by timidity.” - Tacitus. A Roman history podcast with Rhiannon Evans and Matt Smith.</description>
+        <generator>Feeder 4.8.4(6362); Mac OS X Version 26.7.1 (Build 25G241) https://reinventedsoftware.com/feeder/</generator>
+        <docs>http://blogs.law.harvard.edu/tech/rss</docs>
+        <language>en</language>
+        <copyright>(c) 2026 Nightlight Productions</copyright>
+        <pubDate>Tue, 27 Oct 2026 23:27:03 +1100</pubDate>
+        <lastBuildDate>Tue, 27 Oct 2026 23:27:03 +1100</lastBuildDate>
+        <atom:link href="https://www.mattsmithpodcast.com/emperors/eor.xml" rel="self" type="application/rss+xml"/>
+        <itunes:author>Nightlight Productions</itunes:author>
+        <itunes:subtitle>“Great empires are not maintained by timidity.” - Tacitus. A podcast series looking at the rulers of the ancient Roman empire, by Dr Rhiannon Evans, Dr Caillan Davenport and Matt Smith.</itunes:subtitle>
+        <itunes:summary>“Great empires are not maintained by timidity.” - Tacitus. A podcast series looking at the rulers of the ancient Roman empire, by Dr Rhiannon Evans, Dr Caillan Davenport and Matt Smith.</itunes:summary>
+        <itunes:image href="https://www.mattsmithpodcast.com/emperors/eor-logo.jpg"/>
+        <itunes:explicit>false</itunes:explicit>
+        <itunes:owner>
+            <itunes:name>Nightlight Productions</itunes:name>
+        </itunes:owner>
+        <itunes:keywords>history,julius caesar,caesar,rhiannon evans,rome,roman history,biography,emperor,roman emperors,roman emire,ancient history,caillan davenport</itunes:keywords>
+        <itunes:category text="History"/>
+        <itunes:type>episodic</itunes:type>
+        <item>
+            <title>Anthology of Interest IV</title>
+            <link>https://www.mattsmithpodcast.com/emperors/251209-aoiiv.mp3</link>
+            <description><![CDATA[<p>Rhiannon Evans, Caillan Davenport, Matt Smith and special guest William Dalrymple share items of Roman interest! You will hear:</p>
+
+<p>- A phoenix in the forum
+<br />- The unknown Queens of Rome
+<br />- The Roman perception of elephants
+<br />- Trade between India and Rome
+<br />- The low bar of Roman insults
+<br />- The false female centurion
+<br />- What Emperors called themselves
+<br />- An accurate population of Pompeii
+<br />- The false Theodosius
+<br />- Sallust and ethnic etymology in North Africa</p>
+
+<p>Episode CCL(250)</p>
+
+<p>Guests:
+<br />Associate Professor Rhiannon Evans (Classics and Ancient History, La Trobe University)
+<br />Professor Caillan Davenport (Centre for Classical Studies, Australian National University))
+<br />William Dalrymple (Esteemed author and host of Empire podcast)</p>
+]]></description>
+            <pubDate>Tue, 09 Dec 2025 16:27:41 +1100</pubDate>
+            <enclosure url="https://www.mattsmithpodcast.com/emperors/251209-aoiiv.mp3" length="50696538" type="audio/mpeg"/>
+            <guid isPermaLink="false">2D5ED9F0-BA7A-4424-82AA-2D305404EA75</guid>
+            <itunes:author>Rhiannon Evans, Caillan Davenport, Matt Smith and William Dalrymple</itunes:author>
+            <itunes:subtitle>Rhiannon Evans, Caillan Davenport, Matt Smith and special guest William Dalrymple share items of Roman interest!</itunes:subtitle>
+            <itunes:summary>Rhiannon Evans, Caillan Davenport, Matt Smith and special guest William Dalrymple share items of Roman interest! You will hear:
+
+- A phoenix in the forum
+- The unknown Queens of Rome
+- The Roman perception of elephants
+- Trade between India and Rome
+- The low bar of Roman insults
+- The false female centurion
+- What Emperors called themselves
+- An accurate population of Pompeii
+- The false Theodosius
+- Sallust and ethnic etymology in North Africa
+
+Episode CCL(250)
+
+Guests:
+Associate Professor Rhiannon Evans (Classics and Ancient History, La Trobe University)
+Professor Caillan Davenport (Centre for Classical Studies, Australian National University))
+William Dalrymple (Esteemed author and host of Empire podcast)</itunes:summary>
+            <itunes:duration>3146</itunes:duration>
+            <itunes:episodeType>full</itunes:episodeType>
+        </item>
+        <item>
+            <title>Viriathus</title>
+            <link>https://www.mattsmithpodcast.com/emperors/251029-viriathus.mp3</link>
+            <description><![CDATA[<p>Viriathus was a Lusitanian leader who rose from humble beginnings to become one of Rome’s most formidable enemies. A skilled tactician and master of guerrilla warfare, he led his people in resistance against Roman expansion in Hispania during the second century BCE. Celebrated for his honour and leadership — even by the Romans who fought him — Viriathus’s story is one of resilience, betrayal, and the enduring struggle for freedom against empire.</p>
+
+<p>Episode CCXLIX (249)</p>
+
+<p>Guest: Dr Christopher Gribbin (Adjunct Lecturer, Classics and Ancient History, La Trobe University)</p>
+]]></description>
+            <pubDate>Wed, 29 Oct 2025 16:27:41 +1100</pubDate>
+            <enclosure url="https://www.mattsmithpodcast.com/emperors/251029-viriathus.mp3" length="34715815" type="audio/mpeg"/>
+            <guid isPermaLink="false">EE0FBD4A-EEA8-4B54-A4D7-306182CB941D</guid>
+            <itunes:author>Dr Christopher Gribbin</itunes:author>
+            <itunes:subtitle>Viriathus was a Lusitanian leader who rose from humble beginnings to become one of Rome’s most formidable enemies.</itunes:subtitle>
+            <itunes:summary>Viriathus was a Lusitanian leader who rose from humble beginnings to become one of Rome’s most formidable enemies. A skilled tactician and master of guerrilla warfare, he led his people in resistance against Roman expansion in Hispania during the second century BCE. Celebrated for his honour and leadership — even by the Romans who fought him — Viriathus’s story is one of resilience, betrayal, and the enduring struggle for freedom against empire.
+
+Episode CCXLIX (249)
+
+Guest: Dr Christopher Gribbin (Adjunct Lecturer, Classics and Ancient History, La Trobe University)</itunes:summary>
+            <itunes:duration>2148</itunes:duration>
+            <itunes:episodeType>full</itunes:episodeType>
+        </item>
+        <item>
+            <title>Paetus, It Does Not Hurt</title>
+            <link>https://www.mattsmithpodcast.com/emperors/250919-arria.mp3</link>
+            <description><![CDATA[<p>Arria, and her daughter of the same name, were celebrated in Roman literature for their virtues, piety, and devotion to family. Remembered above all for their willingness to embrace self-sacrifice, their lives and deaths became exemplars of courage and duty, cited by writers like Pliny and Martial as models of Roman virtue.</p>
+
+<p>Episode CCXLVIII (248)</p>
+
+<p>Guest: Assoc. Professor Rhiannon Evans (Classic and Ancient History, La Trobe University)</p>
+]]></description>
+            <pubDate>Fri, 19 Sep 2025 13:34:25 +1000</pubDate>
+            <enclosure url="https://www.mattsmithpodcast.com/emperors/250919-arria.mp3" length="43166559" type="audio/mpeg"/>
+            <guid isPermaLink="false">AAF4FD05-86EC-42FE-B228-F0F79ECF4356</guid>
+            <itunes:author>Associate Professor Rhiannon Evans</itunes:author>
+            <itunes:subtitle>Being the daughter of Cato and wife of Brutus came with certain expectations from the ancient world.</itunes:subtitle>
+            <itunes:summary>Arria, and her daughter of the same name, were celebrated in Roman literature for their virtues, piety, and devotion to family. Remembered above all for their willingness to embrace self-sacrifice, their lives and deaths became exemplars of courage and duty, cited by writers like Pliny and Martial as models of Roman virtue.
+
+Episode CCXLVIII (248)
+
+Guest: Assoc. Professor Rhiannon Evans (Classic and Ancient History, La Trobe University)</itunes:summary>
+            <itunes:duration>2676</itunes:duration>
+            <itunes:episodeType>full</itunes:episodeType>
+        </item>
+    </channel>
+</rss>

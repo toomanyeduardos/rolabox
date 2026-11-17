@@ -94,8 +94,9 @@ data class Episode(
 data class DirectoryShow(val directoryId: DirectoryId, val title: String, val creator: String?, val feedUrl: String)
 
 /**
- * An episode as the directory answers it. [guid] is the feed's GUID, when the directory has it, and [audioUrl] the
- * enclosure's URL. The description is plain text.
+ * An episode as the directory or its show's feed answers it. [guid] is the feed's GUID, when there is one, and
+ * [audioUrl] the enclosure's URL. [audioSizeBytes] and [audioType] are the enclosure's, which only the feed gives.
+ * The description is plain text.
  */
 data class DirectoryEpisode(
     val guid: String?,
@@ -104,4 +105,28 @@ data class DirectoryEpisode(
     val length: Duration?,
     val description: String?,
     val audioUrl: String,
+    val audioSizeBytes: Long? = null,
+    val audioType: String? = null,
 )
+
+/** An episode a search found, with the show it is of, which playing it from search adds with it (ADR-031). */
+data class FoundEpisode(val show: DirectoryShow, val episode: DirectoryEpisode)
+
+/**
+ * The directory's answer to a search (ADR-031, The directory): Shows, matching by name or creator, then Episodes,
+ * matching by title or description, each in the directory's order. Both are empty when nothing matches.
+ */
+data class DirectoryResults(val shows: List<DirectoryShow>, val episodes: List<FoundEpisode>) {
+    val isEmpty: Boolean get() = shows.isEmpty() && episodes.isEmpty()
+
+    companion object {
+        val None = DirectoryResults(emptyList(), emptyList())
+    }
+}
+
+/**
+ * A show opened from search, as its feed has it (frame 32). [show] is the one opened, with the feed URL the feed moved
+ * to, if it did. [ownerName] is the feed's owner, else the directory's creator, else `null`. [episodes] are every
+ * episode of the feed with audio, newest first.
+ */
+data class ShowFeed(val show: DirectoryShow, val ownerName: String?, val episodes: List<DirectoryEpisode>)

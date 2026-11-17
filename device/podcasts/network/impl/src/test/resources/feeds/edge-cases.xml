@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Made by hand: what feeds do that the recorded one doesn't. The iTunes namespace is written in https and capitals. -->
+<rss version="2.0" xmlns:itunes="https://www.itunes.com/DTDs/Podcast-1.0.dtd"
+     xmlns:content="http://purl.org/rss/1.0/modules/content/">
+    <channel>
+        <title>Edge Cases</title>
+        <itunes:owner>
+            <itunes:name>The Owner</itunes:name>
+        </itunes:owner>
+        <image>
+            <url>https://example.com/channel.jpg</url>
+            <title>Edge Cases</title>
+        </image>
+        <itunes:new-feed-url>https://example.com/new-feed.xml</itunes:new-feed-url>
+        <item>
+            <title>Oldest</title>
+            <guid>g-old</guid>
+            <pubDate>Mon, 01 Jan 2024 10:00:00 GMT</pubDate>
+            <itunes:duration>59:30</itunes:duration>
+            <description>Plain &amp; simple</description>
+            <enclosure url="https://example.com/old.mp3" length="1000" type="audio/mpeg"/>
+        </item>
+        <item>
+            <title>No GUID</title>
+            <!-- The weekday is wrong, and the zone is a name: both as feeds write them. -->
+            <pubDate>Fri, 3 Jan 2024 10:00 EST</pubDate>
+            <itunes:duration>1:02:03</itunes:duration>
+            <enclosure url="https://example.com/no-guid.m4a?source=feed" length="0"/>
+        </item>
+        <item>
+            <title>A video</title>
+            <guid>g-video</guid>
+            <pubDate>Tue, 02 Jan 2024 10:00:00 GMT</pubDate>
+            <enclosure url="https://example.com/video.mp4" length="5000" type="video/mp4"/>
+        </item>
+        <item>
+            <title>No enclosure</title>
+            <guid>g-none</guid>
+            <pubDate>Tue, 02 Jan 2024 11:00:00 GMT</pubDate>
+        </item>
+        <item>
+            <title>Newest</title>
+            <guid isPermaLink="false">g-new</guid>
+            <pubDate>2024-02-01T08:00:00Z</pubDate>
+            <itunes:image href="https://example.com/newest.jpg"/>
+            <itunes:summary>   </itunes:summary>
+            <content:encoded><![CDATA[<p>First paragraph.</p><p>Second, with <a href="https://example.com">a link</a><img src="https://example.com/i.png"/>.</p>]]></content:encoded>
+            <enclosure url="https://example.com/new.mp3" type="audio/mpeg"/>
+        </item>
+        <item>
+            <title>Undated</title>
+            <guid>g-undated</guid>
+            <itunes:duration>soon</itunes:duration>
+            <enclosure url="https://example.com/undated.mp3" type="audio/mpeg"/>
+        </item>
+    </channel>
+</rss>

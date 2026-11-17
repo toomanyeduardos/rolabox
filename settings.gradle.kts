@@ -83,6 +83,8 @@ include(":device:podcasts:impl")
 include(":device:podcasts:testing")
 include(":device:podcasts:local:api")
 include(":device:podcasts:local:impl")
+include(":device:podcasts:network:api")
+include(":device:podcasts:network:impl")
 
 include(":device:settings:api")
 include(":device:settings:impl")
