@@ -85,6 +85,10 @@
   preferences, and reports only from signed-in users would miss most crashes, including every crash
   on the Sign in screen. Rule 9 now points at ADR-030 as the ADR it asks for. No other Firebase
   product is added.
+- **Revised 2026-11-16 (second):** The podcasts' requests are decided by
+  [ADR-031](031-podcasts.md), which this ADR's table and its paragraph on messages named as
+  podcasts/01: Apple's directory, the feeds, the episodes and their images, all made as when signed
+  in, and the follows, which sync only with an account. The decision is unchanged.
 
 ## Context
 
@@ -261,12 +265,12 @@ library, playback, covers already on the phone or downloaded, and every preferen
 | Signing in, creating an account, the password reset email | Starting it ends no-account mode (rule 7), except the reset email | This ADR, [ADR-009](009-ui-bound-sdks.md), [ADR-013](013-account-linking.md) |
 | Syncing preferences, and later podcast follows | No: an account is what sync is for | [ADR-011](011-preferences-sync.md), [ADR-022](022-data-source-sub-parts.md) |
 | Downloading missing covers | Yes | [ADR-027](027-artwork-from-the-internet.md) |
-| Podcast search, feeds and episode downloads | Yes | podcasts/01 |
+| Podcast search, feeds and episode downloads | Yes | [ADR-031](031-podcasts.md) |
 
 How a screen tells the user that it has no connection is decided by the area that owns the screen,
 not here. Sync and the cover download wait for a connection in the background and say nothing. A
 screen the user is looking at, such as podcast search (frame 33 of the device designs), shows its
-own message, as podcasts/01 decides.
+own message, as [ADR-031](031-podcasts.md) decides.
 
 **One CI build.** CI builds, tests and lints the one app with the placeholder, with no secrets, so
 pull requests from forks run everything. Hilt checks the full graph, Firebase bindings included,

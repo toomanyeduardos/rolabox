@@ -1,6 +1,6 @@
 # ADR-026: Artwork is a reference in the library, loaded from MediaStore's thumbnail of the song, with no image library
 
-- **Status:** Accepted
+- **Status:** Accepted. Rules 1 and 6 superseded for episodes by [ADR-031](031-podcasts.md)
 - **Date:** 2026-11-03
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review
@@ -9,6 +9,12 @@
   folder's image (rule 2), and what is on the phone still wins. Whether there is artwork is known once
   it loads, and can change after: `ArtworkRepository` gains `observeArtwork`, which Now Playing and
   playback observe, so a cover that arrives replaces the placeholder (Who shows it, rule 6).
+- **Revised 2026-11-16:** An episode's artwork is decided by [ADR-031](031-podcasts.md) (rules 1
+  and 6): its image from the feed, downloaded and kept by the podcasts part, and given as pixels by
+  `PodcastArtworkRepository`. Now Playing and playback's artwork watcher pick the repository that
+  matches the loaded item, so the three places still show one image. An episode's
+  `PlaybackItem.artwork` is `null`. Rule 4, no image library, holds for podcasts too. For songs the
+  decision is unchanged.
 
 ## Context
 
@@ -142,6 +148,8 @@ is on screen at a time, since artwork in the lists is out of this phase.
 
 1. `[convention]` Artwork crosses an `:api` as an `ArtworkRef`, and as pixels only from
    `ArtworkRepository`. No model of the library or of playback holds an image, or the URI of one.
+   An episode's artwork is the podcasts', as pixels from `PodcastArtworkRepository`
+   ([ADR-031](031-podcasts.md)).
 2. `[convention]` Artwork comes from MediaStore's thumbnail of the song: the picture embedded in its
    tags, then an image in its folder; then a cover downloaded for its album (ADR-027); then none. What
    is on the phone always wins. Rolabox asks for no image permission.
@@ -151,7 +159,8 @@ is on screen at a time, since artwork in the lists is out of this phase.
 5. `[convention]` The design system draws the artwork and its placeholder, in one frame. Artwork that
    is loading or missing is the placeholder.
 6. `[convention]` Now Playing, the notification and the lock screen get the artwork through
-   `ArtworkRepository`, so they show the same image, and follow it when it changes.
+   `ArtworkRepository`, so they show the same image, and follow it when it changes. For an episode
+   they get it through `PodcastArtworkRepository` ([ADR-031](031-podcasts.md)).
 
 **Conformance.** Rule 3 is the detekt rule `MediaStoreOutsideLibrary` in `build-logic/detekt-rules`,
 which also reports a call of `loadThumbnail`, with a violating and a passing case, and runs everywhere

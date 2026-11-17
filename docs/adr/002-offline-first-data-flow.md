@@ -1,6 +1,7 @@
 # ADR-002: Offline-first data flow with the local database as the single source of truth
 
-- **Status:** Accepted
+- **Status:** Accepted. Rule 1 superseded by [ADR-031](031-podcasts.md) for a podcast directory's
+  answers and a show opened from search
 - **Date:** 2026-09-24
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review
@@ -39,6 +40,10 @@
   no-account mode ([ADR-008](008-one-app-with-an-optional-account.md), the old "offline mode").
   "Offline-first" in this ADR's title and text is about having no connection, and is unchanged. The
   decision is unchanged.
+- **Revised 2026-11-16:** [ADR-031](031-podcasts.md) makes a podcast directory's answers, and the
+  feed of a show opened from search, the one exception to rule 1. They are answers the network
+  gives while the user waits, and are never written to the database. Everything else the podcasts
+  screens show is read from their own database (rule 1). The decision is unchanged.
 
 ## Context
 
@@ -137,7 +142,8 @@ detailed conflict rules for each type of data.
 ## Rules
 
 1. `[convention]` UI and ViewModels read data only through repositories backed by the local
-   database (or DataStore for preferences), never from a network source.
+   database (or DataStore for preferences), never from a network source. A podcast directory's
+   answers, and a show opened from search, are the one exception ([ADR-031](031-podcasts.md)).
 2. `[convention]` User actions write to the local database first. Sync propagates the change later.
 3. `[convention]` Only the sync mechanism talks to the remote backend.
 4. `[convention]` Remote data refers to tracks by their portable identity key, never by MediaStore

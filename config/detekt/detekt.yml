@@ -158,6 +158,10 @@ rolabox:
     # ADR-024 rule 2: only the library's local side finds the music on the phone, and ADR-026 rule 3: loads thumbnails.
     active: true
     excludes: ['**/device/library/local/impl/**']
+  FeedParserOutsidePodcastsNetwork:
+    # ADR-031 rule 13: only the podcasts' network side parses feeds.
+    active: true
+    excludes: ['**/device/podcasts/network/impl/**']
   FixedHeightAroundText:
     # ADR-017 rule 3: a container of text grows with it.
     active: true

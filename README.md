@@ -75,8 +75,9 @@ wordmark. Think of a hardware player, not a streaming app.
 | **Navigation** | Jetpack Navigation 3 ([ADR-012](docs/adr/012-navigation.md)) |
 | **Dependency injection** | Hilt ([ADR-005](docs/adr/005-hilt-dependency-injection.md)) |
 | **Errors** | Arrow `Either` with typed errors ([ADR-007](docs/adr/007-error-handling.md)) |
-| **Storage** | DataStore for preferences, Room for the library index, found through MediaStore ([ADR-024](docs/adr/024-library-index.md)) |
-| **Playback** | Media3: ExoPlayer and `MediaSession`, in a `MediaSessionService` ([ADR-023](docs/adr/023-playback-engine.md)) |
+| **Storage** | DataStore for preferences, Room for the library index, found through MediaStore ([ADR-024](docs/adr/024-library-index.md)), and Room for the podcasts ([ADR-031](docs/adr/031-podcasts.md)) |
+| **Playback** | Media3: ExoPlayer and `MediaSession`, in a `MediaSessionService` ([ADR-023](docs/adr/023-playback-engine.md)), and its `DownloadManager` for episodes ([ADR-031](docs/adr/031-podcasts.md)) |
+| **Podcasts** | Apple's iTunes Search API for the directory, RSS feeds read with the platform's `XmlPullParser`, OkHttp ([ADR-031](docs/adr/031-podcasts.md)) |
 | **Accounts and sync** | Firebase Auth, Cloud Firestore, Credential Manager, WorkManager |
 | **Build** | Gradle with convention plugins in `build-logic` ([ADR-004](docs/adr/004-convention-plugins.md)) |
 | **Quality** | ktlint (with Compose rules), detekt, Android Lint, Paparazzi screenshot tests, Robolectric for the player on the JVM |
@@ -196,6 +197,7 @@ and the rules that follow. Most rules are enforced by the build or by tests, not
 | [023](docs/adr/023-playback-engine.md) | Playback with Media3, in a session service that the playback area owns |
 | [024](docs/adr/024-library-index.md) | The library index: MediaStore finds the files, and Rolabox's own database is what the device reads |
 | [025](docs/adr/025-process-start-tasks.md) | Parts run work at process start through a set in `:common:util`, which `:app` runs |
+| [031](docs/adr/031-podcasts.md) | Podcasts: Apple's directory, feeds read on the phone, downloads in playback's Media3 cache, and follows synced per show |
 
 ### Modules
 
@@ -227,6 +229,15 @@ there is something to fake, a `:testing` module.
 | `:device:library:network:impl` | That source over OkHttp: MusicBrainz's search and the Cover Art Archive ([ADR-027](docs/adr/027-artwork-from-the-internet.md)) |
 | `:device:playback:local:api` | Playback's local source as an interface: the point to resume from |
 | `:device:playback:local:impl` | That point on `PreferencesStore`: on the phone, and never synced |
+| `:device:podcasts:api` | The podcasts' API: shows, owners, episodes, their repositories, `PodcastDirectory`, `EpisodeProgressRepository`, `PodcastArtworkRepository`, `PodcastError` ([ADR-031](docs/adr/031-podcasts.md)) |
+| `:device:podcasts:impl` | The repositories over the database, the directory, the follow check and the artwork download in WorkManager, and the `Syncer` of follows |
+| `:device:podcasts:testing` | Fakes of the podcasts' API and of its local and network sources |
+| `:device:podcasts:local:api` | The podcasts' local sources as interfaces: the database and the artwork files |
+| `:device:podcasts:local:impl` | The podcasts' Room database, and the artwork files |
+| `:device:podcasts:network:api` | The podcasts' network sources as interfaces: the directory, the feeds, the images and the follows |
+| `:device:podcasts:network:impl` | Apple's directory and the images over OkHttp, the feeds with `XmlPullParser`, the follows over Firestore |
+| `:device:podcasts:ui:api` | The keys and entry contract of the podcast screens: Podcasts, Owner, Show, Episode, Search |
+| `:device:podcasts:ui:impl` | The podcast screens and their ViewModels |
 | `:device:music:ui:api` | The keys and entry contract of the music screens: Music, Artists, an artist's albums, songs |
 | `:device:music:ui:impl` | The music screens and their ViewModels, on the library's data |
 | `:device:settings:api` | The keys of the settings screens, the slots of the settings list, and the contract of a contributed section |

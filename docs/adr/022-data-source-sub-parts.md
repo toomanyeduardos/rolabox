@@ -1,6 +1,7 @@
 # ADR-022: A data part's local and network sides are sub-parts, and the part that owns synced data syncs it
 
-- **Status:** Accepted
+- **Status:** Accepted. Rule 2 superseded by [ADR-031](031-podcasts.md) for a podcast directory's
+  answers and a show opened from search
 - **Date:** 2026-10-12
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review
@@ -26,6 +27,11 @@
   it said no request of any kind (Decision, Consequences). This ADR only ever relied on the Firebase
   part: the sync path is still the only path to Firebase. A part's non-sync WorkManager work, such
   as the cover download, runs in no-account mode. The decision is unchanged.
+- **Revised 2026-11-16:** [ADR-031](031-podcasts.md) gives the podcasts part one exception to
+  rule 2: `PodcastDirectory` reads the network side to answer a search, and a show opened from
+  search, and writes nothing to the local side. Rule 6 is read per interface: the podcasts'
+  `:network:api` holds the follows, which only their `Syncer` calls, and the directory, the feeds
+  and the images, which the part's `:impl` calls. The decision is unchanged.
 
 ## Context
 
@@ -184,14 +190,15 @@ Each step leaves the build green.
    `:impl` and the `:testing` of its part, and by its own `:impl`.
 2. `[convention]` A part has a `:local` or a `:network` only when it has that side. Its
    repositories read and write the local side only. Only its `Syncer`, and its WorkManager work that
-   fetches data into the local side, use both.
+   fetches data into the local side, use both. The podcasts' `PodcastDirectory` also reads the
+   network side, and writes nothing ([ADR-031](031-podcasts.md)).
 3. `[enforced]` Firestore is a dependency of `:network:impl` modules only.
 4. `[enforced]` No `:common:sync` module depends on a `:common:userdata` module, or on any
    other part whose data it syncs.
 5. `[convention]` Each kind of synced data is synced by a `Syncer` in the `:impl` of the part that
    owns it, added to the set that `:common:sync:impl` declares. Sync runs only through WorkManager
    work, requested by `SyncRepository`.
-6. `[convention]` A `:network:api` of synced data is called only by its part's `Syncer`. An SDK
+6. `[convention]` A `:network:api` interface of synced data is called only by its part's `Syncer`. An SDK
    object that can open a connection is injected through `Provider` or `Lazy` (ADR-008, rule 8).
 7. `[convention]` A sub-part's `:api` uses the models of its part's `:api`, and declares plain
    models of its own only for what the part's `:api` doesn't show. SDK and storage types stay in the
