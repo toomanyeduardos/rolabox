@@ -30,6 +30,13 @@
   silence, its skip was told over the next song, ⏮ could never get back past it, and the count ("4 of 150", then "9
   of 150") counted songs that would never play. A song that plays with no audio track is skipped too, as Media3
   reports no error for it.
+- **Revised 2026-11-16:** Episodes are decided by [ADR-031](031-podcasts.md) (The playable item, What was not
+  decided). An episode is `PlaybackItemId.Episode`, queued alone from `PlaybackSource.Episode`, with its owner as
+  `album`. Its position is the podcasts part's, read and stored through `EpisodeProgressRepository`. ⏮ and ⏭ skip
+  by seconds on every way in, through a `ForwardingPlayer`, and an episode is never shuffled or repeated.
+  `:device:playback:impl` also downloads episodes, with Media3's `DownloadManager` and a `DownloadService`, into a
+  cache the player reads while the bytes arrive, so Media3 stays in this module alone (rule 9, unchanged), and
+  `PlaybackState` gains the download of the loaded item. playback/09 and podcasts/07 build it.
 
 ## Context
 
@@ -146,14 +153,14 @@ ships.
 ```kotlin
 sealed interface PlaybackItemId {
     data class Song(val id: SongId) : PlaybackItemId
-    // Episode(val id: EpisodeId) comes with podcasts.
+    // Episode(val id: EpisodeId) comes with podcasts (ADR-031).
 }
 
 data class PlaybackItem(
     val id: PlaybackItemId,
     val title: String,
     val artist: String,      // for an episode, its show
-    val album: String,       // for an episode, its show again, or empty
+    val album: String,       // for an episode, its owner (ADR-031)
     val duration: Duration,
 )
 ```
@@ -301,7 +308,9 @@ phone's music stream.
 - **Android Auto, Wear OS and casting.** A `MediaLibraryService` would be needed for Android Auto's
   browsing, and it is out of this phase.
 - **Artwork** in the notification and on Now Playing (playback/06).
-- **Where a podcast episode's position is stored,** once the library's database exists (library/01).
+- **Where a podcast episode's position is stored** is no longer open: in the podcasts' own database, which playback
+  reads and writes through `EpisodeProgressRepository` ([ADR-031](031-podcasts.md)). So are skipping by seconds,
+  the queue of an episode and its download.
 
 ## Alternatives considered
 

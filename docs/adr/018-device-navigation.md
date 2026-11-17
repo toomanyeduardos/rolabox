@@ -1,7 +1,7 @@
 # ADR-018: Device navigation: a linear screen stack driven by the wheel
 
 - **Status:** Accepted. Rules 1, 5 and 12 superseded by [ADR-020](020-modules-by-product-area.md),
-  in the parts that name `:app`
+  in the parts that name `:app`. Rule 17 superseded for episodes by [ADR-031](031-podcasts.md)
 - **Date:** 2026-10-01
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review
@@ -142,6 +142,10 @@
   All, ⏭ on the last starts the first and ⏮ on the first starts the last, so "does nothing on the last" and "always
   restarts on the first" hold with Repeat Off or One. The main menu's Shuffle Songs row plays the whole library
   shuffled. playback/07 decided it, and playback/08 builds it.
+- **Revised 2026-11-16:** Episodes are decided by [ADR-031](031-podcasts.md) (rule 17). Playing an
+  episode queues it alone, so when it ends the queue ends and Now Playing is popped (rule 8). ⏮ and
+  ⏭ skip back 15 s and forward 30 s in it, and a hold scrubs as for a song. Who handles ⏮ and ⏭ is
+  unchanged: the playback area decides what they do for the loaded item. playback/09 builds it.
 
 ## Context
 
@@ -609,7 +613,9 @@ as ADR-017's rule 10 requires.
     3 s, and starts the previous item at 0:00 otherwise. On the first item it always restarts. ⏭
     starts the next item at 0:00, and does nothing on the last. The threshold belongs to the
     playback area. The first and the last are the ends of the order the queue plays in, which
-    Shuffle decides, and with Repeat All ⏮ and ⏭ wrap at them (ADR-028).
+    Shuffle decides, and with Repeat All ⏮ and ⏭ wrap at them (ADR-028). An episode is the
+    exception ([ADR-031](031-podcasts.md)): playing it queues it alone, and ⏮ and ⏭ skip back 15 s
+    and forward 30 s in it.
 18. `[convention]` A play that fails loads nothing, pushes nothing, and tells the user why in a
     toast, with a message for each kind of failure. No failure of an action is silent. A song that
     fails while the queue plays is no action's failure: Now Playing says so in the display.

@@ -8,6 +8,122 @@
 <body>
 <x-dc>
 <helmet><meta name="design_doc_mode" content="canvas"><style>body{margin:0;background:#ecebe8;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}a{color:#E4572E}a:hover{color:#b8401f}@keyframes rbspin{to{transform:rotate(360deg)}}</style></helmet>
+<section id="t3" style="padding:40px 44px 48px;border-bottom:1px solid rgba(0,0,0,.1)">
+<div style="display:flex;align-items:baseline;gap:10px;margin:0 0 20px"><span style="font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px">3</span><span style="font-weight:600;font-size:13px;color:#1a1a1a">Podcasts: browse, play, search, follow (22–34)</span></div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px;max-width:1560px;margin:0 0 32px;font-size:12.5px;line-height:1.5;color:#4a4a4a;text-wrap:pretty">
+<div><div style="font-weight:700;color:#1a1a1a;margin-bottom:4px">Levels</div>Podcasts → Owner → Show → Episode → Now Playing. Search is always the first row of Podcasts, so it's one turn away with 0 shows or 100. 09 shows the same list while music plays.</div>
+<div><div style="font-weight:700;color:#1a1a1a;margin-bottom:4px">Follow (proposal)</div>The first row of every show, with On or Off on the right, changed in place by center like a setting. Off: the show lists only what you've downloaded. On: new episodes are listed each time the app checks (on open, with a connection). Nothing downloads on its own; an episode downloads only when you play it. Playing one episode from search adds the show with Follow Off.</div>
+<div><div style="font-weight:700;color:#1a1a1a;margin-bottom:4px">Episode rows</div>Newest first. Full dot: unplayed. Half dot: partly played. No dot: played. Right side: a percentage while downloading, an arrow when not downloaded yet. Dots are orange, as in 09 and the rule that orange marks unplayed. Dots only show in your library, not on shows opened from search.</div>
+<div><div style="font-weight:700;color:#1a1a1a;margin-bottom:4px">Episode screen</div>Center on an episode opens its screen: Play (or Resume and Play from Start), then the date, length and description. Turning past the last row scrolls the text. ⏮ ⏭ during an episode: tap skips back 15 s or forward 30 s, hold scrubs.</div>
+<div><div style="font-weight:700;color:#1a1a1a;margin-bottom:4px">Search and the keyboard</div>Opening Search shows the phone's keyboard in place of the wheel. Results update as you type: Shows (name or creator), then Episodes (title or description). The keyboard's search key, or Android back, hides it and gives the wheel the first result. MENU goes back to typing. Section labels are skipped by the wheel.</div>
+<div><div style="font-weight:700;color:#1a1a1a;margin-bottom:4px">1.5x text</div>Rows, labels, the search field and Now Playing scale with the system font. The list shows fewer rows and scrolls. Now Playing puts the art above the text at a smaller size, and the title wraps to 2 lines. The keyboard is Android's and follows its own settings.</div>
+<div><div style="font-weight:700;color:#1a1a1a;margin-bottom:4px">Stream while downloading</div>Play starts the download and plays from it. On Now Playing the bar's lighter part is what's downloaded, and DOWNLOADING with a percentage replaces the right label until it's done.</div>
+</div>
+<sc-for list="{{ podThemes }}" as="th" hint-placeholder-count="2">
+<div style="margin:0 0 40px">
+<div style="font:700 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;color:#6a6a6a;margin:0 0 14px">{{ th.name }}</div>
+<div style="display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start">
+<sc-for list="{{ th.screens }}" as="s" hint-placeholder-count="13">
+<div style="display:flex;flex-direction:column;gap:6px;width:360px">
+<div style="display:flex;align-items:baseline;gap:8px;font-size:12px;color:#1a1a1a"><span style="font:600 10.5px ui-monospace,Menlo,monospace;padding:2px 6px;background:rgba(0,0,0,.08);border-radius:4px">{{ s.num }}</span><span style="font-weight:600">{{ s.label }}</span></div>
+<div style="font-size:11.5px;line-height:1.4;color:rgba(0,0,0,.55);min-height:64px;text-wrap:pretty">{{ s.how }}</div>
+<div data-screen-label="{{ s.num }} {{ s.label }} · {{ th.key }}" style="width:360px;height:760px;border-radius:40px;box-shadow:0 26px 44px -22px rgba(0,0,0,.5),0 2px 4px rgba(0,0,0,.12);box-sizing:border-box">
+<div style="position:relative;width:100%;height:100%;border-radius:40px;overflow:hidden;display:flex;flex-direction:column;box-shadow:inset 0 1px 1px rgba(255,255,255,.45),inset 0 0 0 1px rgba(0,0,0,.14),inset 0 -2px 3px rgba(0,0,0,.08);background:{{ th.t.body }};color:{{ th.t.ink }}">
+<div style="height:34px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:12.5px;font-weight:600"><span>9:41</span><div style="width:10px;height:10px;border-radius:50%;background:#050505"></div><span>100%</span></div>
+<div style="margin:8px 14px 0;padding:4px;border-radius:14px;background:{{ th.t.bezel }};box-shadow:inset 0 1px 3px rgba(0,0,0,.45),0 1px 0 {{ th.t.hi }}">
+<div style="height:318px;border-radius:10px;overflow:hidden;display:flex;flex-direction:column;background:{{ th.t.screen }};color:{{ th.t.sInk }}">
+<div style="height:{{ th.hdrH }};flex:none;display:grid;grid-template-columns:44px 1fr 44px;align-items:center;padding:0 10px;background:{{ th.t.hdr }};border-bottom:1px solid {{ th.t.sRule }}">
+<div style="display:flex;align-items:center">{{ s.ind }}</div>
+<div style="text-align:center;font-size:{{ th.hdrFs }};font-weight:700;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.title }}</div>
+<div style="display:flex;justify-content:flex-end;align-items:center;gap:1px"><div style="width:18px;height:9px;border-radius:2px;border:1.5px solid {{ th.t.sInk }};padding:1px;box-sizing:border-box"><div style="width:70%;height:100%;border-radius:1px;background:{{ th.t.sInk }}"></div></div><div style="width:2px;height:4px;border-radius:0 1px 1px 0;background:{{ th.t.sInk }}"></div></div>
+</div>
+<sc-if value="{{ s.isList }}" hint-placeholder-val="{{ true }}">
+<div style="position:relative;flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden">
+<div style="display:{{ s.fieldD }};flex:none;margin:6px 8px;min-height:{{ th.fieldH }};border-radius:7px;align-items:center;gap:7px;padding:0 9px;background:{{ s.fieldBg }};box-shadow:inset 0 0 0 1px {{ th.t.sRule }}">
+<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="{{ th.t.sMuted }}" stroke-width="1.7" stroke-linecap="round"><circle cx="5.5" cy="5.5" r="4.2"></circle><path d="M8.7 8.7L12 12"></path></svg>
+<span style="min-width:0;font-size:{{ th.qFs }};font-weight:600;color:{{ s.qC }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.q }}</span><span style="display:{{ s.caretD }};width:2px;height:{{ th.caretH }};margin-left:-6px;background:#2F86DB"></span>
+</div>
+<sc-for list="{{ s.rows }}" as="r" hint-placeholder-count="6">
+<sc-if value="{{ r.isLabel }}" hint-placeholder-val="{{ false }}">
+<div style="height:{{ th.labelH }};flex:none;display:flex;align-items:center;padding:0 12px;font:700 {{ th.labelFs }}/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;color:{{ th.t.sMuted }};background:{{ th.t.hdr }}">{{ r.t }}</div>
+</sc-if>
+<sc-if value="{{ r.isRow }}" hint-placeholder-val="{{ true }}">
+<div style="height:{{ th.rowH }};flex:none;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 {{ s.padR }} 0 12px;font-size:{{ th.rowFs }};letter-spacing:-.01em;font-weight:700;background:{{ r.bg }};color:{{ r.fg }}">
+<span style="display:flex;align-items:center;gap:8px;min-width:0;flex:1 1 auto"><span style="display:{{ r.dotD }};flex:none;width:{{ th.dotS }};height:{{ th.dotS }};border-radius:50%;box-sizing:border-box;border:1.5px solid {{ r.dotC }};background:{{ r.dotBg }}"></span><span style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.t }}</span></span>
+<span style="display:flex;align-items:center;gap:6px;flex:0 1 auto;min-width:0;max-width:42%">
+<span style="display:{{ r.valD }};min-width:0;overflow:hidden;text-overflow:ellipsis;font-weight:400;font-size:{{ r.vFs }};white-space:nowrap;color:{{ r.vC }}">{{ r.v }}</span>
+<svg aria-label="Not downloaded" width="{{ th.dlW }}" height="{{ th.dlH }}" viewBox="0 0 12 13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:{{ r.dlD }};color:{{ r.vC }}"><path d="M6 1.5v7"></path><path d="M3 5.8L6 8.8l3-3"></path><path d="M1.5 11.5h9"></path></svg>
+<span style="display:{{ r.chevD }};font-size:{{ th.chevFs }};line-height:1;margin-top:-2px;opacity:.75">›</span>
+</span>
+</div>
+</sc-if>
+</sc-for>
+<div style="display:{{ s.descD }};flex-direction:column;gap:6px;padding:10px 16px 0 12px;border-top:1px solid {{ th.t.sRule }};margin-top:6px">
+<div style="font:600 {{ th.monoFs }}/1.3 ui-monospace,Menlo,monospace;letter-spacing:.06em;color:{{ th.t.sMuted }}">{{ s.meta }}</div>
+<div style="font-size:{{ th.subFs }};line-height:1.4;text-wrap:pretty">{{ s.desc }}</div>
+</div>
+<div style="display:{{ s.msgD }};flex:1;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:12px 22px;text-align:center">
+<div style="font-size:{{ th.msgFs }};font-weight:700;letter-spacing:-.01em;line-height:1.2">{{ s.msgTitle }}</div>
+<div style="font-size:{{ th.subFs }};line-height:1.35;color:{{ th.t.sMuted }};text-wrap:pretty">{{ s.msgBody }}</div>
+</div>
+<div style="display:{{ s.sbD }};position:absolute;right:3px;top:{{ s.sbTop }};bottom:4px;width:4px;border-radius:2px;background:{{ th.t.sRule }}"><div style="position:absolute;left:0;right:0;top:0;height:{{ s.thumbH }};border-radius:2px;background:{{ th.t.sMuted }}"></div></div>
+</div>
+</sc-if>
+<sc-if value="{{ s.isPlayer }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;min-height:0;display:flex;flex-direction:column;padding:10px 12px 12px;gap:{{ th.npGap }}">
+<div style="display:flex;justify-content:space-between;font:600 {{ th.monoFs }}/1 ui-monospace,Menlo,monospace;letter-spacing:.06em;color:{{ th.t.sMuted }}"><span>{{ s.pos }}</span><span>{{ s.tag }}</span></div>
+<div style="display:flex;flex-direction:{{ th.npDir }};gap:{{ th.npGap }};align-items:{{ th.npAlign }}">
+<div style="width:{{ th.artS }};height:{{ th.artS }};flex:none;border-radius:4px;display:flex;align-items:center;justify-content:center;background:{{ th.t.art }};box-shadow:0 0 0 1px {{ th.t.sRule }},0 4px 10px -4px rgba(0,0,0,.35);font:600 9px ui-monospace,Menlo,monospace;letter-spacing:.1em;color:{{ th.t.sMuted }}">EPISODE ART</div>
+<div style="display:flex;flex-direction:column;gap:4px;min-width:0">
+<div style="font-size:{{ th.rowFs }};font-weight:700;letter-spacing:-.01em;line-height:1.2;display:-webkit-box;-webkit-line-clamp:{{ th.clamp }};-webkit-box-orient:vertical;overflow:hidden">{{ s.song }}</div>
+<div style="font-size:{{ th.subFs }};line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.artist }}</div>
+<div style="font-size:{{ th.albFs }};line-height:1.25;color:{{ th.t.sMuted }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.album }}</div>
+</div>
+</div>
+<div style="flex:1"></div>
+<div style="display:flex;flex-direction:column;gap:7px">
+<div style="position:relative;height:6px;border-radius:4px;background:{{ th.t.track }}">
+<div style="position:absolute;left:0;top:0;bottom:0;width:{{ s.buf }};border-radius:4px;background:{{ th.t.track }}"></div>
+<div style="position:absolute;left:0;top:0;bottom:0;width:{{ s.pct }};border-radius:4px;background:{{ th.t.fill }}"></div>
+</div>
+<div style="display:flex;justify-content:space-between;font:600 {{ th.monoFs }}/1 ui-monospace,Menlo,monospace;color:{{ th.t.sMuted }};font-variant-numeric:tabular-nums"><span>{{ s.lt }}</span><span>{{ s.rt }}</span></div>
+</div>
+</div>
+</sc-if>
+</div>
+</div>
+<sc-if value="{{ s.wheel }}" hint-placeholder-val="{{ true }}">
+<div style="flex:1;display:flex;align-items:center;justify-content:center">
+<div style="position:relative;width:268px;height:268px;border-radius:50%;background:{{ th.t.ring }};box-shadow:{{ th.t.ringShadow }}">
+<div style="position:absolute;top:24px;left:0;right:0;text-align:center;font:700 14px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.08em;color:{{ th.t.wl }}">MENU</div>
+<div style="position:absolute;left:26px;top:50%;transform:translateY(-50%);display:flex;align-items:center"><div style="width:2px;height:12px;background:{{ th.t.wl }}"></div><div style="width:0;height:0;border-top:6px solid transparent;border-bottom:6px solid transparent;border-right:8px solid {{ th.t.wl }}"></div><div style="width:0;height:0;border-top:6px solid transparent;border-bottom:6px solid transparent;border-right:8px solid {{ th.t.wl }}"></div></div>
+<div style="position:absolute;right:26px;top:50%;transform:translateY(-50%);display:flex;align-items:center"><div style="width:0;height:0;border-top:6px solid transparent;border-bottom:6px solid transparent;border-left:8px solid {{ th.t.wl }}"></div><div style="width:0;height:0;border-top:6px solid transparent;border-bottom:6px solid transparent;border-left:8px solid {{ th.t.wl }}"></div><div style="width:2px;height:12px;background:{{ th.t.wl }}"></div></div>
+<div style="position:absolute;bottom:24px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:3px"><div style="width:0;height:0;border-top:6px solid transparent;border-bottom:6px solid transparent;border-left:8px solid {{ th.t.wl }}"></div><div style="width:2.5px;height:12px;background:{{ th.t.wl }}"></div><div style="width:2.5px;height:12px;background:{{ th.t.wl }}"></div></div>
+<div style="position:absolute;left:50%;top:50%;width:98px;height:98px;transform:translate(-50%,-50%);border-radius:50%;background:{{ th.t.center }};box-shadow:{{ th.t.centerShadow }}"></div>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{ s.kb }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1"></div>
+<div style="flex:none;display:flex;flex-direction:column;gap:10px;padding:10px 4px 0;background:{{ th.k.panel }}">
+<sc-for list="{{ th.keyRows }}" as="kr" hint-placeholder-count="4">
+<div style="display:flex;gap:5px;padding:0 {{ kr.pad }}">
+<sc-for list="{{ kr.keys }}" as="k" hint-placeholder-count="10">
+<div style="flex:{{ k.f }};height:44px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:{{ k.fs }};background:{{ k.bg }};color:{{ k.fg }};font-family:Roboto,'Helvetica Neue',Arial,sans-serif">{{ k.k }}</div>
+</sc-for>
+</div>
+</sc-for>
+<div style="height:30px;display:flex;align-items:center;justify-content:center"><div style="width:108px;height:4px;border-radius:2px;background:{{ th.k.handle }}"></div></div>
+</div>
+</sc-if>
+</div>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-for>
+</section>
 <section id="t2" style="padding:40px 44px 48px;border-bottom:1px solid rgba(0,0,0,.1)">
 <div style="display:flex;align-items:baseline;gap:10px;margin:0 0 20px"><span style="font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px">2</span><span style="font-weight:600;font-size:13px;color:#1a1a1a">Music library states: permission, scan, no music, reading tags (15–19)</span></div>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px;max-width:1560px;margin:0 0 32px;font-size:12.5px;line-height:1.5;color:#4a4a4a;text-wrap:pretty">
@@ -81,7 +197,7 @@
 <div><div style="font-weight:700;color:#1a1a1a;margin-bottom:4px">Two parts</div>The display (top) is the only area that changes. The aluminum body and the wheel stay fixed. Menus slide in from the right when you go deeper and slide out when you press MENU.</div>
 <div><div style="font-weight:700;color:#1a1a1a;margin-bottom:4px">Wheel</div>Turn: move the highlight (in menus) or change the volume (on Now Playing). Center: select. MENU: back. ⏮ ⏭: previous/next track. ⏯: play/pause. A haptic tick fires on each highlight change.</div>
 <div><div style="font-weight:700;color:#1a1a1a;margin-bottom:4px">Status</div>The display stays white on both finishes, so text reads the same on either. The vinyl in the display header spins while audio plays. It's hidden before anything is loaded. Playback continues while you browse (see 09).</div>
-<div><div style="font-weight:700;color:#1a1a1a;margin-bottom:4px">Shuffle and Repeat (22, 23)</div>Icons sit right after "3 OF 10", since both describe the queue, in display ink at 12px tall. The header already holds the vinyl, title and battery, and under the bar are the times. VOLUME and SCRUB keep the right side. Shuffle shows while Shuffle is Songs or Albums, and on a queue started by Shuffle Songs whatever the setting says. Repeat One replaces Repeat. Off shows nothing.</div>
+<div><div style="font-weight:700;color:#1a1a1a;margin-bottom:4px">Shuffle and Repeat (20, 21)</div>Icons sit right after "3 OF 10", since both describe the queue, in display ink at 12px tall. The header already holds the vinyl, title and battery, and under the bar are the times. VOLUME and SCRUB keep the right side. Shuffle shows while Shuffle is Songs or Albums, and on a queue started by Shuffle Songs whatever the setting says. Repeat One replaces Repeat. Off shows nothing.</div>
 <div><div style="font-weight:700;color:#1a1a1a;margin-bottom:4px">Orange</div>The highlighted row is glossy blue, with a lighter top half and a darker bottom half. Orange, the brand color, is only used for unplayed dots, the scrub knob and the vinyl label.</div>
 </div>
 <sc-for list="{{ themes }}" as="th" hint-placeholder-count="2">
@@ -115,12 +231,6 @@
 <div style="display:{{ s.ovD }};position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:104px;height:104px;border-radius:18px;align-items:center;justify-content:center;background:rgba(28,28,30,.74);box-shadow:0 8px 20px -8px rgba(0,0,0,.5);color:#fff;font-size:68px;font-weight:700;line-height:1;letter-spacing:-.02em">{{ s.ov }}</div>
 </div>
 </sc-if>
-<sc-if value="{{ s.isStopped }}" hint-placeholder-val="{{ false }}">
-<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:16px 22px;text-align:center">
-<div style="font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.2">{{ s.stopTitle }}</div>
-<div style="font-size:14px;line-height:1.35;color:{{ th.t.sMuted }};text-wrap:pretty">{{ s.stopBody }}</div>
-</div>
-</sc-if>
 <sc-if value="{{ s.isPlayer }}" hint-placeholder-val="{{ false }}">
 <div style="flex:1;display:flex;flex-direction:column;padding:10px 12px 12px;gap:12px">
 <div style="display:flex;justify-content:space-between;font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.06em;color:{{ th.t.sMuted }}"><span style="display:flex;align-items:center;gap:8px"><span>{{ s.pos }}</span><span style="display:flex;align-items:center;gap:6px;color:{{ th.t.sInk }}">
@@ -129,12 +239,7 @@
 <svg aria-label="Repeat one" width="21" height="12" viewBox="0 0 21 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:{{ s.rep1D }}"><path d="M2 6.5V4.5C2 3.7 2.7 3 3.5 3H13"></path><path d="M11.4 1.2L13.3 3l-1.9 1.8"></path><path d="M14 5.5v2c0 .8-.7 1.5-1.5 1.5H3"></path><path d="M4.6 10.8L2.7 9l1.9-1.8"></path><path d="M17.2 3.6L19 2.2v8.6"></path></svg>
 </span></span><span style="color:{{ s.tagC }}">{{ s.tag }}</span></div>
 <div style="display:flex;gap:12px;align-items:center">
-<sc-if value="{{ s.noCover }}" hint-placeholder-val="{{ false }}">
-<div style="width:108px;height:108px;flex:none;border-radius:4px;display:flex;flex-direction:column;gap:4px;align-items:center;justify-content:center;padding:6px;box-sizing:border-box;text-align:center;background:{{ th.t.art }};box-shadow:0 0 0 1px {{ th.t.sRule }},0 4px 10px -4px rgba(0,0,0,.35)"><div style="font-size:13px;font-weight:700;line-height:1.2">{{ s.noticeTitle }}</div><div style="font-size:11px;line-height:1.25;color:{{ th.t.sMuted }}">{{ s.noticeBody }}</div></div>
-</sc-if>
-<sc-if value="{{ s.hasCover }}" hint-placeholder-val="{{ true }}">
 <div style="width:108px;height:108px;flex:none;border-radius:4px;display:flex;align-items:center;justify-content:center;background:{{ th.t.art }};box-shadow:0 0 0 1px {{ th.t.sRule }},0 4px 10px -4px rgba(0,0,0,.35);font:600 9px ui-monospace,Menlo,monospace;letter-spacing:.1em;color:{{ th.t.sMuted }}">COVER ART</div>
-</sc-if>
 <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
 <div style="font-size:16px;font-weight:700;letter-spacing:-.01em;line-height:1.2">{{ s.song }}</div>
 <div style="font-size:14px;line-height:1.25">{{ s.artist }}</div>
@@ -202,7 +307,7 @@ class Component extends DCLogic {
     const manyArtists = ['Lantern Bay', 'Late Arrivals', 'Lowland Choir', 'Lucid Mile', 'Lyra Banks', 'Mabel Quinn', 'Maple Static', 'Maren Holt', 'Marlow', 'Mason Reed', 'Meadowlark', 'Midnight Arcade', 'Mira Sol', 'Moth & Flame', 'Muir Street', 'Nadia Frost', 'Northbound'].map(x => I(x, { c: 1 }));
     const albums = ['All Songs', 'Low Tide Radio', 'Paper Satellites', 'North of Here'].map(x => I(x, { c: 1 }));
     const songs = ['Dial Tone', 'Every Other Window', 'Glasshouse', 'Tin Can Summer', 'Weather Report', 'Satellite Hymn', 'Coastline', 'Halfway Houses', 'Night Bus', 'Paper Satellites'].map(x => I(x));
-    const pods = [I('The Long Signal', { c: 1, d: 1 }), I('Field Notes', { c: 1 }), I('Small Rooms', { c: 1, d: 1 }), I('Night Shift Radio', { c: 1 }), I('Weekly Bench', { c: 1 })];
+    const pods = [I('Search', { c: 1 }), I('Field Notes Media', { c: 1 }), I('Harbor Audio', { c: 1 }), I('NY Times', { c: 1 }), I('Small Rooms', { c: 1 }), I('Weekly Bench', { c: 1 })];
     const settings = [I('Shuffle', { v: 'Off' }), I('Repeat', { v: 'All' }), I('Clicker', { v: 'On' }), I('Sound Check and Volume Limit', { v: 'Off' }), I('Account', { c: 1 })];
     const deviceSettings = [I('Clicker', { v: 'On' }), I('Theme', { v: 'System' }), I('Main Menu', { c: 1 }), I('About', { c: 1 }), I('Account', { c: 1 })];
     const mainMenuRows = [I('Music', { v: 'On' }), I('Podcasts', { v: 'On' }), I('Audiobooks', { v: 'Off' }), I('Shuffle Songs', { v: 'On' })];
@@ -217,16 +322,14 @@ class Component extends DCLogic {
       { num: '06', label: 'Now Playing', how: 'Center on a song starts playback. MENU goes back to the song list.', player: 1, ...P, lt: '1:12', rt: '-2:29', pct: '33%', mode: 'play', play: true, w: 'center' },
       { num: '07', label: 'Now Playing · volume', how: 'Turn the wheel. The bar switches to volume and returns to time after 2s.', player: 1, ...P, tag: 'VOLUME', lt: 'VOL', rt: '62%', pct: '62%', mode: 'vol', play: true, w: 'turn' },
       { num: '08', label: 'Now Playing · scrub', how: 'Press center, then turn to scrub. Returns to volume after 3s idle.', player: 1, ...P, tag: 'SCRUB', lt: '1:48', rt: '-1:53', pct: '49%', mode: 'scrub', play: true, w: 'center' },
-      { num: '09', label: 'Podcasts (still playing)', how: 'MENU back to the main menu, then Podcasts. The spinning vinyl shows music is still playing. Dots mark unplayed episodes.', title: 'Podcasts', items: pods, hi: 0, play: true, w: 'menu' },
+      { num: '09', label: 'Podcasts (still playing)', how: 'MENU back to the main menu, then Podcasts. The spinning vinyl shows music is still playing. The list matches 22: Search, then owners.', title: 'Podcasts', items: pods, hi: 3, play: true, w: 'menu' },
       { num: '10', label: 'Settings · values', how: 'A setting shows its value on the right, in place of the ›. Center changes it in place. A long label gives way to the value.', title: 'Settings', items: settings, hi: 2, play: null, w: 'center' },
       { num: '11', label: 'Settings', how: 'Center on Settings in the main menu. Clicker and Theme change in place with center: Theme steps through System, Light and Dark. Main Menu and About open a list. Account leaves the device for the full screen, and back returns here.', title: 'Settings', items: deviceSettings, hi: 0, play: null, w: 'center' },
       { num: '12', label: 'Settings · Main Menu', how: 'Center on Main Menu. Each row that can be hidden, with On or Off. Center changes it in place, and the main menu shows only the rows that are On. Settings and Now Playing are always shown, so they are not listed.', title: 'Main Menu', items: mainMenuRows, hi: 2, play: null, w: 'center' },
       { num: '13', label: 'Settings · About', how: 'Center on About. The app, its version and the number of songs in the library. Nothing is highlighted: there is nothing to open or change, and MENU goes back.', title: 'About', items: about, hi: -1, play: null, w: 'menu' },
       { num: '14', label: 'Artists · fast turning', how: 'Spin fast through a long list sorted by name. The first letter of the highlighted row shows over the list and fades out shortly after the turning slows. A name that starts with a digit or a symbol shows #. "The Beatles" shows T, as the list sorts it. Menus and an album\'s songs never show it.', title: 'Artists', items: manyArtists, hi: 9, top: 6, total: 240, overlay: 'M', play: null, w: 'turn' },
-      { num: '20', label: 'Now Playing · song skipped', how: 'A song that can\'t be played is skipped and the next one starts. For 4s the message takes the cover art\'s place, with the reason under it, and nothing else moves. A skip in that time adds to the count and starts the 4s again. The wheel works as usual. Long titles end in an ellipsis after two lines.', player: 1, ...P, song: 'Tin Can Summer', pos: '4 OF 10', lt: '0:02', rt: '-3:12', pct: '1%', mode: 'play', play: true, w: 'none', notice: ['Skipped Glasshouse and 2 more', 'This file is damaged'] },
-      { num: '21', label: 'Now Playing · nothing left to play', how: 'No song left in the queue can be played. Nothing is loaded, so the record and the main menu\'s row go away, and Now Playing stays with this until MENU goes back. It uses the display\'s message, as 17 and 18 do. A queue that ends normally still pops Now Playing.', player: 1, stopped: ['Nothing left can be played', 'Skipped Glasshouse and 2 more'], play: null, w: 'menu' },
-      { num: '22', label: 'Now Playing · Shuffle, Repeat All', how: 'Shuffle is Songs or Albums, or the queue came from Shuffle Songs. Repeat is All. Both icons follow the position.', player: 1, ...P, pos: '4 OF 10', lt: '0:38', rt: '-3:05', pct: '17%', mode: 'play', play: true, shuf: 1, rep: 'all', w: 'center' },
-      { num: '23', label: 'Now Playing · Repeat One', how: 'Repeat is One and Shuffle is Off. The Repeat One icon takes the place of Repeat, and ⏭ still moves to the next song.', player: 1, ...P, lt: '2:51', rt: '-0:50', pct: '77%', mode: 'play', play: true, rep: 'one', w: 'center' }
+      { num: '20', label: 'Now Playing · Shuffle, Repeat All', how: 'Shuffle is Songs or Albums, or the queue came from Shuffle Songs. Repeat is All. Both icons follow the position.', player: 1, ...P, pos: '4 OF 10', lt: '0:38', rt: '-3:05', pct: '17%', mode: 'play', play: true, shuf: 1, rep: 'all', w: 'center' },
+      { num: '21', label: 'Now Playing · Repeat One', how: 'Repeat is One and Shuffle is Off. The Repeat One icon takes the place of Repeat, and ⏭ still moves to the next song.', player: 1, ...P, lt: '2:51', rt: '-0:50', pct: '77%', mode: 'play', play: true, rep: 'one', w: 'center' }
     ];
     const V = 8;
     const build = (t, bg) => defs.map(d => {
@@ -234,9 +337,7 @@ class Component extends DCLogic {
       const s = { num: d.num, label: d.label, how: d.how, w, ind: d.play == null ? null : disc(13, bg, d.play) };
       if (d.player) {
         const scrub = d.mode === 'scrub', vol = d.mode === 'vol';
-        if (d.stopped) return { ...s, isList: false, isPlayer: false, isStopped: true, title: 'Now Playing', stopTitle: d.stopped[0], stopBody: d.stopped[1] };
         return { ...s, isList: false, isPlayer: true, title: 'Now Playing', song: d.song, artist: d.artist, album: d.album, pos: d.pos,
-          hasCover: !d.notice, noCover: !!d.notice, noticeTitle: d.notice ? d.notice[0] : '', noticeBody: d.notice ? d.notice[1] : '',
           tag: d.tag || '', tagC: scrub ? '#E4572E' : t.sMuted, lt: d.lt, rt: d.rt, pct: d.pct,
           barH: scrub ? '8px' : '6px', fillC: scrub ? '#E4572E' : vol ? t.sInk : t.fill, knobD: scrub ? 'block' : 'none',
           shufD: d.shuf ? 'block' : 'none', repD: d.rep === 'all' ? 'block' : 'none', rep1D: d.rep === 'one' ? 'block' : 'none' };
@@ -275,7 +376,87 @@ class Component extends DCLogic {
       { name: 'Dark · gunmetal aluminum', key: 'dark', t: D, ...sz(1), screens: libBuild(D) },
       { name: 'Light · font scale 1.5x', key: 'light 1.5x', t: L, ...sz(1.5), screens: libBuild(L) }
     ];
-    return { libThemes, themes: [
+    const R = (t, o = {}) => ({ t, ...o });
+    const Lb = (t) => ({ t, label: 1 });
+    const daily = [
+      R('Follow', { v: 'On' }),
+      R('A Heat Wave Over the North Atlantic', { dot: 'full', dl: 1 }),
+      R('Inside the Race for a Cheaper Battery', { dot: 'full', v: '38%' }),
+      R('The Town That Saved Its Pharmacy', { dot: 'full' }),
+      R('What Happened at the Port Strike, and What Comes Next', { dot: 'half' }),
+      R('A Quiet Election in a Loud Year'),
+      R('The Return of the Night Train'),
+      R('Who Owns the Moon?')
+    ];
+    const ep = { song: 'What Happened at the Port Strike, and What Comes Next', artist: 'The Daily', album: 'NY Times' };
+    const podDefs = [
+      { num: '22', label: 'Podcasts', how: 'Center on Podcasts in the main menu. Search is always first, then owners A to Z. Same list as 09, which shows it while music plays.', title: 'Podcasts',
+        rows: [R('Search', { c: 1 }), R('Field Notes Media', { c: 1 }), R('Harbor Audio', { c: 1 }), R('NY Times', { c: 1 }), R('Small Rooms', { c: 1 }), R('Weekly Bench', { c: 1 })], hi: 3 },
+      { num: '23', label: 'Podcasts · none yet', how: 'Nothing downloaded. Search is still the first row and highlighted, and a short message sits under it.', title: 'Podcasts',
+        rows: [R('Search', { c: 1 })], hi: 0, msg: ['No podcasts yet', 'Select Search to find a show.'] },
+      { num: '24', label: 'Owner → shows', how: 'Center on NY Times. Its shows, A to Z. The owner level is always shown, even with one show.', title: 'NY Times',
+        rows: [R('Hard Fork', { c: 1 }), R('The Daily', { c: 1 }), R('The Ezra Klein Show', { c: 1 })], hi: 1 },
+      { num: '25', label: 'Show → episodes', how: 'Center on The Daily. Follow first, then episodes newest first. The highlighted title starts at its first word and scrolls after the usual pause.', title: 'The Daily',
+        rows: daily, hi: 4, dots: 1, total: 14 },
+      { num: '26', label: 'Episode', how: 'Center on an episode. Resume plays from where you stopped. Turning past Play from Start scrolls the description. Unplayed episodes show only Play.', title: 'The Daily',
+        rows: [R('Resume'), R('Play from Start')], hi: 0, meta: 'NOV 8 · 32 MIN · 20 MIN LEFT', desc: 'Dockworkers on both coasts walked off the job for nine days. We look at what the strike won, what it cost the ports, and why the next contract talks may be harder.', sbH: '45%' },
+      { num: '27', label: 'Now Playing · episode', how: 'Center on Resume. Same layout as a song: episode title, show, owner. ⏮ ⏭ skip back 15 s and forward 30 s; hold to scrub. The position is kept per episode.', player: 1, ...ep, pos: '', lt: '12:04', rt: '-20:31', pct: '37%', buf: '100%', play: true },
+      { num: '28', label: 'Now Playing · still downloading', how: 'Played before the download finished. The lighter part of the bar is downloaded so far. DOWNLOADING turns back into nothing when it reaches 100%.', player: 1,
+        song: 'Inside the Race for a Cheaper Battery', artist: 'The Daily', album: 'NY Times', pos: '', tag: 'DOWNLOADING 38%', lt: '1:52', rt: '-27:40', pct: '6%', buf: '38%', play: true },
+      { num: '29', label: 'Search', how: 'Center on Search. The keyboard opens in place of the wheel, with the cursor in the field. MENU isn\'t available while typing; Android back closes Search.', title: 'Search',
+        field: 'Shows, creators, episodes', placeholder: 1, caret: 1, kb: 1, rows: [] },
+      { num: '30', label: 'Search · typing', how: 'Results update as you type. Shows match by name or creator, with the creator on the right. Episodes match by title or description. Nothing is highlighted while the keyboard is up.', title: 'Search',
+        field: 'the dai', caret: 1, kb: 1,
+        rows: [Lb('Shows'), R('The Daily', { v: 'NY Times', vm: 1 }), R('Daily Dose of Design', { v: 'Field Notes Media', vm: 1 }), Lb('Episodes'), R('Why the Daily Commute Changed'), R('A Daily Habit, Ten Years Later')], hi: -1 },
+      { num: '31', label: 'Search · results', how: 'The search key or Android back hides the keyboard. The wheel is back on the first result and skips the section labels. MENU returns to typing, a second MENU leaves Search.', title: 'Search',
+        field: 'the daily', rows: [Lb('Shows'), R('The Daily', { v: 'NY Times', vm: 1 }), R('The Daily Brief', { v: 'Harbor Audio', vm: 1 }), R('Daily Dose of Design', { v: 'Field Notes Media', vm: 1 }), Lb('Episodes'), R('Why the Daily Commute Changed', { c: 1 }), R('A Daily Habit, Ten Years Later', { c: 1 })], hi: 1, total: 12 },
+      { num: '32', label: 'Search → show', how: 'Center on The Daily. Follow starts Off. Episodes newest first, all with the download arrow and no dots. Center on one opens 26 with Play, which downloads and plays it (28).', title: 'The Daily',
+        rows: [R('Follow', { v: 'Off' }), R('A Heat Wave Over the North Atlantic', { dl: 1 }), R('Inside the Race for a Cheaper Battery', { dl: 1 }), R('The Town That Saved Its Pharmacy', { dl: 1 }), R('What Happened at the Port Strike, and What Comes Next', { dl: 1 }), R('A Quiet Election in a Loud Year', { dl: 1 }), R('The Return of the Night Train', { dl: 1 }), R('Who Owns the Moon?', { dl: 1 })], hi: 0, total: 40 },
+      { num: '33', label: 'Search · offline', how: 'No connection when typing or when the search key is pressed. The query stays, and results come back when the connection does.', title: 'Search',
+        field: 'the daily', caret: 1, kb: 1, rows: [], msg: ['No connection', 'Search needs the internet. Downloaded episodes still play.'] },
+      { num: '34', label: 'Search · no results', how: 'The directory returned nothing for the query.', title: 'Search',
+        field: 'zzqx radio', caret: 1, kb: 1, rows: [], msg: ['No results', 'Try a show name, a creator, or words from an episode title.'] }
+    ];
+    const podBuild = (t, bg, K) => podDefs.map(d => {
+      const s = { num: d.num, label: d.label, how: d.how, ind: d.play ? disc(13, bg, true) : null, wheel: !d.kb, kb: !!d.kb };
+      if (d.player) return { ...s, isList: false, isPlayer: true, title: 'Now Playing', song: d.song, artist: d.artist, album: d.album, pos: d.pos, tag: d.tag || '', lt: d.lt, rt: d.rt, pct: d.pct, buf: d.buf };
+      const n = d.total || d.rows.length, scroll = n > K.V || !!d.sbH || (K.sc > 1 && d.desc);
+      const rows = d.rows.map((r, i) => {
+        if (r.label) return { isLabel: true, isRow: false, t: r.t };
+        const on = i === d.hi;
+        const dotC = on ? '#fff' : '#E4572E';
+        return { isLabel: false, isRow: true, t: r.t, chevD: r.c ? 'block' : 'none', valD: r.v ? 'block' : 'none', v: r.v || '', vFs: r.vm ? K.albFs : K.rowFs,
+          vC: on ? '#fff' : (r.vm || r.dl ? t.sMuted : t.sInk), dlD: r.dl ? 'block' : 'none',
+          dotD: r.dot ? 'block' : 'none', dotC, dotBg: r.dot === 'full' ? dotC : r.dot === 'half' ? `linear-gradient(90deg,${dotC} 50%,transparent 50%)` : 'transparent',
+          bg: on ? hiBg : 'transparent', fg: on ? '#fff' : t.sInk };
+      });
+      return { ...s, isList: true, isPlayer: false, title: d.title, rows, padR: scroll ? '16px' : '12px',
+        fieldD: d.field ? 'flex' : 'none', q: d.field || '', qC: d.placeholder ? t.sMuted : t.sInk, caretD: d.caret ? 'block' : 'none', fieldBg: d.caret ? t.screen : t.hdr,
+        descD: d.desc ? 'flex' : 'none', meta: d.meta || '', desc: d.desc || '',
+        msgD: d.msg ? 'flex' : 'none', msgTitle: d.msg ? d.msg[0] : '', msgBody: d.msg ? d.msg[1] : '',
+        sbD: scroll ? 'block' : 'none', sbTop: d.field ? '46px' : '4px', thumbH: (K.sc > 1 && d.sbH) ? '25%' : d.sbH || (K.V / n * 100).toFixed(1) + '%' };
+    });
+    const kbRows = (k) => {
+      const key = (x, o = {}) => ({ k: x, f: o.f || 1, fs: o.fs || '19px', bg: o.act ? k.act : o.mod ? k.mod : k.key, fg: o.act ? k.actFg : k.fg });
+      return [
+        { pad: '0px', keys: 'qwertyuiop'.split('').map(x => key(x)) },
+        { pad: '16px', keys: 'asdfghjkl'.split('').map(x => key(x)) },
+        { pad: '0px', keys: [key('⇧', { f: 1.5, mod: 1 }), ...'zxcvbnm'.split('').map(x => key(x)), key('⌫', { f: 1.5, mod: 1, fs: '17px' })] },
+        { pad: '0px', keys: [key('?123', { f: 1.5, mod: 1, fs: '13px' }), key(',', { mod: 1 }), key('', { f: 5 }), key('.', { mod: 1 }), key('Search', { f: 1.7, act: 1, fs: '13px' })] }
+      ];
+    };
+    const kL = { panel: '#e8eaed', key: '#ffffff', mod: '#c7cbd1', fg: '#202124', act: '#3c4043', actFg: '#ffffff', handle: '#9aa0a6' };
+    const kD = { panel: '#202124', key: '#3c4043', mod: '#2d2f31', fg: '#e8eaed', act: '#a8c7fa', actFg: '#062e6f', handle: '#9aa0a6' };
+    const pz = (k) => ({ sc: k, V: k > 1 ? 5 : 8, hdrH: 28 * k + 'px', hdrFs: 13 * k + 'px', rowH: 32 * k + 'px', rowFs: 16 * k + 'px', chevFs: 18 * k + 'px', msgFs: 17 * k + 'px', subFs: 14 * k + 'px', albFs: 13 * k + 'px',
+      labelH: 22 * k + 'px', labelFs: 10.5 * k + 'px', fieldH: 30 * k + 'px', qFs: 15 * k + 'px', caretH: 17 * k + 'px', dotS: 8 * k + 'px', dlW: 12 * k, dlH: 13 * k, monoFs: 11 * k + 'px',
+      artS: k > 1 ? '64px' : '108px', npDir: k > 1 ? 'column' : 'row', npAlign: k > 1 ? 'flex-start' : 'center', npGap: k > 1 ? '8px' : '12px', clamp: k > 1 ? 2 : 3 });
+    const P1 = pz(1), P15 = pz(1.5);
+    const podThemes = [
+      { name: 'Light · anodized aluminum', key: 'light', t: L, k: kL, keyRows: kbRows(kL), ...P1, screens: podBuild(L, L.hdrSolid, P1) },
+      { name: 'Dark · gunmetal aluminum', key: 'dark', t: D, k: kD, keyRows: kbRows(kD), ...P1, screens: podBuild(D, D.hdrSolid, P1) },
+      { name: 'Light · font scale 1.5x', key: 'light 1.5x', t: L, k: kL, keyRows: kbRows(kL), ...P15, screens: podBuild(L, L.hdrSolid, P15) }
+    ];
+    return { podThemes, libThemes, themes: [
       { name: 'Light · anodized aluminum', key: 'light', t: L, screens: build(L, L.hdrSolid) },
       { name: 'Dark · gunmetal aluminum', key: 'dark', t: D, screens: build(D, D.hdrSolid) }
     ] };

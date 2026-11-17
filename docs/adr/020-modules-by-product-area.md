@@ -78,6 +78,12 @@
   ([ADR-008](008-one-app-with-an-optional-account.md), revised the same day): the device is reached
   by signing in or by choosing no-account mode, and `:auth:data:impl`'s check for sync is the
   no-account-mode check. The decision is unchanged.
+- **Revised 2026-11-16:** Podcasts and their search are decided by [ADR-031](031-podcasts.md) (The
+  layout, Left open): a part of the device, `:device:podcasts:{api,impl,testing}` with
+  `:device:podcasts:local:{api,impl}` and `:device:podcasts:network:{api,impl}`, and its screens,
+  `:device:podcasts:ui:{api,impl}`. Search is part of it, since it searches only the directory. The
+  main menu's Podcasts row maps the part's exit like Music's. The rules here hold as they are
+  written. The decision is unchanged.
 
 ## Context
 
@@ -125,6 +131,10 @@ We will group modules **by product area**, let each area **assemble its own part
 :device:music:ui:{api,impl}       the music screens: Music, Artists, albums, songs
 :device:playback:{api,impl,testing}  playback state, and the engine and its service (ADR-023)
 :device:playback:ui:{api,impl}    the playback screens: Now Playing
+:device:podcasts:{api,impl,testing}  shows, owners, episodes, follows, positions, the directory (ADR-031)
+:device:podcasts:local:{api,impl}    the podcasts' Room database and artwork files (ADR-031)
+:device:podcasts:network:{api,impl}  the directory, the feeds, the images, the follows in Firestore (ADR-031)
+:device:podcasts:ui:{api,impl}    the podcast screens: Podcasts, Owner, Show, Episode, Search
 :common:util                      dispatchers, scopes, exception-to-error helpers
 :common:designsystem              the visual language (ADR-015)
 :common:testing                   Hilt test runner, MainDispatcherRule
@@ -327,7 +337,9 @@ This ADR doesn't decide, and its module list isn't complete for:
   each part that keeps relational data a database of its own. It replaced the in-memory library in
   library/03.
 - **`:device:data`,** which doesn't exist until the device has data of its own.
-- **Search and podcasts.**
+- **Search and podcasts** are no longer open: [ADR-031](031-podcasts.md) makes podcasts a part of
+  the device, with its sub-parts and its screens, and search a part of podcasts. Searching the
+  library is left open, and with it a shared search part.
 
 ### Migration
 

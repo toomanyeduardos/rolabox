@@ -52,6 +52,10 @@
   ([ADR-023](023-playback-engine.md)). A real library of iTunes purchases had 73 of them, which shuffle played as
   silence, then skipped one by one. The songs table gains `isProtected`, as a change to cache tables, so the next
   start rescans. The lists still show protected songs: they are the user's files.
+- **Revised 2026-11-16:** The podcasts' database is decided by [ADR-031](031-podcasts.md) (What was not decided):
+  `podcasts.db` in `:device:podcasts:local:impl`, the second database of its own that rule 5 foresaw, with every
+  table the user's data. An episode's position is in it. Media3's own record of downloads, in playback, is the
+  engine's state and not one of Rolabox's tables. The decision is unchanged.
 
 ## Context
 
@@ -441,8 +445,8 @@ A scan has **two passes**, so the device is usable within seconds of the first o
 - **"Add a folder" through the Storage Access Framework.** Later, for files MediaStore misses.
 - **A rescan the user starts,** from settings. Nothing needs it while the observer and the start-up
   check keep the index current.
-- **Where a podcast episode's position is stored.** In a database of the podcasts' own, when they
-  come (ADR-023, What was not decided).
+- **Where a podcast episode's position is stored** is no longer open: in the podcasts' own database,
+  as foreseen ([ADR-031](031-podcasts.md)).
 
 ## Alternatives considered
 

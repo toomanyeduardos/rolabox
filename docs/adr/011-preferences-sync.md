@@ -53,6 +53,11 @@
   8 and 10. Sync still never runs in it, and the choice is still local and never synced. Its stored
   key becomes `no_account_mode_chosen`, migrated locally, which changes no synced field. "A device
   is offline" keeps its meaning: no connection. The decision is unchanged.
+- **Revised 2026-11-16:** The device gains a setting that doesn't sync, Mobile Data
+  (`episodesOnMobileData`), decided by [ADR-031](031-podcasts.md) (Decision, rule 11). It describes
+  this phone's data plan, so rule 10 keeps it on the phone, and rule 11 now says that a device
+  setting rule 10 keeps on the phone isn't a field of the synced document. The decision is
+  unchanged.
 
 ## Context
 
@@ -159,7 +164,10 @@ user creates.
 **A preference syncs unless it belongs to this installation.** Clicker syncs: it is a taste, like
 the theme, and the click is silent anyway when the phone is. The one value that doesn't sync is
 whether no-account mode was chosen, which says how this installation is used and not what the user
-likes. A value like that has no timestamp and is never part of what sync reads.
+likes. A value like that has no timestamp and is never part of what sync reads. The device's
+Mobile Data setting, `episodesOnMobileData` (`ON`, `OFF`, never set reads as `ON`), is the second:
+whether episodes may use a metered network is about this phone's data plan
+([ADR-031](031-podcasts.md)).
 
 **When sync runs.** `SyncRepository.start()`, called from `Application.onCreate`, requests a sync:
 
@@ -307,8 +315,8 @@ same user or another one, merges them with that user's cloud copy.
     what sync reads.
 11. `[convention]` The device's settings are preferences: `:common:userdata` stores them, and
     they sync as fields of `users/{uid}/settings/preferences`, with the names and values of the
-    table in Decision. No `:device` module stores a setting. The rules tests cover each field as
-    rule 6 says.
+    table in Decision, unless rule 10 keeps one on the phone. No `:device` module stores a setting.
+    The rules tests cover each field as rule 6 says.
 
 **Target state.** Rule 11 was ahead of the code from the revision of 2026-10-12 until
 [39.05b](https://trello.com/c/gjuKXyIz), which stores and syncs the device's settings. Since
