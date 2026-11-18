@@ -20,14 +20,15 @@ import com.eduardoflores.rolabox.device.host.rememberListHighlight
 /**
  * The settings list, a device screen (ADR-018, rule 11). Turning moves the highlight, which stops at the first and last
  * rows. Center on Shuffle, Repeat, Clicker, Theme or Online Artwork changes its value in place, without leaving the
- * list. Center on Main Menu reports [onMainMenuClick], on About [onAboutClick], and on a contributed section's row
- * [onOpenFullScreen] with the key it opens, the generic exit that leaves the display (ADR-020, rule 17). The highlight
- * is saved with the entry (ADR-018, rule 7).
+ * list. Center on Main Menu reports [onMainMenuClick], on Podcasts [onPodcastsClick], on About [onAboutClick], and on
+ * a contributed section's row [onOpenFullScreen] with the key it opens, the generic exit that leaves the display
+ * (ADR-020, rule 17). The highlight is saved with the entry (ADR-018, rule 7).
  */
 @Composable
 internal fun SettingsRoute(
     viewModel: SettingsViewModel,
     onMainMenuClick: () -> Unit,
+    onPodcastsClick: () -> Unit,
     onAboutClick: () -> Unit,
     onOpenFullScreen: (NavKey) -> Unit,
 ) {
@@ -47,6 +48,7 @@ internal fun SettingsRoute(
                 SettingsListRow.Theme -> viewModel.onThemeChange()
                 SettingsListRow.OnlineArtwork -> viewModel.onOnlineArtworkChange()
                 SettingsListRow.MainMenu -> onMainMenuClick()
+                SettingsListRow.Podcasts -> onPodcastsClick()
                 SettingsListRow.About -> onAboutClick()
                 is SettingsListRow.Section -> row.row.opens?.let(onOpenFullScreen)
                 null -> Unit
@@ -65,7 +67,7 @@ internal fun SettingsList(state: SettingsUiState, highlightedIndex: Int) {
         when (row) {
             is SettingsListRow.Section -> DeviceListRow(row.row.title(), opensSubmenu = row.row.opens != null)
 
-            SettingsListRow.MainMenu, SettingsListRow.About ->
+            SettingsListRow.MainMenu, SettingsListRow.Podcasts, SettingsListRow.About ->
                 DeviceListRow(stringResource(row.title), opensSubmenu = true)
 
             else -> DeviceListRow(stringResource(row.title), value = state.valueOf(row)?.let { stringResource(it) })
@@ -84,6 +86,7 @@ private val SettingsListRow.title: Int
         SettingsListRow.Theme -> R.string.settings_theme
         SettingsListRow.OnlineArtwork -> R.string.settings_online_artwork
         SettingsListRow.MainMenu -> R.string.settings_main_menu
+        SettingsListRow.Podcasts -> R.string.settings_podcasts
         SettingsListRow.About -> R.string.settings_about
         is SettingsListRow.Section -> error("A section has a title of its own")
     }

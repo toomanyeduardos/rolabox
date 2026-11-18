@@ -8,7 +8,7 @@ import com.eduardoflores.rolabox.device.podcasts.impl.DefaultEpisodeProgressRepo
 import com.eduardoflores.rolabox.device.podcasts.impl.DefaultPodcastDirectory
 import com.eduardoflores.rolabox.device.podcasts.impl.DefaultPodcastsRepository
 import com.eduardoflores.rolabox.device.podcasts.impl.EpisodeDownloads
-import com.eduardoflores.rolabox.device.podcasts.impl.NoEpisodeDownloads
+import com.eduardoflores.rolabox.device.podcasts.impl.PlaybackEpisodeDownloads
 import com.eduardoflores.rolabox.device.podcasts.impl.artwork.DefaultPodcastArtworkRepository
 import com.eduardoflores.rolabox.device.podcasts.impl.artwork.PodcastArtworkScheduler
 import com.eduardoflores.rolabox.device.podcasts.impl.artwork.WorkManagerPodcastArtworkScheduler
@@ -42,5 +42,5 @@ abstract class PodcastsModule {
     ): PodcastArtworkScheduler
 
     @Binds
-    internal abstract fun bindsEpisodeDownloads(downloads: NoEpisodeDownloads): EpisodeDownloads
+    internal abstract fun bindsEpisodeDownloads(downloads: PlaybackEpisodeDownloads): EpisodeDownloads
 }

@@ -6,6 +6,11 @@
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <!-- Episodes download in a foreground service of type dataSync (ADR-031, Downloads). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Media3's download requirements, and whether the network is metered (ADR-031, Mobile data). -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application>
         <!-- Exported with no permission, so the system's controls and the media buttons reach the session,
@@ -21,6 +26,12 @@
                 <action android:name="android.media.browse.MediaBrowserService" />
             </intent-filter>
         </service>
+
+        <!-- Holds the process while an episode downloads (ADR-031, Downloads). Only the app starts it. -->
+        <service
+            android:name="com.eduardoflores.rolabox.device.playback.impl.downloads.EpisodeDownloadService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
 
         <!-- A media button with the app killed reaches the service through this, which resumes (ADR-023). -->
         <receiver

@@ -6,6 +6,15 @@
     <!-- The mode in the corner of the display, when the bar is not showing the time. -->
     <string name="now_playing_tag_scrub">SCRUB</string>
     <string name="now_playing_tag_volume">VOLUME</string>
+    <!-- An episode still downloading, and how much of it is on the phone (ADR-031, frame 28). -->
+    <string name="now_playing_tag_downloading">DOWNLOADING %1$d%%</string>
+    <!-- An episode that ran out of bytes with Use Mobile Data off on mobile data (frame 37). -->
+    <string name="now_playing_tag_waiting_for_wifi">WAITING FOR WI-FI</string>
+    <!-- An episode that ran out of bytes with no connection at all. -->
+    <string name="now_playing_tag_no_connection">NO CONNECTION</string>
+    <!-- An episode whose download failed: it plays only while it can stream. -->
+    <string name="now_playing_download_failed">Couldn\'t download this episode</string>
+    <string name="now_playing_download_failed_body">Play it again to try again</string>
     <string name="now_playing_volume_label">VOL</string>
     <string name="now_playing_volume_level">%1$d%%</string>
     <string name="now_playing_volume_description">Volume</string>

@@ -2,6 +2,7 @@ package com.eduardoflores.rolabox.device.playback.testing
 
 import arrow.core.Either
 import arrow.core.right
+import com.eduardoflores.rolabox.device.playback.api.ItemDownload
 import com.eduardoflores.rolabox.device.playback.api.PlaybackController
 import com.eduardoflores.rolabox.device.playback.api.PlaybackError
 import com.eduardoflores.rolabox.device.playback.api.PlaybackItem
@@ -39,6 +40,8 @@ class FakePlayback @Inject constructor() :
     private val unplayableQueueState = MutableStateFlow<SkippedItems?>(null)
     private val shuffledState = MutableStateFlow(false)
     private val repeatModeState = MutableStateFlow(RepeatMode.Off)
+    private val downloadState = MutableStateFlow<ItemDownload?>(null)
+    private val waitingState = MutableStateFlow<PlaybackError.Waiting?>(null)
 
     /** What [play] answers with. */
     var playResult: Either<PlaybackError, Unit> = Unit.right()
@@ -77,6 +80,19 @@ class FakePlayback @Inject constructor() :
     override val unplayableQueue: Flow<SkippedItems?> = unplayableQueueState
     override val isShuffled: Flow<Boolean> = shuffledState
     override val repeatMode: Flow<RepeatMode> = repeatModeState
+    override val download: Flow<ItemDownload?> = downloadState
+
+    override val waitingFor: Flow<PlaybackError.Waiting?> = waitingState
+
+    /** What the loaded episode waits for, or `null`. */
+    fun waitingFor(waiting: PlaybackError.Waiting?) {
+        waitingState.value = waiting
+    }
+
+    /** The download of the loaded item, or `null` when it has none. */
+    fun downloadAt(download: ItemDownload?) {
+        downloadState.value = download
+    }
 
     /** Whether the queue plays shuffled, and which repeat mode applies (ADR-028). */
     fun order(shuffled: Boolean, repeat: RepeatMode) {

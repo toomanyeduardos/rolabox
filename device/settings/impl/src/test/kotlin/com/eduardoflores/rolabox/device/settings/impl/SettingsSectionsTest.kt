@@ -46,7 +46,8 @@ class SettingsSectionsTest {
         val settingsEntries = DefaultSettingsEntries(setOf(FakeSection(SettingsSlot.Account)))
 
         val provider = entryProvider<NavKey> {
-            settingsEntries.screenStackEntries(this, onMainMenuClick = {}, onAboutClick = {}, onOpenFullScreen = {})
+            settingsEntries.screenStackEntries(this, onMainMenuClick = {
+            }, onPodcastsClick = {}, onAboutClick = {}, onOpenFullScreen = {})
         }
 
         provider(SettingsKey)

@@ -145,3 +145,35 @@ private fun NowPlayingEpisodePreview() = DevicePreview(
         isEpisode = true,
     ),
 )
+
+/** An episode that plays while it downloads: the lighter part of the bar is what is on the phone (frame 28). */
+private val Downloading = NowPlayingUiState.Playing(
+    title = "Inside the Race for a Cheaper Battery",
+    artist = "The Daily",
+    album = "NY Times",
+    number = 1,
+    count = 1,
+    position = 1.minutes + 52.seconds,
+    duration = 29.minutes + 32.seconds,
+    artwork = SampleCover,
+    isEpisode = true,
+    downloaded = 0.38f,
+    tag = EpisodeTag.Downloading(percent = 38),
+)
+
+@PreviewLightDark
+@Composable
+private fun NowPlayingDownloadingPreview() = DevicePreview(Downloading)
+
+/** It played to the end of what was downloaded, and Use Mobile Data is off on mobile data (frame 37). */
+@PreviewLightDark
+@Composable
+private fun NowPlayingWaitingForWifiPreview() = DevicePreview(
+    Downloading.copy(position = 6.minutes + 10.seconds, tag = EpisodeTag.WaitingForWifi),
+)
+
+@PreviewLightDark
+@Composable
+private fun NowPlayingDownloadFailedPreview() = DevicePreview(
+    Downloading.copy(downloaded = null, tag = null, downloadFailed = true),
+)

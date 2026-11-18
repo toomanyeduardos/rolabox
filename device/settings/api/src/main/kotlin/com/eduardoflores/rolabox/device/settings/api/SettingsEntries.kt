@@ -9,16 +9,17 @@ import androidx.navigation3.runtime.NavKey
  */
 interface SettingsEntries {
     /**
-     * Adds the entries of [SettingsKey], [MainMenuSettingsKey] and [AboutKey], device screens for the
-     * screen stack inside the display.
+     * Adds the entries of [SettingsKey], [MainMenuSettingsKey], [PodcastSettingsKey] and [AboutKey], device screens
+     * for the screen stack inside the display.
      *
-     * The exits: center on Main Menu in the settings list is [onMainMenuClick], and on About
-     * [onAboutClick]. Center on a contributed section's row is [onOpenFullScreen] with the key the row
+     * The exits: center on Main Menu in the settings list is [onMainMenuClick], on Podcasts [onPodcastsClick], and on
+     * About [onAboutClick]. Center on a contributed section's row is [onOpenFullScreen] with the key the row
      * opens: the generic exit, which leaves the display (ADR-020, rule 17).
      */
     fun screenStackEntries(
         scope: EntryProviderScope<NavKey>,
         onMainMenuClick: () -> Unit,
+        onPodcastsClick: () -> Unit,
         onAboutClick: () -> Unit,
         onOpenFullScreen: (NavKey) -> Unit,
     )

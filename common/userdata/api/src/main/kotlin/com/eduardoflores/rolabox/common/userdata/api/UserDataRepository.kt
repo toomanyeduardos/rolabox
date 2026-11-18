@@ -4,6 +4,8 @@ import arrow.core.Either
 import com.eduardoflores.rolabox.common.storage.api.StorageError
 import kotlinx.coroutines.flow.Flow
 
+// One function for each preference: observing it and setting it.
+@Suppress("TooManyFunctions")
 interface UserDataRepository {
     fun observeUserData(): Flow<Either<StorageError, UserData>>
 
@@ -29,4 +31,13 @@ interface UserDataRepository {
     fun observeOfflineModeChosen(): Flow<Either<StorageError, Boolean>>
 
     suspend fun setOfflineModeChosen(chosen: Boolean): Either<StorageError, Unit>
+
+    /**
+     * Emits whether episodes may use a metered network, and again when it changes: [EpisodesOnMobileData.ON] when never
+     * set. It describes this phone's data plan, so it isn't part of [UserData] and never syncs (ADR-031, ADR-011 rule
+     * 10).
+     */
+    fun observeEpisodesOnMobileData(): Flow<Either<StorageError, EpisodesOnMobileData>>
+
+    suspend fun setEpisodesOnMobileData(value: EpisodesOnMobileData): Either<StorageError, Unit>
 }

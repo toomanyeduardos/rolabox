@@ -12,6 +12,16 @@
   directory and a show from search"). With only the id, opening a show needs a `lookup` request to
   the directory for its feed URL before the feed is read, and each such request counts against
   the directory's limit of about 20 a minute, which searches already share.
+- **Revised 2026-11-18:** Mobile Data follows its frames, 35 to 37 of `player-designs/device`, added
+  for podcasts/07 ("Mobile data", "Stream while downloading", "Errors", rules 9 and 15). The setting
+  is Use Mobile Data, in a Podcasts list of the device's settings, not a row of the settings list.
+  The Episode screen shows that an episode needs Wi-Fi in place of Play, and opens that list, so
+  `play` failing with `MobileDataOff` is no longer how the user learns it. An episode that runs out
+  of bytes waits for the network, still playing, shows why on Now Playing, and goes on by itself
+  when the network allows it: the design's WAITING FOR WI-FI, and the same for no connection, which
+  the ADR had paused. The free-space check uses only the 50 MB when the feed gives no size.
+  DOWNLOADING and WAITING FOR WI-FI are in the screen's top corner, as frames 28 and 37 draw them,
+  not in place of the bar's right label, as this ADR first said.
 
 ## Context
 
@@ -292,8 +302,8 @@ playback/09 builds it.
   arrow again, and playing it adds the download again.
 - **Storage full.** Before a download is added, playback compares the free space of `filesDir`
   with the enclosure's size from the feed, plus 50 MB, and `play` returns
-  `PlaybackError.StorageFull` instead of starting. A download that fails later with the disk full is
-  failed like any other.
+  `PlaybackError.StorageFull` instead of starting. A feed that gives no size is checked against the
+  50 MB alone. A download that fails later with the disk full is failed like any other.
 - **`ItemDownloads`, in `:device:playback:api`,** reports each download's state by `PlaybackItemId`:
   waiting, downloading with its fraction, done or failed. `:device:podcasts:impl` turns it into the
   episode's own download state in `:device:podcasts:api`, for the rows' percentage and arrow and for
@@ -303,18 +313,36 @@ podcasts/07 builds it.
 
 ### Mobile data: a setting
 
-- **A setting, Mobile Data, decides whether episodes use a metered network.** On, a download runs on
-  any connection. Off, it waits for an unmetered one, which is the `DownloadManager`'s requirement,
-  and the player's own stream refuses a metered network too, so no byte of an episode is fetched over
-  mobile data. An episode then plays as far as it is downloaded, and one that isn't downloaded at all
-  doesn't start: `play` returns `PlaybackError.MobileDataOff`, and the toast says so
-  ([ADR-018](018-device-navigation.md), rule 18).
+- **A setting, Use Mobile Data, decides whether episodes use a metered network.** On, a download
+  runs on any connection. Off, it waits for an unmetered one, which is the `DownloadManager`'s
+  requirement, and the player's own stream refuses a metered network too, so no byte of an episode
+  is fetched over mobile data. An episode then plays as far as it is downloaded, and waits for Wi-Fi
+  there (Stream while downloading). Search, a show opened from search, the follow check and artwork
+  always use any network: they aren't episodes.
 - **It reads as On when never set.** A download only starts because the user pressed Play.
 - **It is a preference that doesn't sync,** `episodesOnMobileData` in `:common:userdata`
   ([ADR-011](011-preferences-sync.md), rules 10 and 11). It is about this phone's data plan, not a
   taste: a tablet on Wi-Fi and a phone on a plan want different values.
-- **Its row is in the device's settings,** toggled in place by center, as the main menu's switches
-  are. Where it sits in the list needs a frame of its own, added before podcasts/07.
+- **Its row is in a Podcasts list of the device's settings** (frame 35). The settings list gains a
+  Podcasts row after Main Menu, which opens a list with one row, Use Mobile Data, toggled in place by
+  center as the main menu's switches are. The list gives later podcast settings a home. It is a
+  device screen of `:device:settings:impl`, with its key in `:device:settings:api`, as Main Menu's
+  is ([ADR-020](020-modules-by-product-area.md), rule 17), and the row is always shown.
+- **Playback says when an episode needs Wi-Fi.** `:device:playback:api` reports whether episodes
+  need Wi-Fi now: Use Mobile Data is Off and the phone's network is metered. `:device:playback:impl`
+  reads the network with `ConnectivityManager`'s default network callback, since it is also what
+  refuses the stream, so the rule is in one place. With no network at all, an episode doesn't need
+  Wi-Fi: it needs a connection, which is `NoConnection`.
+- **The Episode screen shows it in place of Play** (frame 36). For an episode with no download,
+  while episodes need Wi-Fi, the screen's one row is "Needs Wi-Fi. Select to allow mobile data." in
+  place of Play. Center on it is an exit of `:device:podcasts:ui:api`'s contract, which
+  `:device:ui:impl`, the parent of both, maps to the key of the Podcasts list of settings
+  ([ADR-020](020-modules-by-product-area.md), rule 12), so MENU comes back to the episode. Play
+  returns as soon as Wi-Fi or the setting allows it. An episode partly downloaded keeps Play or
+  Resume, and plays as far as it is downloaded.
+- **`play` still returns `PlaybackError.MobileDataOff`** for an episode with no download while
+  episodes need Wi-Fi, for a press that arrives before the screen has changed, and the toast says so
+  ([ADR-018](018-device-navigation.md), rule 18).
 
 ### Stream while downloading
 
@@ -323,12 +351,21 @@ podcasts/07 builds it.
   from the network itself, without writing it: only the download writes the cache. So a seek ahead of
   the download plays at once, and a region the two fetch at the same time is fetched twice, which is
   accepted.
-- **An episode that is downloaded plays with no connection.** One that isn't, and runs out of bytes
-  with no connection, pauses with `PlaybackError.NoConnection` reported as state, and isn't skipped:
-  a queue of one has nowhere to skip to, and the file isn't broken.
+- **An episode that is downloaded plays with no connection.** One that isn't, and runs out of bytes,
+  waits there, and isn't skipped: a queue of one has nowhere to skip to, and the file isn't broken.
+- **It waits for a reason, reported as state.** `PlaybackState` gains what the loaded item waits
+  for: `PlaybackError.NoConnection` with no network, `PlaybackError.MobileDataOff` with Use Mobile
+  Data Off on a metered network, and `null` otherwise. Now Playing shows WAITING FOR WI-FI for the
+  second in the screen's top corner, where it shows DOWNLOADING (frame 37), and NO CONNECTION for
+  the first.
+- **While it waits it is still playing,** as the design draws it: `isPlaying` stays `true` and the
+  position stays. It goes on by itself as soon as the network allows it, an unmetered one for
+  `MobileDataOff` and any for `NoConnection`, and so does the download. ⏯ pauses it, and a paused
+  episode doesn't go on by itself.
 - **`PlaybackState` gains the download of the loaded item,** from `ItemDownloads`. Now Playing draws
-  the downloaded fraction as the lighter part of the bar, and DOWNLOADING with the percentage in place
-  of the right label until it is done (frame 28). The fraction is of bytes, which is close to the
+  the downloaded fraction as the lighter part of the bar, and DOWNLOADING with the percentage in the
+  screen's top corner, where SCRUB and VOLUME are shown, until it is done (frame 28). The bar's
+  labels stay the time elapsed and the time left. The fraction is of bytes, which is close to the
   fraction of time for the constant bit rates podcasts use. Media3 doesn't push a download's
   progress, so it is read on playback's `Tick` while a download runs.
 
@@ -436,8 +473,8 @@ Every call that can fail returns an `Either` ([ADR-007](007-error-handling.md)).
   can't be fetched or read; and `Storage`, wrapping the database's error.
 - **No results is not an error.** It is an empty answer.
 - **`PlaybackError` gains what playing an episode can end in:** `StorageFull` and `MobileDataOff`,
-  returned by `play`, and `NoConnection`, reported as state while it plays. A download that fails is
-  a state of `ItemDownloads`, not an error of a call.
+  returned by `play`, and `NoConnection` and `MobileDataOff`, reported as state while it waits. A
+  download that fails is a state of `ItemDownloads`, not an error of a call.
 - **What is reported to Crashlytics** ([ADR-030](030-crash-reporting.md), rule 6): a database
   failure. Not a feed that can't be read, a directory that refuses, no connection or a full disk,
   which are expected outcomes.
@@ -530,8 +567,12 @@ Every call that can fail returns an `Either` ([ADR-007](007-error-handling.md)).
 - A download stopped by a kill waits for the next open of the app.
 - Two exceptions to "the database is the source of truth": the directory, and a show opened from
   search. Both are the podcasts part's, and named.
-- A new setting, Mobile Data, needs a frame of its own before podcasts/07, and a non-synced field in
-  ADR-011's table.
+- A new setting, Use Mobile Data, with a list of its own in the device's settings (frame 35), and a
+  non-synced field in ADR-011's table.
+- Playback watches the phone's network, and the Episode screen has an exit into the device's
+  settings, which the device maps.
+- An episode waiting for the network looks like it plays, with the reason shown, until the network
+  comes back or the user pauses it.
 - The follows add a collection to Firestore and its rules, the first synced data of a device part.
 - The 90% rule means an episode can be played with its last minutes unheard, on purpose.
 - The fraction on Now Playing's bar is of bytes, and is off for an episode with a variable bit rate.
@@ -558,8 +599,8 @@ Every call that can fail returns an `Either` ([ADR-007](007-error-handling.md)).
 8. `[convention]` Episodes are downloaded only by `:device:playback:impl`, with Media3's
    `DownloadManager`, into app-specific storage, keyed by the episode's id, and only when the episode
    is played. The player reads them through the same cache.
-9. `[convention]` With Mobile Data off, no byte of an episode is fetched over a metered network.
-   The setting doesn't sync.
+9. `[convention]` With Use Mobile Data off, no byte of an episode is fetched over a metered network.
+   The setting doesn't sync, and is in the Podcasts list of the device's settings.
 10. `[convention]` Follows sync one document per show, last-write-wins on `updatedAt`, and an
     unfollow is kept as `followed: false`. Positions, played state and downloads don't sync.
 11. `[convention]` Playing an episode queues it alone. ⏮ and ⏭ skip back 15 s and forward 30 s on
@@ -571,6 +612,9 @@ Every call that can fail returns an `Either` ([ADR-007](007-error-handling.md)).
 14. `[planned]` The security rules of `users/{uid}/podcastFollows/{showKey}` allow its owner only,
     with `hasOnly` on `feedUrl`, `followed` and `updatedAt`, and have emulator tests for each case
     ([podcasts/10](https://trello.com/c/YOaut7LJ)).
+15. `[convention]` An episode that runs out of bytes waits, still playing, with `NoConnection` or
+    `MobileDataOff` as state, and goes on by itself when the network allows it. ⏯ pauses it, and a
+    paused episode never goes on by itself.
 
 **Conformance.** Rule 13 is the detekt rule `FeedParserOutsidePodcastsNetwork` in
 `build-logic/detekt-rules`, with a violating and a passing case, which reports an import of
@@ -585,5 +629,5 @@ rule 3); the layout of rule 3 by ADR-020's and ADR-022's checks on module paths;
 the two `:api` modules by Gradle. The rest are reviewed, and covered by tests as they are built:
 rule 6 by the tests of `EpisodeProgressRepository` in `:device:podcasts:impl`; rules 2 and 4 by the
 tests of `:device:podcasts:network:impl` against recorded answers and feeds, with no network;
-rules 7, 8, 9 and 11 by the real player's tests in `:device:playback:impl`; rule 10 by the tests of
+rules 7, 8, 9, 11 and 15 by the real player's tests in `:device:playback:impl`; rule 10 by the tests of
 the `Syncer` and, once podcasts/10 lands, rule 14 by `firebase/test/firestore.rules.test.mjs`.

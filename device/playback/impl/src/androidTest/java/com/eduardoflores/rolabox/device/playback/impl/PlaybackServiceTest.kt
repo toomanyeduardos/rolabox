@@ -192,6 +192,7 @@ class PlaybackServiceTest {
             PlayOrders(Random(0)),
             FakeNonFatalReport(),
             Podcasts(FakePodcastsRepository(), FakeEpisodeProgressRepository(), FakePodcastArtworkRepository()),
+            FakeEpisodeDownloader(),
         )
         playback.play(PlaybackSource.AllSongs, PlaybackItemId.Song(song.id))
         val started = playback.startCount.first()
@@ -242,6 +243,7 @@ class PlaybackServiceTest {
                 PlayOrders(Random(0)),
                 FakeNonFatalReport(),
                 Podcasts(FakePodcastsRepository(), FakeEpisodeProgressRepository(), FakePodcastArtworkRepository()),
+                FakeEpisodeDownloader(),
             )
 
         playback.changeVolume(-2)

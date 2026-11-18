@@ -1,6 +1,7 @@
 package com.eduardoflores.rolabox.device.playback.impl
 
 import androidx.media3.common.PlaybackException
+import com.eduardoflores.rolabox.common.util.NonFatalReport
 import com.eduardoflores.rolabox.device.playback.api.PlaybackError
 
 /** Media3's error codes as the kinds the user can tell apart. `PlaybackException` stops here (ADR-023, rule 10). */
@@ -41,3 +42,17 @@ private val NETWORK_CODES = setOf(
     PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS,
     PlaybackException.ERROR_CODE_IO_INVALID_HTTP_CONTENT_TYPE,
 )
+
+/**
+ * Reports an item that couldn't be played to [report], unless it is the phone's state and not a bug: a deleted or
+ * protected file, a stream that lost its network or a server that answered with an error (ADR-030). An Unplayable is a
+ * data object, whose toString() is its name.
+ */
+internal fun reportUnplayable(report: NonFatalReport, unplayable: PlaybackError.Unplayable, error: PlaybackException) {
+    if (unplayable != PlaybackError.Unplayable.Missing &&
+        unplayable != PlaybackError.Unplayable.Protected &&
+        !error.isNetworkState()
+    ) {
+        report.report("Unplayable.$unplayable ${error.errorCodeName}", error)
+    }
+}

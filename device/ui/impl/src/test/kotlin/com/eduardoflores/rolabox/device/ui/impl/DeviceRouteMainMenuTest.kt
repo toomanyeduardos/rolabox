@@ -108,6 +108,7 @@ private object NoPodcastsEntries : PodcastsEntries {
         onShowClick: (showId: Long) -> Unit,
         onEpisodeClick: (episodeId: Long) -> Unit,
         onPlaying: () -> Unit,
+        onAllowMobileData: () -> Unit,
     ) = Unit
 }
 
@@ -115,6 +116,7 @@ private object NoSettingsEntries : SettingsEntries {
     override fun screenStackEntries(
         scope: EntryProviderScope<NavKey>,
         onMainMenuClick: () -> Unit,
+        onPodcastsClick: () -> Unit,
         onAboutClick: () -> Unit,
         onOpenFullScreen: (NavKey) -> Unit,
     ) = Unit

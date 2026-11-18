@@ -11,6 +11,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.ShuffleOrder
 import androidx.media3.session.MediaController
 import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
+import com.eduardoflores.rolabox.device.podcasts.api.EpisodeId
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
@@ -45,6 +46,10 @@ internal val PlaybackItemId.mediaId: String
 
 /** Whether a media ID names an episode, which the session's player can tell from it alone (ADR-031, rule 11). */
 internal fun String.isEpisodeMediaId(): Boolean = startsWith(EPISODE_MEDIA_ID_PREFIX)
+
+/** The episode a media ID names, or `null` for a song's. */
+internal fun episodeOfMediaId(mediaId: String): EpisodeId? =
+    mediaId.removePrefix(EPISODE_MEDIA_ID_PREFIX).takeIf { it != mediaId }?.toLongOrNull()?.let(::EpisodeId)
 
 private const val EPISODE_MEDIA_ID_PREFIX = "episode:"
 

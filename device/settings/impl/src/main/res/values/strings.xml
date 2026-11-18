@@ -13,6 +13,9 @@
     <string name="settings_theme_dark">Dark</string>
     <string name="settings_online_artwork">Online Artwork</string>
     <string name="settings_main_menu">Main Menu</string>
+    <string name="settings_podcasts">Podcasts</string>
+    <!-- Whether episodes may download and stream over mobile data (ADR-031, frame 35). -->
+    <string name="settings_podcasts_mobile_data">Use Mobile Data</string>
     <string name="settings_about">About</string>
     <string name="settings_on">On</string>
     <string name="settings_off">Off</string>

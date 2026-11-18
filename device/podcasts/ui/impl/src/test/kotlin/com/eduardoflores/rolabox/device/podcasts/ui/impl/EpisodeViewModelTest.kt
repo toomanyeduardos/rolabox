@@ -7,6 +7,7 @@ import com.eduardoflores.rolabox.common.testing.MainDispatcherRule
 import com.eduardoflores.rolabox.device.playback.api.PlaybackError
 import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
+import com.eduardoflores.rolabox.device.playback.testing.FakeEpisodeNetwork
 import com.eduardoflores.rolabox.device.playback.testing.FakePlayback
 import com.eduardoflores.rolabox.device.podcasts.api.Episode
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastError
@@ -28,9 +29,10 @@ class EpisodeViewModelTest {
 
     private val podcasts = FakePodcastsRepository().apply { fillWithSamples() }
     private val playback = FakePlayback()
+    private val network = FakeEpisodeNetwork()
 
     private fun TestScope.observedViewModel(episode: Episode, savedState: SavedStateHandle = SavedStateHandle()) =
-        EpisodeViewModelImpl(episode.id.value, savedState, podcasts, playback).also {
+        EpisodeViewModelImpl(episode.id.value, savedState, podcasts, playback, network).also {
             backgroundScope.launch(mainDispatcherRule.testDispatcher) { it.uiState.collect() }
             backgroundScope.launch(mainDispatcherRule.testDispatcher) { it.wheel.collect() }
         }
@@ -39,7 +41,8 @@ class EpisodeViewModelTest {
 
     @Test
     fun beforeAnythingIsObserved_isLoading() {
-        val viewModel = EpisodeViewModelImpl(PodcastSamples.unplayed.id.value, SavedStateHandle(), podcasts, playback)
+        val viewModel =
+            EpisodeViewModelImpl(PodcastSamples.unplayed.id.value, SavedStateHandle(), podcasts, playback, network)
 
         assertEquals(ListUiState.Loading, viewModel.uiState.value)
     }
@@ -50,6 +53,37 @@ class EpisodeViewModelTest {
 
         assertEquals(listOf(EpisodeRow.Play), content.rows)
         assertEquals(EpisodeInfo(PodcastSamples.unplayed.publishedAt, 32.minutes, left = null), content.info)
+    }
+
+    @Test
+    fun whileEpisodesNeedWifi_anEpisodeWithNoDownload_offersNeedsWifi_andPlayComesBack() = runTest {
+        network.needsWifi.value = true
+        val viewModel = observedViewModel(PodcastSamples.unplayed)
+
+        assertEquals(listOf(EpisodeRow.NeedsWifi), viewModel.content().rows)
+
+        network.needsWifi.value = false
+
+        assertEquals(listOf(EpisodeRow.Play), viewModel.content().rows)
+    }
+
+    @Test
+    fun whileEpisodesNeedWifi_anEpisodePartlyDownloaded_keepsItsRows() = runTest {
+        network.needsWifi.value = true
+
+        assertEquals(listOf(EpisodeRow.Play), observedViewModel(PodcastSamples.downloading).content().rows)
+    }
+
+    @Test
+    fun centerOnNeedsWifi_opensTheSettings_andPlaysNothing() = runTest {
+        network.needsWifi.value = true
+        val viewModel = observedViewModel(PodcastSamples.unplayed)
+        var allowed = 0
+
+        viewModel.onCenter(onPlaying = {}, onAllowMobileData = { allowed++ })
+
+        assertEquals(1, allowed)
+        assertEquals(emptyList<FakePlayback.PlayCall>(), playback.playCalls)
     }
 
     @Test
@@ -205,7 +239,7 @@ class EpisodeViewModelTest {
         val viewModel = observedViewModel(PodcastSamples.unplayed)
         var playing = 0
 
-        viewModel.onCenter { playing++ }
+        viewModel.onCenter(onPlaying = { playing++ }, onAllowMobileData = {})
 
         val id = PodcastSamples.unplayed.id
         assertEquals(
@@ -219,9 +253,9 @@ class EpisodeViewModelTest {
     fun centerOnResume_resumes_andOnPlayFromStart_startsOver() = runTest {
         val viewModel = observedViewModel(PodcastSamples.partlyPlayed)
 
-        viewModel.onCenter {}
+        viewModel.onCenter(onPlaying = {}, onAllowMobileData = {})
         viewModel.onTurn(1)
-        viewModel.onCenter {}
+        viewModel.onCenter(onPlaying = {}, onAllowMobileData = {})
 
         assertEquals(listOf(true, false), playback.playCalls.map { it.resume })
     }
@@ -232,7 +266,7 @@ class EpisodeViewModelTest {
         val viewModel = observedViewModel(PodcastSamples.unplayed)
         var playing = 0
 
-        viewModel.onCenter { playing++ }
+        viewModel.onCenter(onPlaying = { playing++ }, onAllowMobileData = {})
 
         assertEquals(0, playing)
         assertEquals(EpisodePlayFailure.EpisodeUnavailable, viewModel.playFailure.value)
@@ -245,8 +279,28 @@ class EpisodeViewModelTest {
         playback.playResult = PlaybackError.PlayerUnavailable.left()
         val viewModel = observedViewModel(PodcastSamples.unplayed)
 
-        viewModel.onCenter {}
+        viewModel.onCenter(onPlaying = {}, onAllowMobileData = {})
 
         assertEquals(EpisodePlayFailure.PlayerUnavailable, viewModel.playFailure.value)
+    }
+
+    @Test
+    fun noRoomForTheDownload_saysSo() = runTest {
+        playback.playResult = PlaybackError.StorageFull.left()
+        val viewModel = observedViewModel(PodcastSamples.unplayed)
+
+        viewModel.onCenter(onPlaying = {}, onAllowMobileData = {})
+
+        assertEquals(EpisodePlayFailure.StorageFull, viewModel.playFailure.value)
+    }
+
+    @Test
+    fun mobileDataOff_saysSo() = runTest {
+        playback.playResult = PlaybackError.MobileDataOff.left()
+        val viewModel = observedViewModel(PodcastSamples.unplayed)
+
+        viewModel.onCenter(onPlaying = {}, onAllowMobileData = {})
+
+        assertEquals(EpisodePlayFailure.MobileDataOff, viewModel.playFailure.value)
     }
 }

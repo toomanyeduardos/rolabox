@@ -10,13 +10,18 @@ import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DataSourceBitmapLoader
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import com.eduardoflores.rolabox.common.designsystem.R
 import com.eduardoflores.rolabox.device.library.api.ArtworkRepository
+import com.eduardoflores.rolabox.device.playback.impl.downloads.EpisodeCache
+import com.eduardoflores.rolabox.device.playback.impl.downloads.EpisodeNetworkPolicy
+import com.eduardoflores.rolabox.device.playback.impl.downloads.episodeCacheKey
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastArtworkRepository
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
@@ -47,6 +52,14 @@ internal class PlaybackService : MediaSessionService() {
     @Inject
     lateinit var episodeArtwork: Optional<PodcastArtworkRepository>
 
+    // The cache the episodes download into, which the player reads them through (ADR-031, Stream while downloading).
+    @Inject
+    lateinit var episodes: EpisodeCache
+
+    // Whether an episode's bytes may come over the network now, which the player's stream follows (ADR-031, rule 9).
+    @Inject
+    lateinit var network: EpisodeNetworkPolicy
+
     private var session: MediaSession? = null
 
     // Where the artwork loads, for as long as the service lives.
@@ -60,7 +73,7 @@ internal class PlaybackService : MediaSessionService() {
                 setSmallIcon(R.drawable.ds_ic_notification)
             },
         )
-        val player = buildPlayer(this)
+        val player = buildPlayer(this, episodes.playerDataSource(this) { network.state.value.needsWifi })
         // The play order that Rolabox's controller sends, which only the ExoPlayer can take (ADR-028, rule 6).
         player.addListener(PlayOrderKeeper(player))
         // ⏮ and ⏭ of every controller skip by seconds while an episode is loaded (ADR-031, rule 11).
@@ -129,22 +142,27 @@ internal class PlaybackService : MediaSessionService() {
 /**
  * The player of the service, with the threshold of ⏮ (ADR-023, rule 7), the skips of an episode (ADR-031, rule 11)
  * and the phone's media volume as the volume (rule 6). It handles audio focus as music, and pauses when the
- * headphones go (ADR-023, "Audio focus, noise and buttons"). [configure] is for the tests, which set Media3's fake
+ * headphones go (ADR-023, "Audio focus, noise and buttons"). It reads through [dataSource] when there is one: the
+ * episodes' cache, and Media3's default for a song (ADR-031). [configure] is for the tests, which set Media3's fake
  * clock.
  */
 // The threshold and the device volume are what ADR-023 decides, and Media3 marks them unstable: an upgrade may
 // change them.
 @OptIn(UnstableApi::class)
-internal fun buildPlayer(context: Context, configure: ExoPlayer.Builder.() -> Unit = {}): ExoPlayer =
-    ExoPlayer.Builder(context)
-        .setMaxSeekToPreviousPositionMs(RestartThreshold.inWholeMilliseconds)
-        .setSeekBackIncrementMs(SkipBack.inWholeMilliseconds)
-        .setSeekForwardIncrementMs(SkipForward.inWholeMilliseconds)
-        .setDeviceVolumeControlEnabled(true)
-        .setAudioAttributes(MusicAttributes, true)
-        .setHandleAudioBecomingNoisy(true)
-        .apply(configure)
-        .build()
+internal fun buildPlayer(
+    context: Context,
+    dataSource: DataSource.Factory? = null,
+    configure: ExoPlayer.Builder.() -> Unit = {},
+): ExoPlayer = ExoPlayer.Builder(context)
+    .apply { dataSource?.let { setMediaSourceFactory(DefaultMediaSourceFactory(it)) } }
+    .setMaxSeekToPreviousPositionMs(RestartThreshold.inWholeMilliseconds)
+    .setSeekBackIncrementMs(SkipBack.inWholeMilliseconds)
+    .setSeekForwardIncrementMs(SkipForward.inWholeMilliseconds)
+    .setDeviceVolumeControlEnabled(true)
+    .setAudioAttributes(MusicAttributes, true)
+    .setHandleAudioBecomingNoisy(true)
+    .apply(configure)
+    .build()
 
 /**
  * Whether the player goes on without the app: an item is loaded and asked to play, even if a call has it silent for
@@ -202,6 +220,8 @@ internal class SessionCallback(private val resumption: SessionResumption?, priva
     ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> =
         resumption?.resumption() ?: super.onPlaybackResumption(mediaSession, controller, isForPlayback)
 
+    // The custom cache key is unstable in Media3, and what reads an episode from its download (ADR-031).
+    @OptIn(UnstableApi::class)
     override fun onAddMediaItems(
         mediaSession: MediaSession,
         controller: MediaSession.ControllerInfo,
@@ -209,7 +229,13 @@ internal class SessionCallback(private val resumption: SessionResumption?, priva
     ): ListenableFuture<List<MediaItem>> = Futures.immediateFuture(
         mediaItems.map { item ->
             val uri = item.requestMetadata.mediaUri
-            if (item.localConfiguration == null && uri != null) item.buildUpon().setUri(uri).build() else item
+            if (item.localConfiguration == null && uri != null) {
+                // An episode is read through the cache by its own key, which the media ID gives back (ADR-031).
+                item.buildUpon().setUri(uri).setCustomCacheKey(episodeOfMediaId(item.mediaId)?.let(::episodeCacheKey))
+                    .build()
+            } else {
+                item
+            }
         },
     )
 }

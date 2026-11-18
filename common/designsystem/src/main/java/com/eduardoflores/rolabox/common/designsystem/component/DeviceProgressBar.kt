@@ -35,6 +35,8 @@ private const val KNOB_TURN_DEGREES = 45f
 private const val PREVIEW_TIME = 0.33f
 private const val PREVIEW_SCRUB = 0.49f
 private const val PREVIEW_VOLUME = 0.62f
+private const val PREVIEW_DOWNLOADING_TIME = 0.06f
+private const val PREVIEW_DOWNLOADED = 0.38f
 private val PreviewPadding = 16.dp
 
 /** The three looks of a [DeviceProgressBar]. */
@@ -55,6 +57,9 @@ enum class ProgressBarMode {
  * elapsed and the time left in [ProgressBarMode.Normal] and [ProgressBarMode.Scrub], and "VOL" and the
  * level in [ProgressBarMode.Volume]. [mode] sets the look. Put it in the content of a [DeviceDisplay].
  *
+ * [downloaded] (0 to 1), when there is one, is how much of an episode is on the phone: the track is drawn again up to
+ * it, so that part is the lighter part of the bar behind the fill (ADR-031, frame 28).
+ *
  * It shows state and takes no input: the wheel moves it. [description] is what a screen reader says
  * for it, such as "Playback position", and its range is read as [progress].
  */
@@ -66,6 +71,7 @@ fun DeviceProgressBar(
     description: String,
     modifier: Modifier = Modifier,
     mode: ProgressBarMode = ProgressBarMode.Normal,
+    downloaded: Float? = null,
 ) {
     val colors = RolaboxMetal.colors
     val clamped = progress.coerceIn(0f, 1f)
@@ -87,6 +93,10 @@ fun DeviceProgressBar(
                 .drawBehind {
                     val corner = CornerRadius(BarCorner.toPx())
                     drawRoundRect(colors.displayRule, size = size, cornerRadius = corner)
+                    downloaded?.let {
+                        val width = size.width * it.coerceIn(0f, 1f)
+                        drawRoundRect(colors.displayRule, size = Size(width, size.height), cornerRadius = corner)
+                    }
                     drawRoundRect(fill, size = Size(size.width * clamped, size.height), cornerRadius = corner)
                     if (mode == ProgressBarMode.Scrub) {
                         // Past the bar's height on purpose: the knob is taller than the bar.
@@ -111,12 +121,25 @@ fun DeviceProgressBar(
 }
 
 @Composable
-private fun BarPreview(mode: ProgressBarMode, progress: Float, startLabel: String, endLabel: String) {
+private fun BarPreview(
+    mode: ProgressBarMode,
+    progress: Float,
+    startLabel: String,
+    endLabel: String,
+    downloaded: Float? = null,
+) {
     RolaboxTheme {
         Box(Modifier.padding(PreviewPadding)) {
             // The display's white, since the bar is made for it and not for the metal.
             Box(Modifier.background(RolaboxMetal.colors.displayScreen).padding(PreviewPadding)) {
-                DeviceProgressBar(progress, startLabel, endLabel, description = "Position", mode = mode)
+                DeviceProgressBar(
+                    progress,
+                    startLabel,
+                    endLabel,
+                    description = "Position",
+                    mode = mode,
+                    downloaded = downloaded,
+                )
             }
         }
     }
@@ -133,3 +156,8 @@ private fun DeviceProgressBarScrubPreview() = BarPreview(ProgressBarMode.Scrub, 
 @PreviewLightDark
 @Composable
 private fun DeviceProgressBarVolumePreview() = BarPreview(ProgressBarMode.Volume, PREVIEW_VOLUME, "VOL", "62%")
+
+@PreviewLightDark
+@Composable
+private fun DeviceProgressBarDownloadingPreview() =
+    BarPreview(ProgressBarMode.Normal, PREVIEW_DOWNLOADING_TIME, "1:52", "-27:40", PREVIEW_DOWNLOADED)

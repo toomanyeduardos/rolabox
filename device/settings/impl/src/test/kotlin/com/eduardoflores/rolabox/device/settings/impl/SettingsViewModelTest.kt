@@ -50,6 +50,7 @@ class SettingsViewModelTest {
                 SettingsListRow.Theme,
                 SettingsListRow.OnlineArtwork,
                 SettingsListRow.MainMenu,
+                SettingsListRow.Podcasts,
                 SettingsListRow.About,
             ),
             settingsListRows(viewModel.uiState.value.sections),

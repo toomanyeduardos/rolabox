@@ -25,20 +25,25 @@ import kotlin.time.Duration
 /**
  * Connects an episode of the library to its ViewModel, which the entry creates (ADR-021). The title is the show's.
  * Turning moves between the rows, then scrolls the description, and center plays the episode as the highlighted row
- * says (frame 26).
+ * says (frame 26). On Needs Wi-Fi, center is [onAllowMobileData], which opens the podcasts' settings (frame 36).
  */
 @Composable
-internal fun EpisodeRoute(viewModel: EpisodeViewModel, onPlaying: () -> Unit) {
+internal fun EpisodeRoute(viewModel: EpisodeViewModel, onPlaying: () -> Unit, onAllowMobileData: () -> Unit) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val wheel by viewModel.wheel.collectAsStateWithLifecycle()
     val playFailure by viewModel.playFailure.collectAsStateWithLifecycle()
     val currentOnPlaying by rememberUpdatedState(onPlaying)
+    val currentOnAllowMobileData by rememberUpdatedState(onAllowMobileData)
     ScreenTitle((state as? ListUiState.Loaded)?.value?.showTitle)
     PlayFailureToast(playFailure, onShow = viewModel::onPlayFailureShown)
     HandleWheelEvents { event ->
         when {
             event is WheelEvent.Turn -> viewModel.onTurn(event.steps)
-            event == WheelEvent.Center -> viewModel.onCenter { currentOnPlaying() }
+
+            event == WheelEvent.Center ->
+                viewModel.onCenter(onPlaying = {
+                    currentOnPlaying()
+                }, onAllowMobileData = { currentOnAllowMobileData() })
         }
     }
     val zone = remember { ZoneId.systemDefault() }
@@ -96,6 +101,7 @@ internal data class EpisodeWords(
     val play: String,
     val resume: String,
     val playFromStart: String,
+    val needsWifi: String,
     val dateThisYear: String,
     val dateOtherYear: String,
     val minutes: String,
@@ -108,6 +114,7 @@ internal data class EpisodeWords(
         EpisodeRow.Play -> play
         EpisodeRow.Resume -> resume
         EpisodeRow.PlayFromStart -> playFromStart
+        EpisodeRow.NeedsWifi -> needsWifi
     }
 }
 
@@ -116,6 +123,7 @@ internal fun episodeWords() = EpisodeWords(
     play = stringResource(R.string.podcasts_play),
     resume = stringResource(R.string.podcasts_resume),
     playFromStart = stringResource(R.string.podcasts_play_from_start),
+    needsWifi = stringResource(R.string.podcasts_needs_wifi),
     dateThisYear = stringResource(R.string.podcasts_date_this_year),
     dateOtherYear = stringResource(R.string.podcasts_date_other_year),
     minutes = stringResource(R.string.podcasts_minutes),
@@ -170,6 +178,8 @@ private fun PlayFailureToast(failure: EpisodePlayFailure?, onShow: () -> Unit) {
         val message = when (failure ?: return@LaunchedEffect) {
             EpisodePlayFailure.EpisodeUnavailable -> R.string.podcasts_play_episode_unavailable
             EpisodePlayFailure.PlayerUnavailable -> R.string.podcasts_play_player_unavailable
+            EpisodePlayFailure.StorageFull -> R.string.podcasts_play_storage_full
+            EpisodePlayFailure.MobileDataOff -> R.string.podcasts_play_mobile_data_off
         }
         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         currentOnShow()

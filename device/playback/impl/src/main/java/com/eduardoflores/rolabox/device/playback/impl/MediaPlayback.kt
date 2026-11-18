@@ -26,6 +26,7 @@ import com.eduardoflores.rolabox.device.library.api.LibraryError
 import com.eduardoflores.rolabox.device.library.api.LibraryRepository
 import com.eduardoflores.rolabox.device.library.api.Song
 import com.eduardoflores.rolabox.device.library.api.SongId
+import com.eduardoflores.rolabox.device.playback.api.ItemDownload
 import com.eduardoflores.rolabox.device.playback.api.PlaybackController
 import com.eduardoflores.rolabox.device.playback.api.PlaybackError
 import com.eduardoflores.rolabox.device.playback.api.PlaybackItem
@@ -35,6 +36,8 @@ import com.eduardoflores.rolabox.device.playback.api.PlaybackState
 import com.eduardoflores.rolabox.device.playback.api.RepeatMode
 import com.eduardoflores.rolabox.device.playback.api.SeekDirection
 import com.eduardoflores.rolabox.device.playback.api.SkippedItems
+import com.eduardoflores.rolabox.device.playback.impl.downloads.EpisodeDownloader
+import com.eduardoflores.rolabox.device.playback.impl.downloads.episodeCacheKey
 import com.eduardoflores.rolabox.device.playback.local.api.PlayOrder
 import com.eduardoflores.rolabox.device.playback.local.api.PlaybackLocalDataSource
 import com.eduardoflores.rolabox.device.playback.local.api.ResumePoint
@@ -57,6 +60,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filterNotNull
@@ -116,10 +120,12 @@ private val SILENT_EVENTS = intArrayOf(
  *
  * An episode is queued alone, from [podcasts] (ADR-031): it starts where it was left when asked to resume, ⏮ and ⏭
  * skip by seconds, it is never shuffled or repeated, and its position is stored in the podcasts with the resume point.
+ * Playing one adds its download to [downloads] first, unless it is done or under way, and the player reads it through
+ * the cache that the download writes, by the episode's own key (ADR-031, Downloads).
  */
 // One function for each action of the controller, and the few that every action shares. One parameter for each of
 // what it plays with: the library, the player, the volume, the stored point, the scope, the clock, the artwork, the
-// settings, the random orders and the podcasts.
+// settings, the random orders, the podcasts and the downloads.
 @Suppress("TooManyFunctions", "LongParameterList")
 @Singleton
 internal class MediaPlayback @Inject constructor(
@@ -134,10 +140,14 @@ internal class MediaPlayback @Inject constructor(
     private val orders: PlayOrders,
     private val nonFatalReport: NonFatalReport,
     private val podcasts: Podcasts,
+    private val downloads: EpisodeDownloader,
 ) : PlaybackState,
     PlaybackController,
     SessionResumption {
     private val state = MutableStateFlow(Snapshot())
+
+    /** An episode that ran out of bytes, waiting for the network (ADR-031, rule 15). */
+    private val wait = NetworkWait(downloads.waitsFor, scope) { action -> onPlayer(action) }
 
     /** The items the player was given, in its order, which is the list's. Empty when nothing is loaded. */
     private var items: List<PlaybackItem> = emptyList()
@@ -178,24 +188,8 @@ internal class MediaPlayback @Inject constructor(
     /** Whether ⏮ brought the player to an item that hasn't played yet, so a skip goes on backward. */
     private var goingBack = false
 
-    // A deleted or protected file is the phone's state, not a bug, and so is a stream that lost its network or a server
-    // that answered with an error, so only the others are reported (ADR-030). An Unplayable is a data object, whose
-    // toString() is its name.
-    private fun report(unplayable: PlaybackError.Unplayable, error: PlaybackException) {
-        if (unplayable != PlaybackError.Unplayable.Missing &&
-            unplayable != PlaybackError.Unplayable.Protected &&
-            !error.isNetworkState()
-        ) {
-            nonFatalReport.report("Unplayable.$unplayable ${error.errorCodeName}", error)
-        }
-    }
-
     private val listener = object : Player.Listener {
-        override fun onPlayerError(error: PlaybackException) {
-            val unplayable = error.toUnplayable()
-            report(unplayable, error)
-            listenedTo?.let { skip(it, unplayable) }
-        }
+        override fun onPlayerError(error: PlaybackException) = onItemFailed(error)
 
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             // A new list counts its own start in play(). Repeat One starting the item again is a start too (ADR-028).
@@ -212,6 +206,7 @@ internal class MediaPlayback @Inject constructor(
             // ⏮'s direction lasts until an item plays: one with no audio is ready too, and is skipped on backward
             // (ADR-023).
             if (playbackState == Player.STATE_READY && listenedTo?.hasNoAudio() != true) goingBack = false
+            if (playbackState == Player.STATE_READY) wait.end()
             // An item with no audio can end without ever being ready, at once: it didn't play, it failed.
             if (playbackState == Player.STATE_ENDED) {
                 listenedTo?.let {
@@ -232,6 +227,15 @@ internal class MediaPlayback @Inject constructor(
                 refresh(player)
             }
         }
+    }
+
+    /** The current item failed: it is reported unless it is the phone's state, and skipped (ADR-023). */
+    private fun onItemFailed(error: PlaybackException) {
+        // An episode out of bytes with no network it may use isn't broken: it waits (ADR-031, rule 15).
+        if (wait.onError(error, isEpisodeLoaded)) return
+        val unplayable = error.toUnplayable()
+        reportUnplayable(nonFatalReport, unplayable, error)
+        listenedTo?.let { skip(it, unplayable) }
     }
 
     init {
@@ -323,6 +327,9 @@ internal class MediaPlayback @Inject constructor(
     override val unplayableQueue: Flow<SkippedItems?> = state.map { it.unplayableQueue }.distinctUntilChanged()
     override val isShuffled: Flow<Boolean> = state.map { it.isShuffled }.distinctUntilChanged()
     override val repeatMode: Flow<RepeatMode> = state.map { it.repeatMode }.distinctUntilChanged()
+    override val waitingFor: Flow<PlaybackError.Waiting?> = wait.waitingFor
+    override val download: Flow<ItemDownload?> =
+        combine(currentItem, downloads.downloads) { item, all -> item?.let { all[it.id] } }.distinctUntilChanged()
 
     // The queue holds only the songs that can be played: a protected one selected plays from the nearest that can be
     // (ADR-023). An episode resumes from the podcasts' position, which a song doesn't keep (ADR-031).
@@ -340,6 +347,10 @@ internal class MediaPlayback @Inject constructor(
             loadNothingPlayable(all).bind()
         } else {
             val startAt = if (resume) podcasts.storedPositionOf(first.item.id).bind() else Duration.ZERO
+            // An episode plays from its download, which playing it adds (ADR-031, rule 8).
+            (first.item.id as? PlaybackItemId.Episode)?.let {
+                downloads.download(it.id, first.uri, first.sizeBytes).bind()
+            }
             start(source, list, currentSettings().shuffle.shuffledBy, list.indexOf(first), startAt).bind()
         }
     }
@@ -387,6 +398,7 @@ internal class MediaPlayback @Inject constructor(
         player.prepare()
         player.play()
         state.update { it.copy(startCount = it.startCount + 1, skipped = null, unplayableQueue = null) }
+        wait.end()
         refresh(player)
         // The same item in another list changes no state, and the list is what is stored.
         store(player)
@@ -401,7 +413,7 @@ internal class MediaPlayback @Inject constructor(
         var empty = false
         onPlayer { empty = it.mediaItemCount == 0 }
         if (!empty) return
-        val stored = storedQueue() ?: return
+        val stored = storedQueue(local, library, podcasts, orders) ?: return
         val current = currentSettings()
         onPlayer { player ->
             if (player.mediaItemCount == 0) {
@@ -422,7 +434,7 @@ internal class MediaPlayback @Inject constructor(
     override fun resumption(): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
         val resumed = SettableFuture.create<MediaSession.MediaItemsWithStartPosition>()
         scope.launch(connection.dispatcher) {
-            val stored = storedQueue()
+            val stored = storedQueue(local, library, podcasts, orders)
             val current = currentSettings()
             if (stored == null) {
                 resumed.setException(UnsupportedOperationException("Nothing was stored to resume"))
@@ -542,42 +554,6 @@ internal class MediaPlayback @Inject constructor(
         playerOrder = order
     }
 
-    /**
-     * The stored list as it is now, and where in it to carry on. A song that is gone leaves the next one at its index,
-     * from 0:00. Nothing is left when that is past the end, or the list is gone, so nothing is stored any more. A
-     * library that can't be read says nothing about the songs, so what is stored stays. A shuffled queue comes back in
-     * its stored order, and an order that can't be used is dropped (ADR-028, "What is restored").
-     */
-    private suspend fun storedQueue(): StoredQueue? {
-        val point = local.resumePoint().getOrNull() ?: return null
-        val order = local.playOrder().getOrNull()
-        return queueOf(point.source, library, podcasts).fold(
-            ifLeft = { error ->
-                if (error.isListGone()) local.clear()
-                null
-            },
-            ifRight = { all ->
-                // A song found protected since it was stored is left out, as it is of any queue (ADR-023).
-                val list = all.playable()
-                val stored = list.resumedAt(point, order?.roundIn(list, point))
-                if (stored == null) local.clear()
-                stored?.withPositionOf(point, podcasts)
-            },
-        )
-    }
-
-    /**
-     * The round of a stored [PlayOrder] in [list]: a song that is gone leaves it, as it leaves the queue, and a song
-     * new to the list goes at its end, in a random order. `null` when it doesn't hold the stored song.
-     */
-    private fun PlayOrder.roundIn(list: List<QueuedItem>, point: ResumePoint): StoredOrder? {
-        if (point.item !in items) return null
-        val indexOf = list.indices.associateBy { list[it].item.id }
-        val kept = items.mapNotNull { indexOf[it] }
-        val added = list.indices - kept.toSet()
-        return StoredOrder(shuffledBy, kept + orders.shuffled(added))
-    }
-
     // The index is where the item is in the play order (ADR-028), which is the list's when it isn't shuffled.
     private fun store(player: Player) {
         val list = source ?: return
@@ -607,11 +583,15 @@ internal class MediaPlayback @Inject constructor(
         toStore.trySend(Write.Order(order))
     }
 
+    // A paused episode never goes on by itself, so pausing ends a wait for the network (ADR-031, rule 15).
     override suspend fun pause() = onLoaded { player ->
         hold?.let { it.wasPlaying = false } ?: player.pause()
+        wait.end()
     }
 
+    // An episode that stopped for the network is prepared again, and waits again if it still can't be read.
     override suspend fun resume() = onLoaded { player ->
+        if (player.playbackState == Player.STATE_IDLE) player.prepare()
         hold?.let { it.wasPlaying = true } ?: player.play()
     }
 
@@ -705,6 +685,7 @@ internal class MediaPlayback @Inject constructor(
         hold = null
         failed = emptySet()
         playerOrder = null
+        wait.end()
         state.update { Snapshot(startCount = it.startCount, volume = it.volume, repeatMode = it.repeatMode) }
     }
 
@@ -859,6 +840,7 @@ internal class MediaPlayback @Inject constructor(
         failed = emptySet()
         goingBack = false
         playerOrder = null
+        wait.end()
         toStore.trySend(Write.Clear)
         player.clearMediaItems()
     }
@@ -991,7 +973,7 @@ private data class Snapshot(
 /**
  * An item of the queue, where its audio is, which the player needs and the `:api` doesn't show, and where it is in its
  * album, which the Albums order needs (ADR-028). A [isProtected] song is in the library's list, and never in a queue
- * (ADR-023).
+ * (ADR-023). [sizeBytes] is an episode's size as its feed gives it, which its download is checked against.
  */
 private class QueuedItem(
     val item: PlaybackItem,
@@ -999,10 +981,15 @@ private class QueuedItem(
     val place: AlbumPlace,
     val artworkVersion: Int = 0,
     val isProtected: Boolean = false,
+    val sizeBytes: Long? = null,
 ) {
+    // The custom cache key is unstable in Media3, and what reads an episode from its download (ADR-031).
+    @OptIn(UnstableApi::class)
     fun toMediaItem(): MediaItem = MediaItem.Builder()
         .setMediaId(item.id.mediaId)
         .setUri(uri)
+        // An episode is read through the cache by its own key, not its URL (ADR-031, Downloads).
+        .setCustomCacheKey((item.id as? PlaybackItemId.Episode)?.let { episodeCacheKey(it.id) })
         // A controller in another process drops the URI, and the session puts it back from here.
         .setRequestMetadata(MediaItem.RequestMetadata.Builder().setMediaUri(Uri.parse(uri)).build())
         .setMediaMetadata(
@@ -1034,6 +1021,47 @@ private class StoredQueue(
 
 /** A stored play order, as indices into the list it is loaded with. */
 private class StoredOrder(val by: ShuffledBy, val round: List<Int>)
+
+/**
+ * The stored list as it is now, and where in it to carry on. A song that is gone leaves the next one at its index,
+ * from 0:00. Nothing is left when that is past the end, or the list is gone, so nothing is stored any more. A
+ * library that can't be read says nothing about the songs, so what is stored stays. A shuffled queue comes back in
+ * its stored order, and an order that can't be used is dropped (ADR-028, "What is restored").
+ */
+private suspend fun storedQueue(
+    local: PlaybackLocalDataSource,
+    library: LibraryRepository,
+    podcasts: Podcasts,
+    orders: PlayOrders,
+): StoredQueue? {
+    val point = local.resumePoint().getOrNull() ?: return null
+    val order = local.playOrder().getOrNull()
+    return queueOf(point.source, library, podcasts).fold(
+        ifLeft = { error ->
+            if (error.isListGone()) local.clear()
+            null
+        },
+        ifRight = { all ->
+            // A song found protected since it was stored is left out, as it is of any queue (ADR-023).
+            val list = all.playable()
+            val stored = list.resumedAt(point, order?.roundIn(list, point, orders))
+            if (stored == null) local.clear()
+            stored?.withPositionOf(point, podcasts)
+        },
+    )
+}
+
+/**
+ * The round of a stored [PlayOrder] in [list]: a song that is gone leaves it, as it leaves the queue, and a song
+ * new to the list goes at its end, in a random order. `null` when it doesn't hold the stored song.
+ */
+private fun PlayOrder.roundIn(list: List<QueuedItem>, point: ResumePoint, orders: PlayOrders): StoredOrder? {
+    if (point.item !in items) return null
+    val indexOf = list.indices.associateBy { list[it].item.id }
+    val kept = items.mapNotNull { indexOf[it] }
+    val added = list.indices - kept.toSet()
+    return StoredOrder(shuffledBy, kept + orders.shuffled(added))
+}
 
 /** Where to carry on: the stored item, and when it is gone the one at its place, in the [order] when there is one. */
 private fun List<QueuedItem>.resumedAt(point: ResumePoint, order: StoredOrder?): StoredQueue? {
@@ -1121,7 +1149,14 @@ private suspend fun Podcasts.queueOf(episodeId: EpisodeId): Either<PlaybackError
         duration = episode.length ?: Duration.ZERO,
         artwork = null,
     )
-    listOf(QueuedItem(item, episode.audioUrl, AlbumPlace(album = null, disc = null, track = null)))
+    listOf(
+        QueuedItem(
+            item,
+            episode.audioUrl,
+            AlbumPlace(album = null, disc = null, track = null),
+            sizeBytes = episode.audioSizeBytes,
+        ),
+    )
 }
 
 /** The list of [source]: the library's songs, or an episode alone, from the podcasts (ADR-031). */

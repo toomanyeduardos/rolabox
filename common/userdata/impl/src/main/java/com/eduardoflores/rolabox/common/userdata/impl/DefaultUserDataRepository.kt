@@ -7,6 +7,7 @@ import com.eduardoflores.rolabox.common.sync.api.SyncedValue
 import com.eduardoflores.rolabox.common.userdata.api.AccentColor
 import com.eduardoflores.rolabox.common.userdata.api.Clicker
 import com.eduardoflores.rolabox.common.userdata.api.DarkThemeConfig
+import com.eduardoflores.rolabox.common.userdata.api.EpisodesOnMobileData
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRow
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRowVisibility
 import com.eduardoflores.rolabox.common.userdata.api.Repeat
@@ -22,6 +23,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 
 /** Reads and writes the local side only (ADR-002); the [PreferencesSyncer] brings the remote side. */
+// One function for each preference of the repository, as the local data source has.
+@Suppress("TooManyFunctions")
 internal class DefaultUserDataRepository @Inject constructor(
     private val local: PreferencesLocalDataSource,
     private val clock: Clock,
@@ -56,6 +59,12 @@ internal class DefaultUserDataRepository @Inject constructor(
 
     override suspend fun setOfflineModeChosen(chosen: Boolean): Either<StorageError, Unit> =
         local.setOfflineModeChosen(chosen)
+
+    override fun observeEpisodesOnMobileData(): Flow<Either<StorageError, EpisodesOnMobileData>> =
+        local.observeEpisodesOnMobileData()
+
+    override suspend fun setEpisodesOnMobileData(value: EpisodesOnMobileData): Either<StorageError, Unit> =
+        local.setEpisodesOnMobileData(value)
 
     private fun now() = SyncTimestamp(clock.millis())
 }

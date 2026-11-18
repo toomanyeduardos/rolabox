@@ -65,4 +65,18 @@ interface PlaybackState {
      * as queues do.
      */
     val unplayableQueue: Flow<SkippedItems?>
+
+    /**
+     * The download of [currentItem], as [ItemDownloads] has it, while one is loaded: an episode that is being or was
+     * downloaded (ADR-031, Stream while downloading). `null` when nothing is loaded, or the item has no download, as a
+     * song never does.
+     */
+    val download: Flow<ItemDownload?>
+
+    /**
+     * What the loaded episode waits for, once it ran out of bytes with no network it may use (ADR-031, rule 15). It is
+     * still playing while it waits, at the same position, and goes on by itself when the network allows it. Pausing it
+     * ends the wait. `null` otherwise.
+     */
+    val waitingFor: Flow<PlaybackError.Waiting?>
 }

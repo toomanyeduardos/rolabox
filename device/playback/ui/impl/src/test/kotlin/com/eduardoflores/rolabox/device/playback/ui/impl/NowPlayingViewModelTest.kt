@@ -7,6 +7,7 @@ import com.eduardoflores.rolabox.device.library.api.ArtworkRef
 import com.eduardoflores.rolabox.device.library.api.LibraryError
 import com.eduardoflores.rolabox.device.library.api.SongId
 import com.eduardoflores.rolabox.device.library.testing.FakeArtworkRepository
+import com.eduardoflores.rolabox.device.playback.api.ItemDownload
 import com.eduardoflores.rolabox.device.playback.api.PlaybackError
 import com.eduardoflores.rolabox.device.playback.api.PlaybackItem
 import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
@@ -153,6 +154,55 @@ class NowPlayingViewModelTest {
         episodeArtwork.artwork = mapOf(episode to Blue)
 
         assertEquals(Blue, viewModel.artwork)
+    }
+
+    @Test
+    fun anEpisodeDownloading_showsWhatIsDownloaded_andSaysSo() = runTest {
+        val viewModel = observedViewModel()
+        playback.load(listOf(AnEpisode), index = 0)
+
+        playback.downloadAt(ItemDownload.Downloading(0.38f))
+
+        assertEquals(0.38f, viewModel.playing().downloaded)
+        assertEquals(EpisodeTag.Downloading(38), viewModel.playing().tag)
+
+        playback.downloadAt(ItemDownload.Waiting(0.996f))
+        assertEquals(EpisodeTag.Downloading(99), viewModel.playing().tag)
+
+        playback.downloadAt(ItemDownload.Done)
+        assertEquals(1f, viewModel.playing().downloaded)
+        assertNull(viewModel.playing().tag)
+    }
+
+    @Test
+    fun anEpisodeWaiting_saysWhatFor_overTheDownload() = runTest {
+        val viewModel = observedViewModel()
+        playback.load(listOf(AnEpisode), index = 0)
+        playback.downloadAt(ItemDownload.Waiting(0.38f))
+
+        playback.waitingFor(PlaybackError.MobileDataOff)
+        assertEquals(EpisodeTag.WaitingForWifi, viewModel.playing().tag)
+
+        playback.waitingFor(PlaybackError.NoConnection)
+        assertEquals(EpisodeTag.WaitingForConnection, viewModel.playing().tag)
+        assertEquals(0.38f, viewModel.playing().downloaded)
+    }
+
+    @Test
+    fun aDownloadThatFails_isSaidForAMoment_andTheBarLosesItsDownload() = runTest {
+        val viewModel = observedViewModel()
+        playback.load(listOf(AnEpisode), index = 0)
+        playback.downloadAt(ItemDownload.Downloading(0.5f))
+
+        playback.downloadAt(ItemDownload.Failed)
+
+        assertTrue(viewModel.playing().downloadFailed)
+        assertNull(viewModel.playing().downloaded)
+        assertNull(viewModel.playing().tag)
+
+        advanceTimeBy(DownloadFailedNotice + 1.seconds)
+
+        assertFalse(viewModel.playing().downloadFailed)
     }
 
     @Test
@@ -741,5 +791,7 @@ class NowPlayingViewModelTest {
         val Red = FakeArtworkRepository.solid(0xFFFF0000.toInt())
 
         val Queue = listOf(song(1, "Dial Tone"), song(2, "Coastline"), song(3, "Glasshouse"))
+        val AnEpisode =
+            PlaybackItem(PlaybackItemId.Episode(EpisodeId(3)), "Episode", "The Daily", "NY Times", 30.minutes, null)
     }
 }

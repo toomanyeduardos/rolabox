@@ -14,6 +14,13 @@ data object SettingsKey : NavKey
 @Serializable
 data object MainMenuSettingsKey : NavKey
 
+/**
+ * The podcasts' settings: Use Mobile Data (ADR-031, frame 35). The Episode screen opens it too, from an episode that
+ * needs Wi-Fi (frame 36).
+ */
+@Serializable
+data object PodcastSettingsKey : NavKey
+
 /** The app's name and version, and the number of songs in the library. */
 @Serializable
 data object AboutKey : NavKey

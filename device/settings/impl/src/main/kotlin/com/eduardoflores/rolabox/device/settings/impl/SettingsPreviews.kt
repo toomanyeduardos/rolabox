@@ -9,6 +9,7 @@ import com.eduardoflores.rolabox.common.designsystem.component.PreviewLightDark
 import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxTheme
 import com.eduardoflores.rolabox.common.userdata.api.Clicker
 import com.eduardoflores.rolabox.common.userdata.api.DarkThemeConfig
+import com.eduardoflores.rolabox.common.userdata.api.EpisodesOnMobileData
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRow
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRowVisibility
 import com.eduardoflores.rolabox.common.userdata.api.Repeat
@@ -80,3 +81,10 @@ private data object PreviewKey : NavKey
 
 // The number of songs frame 13 shows.
 private const val PREVIEW_SONG_COUNT = 42
+
+/** Settings → Podcasts, with Use Mobile Data off (ADR-031, frame 35). */
+@PreviewLightDark
+@Composable
+private fun PodcastSettingsPreview() = DevicePreview(title = "Podcasts") {
+    PodcastSettingsList(mobileData = EpisodesOnMobileData.OFF, highlightedIndex = 0)
+}
