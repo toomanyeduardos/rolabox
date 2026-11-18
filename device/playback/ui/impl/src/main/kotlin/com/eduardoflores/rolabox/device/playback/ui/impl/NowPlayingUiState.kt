@@ -22,6 +22,18 @@ internal enum class SkipReason { Missing, Damaged, Unsupported, Protected, Unrea
 /** The songs skipped in a run: [title] is the last one's, [others] how many came before it, [reason] why it failed. */
 internal data class SkippedSongs(val title: String?, val others: Int, val reason: SkipReason)
 
+/**
+ * What the corner of an episode's Now Playing says in the time look (ADR-031, frames 28 and 37): that it is still
+ * downloading, with the [Downloading.percent] downloaded, or what it waits for once it ran out of bytes.
+ */
+internal sealed interface EpisodeTag {
+    data class Downloading(val percent: Int) : EpisodeTag
+
+    data object WaitingForWifi : EpisodeTag
+
+    data object WaitingForConnection : EpisodeTag
+}
+
 /** What Now Playing shows: nothing yet, that nothing is loaded, or the loaded song. */
 internal sealed interface NowPlayingUiState {
     data object Loading : NowPlayingUiState
@@ -43,7 +55,10 @@ internal sealed interface NowPlayingUiState {
      * to get here, which takes the cover art's place for a moment. [artwork] is the song's cover, `null` while it loads
      * and when it has none, which the placeholder stands for (ADR-026). [shuffled] and [repeat] are how the queue
      * plays, which icons after its place show (ADR-028). [isEpisode] is an episode, which is queued alone and never
-     * shuffled or repeated, so neither its place nor the icons are shown (ADR-031, frame 27).
+     * shuffled or repeated, so neither its place nor the icons are shown (ADR-031, frame 27). [downloaded] is how much
+     * of an episode is on the phone, the lighter part of the bar, and `null` for a song and an episode with no
+     * download. [tag] says it downloads or waits, and [downloadFailed] that its download just failed, which takes the
+     * cover art's place for a moment as a skip does (ADR-031, Errors).
      */
     data class Playing(
         val title: String?,
@@ -60,6 +75,9 @@ internal sealed interface NowPlayingUiState {
         val shuffled: Boolean = false,
         val repeat: RepeatMode = RepeatMode.Off,
         val isEpisode: Boolean = false,
+        val downloaded: Float? = null,
+        val tag: EpisodeTag? = null,
+        val downloadFailed: Boolean = false,
     ) : NowPlayingUiState {
         /** How full the volume is, from 0 to 1. */
         val volumeFraction: Float

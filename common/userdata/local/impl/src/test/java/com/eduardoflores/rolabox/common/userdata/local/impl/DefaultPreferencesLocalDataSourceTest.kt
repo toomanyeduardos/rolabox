@@ -10,6 +10,7 @@ import com.eduardoflores.rolabox.common.sync.testing.FakeLastWriteWins
 import com.eduardoflores.rolabox.common.userdata.api.AccentColor
 import com.eduardoflores.rolabox.common.userdata.api.Clicker
 import com.eduardoflores.rolabox.common.userdata.api.DarkThemeConfig
+import com.eduardoflores.rolabox.common.userdata.api.EpisodesOnMobileData
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRow
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRowVisibility.HIDDEN
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRowVisibility.SHOWN
@@ -276,6 +277,21 @@ class DefaultPreferencesLocalDataSourceTest {
         preferencesStore.setReadError(StorageError.Corrupted)
 
         assertEquals(listOf(StorageError.Corrupted.left()), dataSource.observeOfflineModeChosen().toList())
+    }
+
+    @Test
+    fun observeEpisodesOnMobileData_nothingStored_isOn() = runTest {
+        assertEquals(EpisodesOnMobileData.ON.right(), dataSource.observeEpisodesOnMobileData().first())
+    }
+
+    @Test
+    fun setEpisodesOnMobileData_isObserved_andNotPartOfTheSyncedPreferences() = runTest {
+        val before = dataSource.getSyncedPreferences()
+
+        assertEquals(Unit.right(), dataSource.setEpisodesOnMobileData(EpisodesOnMobileData.OFF))
+
+        assertEquals(EpisodesOnMobileData.OFF.right(), dataSource.observeEpisodesOnMobileData().first())
+        assertEquals(before, dataSource.getSyncedPreferences())
     }
 
     private fun <T> synced(value: T, updatedAt: Long) = SyncedValue(value, SyncTimestamp(updatedAt))

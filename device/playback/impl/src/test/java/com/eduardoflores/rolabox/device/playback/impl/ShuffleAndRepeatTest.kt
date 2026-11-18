@@ -122,6 +122,7 @@ class ShuffleAndRepeatTest {
             PlayOrders(Random(SEED)),
             FakeNonFatalReport(),
             Podcasts(FakePodcastsRepository(), FakeEpisodeProgressRepository(), FakePodcastArtworkRepository()),
+            FakeEpisodeDownloader(),
         )
     }
 

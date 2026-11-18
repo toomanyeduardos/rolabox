@@ -8,6 +8,7 @@ import com.eduardoflores.rolabox.common.sync.api.SyncedValue
 import com.eduardoflores.rolabox.common.userdata.api.AccentColor
 import com.eduardoflores.rolabox.common.userdata.api.Clicker
 import com.eduardoflores.rolabox.common.userdata.api.DarkThemeConfig
+import com.eduardoflores.rolabox.common.userdata.api.EpisodesOnMobileData
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRow
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRowVisibility
 import com.eduardoflores.rolabox.common.userdata.api.Repeat
@@ -164,6 +165,14 @@ class DefaultUserDataRepositoryTest {
 
         assertEquals(Unit.right(), repository.setOfflineModeChosen(true))
         assertEquals(true.right(), repository.observeOfflineModeChosen().first())
+    }
+
+    @Test
+    fun setEpisodesOnMobileData_isObserved_OnUntilSet() = runTest {
+        assertEquals(EpisodesOnMobileData.ON.right(), repository.observeEpisodesOnMobileData().first())
+
+        assertEquals(Unit.right(), repository.setEpisodesOnMobileData(EpisodesOnMobileData.OFF))
+        assertEquals(EpisodesOnMobileData.OFF.right(), repository.observeEpisodesOnMobileData().first())
     }
 
     private fun <T> synced(value: T, updatedAt: Long) = SyncedValue(value, SyncTimestamp(updatedAt))

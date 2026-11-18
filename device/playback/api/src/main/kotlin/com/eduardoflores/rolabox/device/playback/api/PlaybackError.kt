@@ -20,6 +20,25 @@ sealed interface PlaybackError {
     data object PlayerUnavailable : PlaybackError
 
     /**
+     * The episode isn't downloaded, and the phone hasn't room for it: less free space than its size, as its feed gives
+     * it, plus a margin (ADR-031, Downloads). Nothing is downloaded or loaded.
+     */
+    data object StorageFull : PlaybackError
+
+    /**
+     * What an episode that ran out of bytes waits for, reported by [PlaybackState.waitingFor] (ADR-031, Stream while
+     * downloading). [MobileDataOff] is also what [PlaybackController.play] returns for an episode with no download
+     * while episodes need Wi-Fi ([EpisodeNetwork]).
+     */
+    sealed interface Waiting : PlaybackError
+
+    /** No network: the episode goes on once there is one. */
+    data object NoConnection : Waiting
+
+    /** Use Mobile Data is Off and the network is metered: the episode goes on once Wi-Fi or the setting allows it. */
+    data object MobileDataOff : Waiting
+
+    /**
      * Why the engine couldn't play an item. No call returns these: [PlaybackState] reports them as they happen, since
      * they come while the queue plays (ADR-023).
      */

@@ -12,9 +12,13 @@
     <!-- Toasts when center on Play, Resume or Play from Start couldn't play the episode (ADR-018, rule 18). -->
     <string name="podcasts_play_episode_unavailable">Can\'t read this episode</string>
     <string name="podcasts_play_player_unavailable">Couldn\'t start the player. Try again.</string>
+    <string name="podcasts_play_storage_full">Not enough space to download this episode</string>
+    <string name="podcasts_play_mobile_data_off">Needs Wi-Fi. Use Mobile Data is off.</string>
     <string name="podcasts_play">Play</string>
     <string name="podcasts_resume">Resume</string>
     <string name="podcasts_play_from_start">Play from Start</string>
+    <!-- In place of Play, for an episode not downloaded while Use Mobile Data is off on mobile data (frame 36). -->
+    <string name="podcasts_needs_wifi">Needs Wi-Fi. Select to allow mobile data.</string>
     <!-- The episode's date on its screen, drawn in capitals: NOV 8. A date of another year adds it. -->
     <string name="podcasts_date_this_year" translatable="false">MMM d</string>
     <string name="podcasts_date_other_year" translatable="false">MMM d, yyyy</string>

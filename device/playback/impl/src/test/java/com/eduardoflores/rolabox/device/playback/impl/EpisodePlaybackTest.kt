@@ -12,6 +12,7 @@ import androidx.media3.test.utils.FakeClock
 import androidx.media3.test.utils.robolectric.ShadowMediaCodecConfig
 import androidx.media3.test.utils.robolectric.TestPlayerRunHelper
 import androidx.test.core.app.ApplicationProvider
+import arrow.core.left
 import arrow.core.right
 import com.eduardoflores.rolabox.common.storage.api.StorageError
 import com.eduardoflores.rolabox.common.testing.FakeNonFatalReport
@@ -23,11 +24,13 @@ import com.eduardoflores.rolabox.device.library.testing.FakeLibraryRepository
 import com.eduardoflores.rolabox.device.library.testing.audio.FixtureContent
 import com.eduardoflores.rolabox.device.library.testing.audio.Mp3Stream
 import com.eduardoflores.rolabox.device.library.testing.audio.Mp3Tags
+import com.eduardoflores.rolabox.device.playback.api.ItemDownload
 import com.eduardoflores.rolabox.device.playback.api.PlaybackError
 import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
 import com.eduardoflores.rolabox.device.playback.api.RepeatMode
 import com.eduardoflores.rolabox.device.playback.api.SeekDirection
+import com.eduardoflores.rolabox.device.playback.impl.downloads.episodeCacheKey
 import com.eduardoflores.rolabox.device.playback.local.api.ResumePoint
 import com.eduardoflores.rolabox.device.playback.testing.FakePlaybackLocalDataSource
 import com.eduardoflores.rolabox.device.podcasts.api.Episode
@@ -83,6 +86,7 @@ class EpisodePlaybackTest {
     private val progress = FakeEpisodeProgressRepository()
     private val local = FakePlaybackLocalDataSource()
     private val userData = FakeUserDataRepository()
+    private val downloader = FakeEpisodeDownloader()
     private lateinit var episode: Episode
     private lateinit var player: ExoPlayer
     private lateinit var playback: MediaPlayback
@@ -121,6 +125,7 @@ class EpisodePlaybackTest {
             PlayOrders(Random(0)),
             FakeNonFatalReport(),
             Podcasts(podcasts, progress, FakePodcastArtworkRepository()),
+            downloader,
         )
     }
 
@@ -143,6 +148,40 @@ class EpisodePlaybackTest {
         assertEquals(1, player.mediaItemCount)
         assertEquals(Uri.parse(episode.audioUrl), player.currentMediaItem?.localConfiguration?.uri)
         assertEquals(MediaMetadata.MEDIA_TYPE_PODCAST_EPISODE, player.currentMediaItem?.mediaMetadata?.mediaType)
+    }
+
+    @Test
+    fun play_addsTheEpisodesDownload_andReadsItThroughTheCacheByItsId() = scope.runTest {
+        playback.play(source, item)
+
+        assertEquals(
+            listOf(FakeEpisodeDownloader.Call(episode.id, episode.audioUrl, episode.audioSizeBytes)),
+            downloader.calls,
+        )
+        assertEquals(episodeCacheKey(episode.id), player.currentMediaItem?.localConfiguration?.customCacheKey)
+    }
+
+    @Test
+    fun play_withNoRoomForTheDownload_loadsNothing() = scope.runTest {
+        downloader.result = PlaybackError.StorageFull.left()
+
+        val result = playback.play(source, item)
+
+        assertEquals(PlaybackError.StorageFull, result.leftOrNull())
+        assertEquals(0, player.mediaItemCount)
+        assertNull(playback.currentItem.first())
+    }
+
+    @Test
+    fun theLoadedEpisodesDownload_isTheState() = scope.runTest {
+        downloader.downloads.value = mapOf(item to ItemDownload.Downloading(0.4f))
+        assertNull(playback.download.first())
+
+        playback.play(source, item)
+
+        assertEquals(ItemDownload.Downloading(0.4f), playback.download.first())
+        downloader.downloads.value = mapOf(item to ItemDownload.Done)
+        assertEquals(ItemDownload.Done, playback.download.first())
     }
 
     @Test

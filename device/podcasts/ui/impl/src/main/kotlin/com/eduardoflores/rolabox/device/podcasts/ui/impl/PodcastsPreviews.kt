@@ -212,6 +212,17 @@ private fun EpisodePartlyPlayedPreview() = EpisodePreview(
 private fun EpisodeUnplayedPreview() =
     EpisodePreview(episodeContent(TheDaily, partOfTheDaily(Duration.ZERO, PlayedState.Unplayed)))
 
+/** Frame 36: not downloaded, on mobile data with Use Mobile Data off, so Needs Wi-Fi in place of Play. */
+@PreviewLightDark
+@Composable
+private fun EpisodeNeedsWifiPreview() = EpisodePreview(
+    episodeContent(
+        TheDaily,
+        partOfTheDaily(Duration.ZERO, PlayedState.Unplayed).copy(download = DownloadState.NotDownloaded),
+        needWifi = true,
+    ),
+)
+
 /** Turned past Play from Start: the description scrolled up, Play from Start still highlighted. */
 @PreviewLightDark
 @Composable

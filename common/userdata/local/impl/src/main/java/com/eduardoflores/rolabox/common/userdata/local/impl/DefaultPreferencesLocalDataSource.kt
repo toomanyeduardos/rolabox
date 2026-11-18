@@ -9,6 +9,7 @@ import com.eduardoflores.rolabox.common.sync.api.SyncedValue
 import com.eduardoflores.rolabox.common.userdata.api.AccentColor
 import com.eduardoflores.rolabox.common.userdata.api.Clicker
 import com.eduardoflores.rolabox.common.userdata.api.DarkThemeConfig
+import com.eduardoflores.rolabox.common.userdata.api.EpisodesOnMobileData
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRow
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRowVisibility
 import com.eduardoflores.rolabox.common.userdata.api.Repeat
@@ -64,6 +65,18 @@ internal class DefaultPreferencesLocalDataSource @Inject constructor(
     override suspend fun setOfflineModeChosen(chosen: Boolean): Either<StorageError, Unit> =
         preferencesStore.setString(OFFLINE_MODE_CHOSEN_KEY, chosen.toString())
 
+    // A value this version doesn't know reads as the default, as an unknown synced value does.
+    override fun observeEpisodesOnMobileData(): Flow<Either<StorageError, EpisodesOnMobileData>> =
+        preferencesStore.observeString(EPISODES_ON_MOBILE_DATA_KEY).map { result ->
+            result.map { stored ->
+                EpisodesOnMobileData.entries.firstOrNull { it.name == stored }
+                    ?: EpisodesOnMobileData.ON
+            }
+        }
+
+    override suspend fun setEpisodesOnMobileData(value: EpisodesOnMobileData): Either<StorageError, Unit> =
+        preferencesStore.setString(EPISODES_ON_MOBILE_DATA_KEY, value.name)
+
     // Each field is resolved on its own, with [remote] as the remote side. Each main menu row too.
     private fun SyncedPreferences.mergedWith(remote: SyncedPreferences) = SyncedPreferences(
         darkThemeConfig = lastWriteWins.resolve(darkThemeConfig, remote.darkThemeConfig),
@@ -86,6 +99,7 @@ internal class DefaultPreferencesLocalDataSource @Inject constructor(
 // Not one of the synced fields below: it's stored on this device only. The key is stored on users'
 // devices, so it doesn't change.
 private const val OFFLINE_MODE_CHOSEN_KEY = "offline_mode_chosen"
+private const val EPISODES_ON_MOBILE_DATA_KEY = "episodes_on_mobile_data"
 private const val TRUE = "true"
 
 /**

@@ -19,9 +19,13 @@ import com.eduardoflores.rolabox.device.library.api.LibraryRepository
 import com.eduardoflores.rolabox.device.library.impl.di.LibraryModule
 import com.eduardoflores.rolabox.device.library.testing.FakeArtworkRepository
 import com.eduardoflores.rolabox.device.library.testing.FakeLibraryRepository
+import com.eduardoflores.rolabox.device.playback.api.EpisodeNetwork
+import com.eduardoflores.rolabox.device.playback.api.ItemDownloads
 import com.eduardoflores.rolabox.device.playback.api.PlaybackController
 import com.eduardoflores.rolabox.device.playback.api.PlaybackState
 import com.eduardoflores.rolabox.device.playback.impl.di.PlaybackModule
+import com.eduardoflores.rolabox.device.playback.testing.FakeEpisodeNetwork
+import com.eduardoflores.rolabox.device.playback.testing.FakeItemDownloads
 import com.eduardoflores.rolabox.device.playback.testing.FakePlayback
 import com.eduardoflores.rolabox.device.podcasts.api.EpisodeProgressRepository
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastArtworkRepository
@@ -79,6 +83,13 @@ abstract class TestPlaybackModule {
 
     @Binds
     abstract fun bindsPlaybackController(fake: FakePlayback): PlaybackController
+
+    // The downloads and the network of episodes, which the podcasts' rows and Episode screen read (ADR-031).
+    @Binds
+    abstract fun bindsItemDownloads(fake: FakeItemDownloads): ItemDownloads
+
+    @Binds
+    abstract fun bindsEpisodeNetwork(fake: FakeEpisodeNetwork): EpisodeNetwork
 }
 
 // The real library reads the files on the phone, so the tests bring their own.

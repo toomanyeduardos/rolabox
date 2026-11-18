@@ -70,3 +70,13 @@ enum class MainMenuRowVisibility {
     SHOWN,
     HIDDEN,
 }
+
+/**
+ * Whether episodes may use a metered network, the device's Use Mobile Data setting (ADR-031, Mobile data). It describes
+ * this phone's data plan, so it never syncs (ADR-011, rule 10), and reads as [ON] when never set. The names are stored,
+ * so they never change.
+ */
+enum class EpisodesOnMobileData {
+    ON,
+    OFF,
+}

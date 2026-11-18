@@ -3,11 +3,13 @@ package com.eduardoflores.rolabox.device.playback.ui.impl
 import androidx.lifecycle.viewModelScope
 import com.eduardoflores.rolabox.device.library.api.ArtworkImage
 import com.eduardoflores.rolabox.device.library.api.ArtworkRepository
+import com.eduardoflores.rolabox.device.playback.api.ItemDownload
 import com.eduardoflores.rolabox.device.playback.api.PlaybackController
 import com.eduardoflores.rolabox.device.playback.api.PlaybackError
 import com.eduardoflores.rolabox.device.playback.api.PlaybackItem
 import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackState
+import com.eduardoflores.rolabox.device.playback.api.RepeatMode
 import com.eduardoflores.rolabox.device.playback.api.SkippedItems
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastArtworkRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -66,15 +68,24 @@ internal class NowPlayingViewModelImpl @Inject constructor(
 
     private val artwork = playbackState.currentItem.artworkOf(artworkRepository, podcastArtworkRepository)
 
+    private val episode = combine(
+        artwork,
+        playbackState.isShuffled,
+        playbackState.repeatMode,
+        playbackState.download,
+        combine(playbackState.waitingFor, playbackState.download.failedJustNow(), ::Pair),
+    ) { artwork, shuffled, repeat, download, (waiting, failed) ->
+        Extras(artwork, shuffled, repeat, download, waiting, failed)
+    }
+
     override val uiState: StateFlow<NowPlayingUiState> = combine(
         combine(playbackState.currentItem, playbackState.startCount, ::Pair)
             .onEach { (item, start) -> endScrubOnAnotherStart(item, start) },
         combine(playbackState.position, playbackState.queueIndex, playbackState.queue, ::Triple),
         combine(mode, playbackState.volume, marker, ::Triple),
         combine(playbackState.skipped, playbackState.unplayableQueue, ::Pair),
-        combine(artwork, playbackState.isShuffled, playbackState.repeatMode, ::Triple),
-    ) { (item, start), (position, index, queue), (mode, volume, marker), (skipped, unplayableQueue), order ->
-        val (artwork, shuffled, repeat) = order
+        episode,
+    ) { (item, start), (position, index, queue), (mode, volume, marker), (skipped, unplayableQueue), extras ->
         if (item == null || index == null) {
             unplayableQueue?.let { NowPlayingUiState.NothingLeftToPlay(it.toUi()) } ?: NowPlayingUiState.NothingLoaded
         } else {
@@ -90,10 +101,13 @@ internal class NowPlayingViewModelImpl @Inject constructor(
                 mode = mode,
                 volume = volume,
                 skipped = skipped?.toUi(),
-                artwork = artwork,
-                shuffled = shuffled,
-                repeat = repeat,
+                artwork = extras.artwork,
+                shuffled = extras.shuffled,
+                repeat = extras.repeat,
                 isEpisode = item.id is PlaybackItemId.Episode,
+                downloaded = extras.download.downloaded(),
+                tag = episodeTag(extras.waiting, extras.download),
+                downloadFailed = extras.downloadFailed,
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), NowPlayingUiState.Loading)
@@ -207,6 +221,51 @@ private fun Flow<PlaybackItem?>.artworkOf(
         }
     }
     .distinctUntilChanged()
+
+/** What of the playback state only an episode has, with the artwork and the order, which every item has. */
+private data class Extras(
+    val artwork: ArtworkImage?,
+    val shuffled: Boolean,
+    val repeat: RepeatMode,
+    val download: ItemDownload?,
+    val waiting: PlaybackError.Waiting?,
+    val downloadFailed: Boolean,
+)
+
+/** How long Now Playing says that the loaded episode's download failed, as long as it says a song was skipped. */
+internal val DownloadFailedNotice: Duration = 4.seconds
+
+/** `true` for [DownloadFailedNotice] after the loaded item's download fails, and `false` otherwise. */
+@OptIn(ExperimentalCoroutinesApi::class)
+private fun Flow<ItemDownload?>.failedJustNow(): Flow<Boolean> = distinctUntilChanged().transformLatest { download ->
+    emit(download == ItemDownload.Failed)
+    if (download == ItemDownload.Failed) {
+        delay(DownloadFailedNotice)
+        emit(false)
+    }
+}.distinctUntilChanged()
+
+/** The lighter part of the bar: all of a downloaded episode, what it has while it downloads, and none otherwise. */
+private fun ItemDownload?.downloaded(): Float? = when (this) {
+    ItemDownload.Done -> 1f
+    is ItemDownload.Downloading -> fraction
+    is ItemDownload.Waiting -> fraction
+    ItemDownload.Failed, null -> null
+}
+
+/** What the corner says: what the episode waits for first, then that it downloads (ADR-031, frames 28 and 37). */
+private fun episodeTag(waiting: PlaybackError.Waiting?, download: ItemDownload?): EpisodeTag? = when {
+    waiting == PlaybackError.MobileDataOff -> EpisodeTag.WaitingForWifi
+    waiting == PlaybackError.NoConnection -> EpisodeTag.WaitingForConnection
+    download is ItemDownload.Downloading -> EpisodeTag.Downloading(download.fraction.percent())
+    download is ItemDownload.Waiting -> EpisodeTag.Downloading(download.fraction.percent())
+    else -> null
+}
+
+// Rounded down, so 100 % is only said of a download that is done, which says nothing.
+private fun Float.percent(): Int = (this * PERCENT).toInt().coerceIn(0, PERCENT - 1)
+
+private const val PERCENT = 100
 
 private fun SkippedItems.toUi() = SkippedSongs(
     title = last.title,

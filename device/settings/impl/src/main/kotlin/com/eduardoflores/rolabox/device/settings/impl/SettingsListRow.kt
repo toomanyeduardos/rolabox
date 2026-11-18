@@ -19,6 +19,9 @@ internal sealed interface SettingsListRow {
 
     data object MainMenu : SettingsListRow
 
+    /** The podcasts' own settings, a list of their own (ADR-031, frame 35). */
+    data object Podcasts : SettingsListRow
+
     data object About : SettingsListRow
 
     data class Section(val row: SettingsRow) : SettingsListRow
@@ -31,6 +34,7 @@ internal fun settingsListRows(sections: List<SettingsRow>): List<SettingsListRow
     SettingsListRow.Theme,
     SettingsListRow.OnlineArtwork,
     SettingsListRow.MainMenu,
+    SettingsListRow.Podcasts,
     SettingsListRow.About,
 ) +
     sections.map(SettingsListRow::Section)

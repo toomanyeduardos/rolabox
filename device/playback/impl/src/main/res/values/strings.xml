@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The notification channel of episode downloads, as the system's notification settings list it. -->
+    <string name="playback_downloads_channel">Episode downloads</string>
+</resources>

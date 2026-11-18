@@ -19,7 +19,9 @@ interface PodcastsEntries {
      * The exits: center on Search in Podcasts is [onSearchClick]; on an owner, [onOwnerClick] with its grouping key;
      * on a show of an owner, [onShowClick]; on an episode of a show, [onEpisodeClick], which opens its
      * [PodcastEpisodeKey]; and on Play, Resume or Play from Start of an episode, [onPlaying], once it plays, which
-     * opens Now Playing. Follow, the first row of a show, is toggled in place and isn't an exit.
+     * opens Now Playing; and on Needs Wi-Fi of an episode, [onAllowMobileData], which opens the podcasts' settings,
+     * where Use Mobile Data is (ADR-031, frame 36). Follow, the first row of a show, is toggled in place and isn't an
+     * exit.
      */
     @Suppress("LongParameterList") // One lambda per exit, so the contract lists how its screens are left.
     fun screenStackEntries(
@@ -29,5 +31,6 @@ interface PodcastsEntries {
         onShowClick: (showId: Long) -> Unit,
         onEpisodeClick: (episodeId: Long) -> Unit,
         onPlaying: () -> Unit,
+        onAllowMobileData: () -> Unit,
     )
 }

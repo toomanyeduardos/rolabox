@@ -5,12 +5,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import arrow.core.Either
 import arrow.core.raise.either
+import com.eduardoflores.rolabox.device.playback.api.EpisodeNetwork
 import com.eduardoflores.rolabox.device.playback.api.PlaybackController
 import com.eduardoflores.rolabox.device.playback.api.PlaybackError
 import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
 import com.eduardoflores.rolabox.device.podcasts.api.DirectoryEpisode
 import com.eduardoflores.rolabox.device.podcasts.api.DirectoryShow
+import com.eduardoflores.rolabox.device.podcasts.api.DownloadState
 import com.eduardoflores.rolabox.device.podcasts.api.Episode
 import com.eduardoflores.rolabox.device.podcasts.api.EpisodeId
 import com.eduardoflores.rolabox.device.podcasts.api.PlayedState
@@ -32,7 +34,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -46,6 +47,12 @@ internal enum class EpisodeRow {
 
     /** From 0:00, for one partly played. */
     PlayFromStart,
+
+    /**
+     * In place of Play, for an episode with no download while episodes need Wi-Fi (ADR-031, frame 36). Center opens
+     * the podcasts' settings, where Use Mobile Data is.
+     */
+    NeedsWifi,
 }
 
 /** Why center couldn't play the episode, as the screen tells the user (ADR-018, rule 18). */
@@ -55,6 +62,12 @@ internal enum class EpisodePlayFailure {
 
     /** The player couldn't be reached. */
     PlayerUnavailable,
+
+    /** The phone hasn't room for the episode's download (ADR-031, Downloads). */
+    StorageFull,
+
+    /** The episode has no download, and Use Mobile Data is Off on a metered network (ADR-031, Mobile data). */
+    MobileDataOff,
 }
 
 /**
@@ -120,9 +133,9 @@ internal abstract class EpisodeViewModel : ViewModel() {
     /**
      * Center: plays the episode as the highlighted row says, alone (ADR-031, rule 11), and then calls [onPlaying]. Play
      * and Play from Start start at 0:00, and Resume where the user stopped. When it can't play, [onPlaying] isn't
-     * called, and [playFailure] says why.
+     * called, and [playFailure] says why. On Needs Wi-Fi it plays nothing, and calls [onAllowMobileData].
      */
-    abstract fun onCenter(onPlaying: () -> Unit)
+    abstract fun onCenter(onPlaying: () -> Unit, onAllowMobileData: () -> Unit)
 
     /** The message of [playFailure] was shown, so it isn't shown again. */
     abstract fun onPlayFailureShown()
@@ -135,6 +148,7 @@ internal class EpisodeViewModelImpl @AssistedInject constructor(
     private val savedState: SavedStateHandle,
     podcastsRepository: PodcastsRepository,
     private val playbackController: PlaybackController,
+    episodeNetwork: EpisodeNetwork,
 ) : EpisodeViewModel() {
     private val episodeId = EpisodeId(episodeKey)
 
@@ -144,7 +158,9 @@ internal class EpisodeViewModelImpl @AssistedInject constructor(
             .flatMapLatest { episode ->
                 episode.fold(
                     ifLeft = { flowOf(Either.Left(it)) },
-                    ifRight = { found -> withShow(podcastsRepository.observeShow(found.showId), found) },
+                    ifRight = { found ->
+                        withShow(podcastsRepository.observeShow(found.showId), found, episodeNetwork.observeNeedsWifi())
+                    },
                 )
             }
             .asListState()
@@ -173,10 +189,14 @@ internal class EpisodeViewModelImpl @AssistedInject constructor(
         if (wheel.lines > scrollableLines) save(wheel.copy(lines = scrollableLines))
     }
 
-    // Downloading before it plays comes with podcasts/07: until then the episode streams from its URL.
-    override fun onCenter(onPlaying: () -> Unit) {
+    // Playing downloads the episode, and plays it as it arrives (ADR-031, rule 8).
+    override fun onCenter(onPlaying: () -> Unit, onAllowMobileData: () -> Unit) {
         val rows = (uiState.value as? ListUiState.Loaded)?.value?.rows ?: return
         val row = rows.getOrNull(currentWheel().row.coerceIn(0, rows.lastIndex)) ?: return
+        if (row == EpisodeRow.NeedsWifi) onAllowMobileData() else play(row, onPlaying)
+    }
+
+    private fun play(row: EpisodeRow, onPlaying: () -> Unit) {
         viewModelScope.launch {
             playbackController.play(
                 source = PlaybackSource.Episode(episodeId),
@@ -214,17 +234,26 @@ internal class EpisodeViewModelImpl @AssistedInject constructor(
 private fun withShow(
     show: Flow<Either<PodcastError, Show>>,
     episode: Episode,
-): Flow<Either<PodcastError, EpisodeContent>> = show.map { found -> either { episodeContent(found.bind(), episode) } }
+    needsWifi: Flow<Boolean>,
+): Flow<Either<PodcastError, EpisodeContent>> = combine(show, needsWifi) { found, wifi ->
+    either { episodeContent(found.bind(), episode, wifi) }
+}
 
 /**
  * An episode of the library: Play when it is unplayed or played, from 0:00, and Resume and Play from Start when it is
- * partly played, with the time left (ADR-031, Played, partly played and unplayed).
+ * partly played, with the time left (ADR-031, Played, partly played and unplayed). An episode with no download while
+ * episodes [needWifi] has Needs Wi-Fi in place of its rows, and gets Play back once Wi-Fi or the setting allows it
+ * (frame 36). One partly downloaded plays as far as it is downloaded, so it keeps its rows.
  */
-internal fun episodeContent(show: Show, episode: Episode): EpisodeContent {
+internal fun episodeContent(show: Show, episode: Episode, needWifi: Boolean = false): EpisodeContent {
     val partlyPlayed = episode.playedState == PlayedState.PartlyPlayed
     return EpisodeContent(
         showTitle = show.title,
-        rows = if (partlyPlayed) listOf(EpisodeRow.Resume, EpisodeRow.PlayFromStart) else listOf(EpisodeRow.Play),
+        rows = when {
+            needWifi && episode.download == DownloadState.NotDownloaded -> listOf(EpisodeRow.NeedsWifi)
+            partlyPlayed -> listOf(EpisodeRow.Resume, EpisodeRow.PlayFromStart)
+            else -> listOf(EpisodeRow.Play)
+        },
         info = EpisodeInfo(
             publishedAt = episode.publishedAt,
             length = episode.length,
@@ -250,6 +279,10 @@ internal fun foundEpisodeContent(show: DirectoryShow, episode: DirectoryEpisode)
 private fun PlaybackError.toEpisodePlayFailure(): EpisodePlayFailure = when (this) {
     PlaybackError.PlayerUnavailable -> EpisodePlayFailure.PlayerUnavailable
 
+    PlaybackError.StorageFull -> EpisodePlayFailure.StorageFull
+
+    PlaybackError.MobileDataOff -> EpisodePlayFailure.MobileDataOff
+
     // The podcasts couldn't give the episode: it is gone, or couldn't be read. The others are the library's, which an
     // episode never reads, or the state's: the nearest thing to say if one ever came.
     is PlaybackError.Podcasts,
@@ -257,5 +290,6 @@ private fun PlaybackError.toEpisodePlayFailure(): EpisodePlayFailure = when (thi
     is PlaybackError.ItemNotInSource,
     is PlaybackError.NothingToPlay,
     is PlaybackError.Unplayable,
+    PlaybackError.NoConnection,
     -> EpisodePlayFailure.EpisodeUnavailable
 }

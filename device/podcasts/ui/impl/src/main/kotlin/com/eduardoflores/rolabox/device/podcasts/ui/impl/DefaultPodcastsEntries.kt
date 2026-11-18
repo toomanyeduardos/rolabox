@@ -23,6 +23,7 @@ internal class DefaultPodcastsEntries @Inject constructor() : PodcastsEntries {
         onShowClick: (showId: Long) -> Unit,
         onEpisodeClick: (episodeId: Long) -> Unit,
         onPlaying: () -> Unit,
+        onAllowMobileData: () -> Unit,
     ) = with(scope) {
         entry<PodcastsKey> {
             PodcastsRoute(
@@ -53,6 +54,7 @@ internal class DefaultPodcastsEntries @Inject constructor() : PodcastsEntries {
                     creationCallback = { factory -> factory.create(key.episodeId) },
                 ),
                 onPlaying = onPlaying,
+                onAllowMobileData = onAllowMobileData,
             )
         }
     }

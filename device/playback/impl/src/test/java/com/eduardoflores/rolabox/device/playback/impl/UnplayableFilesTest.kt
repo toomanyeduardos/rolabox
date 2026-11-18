@@ -106,6 +106,7 @@ class UnplayableFilesTest {
                 PlayOrders(Random(0)),
                 report,
                 Podcasts(FakePodcastsRepository(), FakeEpisodeProgressRepository(), FakePodcastArtworkRepository()),
+                FakeEpisodeDownloader(),
             )
     }
 

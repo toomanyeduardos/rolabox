@@ -7,6 +7,7 @@ import com.eduardoflores.rolabox.common.storage.api.StorageError
 import com.eduardoflores.rolabox.common.userdata.api.AccentColor
 import com.eduardoflores.rolabox.common.userdata.api.Clicker
 import com.eduardoflores.rolabox.common.userdata.api.DarkThemeConfig
+import com.eduardoflores.rolabox.common.userdata.api.EpisodesOnMobileData
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRow
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRowVisibility
 import com.eduardoflores.rolabox.common.userdata.api.Repeat
@@ -37,6 +38,7 @@ class FakeUserDataRepository @Inject constructor() : UserDataRepository {
     )
     private val readError = MutableStateFlow<StorageError?>(null)
     private val offlineModeChosen = MutableStateFlow(false)
+    private val episodesOnMobileData = MutableStateFlow(EpisodesOnMobileData.ON)
 
     /** When set, writes fail with this error and leave the data unchanged. */
     var writeError: StorageError? = null
@@ -67,6 +69,12 @@ class FakeUserDataRepository @Inject constructor() : UserDataRepository {
 
     override suspend fun setOfflineModeChosen(chosen: Boolean): Either<StorageError, Unit> =
         writeError?.left() ?: offlineModeChosen.update { chosen }.right()
+
+    override fun observeEpisodesOnMobileData(): Flow<Either<StorageError, EpisodesOnMobileData>> =
+        combine(episodesOnMobileData, readError) { value, error -> error?.left() ?: value.right() }.untilLeft()
+
+    override suspend fun setEpisodesOnMobileData(value: EpisodesOnMobileData): Either<StorageError, Unit> =
+        writeError?.left() ?: episodesOnMobileData.update { value }.right()
 
     /** Makes the observed flows emit [error] and end. */
     fun setReadError(error: StorageError) {

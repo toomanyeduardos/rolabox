@@ -100,6 +100,7 @@ class PlayerUnavailableTest {
                 PlayOrders(Random(0)),
                 FakeNonFatalReport(),
                 Podcasts(FakePodcastsRepository(), FakeEpisodeProgressRepository(), FakePodcastArtworkRepository()),
+                FakeEpisodeDownloader(),
             )
     }
 

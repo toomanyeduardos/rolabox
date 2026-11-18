@@ -6,6 +6,7 @@ import com.eduardoflores.rolabox.common.sync.api.SyncedValue
 import com.eduardoflores.rolabox.common.userdata.api.AccentColor
 import com.eduardoflores.rolabox.common.userdata.api.Clicker
 import com.eduardoflores.rolabox.common.userdata.api.DarkThemeConfig
+import com.eduardoflores.rolabox.common.userdata.api.EpisodesOnMobileData
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRow
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRowVisibility
 import com.eduardoflores.rolabox.common.userdata.api.Repeat
@@ -17,6 +18,8 @@ import kotlinx.coroutines.flow.Flow
  * The user's preferences as stored on this device, the source of truth (ADR-002). Each synced field
  * is kept with when it last changed, so sync can merge it (ADR-011).
  */
+// One function for each preference: observing it and setting it.
+@Suppress("TooManyFunctions")
 interface PreferencesLocalDataSource {
     /** Emits the synced preferences, and again whenever one is set or applied. A Left ends the flow. */
     fun observeSyncedPreferences(): Flow<Either<StorageError, SyncedPreferences>>
@@ -59,4 +62,12 @@ interface PreferencesLocalDataSource {
     fun observeOfflineModeChosen(): Flow<Either<StorageError, Boolean>>
 
     suspend fun setOfflineModeChosen(chosen: Boolean): Either<StorageError, Unit>
+
+    /**
+     * Emits whether episodes may use a metered network, [EpisodesOnMobileData.ON] when never set, and again when it
+     * changes. It belongs to this phone, so it has no timestamp and never syncs (ADR-011, rule 10).
+     */
+    fun observeEpisodesOnMobileData(): Flow<Either<StorageError, EpisodesOnMobileData>>
+
+    suspend fun setEpisodesOnMobileData(value: EpisodesOnMobileData): Either<StorageError, Unit>
 }

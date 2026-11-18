@@ -157,7 +157,7 @@ private fun NowPlayingContent(state: NowPlayingUiState.Playing) {
                 }
             }
             when (state.mode) {
-                NowPlayingMode.Time -> Unit
+                NowPlayingMode.Time -> state.tag?.let { ModeTag(it.text()) }
 
                 NowPlayingMode.Scrub -> ModeTag(
                     stringResource(R.string.now_playing_tag_scrub),
@@ -174,6 +174,12 @@ private fun NowPlayingContent(state: NowPlayingUiState.Playing) {
             if (skipped != null) {
                 // What was skipped takes the cover art's place for a moment, so nothing else on the display moves.
                 DeviceNotice(skippedText(skipped), skipped.reason.text(), Modifier.fillMaxSize())
+            } else if (state.downloadFailed) {
+                DeviceNotice(
+                    stringResource(R.string.now_playing_download_failed),
+                    stringResource(R.string.now_playing_download_failed_body),
+                    Modifier.fillMaxSize(),
+                )
             } else {
                 DeviceCoverArt(
                     rememberCoverArt(state.artwork),
@@ -210,8 +216,16 @@ private fun NowPlayingBar(state: NowPlayingUiState.Playing) {
             endLabel = timeLeftClock(state.position, state.duration),
             description = stringResource(R.string.now_playing_progress_description),
             mode = if (state.mode == NowPlayingMode.Scrub) ProgressBarMode.Scrub else ProgressBarMode.Normal,
+            downloaded = state.downloaded,
         )
     }
+}
+
+@Composable
+private fun EpisodeTag.text(): String = when (this) {
+    is EpisodeTag.Downloading -> stringResource(R.string.now_playing_tag_downloading, percent)
+    EpisodeTag.WaitingForWifi -> stringResource(R.string.now_playing_tag_waiting_for_wifi)
+    EpisodeTag.WaitingForConnection -> stringResource(R.string.now_playing_tag_no_connection)
 }
 
 @Composable

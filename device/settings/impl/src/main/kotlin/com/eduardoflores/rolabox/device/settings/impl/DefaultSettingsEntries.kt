@@ -5,6 +5,7 @@ import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import com.eduardoflores.rolabox.device.settings.api.AboutKey
 import com.eduardoflores.rolabox.device.settings.api.MainMenuSettingsKey
+import com.eduardoflores.rolabox.device.settings.api.PodcastSettingsKey
 import com.eduardoflores.rolabox.device.settings.api.SettingsEntries
 import com.eduardoflores.rolabox.device.settings.api.SettingsKey
 import com.eduardoflores.rolabox.device.settings.api.SettingsSection
@@ -22,6 +23,7 @@ internal class DefaultSettingsEntries @Inject constructor(sections: Set<@JvmSupp
     override fun screenStackEntries(
         scope: EntryProviderScope<NavKey>,
         onMainMenuClick: () -> Unit,
+        onPodcastsClick: () -> Unit,
         onAboutClick: () -> Unit,
         onOpenFullScreen: (NavKey) -> Unit,
     ) = with(scope) {
@@ -29,11 +31,15 @@ internal class DefaultSettingsEntries @Inject constructor(sections: Set<@JvmSupp
             SettingsRoute(
                 viewModel = hiltViewModel<SettingsViewModelImpl>(),
                 onMainMenuClick = onMainMenuClick,
+                onPodcastsClick = onPodcastsClick,
                 onAboutClick = onAboutClick,
                 onOpenFullScreen = onOpenFullScreen,
             )
         }
         entry<MainMenuSettingsKey> { MainMenuSettingsRoute(viewModel = hiltViewModel<MainMenuSettingsViewModelImpl>()) }
+        entry<PodcastSettingsKey> {
+            PodcastSettingsRoute(viewModel = hiltViewModel<PodcastSettingsViewModelImpl>())
+        }
         entry<AboutKey> { AboutRoute(viewModel = hiltViewModel<AboutViewModelImpl>()) }
     }
 

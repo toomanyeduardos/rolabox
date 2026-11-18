@@ -43,6 +43,7 @@ import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastsEntries
 import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastsKey
 import com.eduardoflores.rolabox.device.settings.api.AboutKey
 import com.eduardoflores.rolabox.device.settings.api.MainMenuSettingsKey
+import com.eduardoflores.rolabox.device.settings.api.PodcastSettingsKey
 import com.eduardoflores.rolabox.device.settings.api.SettingsEntries
 import com.eduardoflores.rolabox.device.settings.api.SettingsKey
 import com.eduardoflores.rolabox.device.ui.api.MainMenuKey
@@ -119,11 +120,14 @@ internal fun DeviceRoute(
                 onShowClick = { showId -> stack.push(PodcastShowKey(showId)) },
                 onEpisodeClick = { episodeId -> stack.push(PodcastEpisodeKey(episodeId)) },
                 onPlaying = { stack.push(NowPlayingKey) },
+                // The podcasts' settings, a device screen, so MENU comes back to the episode (ADR-031, frame 36).
+                onAllowMobileData = { stack.push(PodcastSettingsKey) },
             )
             playbackEntries.screenStackEntries(scope = this)
             settingsEntries.screenStackEntries(
                 scope = this,
                 onMainMenuClick = { stack.push(MainMenuSettingsKey) },
+                onPodcastsClick = { stack.push(PodcastSettingsKey) },
                 onAboutClick = { stack.push(AboutKey) },
                 onOpenFullScreen = onOpenFullScreen,
             )

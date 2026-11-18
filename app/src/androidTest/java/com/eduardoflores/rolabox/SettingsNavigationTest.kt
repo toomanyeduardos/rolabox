@@ -157,8 +157,8 @@ class SettingsNavigationTest {
 // Settings is the last row of the main menu, after Music, Podcasts, Audiobooks and Shuffle Songs.
 private const val SETTINGS_ROW_INDEX = 4
 
-// Account is the last row of the settings list, after Shuffle, Repeat, Clicker, Theme, Online Artwork, Main Menu and
-// About.
-private const val ACCOUNT_ROW_INDEX = 7
+// Account is the last row of the settings list, after Shuffle, Repeat, Clicker, Theme, Online Artwork, Main Menu,
+// Podcasts and About.
+private const val ACCOUNT_ROW_INDEX = 8
 
 private const val SIGN_IN_SCREEN = "Sign in screen"
