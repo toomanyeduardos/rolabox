@@ -56,6 +56,7 @@ class RolaboxTypography internal constructor(
     internal val displayHeadline: TextStyle,
     internal val displayBody: TextStyle,
     internal val displayCaption: TextStyle,
+    internal val displayText: TextStyle,
     internal val displayOverlayLetter: TextStyle,
 )
 
@@ -166,6 +167,8 @@ internal fun rolaboxTypography(
         ),
         displayBody = body.copy(fontSize = 14.sp, letterSpacing = 0.em, lineHeight = 1.25.em),
         displayCaption = body.copy(fontSize = 13.sp, letterSpacing = 0.em, lineHeight = 1.25.em),
+        // Text to read on the display, such as an episode's description: lines further apart than the body's.
+        displayText = body.copy(fontSize = 14.sp, letterSpacing = 0.em, lineHeight = 1.4.em),
         // The letter over a list that turns fast: one glyph, so its line is as tall as the letter.
         displayOverlayLetter = body.copy(
             fontSize = 68.sp,

@@ -36,6 +36,7 @@ import com.eduardoflores.rolabox.device.music.ui.api.SongsKey
 import com.eduardoflores.rolabox.device.playback.api.SeekDirection
 import com.eduardoflores.rolabox.device.playback.ui.api.NowPlayingKey
 import com.eduardoflores.rolabox.device.playback.ui.api.PlaybackEntries
+import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastEpisodeKey
 import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastOwnerKey
 import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastShowKey
 import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastsEntries
@@ -112,11 +113,11 @@ internal fun DeviceRoute(
             musicScreens(musicEntries, stack, viewModel)
             podcastsEntries.screenStackEntries(
                 scope = this,
-                // Search and the Episode screen come with podcasts/08 and podcasts/06, with their entries.
+                // Search comes with podcasts/08, with its entry.
                 onSearchClick = {},
                 onOwnerClick = { ownerId -> stack.push(PodcastOwnerKey(ownerId)) },
                 onShowClick = { showId -> stack.push(PodcastShowKey(showId)) },
-                onEpisodeClick = {},
+                onEpisodeClick = { episodeId -> stack.push(PodcastEpisodeKey(episodeId)) },
             )
             playbackEntries.screenStackEntries(scope = this)
             settingsEntries.screenStackEntries(

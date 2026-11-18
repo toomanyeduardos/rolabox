@@ -18,7 +18,7 @@ data class PodcastOwnerKey(val ownerId: String) : NavKey
 @Serializable
 data class PodcastShowKey(val showId: Long) : NavKey
 
-/** An episode of the library (frame 26). Its entry comes with the Episode screen, in podcasts/06. */
+/** An episode of the library: Play, or Resume and Play from Start, then its date, length and description (frame 26). */
 @Serializable
 data class PodcastEpisodeKey(val episodeId: Long) : NavKey
 

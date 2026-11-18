@@ -85,6 +85,9 @@ class RolaboxTextStyles internal constructor(
     /** The album on Now Playing. It's the display's secondary ink. */
     val displayCaption = typography.displayCaption.copy(color = colors.displayMuted)
 
+    /** Text to read on the display, of any length, such as an episode's description. */
+    internal val displayText = typography.displayText.copy(color = colors.displayInk)
+
     /** The letter over a list that turns fast, on [MetalColors.displayOverlay]. */
     internal val displayOverlayLetter = typography.displayOverlayLetter.copy(color = colors.onDisplayOverlay)
 
@@ -123,6 +126,7 @@ class RolaboxTextStyles internal constructor(
             "displayHeadline" to displayHeadline,
             "displayBody" to displayBody,
             "displayCaption" to displayCaption,
+            "displayText" to displayText,
             "displayOverlayLetter" to displayOverlayLetter,
         )
 }

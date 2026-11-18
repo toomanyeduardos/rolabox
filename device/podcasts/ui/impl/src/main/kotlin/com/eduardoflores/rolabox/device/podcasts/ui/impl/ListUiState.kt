@@ -15,8 +15,8 @@ internal sealed interface ListUiState<out T> {
     data object Failed : ListUiState<Nothing>
 
     /**
-     * The owner or show this screen is of is no longer in the library. The display says so, and MENU goes back, as
-     * Music's screens do.
+     * The owner, show or episode this screen is of is no longer in the library. The display says so, and MENU goes
+     * back, as Music's screens do.
      */
     data object Gone : ListUiState<Nothing>
 }
@@ -25,7 +25,11 @@ internal fun <T> Flow<Either<PodcastError, T>>.asListState(): Flow<ListUiState<T
     result.fold(
         ifLeft = { error ->
             when (error) {
-                is PodcastError.OwnerNotFound, is PodcastError.ShowNotFound -> ListUiState.Gone
+                is PodcastError.OwnerNotFound,
+                is PodcastError.ShowNotFound,
+                is PodcastError.EpisodeNotFound,
+                -> ListUiState.Gone
+
                 else -> ListUiState.Failed
             }
         },

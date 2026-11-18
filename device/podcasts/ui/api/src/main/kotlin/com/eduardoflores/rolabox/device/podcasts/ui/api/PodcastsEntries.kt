@@ -13,12 +13,13 @@ import androidx.navigation3.runtime.NavKey
  */
 interface PodcastsEntries {
     /**
-     * Adds the entries of [PodcastsKey], [PodcastOwnerKey] and [PodcastShowKey], for the screen stack inside the
-     * display.
+     * Adds the entries of [PodcastsKey], [PodcastOwnerKey], [PodcastShowKey] and [PodcastEpisodeKey], for the screen
+     * stack inside the display.
      *
      * The exits: center on Search in Podcasts is [onSearchClick]; on an owner, [onOwnerClick] with its grouping key;
-     * on a show of an owner, [onShowClick]; on an episode of a show, [onEpisodeClick]. Follow, the first row of a
-     * show, is toggled in place and isn't an exit.
+     * on a show of an owner, [onShowClick]; on an episode of a show, [onEpisodeClick], which opens its
+     * [PodcastEpisodeKey]. Follow, the first row of a show, is toggled in place and isn't an exit, and the Episode
+     * screen has none until playing an episode opens Now Playing (playback/09).
      */
     fun screenStackEntries(
         scope: EntryProviderScope<NavKey>,

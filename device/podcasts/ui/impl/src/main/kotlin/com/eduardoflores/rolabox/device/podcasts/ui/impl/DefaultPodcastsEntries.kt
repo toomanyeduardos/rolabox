@@ -3,6 +3,7 @@ package com.eduardoflores.rolabox.device.podcasts.ui.impl
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
+import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastEpisodeKey
 import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastOwnerKey
 import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastShowKey
 import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastsEntries
@@ -43,6 +44,13 @@ internal class DefaultPodcastsEntries @Inject constructor() : PodcastsEntries {
                     creationCallback = { factory -> factory.create(key.showId) },
                 ),
                 onEpisodeClick = onEpisodeClick,
+            )
+        }
+        entry<PodcastEpisodeKey> { key ->
+            EpisodeRoute(
+                viewModel = hiltViewModel<EpisodeViewModelImpl, EpisodeViewModelImpl.Factory>(
+                    creationCallback = { factory -> factory.create(key.episodeId) },
+                ),
             )
         }
     }
