@@ -13,6 +13,8 @@ import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
 import com.eduardoflores.rolabox.device.playback.api.RepeatMode
 import com.eduardoflores.rolabox.device.playback.api.SkippedItems
 import com.eduardoflores.rolabox.device.playback.testing.FakePlayback
+import com.eduardoflores.rolabox.device.podcasts.api.EpisodeId
+import com.eduardoflores.rolabox.device.podcasts.testing.FakePodcastArtworkRepository
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
@@ -24,7 +26,9 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -34,14 +38,19 @@ class NowPlayingViewModelTest {
 
     private val playback = FakePlayback()
     private val artwork = FakeArtworkRepository()
+    private val episodeArtwork = FakePodcastArtworkRepository()
 
-    private fun TestScope.observedViewModel() = NowPlayingViewModelImpl(playback, playback, artwork).also { viewModel ->
-        backgroundScope.launch(mainDispatcherRule.testDispatcher) { viewModel.uiState.collect() }
-    }
+    private fun TestScope.observedViewModel() =
+        NowPlayingViewModelImpl(playback, playback, artwork, episodeArtwork).also { viewModel ->
+            backgroundScope.launch(mainDispatcherRule.testDispatcher) { viewModel.uiState.collect() }
+        }
 
     @Test
     fun beforeAnythingIsObserved_isLoading() {
-        assertEquals(NowPlayingUiState.Loading, NowPlayingViewModelImpl(playback, playback, artwork).uiState.value)
+        assertEquals(
+            NowPlayingUiState.Loading,
+            NowPlayingViewModelImpl(playback, playback, artwork, episodeArtwork).uiState.value,
+        )
     }
 
     @Test
@@ -109,6 +118,50 @@ class NowPlayingViewModelTest {
 
         assertEquals(Blue, viewModel.artwork)
         assertEquals(listOf(ArtworkRef(SongId(3))), artwork.loads)
+    }
+
+    // Episodes (ADR-031)
+
+    @Test
+    fun anEpisode_showsItsOwnArtwork_andNeitherItsPlaceNorTheQueueIcons() = runTest {
+        val episode = EpisodeId(7)
+        episodeArtwork.artwork = mapOf(episode to Blue)
+        val viewModel = observedViewModel()
+
+        playback.load(
+            listOf(PlaybackItem(PlaybackItemId.Episode(episode), "Episode", "The Daily", "NY Times", 30.minutes, null)),
+            index = 0,
+        )
+
+        val playing = viewModel.uiState.value as NowPlayingUiState.Playing
+        assertEquals(Blue, playing.artwork)
+        assertTrue(playing.isEpisode)
+        assertEquals(listOf(episode), episodeArtwork.observed)
+        assertTrue(artwork.loads.isEmpty())
+    }
+
+    @Test
+    fun anEpisodesArtworkThatArrives_replacesThePlaceholder() = runTest {
+        val episode = EpisodeId(7)
+        val viewModel = observedViewModel()
+        playback.load(
+            listOf(PlaybackItem(PlaybackItemId.Episode(episode), "Episode", "The Daily", "NY Times", 30.minutes, null)),
+            index = 0,
+        )
+        assertNull(viewModel.artwork)
+
+        episodeArtwork.artwork = mapOf(episode to Blue)
+
+        assertEquals(Blue, viewModel.artwork)
+    }
+
+    @Test
+    fun aSong_isNoEpisode() = runTest {
+        val viewModel = observedViewModel()
+
+        playback.load(Queue, index = 0)
+
+        assertFalse((viewModel.uiState.value as NowPlayingUiState.Playing).isEpisode)
     }
 
     @Test

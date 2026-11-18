@@ -40,7 +40,13 @@ internal fun Player.setPlayOrder(mediaIds: List<String>) {
 internal val PlaybackItemId.mediaId: String
     get() = when (this) {
         is PlaybackItemId.Song -> "song:${id.value}"
+        is PlaybackItemId.Episode -> "$EPISODE_MEDIA_ID_PREFIX${id.value}"
     }
+
+/** Whether a media ID names an episode, which the session's player can tell from it alone (ADR-031, rule 11). */
+internal fun String.isEpisodeMediaId(): Boolean = startsWith(EPISODE_MEDIA_ID_PREFIX)
+
+private const val EPISODE_MEDIA_ID_PREFIX = "episode:"
 
 private const val PLAY_ORDER_KEY = "com.eduardoflores.rolabox.PLAY_ORDER"
 private val sent = AtomicInteger()

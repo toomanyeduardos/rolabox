@@ -18,14 +18,16 @@ interface PodcastsEntries {
      *
      * The exits: center on Search in Podcasts is [onSearchClick]; on an owner, [onOwnerClick] with its grouping key;
      * on a show of an owner, [onShowClick]; on an episode of a show, [onEpisodeClick], which opens its
-     * [PodcastEpisodeKey]. Follow, the first row of a show, is toggled in place and isn't an exit, and the Episode
-     * screen has none until playing an episode opens Now Playing (playback/09).
+     * [PodcastEpisodeKey]; and on Play, Resume or Play from Start of an episode, [onPlaying], once it plays, which
+     * opens Now Playing. Follow, the first row of a show, is toggled in place and isn't an exit.
      */
+    @Suppress("LongParameterList") // One lambda per exit, so the contract lists how its screens are left.
     fun screenStackEntries(
         scope: EntryProviderScope<NavKey>,
         onSearchClick: () -> Unit,
         onOwnerClick: (ownerId: String) -> Unit,
         onShowClick: (showId: Long) -> Unit,
         onEpisodeClick: (episodeId: Long) -> Unit,
+        onPlaying: () -> Unit,
     )
 }

@@ -34,6 +34,9 @@ import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
 import com.eduardoflores.rolabox.device.playback.api.RepeatMode
 import com.eduardoflores.rolabox.device.playback.testing.FakePlaybackLocalDataSource
+import com.eduardoflores.rolabox.device.podcasts.testing.FakeEpisodeProgressRepository
+import com.eduardoflores.rolabox.device.podcasts.testing.FakePodcastArtworkRepository
+import com.eduardoflores.rolabox.device.podcasts.testing.FakePodcastsRepository
 import java.io.File
 import kotlin.coroutines.ContinuationInterceptor
 import kotlin.random.Random
@@ -118,6 +121,7 @@ class ShuffleAndRepeatTest {
             userData,
             PlayOrders(Random(SEED)),
             FakeNonFatalReport(),
+            Podcasts(FakePodcastsRepository(), FakeEpisodeProgressRepository(), FakePodcastArtworkRepository()),
         )
     }
 

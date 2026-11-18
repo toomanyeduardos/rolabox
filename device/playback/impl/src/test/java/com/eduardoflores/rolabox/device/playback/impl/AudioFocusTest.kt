@@ -32,6 +32,9 @@ import com.eduardoflores.rolabox.device.library.testing.audio.Mp3Tags
 import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
 import com.eduardoflores.rolabox.device.playback.testing.FakePlaybackLocalDataSource
+import com.eduardoflores.rolabox.device.podcasts.testing.FakeEpisodeProgressRepository
+import com.eduardoflores.rolabox.device.podcasts.testing.FakePodcastArtworkRepository
+import com.eduardoflores.rolabox.device.podcasts.testing.FakePodcastsRepository
 import java.io.File
 import kotlin.coroutines.ContinuationInterceptor
 import kotlin.random.Random
@@ -109,6 +112,7 @@ class AudioFocusTest {
                 FakeUserDataRepository(),
                 PlayOrders(Random(0)),
                 FakeNonFatalReport(),
+                Podcasts(FakePodcastsRepository(), FakeEpisodeProgressRepository(), FakePodcastArtworkRepository()),
             )
     }
 

@@ -8,6 +8,7 @@ import com.eduardoflores.rolabox.device.podcasts.api.Owner
 import com.eduardoflores.rolabox.device.podcasts.api.OwnerId
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastError
 import com.eduardoflores.rolabox.device.podcasts.api.ShowId
+import com.eduardoflores.rolabox.device.podcasts.local.api.ArtworkSource
 import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeProgressLocalDataSource
 import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeWrite
 import com.eduardoflores.rolabox.device.podcasts.local.api.PodcastsLocalDataSource
@@ -249,6 +250,29 @@ abstract class PodcastsLocalContract {
             local.observeEpisodesByShow(local.getEpisode(id).getOrNull()!!.showId).first()
                 .getOrNull()?.single()?.progress,
         )
+    }
+
+    @Test
+    fun anArtworkSource_hasNoImagesUntilTheFeedNamesThem_andThenHasThem() = runTest {
+        val written = show(1, "The Daily", "NY Times")
+        val episodeId = add(written, episode("g1"))
+        val other = add(written, episode("g2"))
+        val showId = local.getEpisode(episodeId).getOrNull()!!.showId
+
+        val before = local.getArtworkSource(episodeId).getOrNull()!!
+        assertEquals(ArtworkSource(episodeId, showId, "g1", written.feedUrl, null, null), before)
+
+        local.setImageUrls(showId, "https://example.com/show.jpg", mapOf("g1" to "https://example.com/g1.jpg"))
+
+        val after = local.getArtworkSource(episodeId).getOrNull()!!
+        assertEquals("https://example.com/g1.jpg", after.episodeImageUrl)
+        assertEquals("https://example.com/show.jpg", after.showImageUrl)
+        assertNull(local.getArtworkSource(other).getOrNull()!!.episodeImageUrl)
+    }
+
+    @Test
+    fun theArtworkSource_ofAnEpisodeThatIsntThere_isNull() = runTest {
+        assertEquals(null.right(), local.getArtworkSource(EpisodeId(99)))
     }
 
     @Test

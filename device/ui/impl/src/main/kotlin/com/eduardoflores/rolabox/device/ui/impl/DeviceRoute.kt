@@ -118,6 +118,7 @@ internal fun DeviceRoute(
                 onOwnerClick = { ownerId -> stack.push(PodcastOwnerKey(ownerId)) },
                 onShowClick = { showId -> stack.push(PodcastShowKey(showId)) },
                 onEpisodeClick = { episodeId -> stack.push(PodcastEpisodeKey(episodeId)) },
+                onPlaying = { stack.push(NowPlayingKey) },
             )
             playbackEntries.screenStackEntries(scope = this)
             settingsEntries.screenStackEntries(

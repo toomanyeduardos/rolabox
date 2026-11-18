@@ -9,6 +9,7 @@ import com.eduardoflores.rolabox.device.playback.impl.PlayerConnection
 import com.eduardoflores.rolabox.device.playback.impl.RestoreOnProcessStart
 import com.eduardoflores.rolabox.device.playback.impl.SessionConnection
 import com.eduardoflores.rolabox.device.playback.impl.SessionResumption
+import com.eduardoflores.rolabox.device.podcasts.api.PodcastArtworkRepository
 import dagger.Binds
 import dagger.BindsOptionalOf
 import dagger.Module
@@ -46,4 +47,7 @@ abstract class PlaybackServiceModule {
 
     @BindsOptionalOf
     internal abstract fun optionalArtworkRepository(): ArtworkRepository
+
+    @BindsOptionalOf
+    internal abstract fun optionalPodcastArtworkRepository(): PodcastArtworkRepository
 }

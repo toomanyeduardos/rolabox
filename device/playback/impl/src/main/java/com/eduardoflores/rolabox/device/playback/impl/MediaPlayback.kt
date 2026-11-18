@@ -39,6 +39,9 @@ import com.eduardoflores.rolabox.device.playback.local.api.PlayOrder
 import com.eduardoflores.rolabox.device.playback.local.api.PlaybackLocalDataSource
 import com.eduardoflores.rolabox.device.playback.local.api.ResumePoint
 import com.eduardoflores.rolabox.device.playback.local.api.ShuffledBy
+import com.eduardoflores.rolabox.device.podcasts.api.EpisodeId
+import com.eduardoflores.rolabox.device.podcasts.api.EpisodeProgressRepository
+import com.eduardoflores.rolabox.device.podcasts.api.PodcastError
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.SettableFuture
 import javax.inject.Inject
@@ -110,10 +113,13 @@ private val SILENT_EVENTS = intArrayOf(
  * Shuffle and Repeat are the user's settings, which it reads from [userData] and applies at once (ADR-028). The repeat
  * mode is the player's, and so is the shuffle order, which [playQueue] makes and the player is given: the playlist
  * stays in the list's order.
+ *
+ * An episode is queued alone, from [podcasts] (ADR-031): it starts where it was left when asked to resume, ⏮ and ⏭
+ * skip by seconds, it is never shuffled or repeated, and its position is stored in the podcasts with the resume point.
  */
 // One function for each action of the controller, and the few that every action shares. One parameter for each of
 // what it plays with: the library, the player, the volume, the stored point, the scope, the clock, the artwork, the
-// settings and the random orders.
+// settings, the random orders and the podcasts.
 @Suppress("TooManyFunctions", "LongParameterList")
 @Singleton
 internal class MediaPlayback @Inject constructor(
@@ -127,6 +133,7 @@ internal class MediaPlayback @Inject constructor(
     private val userData: UserDataRepository,
     private val orders: PlayOrders,
     private val nonFatalReport: NonFatalReport,
+    private val podcasts: Podcasts,
 ) : PlaybackState,
     PlaybackController,
     SessionResumption {
@@ -171,10 +178,14 @@ internal class MediaPlayback @Inject constructor(
     /** Whether ⏮ brought the player to an item that hasn't played yet, so a skip goes on backward. */
     private var goingBack = false
 
-    // A deleted or protected file is the phone's state, not a bug, so only the others are reported (ADR-030). An
-    // Unplayable is a data object, whose toString() is its name.
+    // A deleted or protected file is the phone's state, not a bug, and so is a stream that lost its network or a server
+    // that answered with an error, so only the others are reported (ADR-030). An Unplayable is a data object, whose
+    // toString() is its name.
     private fun report(unplayable: PlaybackError.Unplayable, error: PlaybackException) {
-        if (unplayable != PlaybackError.Unplayable.Missing && unplayable != PlaybackError.Unplayable.Protected) {
+        if (unplayable != PlaybackError.Unplayable.Missing &&
+            unplayable != PlaybackError.Unplayable.Protected &&
+            !error.isNetworkState()
+        ) {
             nonFatalReport.report("Unplayable.$unplayable ${error.errorCodeName}", error)
         }
     }
@@ -203,7 +214,14 @@ internal class MediaPlayback @Inject constructor(
             if (playbackState == Player.STATE_READY && listenedTo?.hasNoAudio() != true) goingBack = false
             // An item with no audio can end without ever being ready, at once: it didn't play, it failed.
             if (playbackState == Player.STATE_ENDED) {
-                listenedTo?.let { if (it.hasNoAudio()) skip(it, PlaybackError.Unplayable.Unsupported) else unload(it) }
+                listenedTo?.let {
+                    if (it.hasNoAudio()) {
+                        skip(it, PlaybackError.Unplayable.Unsupported)
+                    } else {
+                        storeEnded(it)
+                        unload(it)
+                    }
+                }
             }
         }
 
@@ -240,11 +258,14 @@ internal class MediaPlayback @Inject constructor(
             }
         }
         // A cover that arrives for the item playing, downloaded for its album, reaches the notification and the lock
-        // screen (ADR-027): its first value is the one the session loads anyway.
+        // screen (ADR-027), and so does an episode's artwork (ADR-031): its first value is the one the session loads
+        // anyway.
         scope.launch {
             state.map { it.currentItem }.distinctUntilChanged { old, new -> old?.id == new?.id }.collectLatest { item ->
-                val ref = item?.artwork ?: return@collectLatest
-                artwork.observeArtwork(ref).drop(1).collect { onPlayer { player -> showNewArtwork(item, player) } }
+                if (item == null) return@collectLatest
+                artworkChangesOf(item, artwork, podcasts).drop(1).collect {
+                    onPlayer { player -> showNewArtwork(item, player) }
+                }
             }
         }
         // On each pause and each new item, and every so often while it plays.
@@ -264,8 +285,9 @@ internal class MediaPlayback @Inject constructor(
             for (first in toStore) {
                 val writes = generateSequence(first) { toStore.tryReceive().getOrNull() }.toList()
                 writes.forEachIndexed { at, write ->
-                    val replaced = write is Write.Point && writes.drop(at + 1).any { it !is Write.Order }
-                    if (!replaced) write.to(local)
+                    val replaced =
+                        write is Write.Point && writes.drop(at + 1).any { it is Write.Point || it is Write.Clear }
+                    if (!replaced) write.to(local, podcasts.progress)
                 }
             }
         }
@@ -303,9 +325,13 @@ internal class MediaPlayback @Inject constructor(
     override val repeatMode: Flow<RepeatMode> = state.map { it.repeatMode }.distinctUntilChanged()
 
     // The queue holds only the songs that can be played: a protected one selected plays from the nearest that can be
-    // (ADR-023).
-    override suspend fun play(source: PlaybackSource, from: PlaybackItemId): Either<PlaybackError, Unit> = either {
-        val all = library.queueOf(source).bind()
+    // (ADR-023). An episode resumes from the podcasts' position, which a song doesn't keep (ADR-031).
+    override suspend fun play(
+        source: PlaybackSource,
+        from: PlaybackItemId,
+        resume: Boolean,
+    ): Either<PlaybackError, Unit> = either {
+        val all = queueOf(source, library, podcasts).bind()
         val at = all.indexOfFirst { it.item.id == from }
         if (at < 0) raise(PlaybackError.ItemNotInSource(from, source))
         val list = all.playable()
@@ -313,14 +339,15 @@ internal class MediaPlayback @Inject constructor(
         if (first == null) {
             loadNothingPlayable(all).bind()
         } else {
-            start(source, list, currentSettings().shuffle.shuffledBy, list.indexOf(first)).bind()
+            val startAt = if (resume) podcasts.storedPositionOf(first.item.id).bind() else Duration.ZERO
+            start(source, list, currentSettings().shuffle.shuffledBy, list.indexOf(first), startAt).bind()
         }
     }
 
     // Shuffle Songs: shuffled by songs whatever the setting says, from a random item, of those that can be played
     // (ADR-028, rule 5).
     override suspend fun shuffle(source: PlaybackSource): Either<PlaybackError, Unit> = either {
-        val all = library.queueOf(source).bind()
+        val all = queueOf(source, library, podcasts).bind()
         ensure(all.isNotEmpty()) { PlaybackError.NothingToPlay(source) }
         val list = all.playable()
         if (list.isEmpty()) {
@@ -341,16 +368,21 @@ internal class MediaPlayback @Inject constructor(
         refresh(player)
     }
 
-    /** Loads [list] in place of what was loaded, in an order shuffled [by] a value or in its own, and plays [index]. */
+    /**
+     * Loads [list] in place of what was loaded, in an order shuffled [by] a value or in its own, and plays [index] from
+     * [startAt]. An episode is never shuffled or repeated (ADR-031, rule 11).
+     */
     private suspend fun start(
         source: PlaybackSource,
         list: List<QueuedItem>,
         by: ShuffledBy?,
         index: Int,
+        startAt: Duration = Duration.ZERO,
     ): Either<PlaybackError, Unit> = onPlayer { player ->
-        load(source, list, by, index)
+        load(source, list, by.takeUnless { source.isEpisode }, index)
         // The whole queue, so the next item is prepared before the current one ends (ADR-023).
-        player.setMediaItems(list.map { it.toMediaItem() }, index, 0)
+        player.setMediaItems(list.map { it.toMediaItem() }, index, startAt.inWholeMilliseconds)
+        settings.value?.let { applyRepeat(it, player) }
         applyOrder(player)
         player.prepare()
         player.play()
@@ -441,7 +473,8 @@ internal class MediaPlayback @Inject constructor(
             playQueue.load(places, null, stored.index)
         }
         val by = settings.shuffle.shuffledBy
-        if (playQueue.shuffledBy != ShuffledBy.ShuffleSongs &&
+        if (!stored.source.isEpisode &&
+            playQueue.shuffledBy != ShuffledBy.ShuffleSongs &&
             playQueue.shuffledBy != by
         ) {
             playQueue.reorder(by, stored.index)
@@ -468,16 +501,32 @@ internal class MediaPlayback @Inject constructor(
      * to a queue of Shuffle Songs. A queue already in the order the setting says is left as it is.
      */
     private fun follow(settings: Settings, player: Player) {
-        if (player.repeatMode != settings.repeat.media3) player.repeatMode = settings.repeat.media3
+        applyRepeat(settings, player)
         state.update { it.copy(repeatMode = settings.repeat) }
         val by = settings.shuffle.shuffledBy
-        if (items.isNotEmpty() && playQueue.shuffledBy != ShuffledBy.ShuffleSongs && playQueue.shuffledBy != by) {
+        val reorders = playQueue.shuffledBy != ShuffledBy.ShuffleSongs && playQueue.shuffledBy != by
+        if (items.isNotEmpty() && !isEpisodeLoaded && reorders) {
             playQueue.reorder(by, player.currentMediaItemIndex)
             storeOrder()
         }
         applyOrder(player)
         refresh(player)
     }
+
+    /**
+     * Gives the player the repeat mode of the setting, or none while an episode is loaded, which is never repeated
+     * (ADR-031, rule 11). [PlaybackState.repeatMode] stays the setting's.
+     */
+    private fun applyRepeat(settings: Settings, player: Player) {
+        val mode = if (isEpisodeLoaded) Player.REPEAT_MODE_OFF else settings.repeat.media3
+        if (player.repeatMode != mode) player.repeatMode = mode
+    }
+
+    /** Whether the queue is an episode, which plays alone (ADR-031). */
+    private val isEpisodeLoaded: Boolean get() = items.isNotEmpty() && source.isEpisode
+
+    /** The repeat mode the queue follows: the setting's, and none for an episode. */
+    private val queueRepeat: RepeatMode get() = if (isEpisodeLoaded) RepeatMode.Off else state.value.repeatMode
 
     /**
      * Gives the player the shuffle mode and the order for the item it is on (ADR-028, rule 6), and starts the next
@@ -487,7 +536,7 @@ internal class MediaPlayback @Inject constructor(
         if (items.isEmpty() || player.mediaItemCount != items.size) return
         val current = player.currentMediaItemIndex
         if (playQueue.startedNextRound(current)) storeOrder()
-        val order = playQueue.playerOrder(current, state.value.repeatMode)
+        val order = playQueue.playerOrder(current, queueRepeat)
         if (player.shuffleModeEnabled != (order != null)) player.shuffleModeEnabled = order != null
         if (order != null && order != playerOrder) player.setPlayOrder(order.map { items[it].id.mediaId })
         playerOrder = order
@@ -502,7 +551,7 @@ internal class MediaPlayback @Inject constructor(
     private suspend fun storedQueue(): StoredQueue? {
         val point = local.resumePoint().getOrNull() ?: return null
         val order = local.playOrder().getOrNull()
-        return library.queueOf(point.source).fold(
+        return queueOf(point.source, library, podcasts).fold(
             ifLeft = { error ->
                 if (error.isListGone()) local.clear()
                 null
@@ -512,7 +561,7 @@ internal class MediaPlayback @Inject constructor(
                 val list = all.playable()
                 val stored = list.resumedAt(point, order?.roundIn(list, point))
                 if (stored == null) local.clear()
-                stored
+                stored?.withPositionOf(point, podcasts)
             },
         )
     }
@@ -536,8 +585,19 @@ internal class MediaPlayback @Inject constructor(
         val item = items.getOrNull(index)
         if (item != null && player.mediaItemCount == items.size) {
             val position = player.currentPosition.coerceAtLeast(0).milliseconds
-            toStore.trySend(Write.Point(ResumePoint(list, item.id, playQueue.positionOf(index), position)))
+            val point = ResumePoint(list, item.id, playQueue.positionOf(index), position)
+            // An episode's position is the podcasts', stored with the point (ADR-031, rule 7).
+            val episode = (item.id as? PlaybackItemId.Episode)?.let {
+                EpisodeProgress(it.id, position, player.length())
+            }
+            toStore.trySend(Write.Point(point, episode))
         }
+    }
+
+    /** The episode playing played to its end, which the podcasts mark played (ADR-031, rule 6). */
+    private fun storeEnded(player: Player) {
+        val episode = items.getOrNull(player.currentMediaItemIndex)?.id as? PlaybackItemId.Episode ?: return
+        toStore.trySend(Write.Ended(episode.id, player.length()))
     }
 
     /** Stores the order when it changes, apart from the point: a whole library's order is too large to write often. */
@@ -581,11 +641,16 @@ internal class MediaPlayback @Inject constructor(
 
     override suspend fun next() = onLoaded { player ->
         goingBack = false
-        // Does nothing on the last item.
-        player.seekToNext()
+        // Does nothing on the last item. An episode skips forward, to its end at most, which ends it (ADR-031).
+        if (isEpisodeLoaded) player.seekForward() else player.seekToNext()
     }
 
     override suspend fun previous() = onLoaded { player ->
+        // An episode skips back, to 0:00 at most, and starts nothing again (ADR-031, rule 11).
+        if (isEpisodeLoaded) {
+            player.seekBack()
+            return@onLoaded
+        }
         val index = player.currentMediaItemIndex
         player.seekToPrevious()
         // Starting the same item again is no transition, so it is counted here.
@@ -625,7 +690,7 @@ internal class MediaPlayback @Inject constructor(
                         player.addListener(listener)
                         listenedTo = player
                         playerOrder = null
-                        settings.value?.let { player.repeatMode = it.repeat.media3 }
+                        settings.value?.let { applyRepeat(it, player) }
                         refresh(player)
                     }
                     action(player)
@@ -656,7 +721,7 @@ internal class MediaPlayback @Inject constructor(
             it.copy(skipped = SkippedItems(item, error, (it.skipped?.count ?: 0) + 1))
         }
         val round = playQueue.order
-        val next = playQueue.nextPlayable(index, state.value.repeatMode, goingBack) { items[it].id in failed }
+        val next = playQueue.nextPlayable(index, queueRepeat, goingBack) { items[it].id in failed }
         if (next == null) {
             state.update { it.copy(unplayableQueue = it.skipped) }
             unload(player)
@@ -734,8 +799,9 @@ internal class MediaPlayback @Inject constructor(
     private fun follow(locations: Map<SongId, String>, player: Player) {
         if (items.isEmpty()) return
         val current = player.currentMediaItemIndex
-        val gone = items.indices.filter { locations[items[it].songId] == null }
-        if (current in gone && !playQueue.hasNext(current, state.value.repeatMode) { it in gone }) {
+        // An episode isn't the library's, so the library never takes it away.
+        val gone = items.indices.filter { index -> items[index].songId?.let { locations[it] == null } == true }
+        if (current in gone && !playQueue.hasNext(current, queueRepeat) { it in gone }) {
             unload(player)
         } else {
             if (current in gone) {
@@ -775,7 +841,7 @@ internal class MediaPlayback @Inject constructor(
 
     private fun moveToNewLocations(locations: Map<SongId, String>, player: Player) {
         items.forEachIndexed { index, item ->
-            val uri = locations[item.songId] ?: return@forEachIndexed
+            val uri = item.songId?.let(locations::get) ?: return@forEachIndexed
             if (uri != uris[item.id] && index != player.currentMediaItemIndex) {
                 uris = uris + (item.id to uri)
                 failed = failed - item.id
@@ -857,33 +923,47 @@ private val RepeatMode.media3: Int
         RepeatMode.All -> Player.REPEAT_MODE_ALL
     }
 
-/** A write to the stored point, in the order they are made. */
-private sealed interface Write {
-    suspend fun to(local: PlaybackLocalDataSource)
+/** Where an episode is, as the podcasts store it, with the length the player knows (ADR-031, rule 7). */
+private data class EpisodeProgress(val episode: EpisodeId, val position: Duration, val length: Duration?)
 
-    data class Point(val point: ResumePoint) : Write {
-        override suspend fun to(local: PlaybackLocalDataSource) {
+/**
+ * A write to the stored point, or to an episode's progress, in the order they are made. A progress that can't be
+ * written loses nothing but where to carry on from, as a point does.
+ */
+private sealed interface Write {
+    suspend fun to(local: PlaybackLocalDataSource, progress: EpisodeProgressRepository)
+
+    data class Point(val point: ResumePoint, val episode: EpisodeProgress? = null) : Write {
+        override suspend fun to(local: PlaybackLocalDataSource, progress: EpisodeProgressRepository) {
             local.store(point)
+            episode?.let { progress.setPosition(it.episode, it.position, it.length) }
         }
     }
 
     data class Order(val order: PlayOrder?) : Write {
-        override suspend fun to(local: PlaybackLocalDataSource) {
+        override suspend fun to(local: PlaybackLocalDataSource, progress: EpisodeProgressRepository) {
             local.storeOrder(order)
         }
     }
 
+    data class Ended(val episode: EpisodeId, val length: Duration?) : Write {
+        override suspend fun to(local: PlaybackLocalDataSource, progress: EpisodeProgressRepository) {
+            progress.setEnded(episode, length)
+        }
+    }
+
     data object Clear : Write {
-        override suspend fun to(local: PlaybackLocalDataSource) {
+        override suspend fun to(local: PlaybackLocalDataSource, progress: EpisodeProgressRepository) {
             local.clear()
         }
     }
 }
 
-private val PlaybackItem.songId: SongId
-    get() = when (val itemId = id) {
-        is PlaybackItemId.Song -> itemId.id
-    }
+/** The song of an item, or `null` for an episode, which isn't the library's. */
+private val PlaybackItem.songId: SongId?
+    get() = (id as? PlaybackItemId.Song)?.id
+
+private val PlaybackSource?.isEpisode: Boolean get() = this is PlaybackSource.Episode
 
 /** A hold of ⏮ or ⏭: which way it moves, whether the item plays once it ends, and when it last moved. */
 private class Hold(var direction: SeekDirection, var wasPlaying: Boolean, var movedAt: ComparableTimeMark)
@@ -930,10 +1010,17 @@ private class QueuedItem(
                 .setTitle(item.title)
                 .setArtist(item.artist)
                 .setAlbumTitle(item.album)
-                .setArtworkUri(item.artwork?.let { artworkUriOf(it, artworkVersion) })
+                .setArtworkUri(artworkUri())
+                .apply { if (item.id is PlaybackItemId.Episode) setMediaType(MediaMetadata.MEDIA_TYPE_PODCAST_EPISODE) }
                 .build(),
         )
         .build()
+
+    /** A song's cover, or an episode's artwork, which the session loads through Rolabox's repositories (ADR-031). */
+    private fun artworkUri(): Uri? = when (val id = item.id) {
+        is PlaybackItemId.Song -> item.artwork?.let { artworkUriOf(it, artworkVersion) }
+        is PlaybackItemId.Episode -> episodeArtworkUriOf(id.id, artworkVersion)
+    }
 }
 
 /** A stored list, loaded again: its items, where to carry on in them, and the round it was in when it was shuffled. */
@@ -959,8 +1046,15 @@ private fun List<QueuedItem>.resumedAt(point: ResumePoint, order: StoredOrder?):
     }
 }
 
-private fun PlaybackError.isListGone(): Boolean = this is PlaybackError.Library &&
-    (cause is LibraryError.ArtistNotFound || cause is LibraryError.AlbumNotFound || cause is LibraryError.GenreNotFound)
+private fun PlaybackError.isListGone(): Boolean = when (this) {
+    is PlaybackError.Library ->
+        cause is LibraryError.ArtistNotFound || cause is LibraryError.AlbumNotFound ||
+            cause is LibraryError.GenreNotFound
+
+    is PlaybackError.Podcasts -> cause is PodcastError.EpisodeNotFound || cause is PodcastError.ShowNotFound
+
+    else -> false
+}
 
 /**
  * The list of [source] as the library shows it, with the names of each song's artist and album and its URI. Its
@@ -974,6 +1068,7 @@ private suspend fun LibraryRepository.queueOf(source: PlaybackSource): Either<Pl
             is PlaybackSource.ByAlbum -> observeSongsByAlbum(source.albumId)
             is PlaybackSource.ByGenreAndArtist -> observeSongsByGenreAndArtist(source.genreId, source.artistId)
             is PlaybackSource.ByGenreAndAlbum -> observeSongsByGenreAndAlbum(source.genreId, source.albumId)
+            is PlaybackSource.Episode -> error("An episode isn't the library's: $source")
         }.first().mapLeft(PlaybackError::Library).bind()
         val artists = mutableMapOf<ArtistId, String?>()
         val albums = mutableMapOf<AlbumId, String?>()
@@ -1009,3 +1104,41 @@ private fun List<QueuedItem>.playableFrom(at: Int): QueuedItem? =
     drop(at).firstOrNull { !it.isProtected } ?: take(at).lastOrNull { !it.isProtected }
 
 private const val MAX_VOLUME = 100
+
+/**
+ * An episode alone, as a queue: its title, its show as the artist and the show's owner as the album, its length, and
+ * its enclosure's URL (ADR-031, Episodes in playback). An episode with no length known plays with none until the
+ * player knows it.
+ */
+private suspend fun Podcasts.queueOf(episodeId: EpisodeId): Either<PlaybackError, List<QueuedItem>> = either {
+    val episode = repository.getEpisode(episodeId).mapLeft(PlaybackError::Podcasts).bind()
+    val show = repository.observeShow(episode.showId).first().mapLeft(PlaybackError::Podcasts).bind()
+    val item = PlaybackItem(
+        id = PlaybackItemId.Episode(episode.id),
+        title = episode.title,
+        artist = show.title,
+        album = show.ownerName,
+        duration = episode.length ?: Duration.ZERO,
+        artwork = null,
+    )
+    listOf(QueuedItem(item, episode.audioUrl, AlbumPlace(album = null, disc = null, track = null)))
+}
+
+/** The list of [source]: the library's songs, or an episode alone, from the podcasts (ADR-031). */
+private suspend fun queueOf(
+    source: PlaybackSource,
+    library: LibraryRepository,
+    podcasts: Podcasts,
+): Either<PlaybackError, List<QueuedItem>> = when (source) {
+    is PlaybackSource.Episode -> podcasts.queueOf(source.id)
+    else -> library.queueOf(source)
+}
+
+/**
+ * An episode carries on from the podcasts' position, so the two never disagree (ADR-031, Positions). One that can't be
+ * read is the point's.
+ */
+private suspend fun StoredQueue.withPositionOf(point: ResumePoint, podcasts: Podcasts): StoredQueue {
+    val position = (point.item as? PlaybackItemId.Episode)?.let { podcasts.progress.getPosition(it.id).getOrNull() }
+    return if (position == null) this else StoredQueue(source, queue, index, position.inWholeMilliseconds, order)
+}

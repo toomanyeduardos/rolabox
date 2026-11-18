@@ -18,6 +18,7 @@ import com.eduardoflores.rolabox.device.podcasts.api.OwnerId
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastError
 import com.eduardoflores.rolabox.device.podcasts.api.Show
 import com.eduardoflores.rolabox.device.podcasts.api.ShowId
+import com.eduardoflores.rolabox.device.podcasts.local.api.ArtworkSource
 import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeRecord
 import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeWrite
 import com.eduardoflores.rolabox.device.podcasts.local.api.PodcastsLocalDataSource
@@ -30,6 +31,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 
 /** The shows, episodes and follows in Room. */
+@Suppress("TooManyFunctions") // One function for each of the source's.
 internal class RoomPodcastsLocalDataSource @Inject constructor(
     private val dao: PodcastsDao,
     @param:Dispatcher(IO) private val ioDispatcher: CoroutineDispatcher,
@@ -66,6 +68,28 @@ internal class RoomPodcastsLocalDataSource @Inject constructor(
         addedAt: Instant,
     ): Either<PodcastError, EpisodeId> = catchNamed(::toError) {
         EpisodeId(dao.addEpisode(show.toEntity(addedAt), episode.toEntity(addedAt)))
+    }
+
+    override suspend fun getArtworkSource(episodeId: EpisodeId): Either<PodcastError, ArtworkSource?> =
+        catchNamed(::toError) {
+            dao.getArtworkSource(episodeId.value)?.let { row ->
+                ArtworkSource(
+                    episodeId = EpisodeId(row.episodeId),
+                    showId = ShowId(row.showId),
+                    itemKey = row.itemKey,
+                    feedUrl = row.feedUrl,
+                    episodeImageUrl = row.episodeImageUrl,
+                    showImageUrl = row.showImageUrl,
+                )
+            }
+        }
+
+    override suspend fun setImageUrls(
+        showId: ShowId,
+        showImageUrl: String?,
+        episodeImageUrls: Map<String, String>,
+    ): Either<PodcastError, Unit> = catchNamed(::toError) {
+        dao.setImageUrls(showId.value, showImageUrl, episodeImageUrls)
     }
 
     private fun <T> Flow<T>.asRead(): Flow<Either<PodcastError, T>> = flowOn(ioDispatcher).catchNamed(::toError)

@@ -22,6 +22,7 @@ internal class DefaultPodcastsEntries @Inject constructor() : PodcastsEntries {
         onOwnerClick: (ownerId: String) -> Unit,
         onShowClick: (showId: Long) -> Unit,
         onEpisodeClick: (episodeId: Long) -> Unit,
+        onPlaying: () -> Unit,
     ) = with(scope) {
         entry<PodcastsKey> {
             PodcastsRoute(
@@ -51,6 +52,7 @@ internal class DefaultPodcastsEntries @Inject constructor() : PodcastsEntries {
                 viewModel = hiltViewModel<EpisodeViewModelImpl, EpisodeViewModelImpl.Factory>(
                     creationCallback = { factory -> factory.create(key.episodeId) },
                 ),
+                onPlaying = onPlaying,
             )
         }
     }

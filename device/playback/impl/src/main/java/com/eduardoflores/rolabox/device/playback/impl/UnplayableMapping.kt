@@ -31,3 +31,13 @@ internal fun PlaybackException.toUnplayable(): PlaybackError.Unplayable = when (
 // Media3 keeps each family of codes in its own range of a thousand.
 private val IO_CODES = 2000..2999
 private val DRM_CODES = 6000..6999
+
+/** Whether a stream failed for the network or the server, which is the phone's state and not a bug (ADR-030). */
+internal fun PlaybackException.isNetworkState(): Boolean = errorCode in NETWORK_CODES
+
+private val NETWORK_CODES = setOf(
+    PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED,
+    PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT,
+    PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS,
+    PlaybackException.ERROR_CODE_IO_INVALID_HTTP_CONTENT_TYPE,
+)

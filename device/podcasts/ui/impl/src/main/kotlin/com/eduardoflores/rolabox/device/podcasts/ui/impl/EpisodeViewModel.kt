@@ -5,6 +5,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import arrow.core.Either
 import arrow.core.raise.either
+import com.eduardoflores.rolabox.device.playback.api.PlaybackController
+import com.eduardoflores.rolabox.device.playback.api.PlaybackError
+import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
+import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
 import com.eduardoflores.rolabox.device.podcasts.api.DirectoryEpisode
 import com.eduardoflores.rolabox.device.podcasts.api.DirectoryShow
 import com.eduardoflores.rolabox.device.podcasts.api.Episode
@@ -21,13 +25,16 @@ import java.time.Instant
 import kotlin.time.Duration
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 /** A row of the Episode screen: what center on it does. */
 internal enum class EpisodeRow {
@@ -39,6 +46,15 @@ internal enum class EpisodeRow {
 
     /** From 0:00, for one partly played. */
     PlayFromStart,
+}
+
+/** Why center couldn't play the episode, as the screen tells the user (ADR-018, rule 18). */
+internal enum class EpisodePlayFailure {
+    /** The episode, its show or its position couldn't be read, or it is no longer in the library. */
+    EpisodeUnavailable,
+
+    /** The player couldn't be reached. */
+    PlayerUnavailable,
 }
 
 /**
@@ -98,8 +114,18 @@ internal abstract class EpisodeViewModel : ViewModel() {
     /** How many lines the description can be scrolled, as the screen measured it at this width and font scale. */
     abstract fun onScrollableLinesChange(lines: Int)
 
-    /** Center: plays the episode as the highlighted row says. */
-    abstract fun onCenter()
+    /** Why the last center couldn't play, until [onPlayFailureShown]. `null` when there is nothing to show. */
+    abstract val playFailure: StateFlow<EpisodePlayFailure?>
+
+    /**
+     * Center: plays the episode as the highlighted row says, alone (ADR-031, rule 11), and then calls [onPlaying]. Play
+     * and Play from Start start at 0:00, and Resume where the user stopped. When it can't play, [onPlaying] isn't
+     * called, and [playFailure] says why.
+     */
+    abstract fun onCenter(onPlaying: () -> Unit)
+
+    /** The message of [playFailure] was shown, so it isn't shown again. */
+    abstract fun onPlayFailureShown()
 }
 
 /** The episode is the one of the entry's key, given when the entry creates the ViewModel (see [ShowViewModelImpl]). */
@@ -108,10 +134,13 @@ internal class EpisodeViewModelImpl @AssistedInject constructor(
     @Assisted episodeKey: Long,
     private val savedState: SavedStateHandle,
     podcastsRepository: PodcastsRepository,
+    private val playbackController: PlaybackController,
 ) : EpisodeViewModel() {
+    private val episodeId = EpisodeId(episodeKey)
+
     @OptIn(ExperimentalCoroutinesApi::class)
     override val uiState: StateFlow<ListUiState<EpisodeContent>> =
-        podcastsRepository.observeEpisode(EpisodeId(episodeKey))
+        podcastsRepository.observeEpisode(episodeId)
             .flatMapLatest { episode ->
                 episode.fold(
                     ifLeft = { flowOf(Either.Left(it)) },
@@ -129,6 +158,9 @@ internal class EpisodeViewModelImpl @AssistedInject constructor(
 
     private var scrollableLines = 0
 
+    private val playFailureState = MutableStateFlow<EpisodePlayFailure?>(null)
+    override val playFailure: StateFlow<EpisodePlayFailure?> = playFailureState.asStateFlow()
+
     override fun onTurn(steps: Int) {
         val rowCount = (uiState.value as? ListUiState.Loaded)?.value?.rows?.size ?: return
         save(currentWheel().turned(steps, rowCount, scrollableLines))
@@ -141,9 +173,24 @@ internal class EpisodeViewModelImpl @AssistedInject constructor(
         if (wheel.lines > scrollableLines) save(wheel.copy(lines = scrollableLines))
     }
 
-    override fun onCenter() {
-        // Playing comes with playback/09 and podcasts/07: Play and Play from Start from 0:00, Resume from the
-        // episode's position. Until then center on a row does nothing.
+    // Downloading before it plays comes with podcasts/07: until then the episode streams from its URL.
+    override fun onCenter(onPlaying: () -> Unit) {
+        val rows = (uiState.value as? ListUiState.Loaded)?.value?.rows ?: return
+        val row = rows.getOrNull(currentWheel().row.coerceIn(0, rows.lastIndex)) ?: return
+        viewModelScope.launch {
+            playbackController.play(
+                source = PlaybackSource.Episode(episodeId),
+                from = PlaybackItemId.Episode(episodeId),
+                resume = row == EpisodeRow.Resume,
+            ).fold(
+                ifLeft = { error -> playFailureState.value = error.toEpisodePlayFailure() },
+                ifRight = { onPlaying() },
+            )
+        }
+    }
+
+    override fun onPlayFailureShown() {
+        playFailureState.value = null
     }
 
     private fun currentWheel() = EpisodeWheel(savedState[ROW_KEY] ?: 0, savedState[LINES_KEY] ?: 0)
@@ -199,3 +246,16 @@ internal fun foundEpisodeContent(show: DirectoryShow, episode: DirectoryEpisode)
     info = EpisodeInfo(publishedAt = episode.publishedAt, length = episode.length, left = null),
     description = episode.description?.takeIf { it.isNotBlank() },
 )
+
+private fun PlaybackError.toEpisodePlayFailure(): EpisodePlayFailure = when (this) {
+    PlaybackError.PlayerUnavailable -> EpisodePlayFailure.PlayerUnavailable
+
+    // The podcasts couldn't give the episode: it is gone, or couldn't be read. The others are the library's, which an
+    // episode never reads, or the state's: the nearest thing to say if one ever came.
+    is PlaybackError.Podcasts,
+    is PlaybackError.Library,
+    is PlaybackError.ItemNotInSource,
+    is PlaybackError.NothingToPlay,
+    is PlaybackError.Unplayable,
+    -> EpisodePlayFailure.EpisodeUnavailable
+}

@@ -2,9 +2,11 @@ package com.eduardoflores.rolabox.device.podcasts.network.impl.di
 
 import com.eduardoflores.rolabox.device.podcasts.network.api.DirectoryNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.api.FeedNetworkDataSource
+import com.eduardoflores.rolabox.device.podcasts.network.api.ImageNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.impl.DeviceCountry
 import com.eduardoflores.rolabox.device.podcasts.network.impl.DirectorySearchUrl
 import com.eduardoflores.rolabox.device.podcasts.network.impl.ITunesDirectoryNetworkDataSource
+import com.eduardoflores.rolabox.device.podcasts.network.impl.OkHttpImageNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.impl.PodcastsClient
 import com.eduardoflores.rolabox.device.podcasts.network.impl.RssFeedNetworkDataSource
 import dagger.Binds
@@ -30,6 +32,9 @@ abstract class PodcastsNetworkModule {
     @Binds
     internal abstract fun bindsFeedNetworkDataSource(dataSource: RssFeedNetworkDataSource): FeedNetworkDataSource
 
+    @Binds
+    internal abstract fun bindsImageNetworkDataSource(dataSource: OkHttpImageNetworkDataSource): ImageNetworkDataSource
+
     internal companion object {
         private val CONNECT_TIMEOUT = 15.seconds
 
@@ -43,7 +48,10 @@ abstract class PodcastsNetworkModule {
         @Provides
         fun providesDeviceCountry(): DeviceCountry = DeviceCountry.FromLocale
 
-        /** The podcasts' client, for the directory and the feeds. It sends nothing of its own (ADR-031, rule 1). */
+        /**
+         * The podcasts' client, for the directory, the feeds and their images. It sends nothing of its own (ADR-031,
+         * rule 1).
+         */
         @Provides
         @Singleton
         @PodcastsClient

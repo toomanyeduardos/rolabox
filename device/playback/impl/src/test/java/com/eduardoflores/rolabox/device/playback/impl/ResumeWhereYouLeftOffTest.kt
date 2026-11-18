@@ -31,6 +31,9 @@ import com.eduardoflores.rolabox.device.playback.local.api.PlayOrder
 import com.eduardoflores.rolabox.device.playback.local.api.ResumePoint
 import com.eduardoflores.rolabox.device.playback.local.api.ShuffledBy
 import com.eduardoflores.rolabox.device.playback.testing.FakePlaybackLocalDataSource
+import com.eduardoflores.rolabox.device.podcasts.testing.FakeEpisodeProgressRepository
+import com.eduardoflores.rolabox.device.podcasts.testing.FakePodcastArtworkRepository
+import com.eduardoflores.rolabox.device.podcasts.testing.FakePodcastsRepository
 import java.io.File
 import kotlin.coroutines.ContinuationInterceptor
 import kotlin.random.Random
@@ -101,6 +104,7 @@ class ResumeWhereYouLeftOffTest {
                 userData,
                 PlayOrders(Random(0)),
                 FakeNonFatalReport(),
+                Podcasts(FakePodcastsRepository(), FakeEpisodeProgressRepository(), FakePodcastArtworkRepository()),
             )
     }
 

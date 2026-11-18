@@ -81,6 +81,26 @@ internal interface PodcastsDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertEpisode(episode: EpisodeEntity): Long
 
+    @Query(
+        "SELECT e.id AS episodeId, e.showId AS showId, e.itemKey AS itemKey, s.feedUrl AS feedUrl, " +
+            "e.imageUrl AS episodeImageUrl, s.imageUrl AS showImageUrl " +
+            "FROM episodes e JOIN shows s ON s.id = e.showId WHERE e.id = :episodeId",
+    )
+    suspend fun getArtworkSource(episodeId: Long): ArtworkSourceRow?
+
+    @Query("UPDATE shows SET imageUrl = :imageUrl WHERE id = :showId")
+    suspend fun setShowImageUrl(showId: Long, imageUrl: String?)
+
+    @Query("UPDATE episodes SET imageUrl = :imageUrl WHERE showId = :showId AND itemKey = :itemKey")
+    suspend fun setEpisodeImageUrl(showId: Long, itemKey: String, imageUrl: String)
+
+    /** Stores the image URLs a show's feed names, the show's and its episodes', in one transaction. */
+    @Transaction
+    suspend fun setImageUrls(showId: Long, showImageUrl: String?, episodeImageUrls: Map<String, String>) {
+        setShowImageUrl(showId, showImageUrl)
+        episodeImageUrls.forEach { (itemKey, url) -> setEpisodeImageUrl(showId, itemKey, url) }
+    }
+
     /** Adds the show and the episode that aren't there yet, and returns the episode's id. */
     @Transaction
     suspend fun addEpisode(show: ShowEntity, episode: EpisodeEntity): Long {
@@ -123,4 +143,13 @@ internal data class EpisodeRow(
     val played: Boolean?,
     val playerLengthMillis: Long?,
     val lastPlayedAt: Long?,
+)
+
+internal data class ArtworkSourceRow(
+    val episodeId: Long,
+    val showId: Long,
+    val itemKey: String,
+    val feedUrl: String,
+    val episodeImageUrl: String?,
+    val showImageUrl: String?,
 )

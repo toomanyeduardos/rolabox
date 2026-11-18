@@ -9,10 +9,11 @@ import kotlin.time.Duration
  */
 interface PlaybackController {
     /**
-     * Loads the whole list of [source] and starts playing at [from], at 0:00, in place of what was loaded.
-     * Nothing changes on a `Left`.
+     * Loads the whole list of [source] and starts playing at [from], in place of what was loaded. It starts at 0:00,
+     * unless [resume] is `true` and the item keeps a position of its own, as an episode does: it then starts from where
+     * it was left (ADR-031). A song always starts at 0:00. Nothing changes on a `Left`.
      */
-    suspend fun play(source: PlaybackSource, from: PlaybackItemId): Either<PlaybackError, Unit>
+    suspend fun play(source: PlaybackSource, from: PlaybackItemId, resume: Boolean = false): Either<PlaybackError, Unit>
 
     /**
      * Shuffle Songs (ADR-028): loads the whole list of [source] in a random order, by song, and starts playing a random
@@ -44,13 +45,18 @@ interface PlaybackController {
     /** Ends [startSeeking]: the item goes on from where the seek left it. Does nothing when nothing is being sought. */
     suspend fun stopSeeking()
 
-    /** Starts the next item at 0:00. Does nothing on the last item, or when nothing is loaded. */
+    /**
+     * What ⏭ does: starts the next item at 0:00, and does nothing on the last item. During an episode it skips
+     * forward 30 s instead, and in its last 30 s goes to its end, which ends it (ADR-031, rule 11). Does nothing when
+     * nothing is loaded.
+     */
     suspend fun next()
 
     /**
      * What ⏮ does: starts the loaded item again at 0:00 when it is past its first seconds, and the previous
      * item at 0:00 otherwise. The first item has no previous one, and starts again wherever it is. The
-     * threshold is the playback area's (ADR-018, rule 17). Does nothing when nothing is loaded.
+     * threshold is the playback area's (ADR-018, rule 17). During an episode it skips back 15 s instead, and stops at
+     * 0:00 (ADR-031, rule 11). Does nothing when nothing is loaded.
      */
     suspend fun previous()
 

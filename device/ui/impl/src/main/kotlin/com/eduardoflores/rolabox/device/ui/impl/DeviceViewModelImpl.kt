@@ -119,4 +119,7 @@ private fun PlaybackError.toPlayFailure(): PlayFailure = when (this) {
 
     // The state reports these, and play() never returns one: the nearest thing to say if it ever did.
     is PlaybackError.Unplayable -> PlayFailure.PlayerUnavailable
+
+    // Only an episode's play returns it, which the Episode screen says itself: a song click never does.
+    is PlaybackError.Podcasts -> PlayFailure.LibraryUnavailable
 }

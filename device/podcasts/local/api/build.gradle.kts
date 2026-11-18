@@ -8,4 +8,6 @@ dependencies {
     api(libs.kotlinx.coroutines.core)
     api(libs.arrow.core)
     implementation(project(":device:podcasts:api"))
+    // ArtworkImage, the pixels an artwork is (ADR-031, rule 12).
+    implementation(project(":device:library:api"))
 }

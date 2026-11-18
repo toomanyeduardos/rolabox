@@ -1,9 +1,13 @@
 package com.eduardoflores.rolabox.device.podcasts.ui.impl
 
+import android.widget.Toast
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceListAndText
@@ -24,14 +28,17 @@ import kotlin.time.Duration
  * says (frame 26).
  */
 @Composable
-internal fun EpisodeRoute(viewModel: EpisodeViewModel) {
+internal fun EpisodeRoute(viewModel: EpisodeViewModel, onPlaying: () -> Unit) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val wheel by viewModel.wheel.collectAsStateWithLifecycle()
+    val playFailure by viewModel.playFailure.collectAsStateWithLifecycle()
+    val currentOnPlaying by rememberUpdatedState(onPlaying)
     ScreenTitle((state as? ListUiState.Loaded)?.value?.showTitle)
+    PlayFailureToast(playFailure, onShow = viewModel::onPlayFailureShown)
     HandleWheelEvents { event ->
         when {
             event is WheelEvent.Turn -> viewModel.onTurn(event.steps)
-            event == WheelEvent.Center -> viewModel.onCenter()
+            event == WheelEvent.Center -> viewModel.onCenter { currentOnPlaying() }
         }
     }
     val zone = remember { ZoneId.systemDefault() }
@@ -150,3 +157,21 @@ private fun durationText(duration: Duration, words: EpisodeWords, locale: Locale
 
 private const val SEPARATOR = " · "
 private const val MINUTES_PER_HOUR = 60
+
+/**
+ * A play that failed says why, once, in a toast, and then calls [onShow]: nothing is loaded and Now Playing isn't
+ * opened (ADR-018, rule 18). A toast is the system's, drawn over the device.
+ */
+@Composable
+private fun PlayFailureToast(failure: EpisodePlayFailure?, onShow: () -> Unit) {
+    val context = LocalContext.current
+    val currentOnShow by rememberUpdatedState(onShow)
+    LaunchedEffect(failure) {
+        val message = when (failure ?: return@LaunchedEffect) {
+            EpisodePlayFailure.EpisodeUnavailable -> R.string.podcasts_play_episode_unavailable
+            EpisodePlayFailure.PlayerUnavailable -> R.string.podcasts_play_player_unavailable
+        }
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        currentOnShow()
+    }
+}

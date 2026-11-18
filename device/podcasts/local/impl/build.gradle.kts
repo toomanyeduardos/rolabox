@@ -12,6 +12,8 @@ android {
 dependencies {
     implementation(project(":device:podcasts:api"))
     implementation(project(":device:podcasts:local:api"))
+    // ArtworkImage, the pixels the artwork files are read as (ADR-031, rule 12).
+    implementation(project(":device:library:api"))
     implementation(project(":common:storage:api"))
     implementation(project(":common:util"))
 

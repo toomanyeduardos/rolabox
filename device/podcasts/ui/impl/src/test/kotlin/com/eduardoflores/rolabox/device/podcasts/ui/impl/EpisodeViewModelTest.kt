@@ -1,9 +1,15 @@
 package com.eduardoflores.rolabox.device.podcasts.ui.impl
 
 import androidx.lifecycle.SavedStateHandle
+import arrow.core.left
 import com.eduardoflores.rolabox.common.storage.api.StorageError
 import com.eduardoflores.rolabox.common.testing.MainDispatcherRule
+import com.eduardoflores.rolabox.device.playback.api.PlaybackError
+import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
+import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
+import com.eduardoflores.rolabox.device.playback.testing.FakePlayback
 import com.eduardoflores.rolabox.device.podcasts.api.Episode
+import com.eduardoflores.rolabox.device.podcasts.api.PodcastError
 import com.eduardoflores.rolabox.device.podcasts.testing.FakePodcastsRepository
 import com.eduardoflores.rolabox.device.podcasts.testing.PodcastSamples
 import kotlin.time.Duration.Companion.minutes
@@ -21,9 +27,10 @@ class EpisodeViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val podcasts = FakePodcastsRepository().apply { fillWithSamples() }
+    private val playback = FakePlayback()
 
     private fun TestScope.observedViewModel(episode: Episode, savedState: SavedStateHandle = SavedStateHandle()) =
-        EpisodeViewModelImpl(episode.id.value, savedState, podcasts).also {
+        EpisodeViewModelImpl(episode.id.value, savedState, podcasts, playback).also {
             backgroundScope.launch(mainDispatcherRule.testDispatcher) { it.uiState.collect() }
             backgroundScope.launch(mainDispatcherRule.testDispatcher) { it.wheel.collect() }
         }
@@ -32,7 +39,7 @@ class EpisodeViewModelTest {
 
     @Test
     fun beforeAnythingIsObserved_isLoading() {
-        val viewModel = EpisodeViewModelImpl(PodcastSamples.unplayed.id.value, SavedStateHandle(), podcasts)
+        val viewModel = EpisodeViewModelImpl(PodcastSamples.unplayed.id.value, SavedStateHandle(), podcasts, playback)
 
         assertEquals(ListUiState.Loading, viewModel.uiState.value)
     }
@@ -189,5 +196,57 @@ class EpisodeViewModelTest {
         val restored = observedViewModel(PodcastSamples.partlyPlayed, savedState)
 
         assertEquals(EpisodeWheel(row = 1, lines = 2), restored.wheel.value)
+    }
+
+    // Playing (ADR-031, Episodes in playback)
+
+    @Test
+    fun centerOnPlay_playsTheEpisodeAloneFromTheStart_andThenOpensNowPlaying() = runTest {
+        val viewModel = observedViewModel(PodcastSamples.unplayed)
+        var playing = 0
+
+        viewModel.onCenter { playing++ }
+
+        val id = PodcastSamples.unplayed.id
+        assertEquals(
+            listOf(FakePlayback.PlayCall(PlaybackSource.Episode(id), PlaybackItemId.Episode(id), resume = false)),
+            playback.playCalls,
+        )
+        assertEquals(1, playing)
+    }
+
+    @Test
+    fun centerOnResume_resumes_andOnPlayFromStart_startsOver() = runTest {
+        val viewModel = observedViewModel(PodcastSamples.partlyPlayed)
+
+        viewModel.onCenter {}
+        viewModel.onTurn(1)
+        viewModel.onCenter {}
+
+        assertEquals(listOf(true, false), playback.playCalls.map { it.resume })
+    }
+
+    @Test
+    fun aPlayThatFails_saysWhy_andOpensNothing() = runTest {
+        playback.playResult = PlaybackError.Podcasts(PodcastError.EpisodeNotFound(PodcastSamples.unplayed.id)).left()
+        val viewModel = observedViewModel(PodcastSamples.unplayed)
+        var playing = 0
+
+        viewModel.onCenter { playing++ }
+
+        assertEquals(0, playing)
+        assertEquals(EpisodePlayFailure.EpisodeUnavailable, viewModel.playFailure.value)
+        viewModel.onPlayFailureShown()
+        assertNull(viewModel.playFailure.value)
+    }
+
+    @Test
+    fun aPlayerThatCantBeReached_saysSo() = runTest {
+        playback.playResult = PlaybackError.PlayerUnavailable.left()
+        val viewModel = observedViewModel(PodcastSamples.unplayed)
+
+        viewModel.onCenter {}
+
+        assertEquals(EpisodePlayFailure.PlayerUnavailable, viewModel.playFailure.value)
     }
 }

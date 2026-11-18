@@ -21,6 +21,8 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom)) // required by the design system's Compose, with no version
     implementation(project(":device:library:api"))
     implementation(project(":device:playback:api"))
+    // An episode's audio URL, its names and its position, and its artwork (ADR-031, The layout).
+    implementation(project(":device:podcasts:api"))
     // What is restored after the app is killed (ADR-023, rule 11).
     implementation(project(":device:playback:local:api"))
     implementation(project(":common:storage:api")) // required by its errors
@@ -39,6 +41,7 @@ dependencies {
     testImplementation(project(":device:playback:testing"))
     testImplementation(project(":device:library:testing"))
     testImplementation(project(":common:userdata:testing"))
+    testImplementation(project(":device:podcasts:testing"))
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     // A real ExoPlayer on the JVM, with Media3's fake clock, playing library/02's fixtures (ADR-023).
@@ -52,6 +55,7 @@ dependencies {
     androidTestImplementation(project(":device:library:testing"))
     androidTestImplementation(project(":device:playback:testing"))
     androidTestImplementation(project(":common:userdata:testing"))
+    androidTestImplementation(project(":device:podcasts:testing"))
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.test.runner)
 }

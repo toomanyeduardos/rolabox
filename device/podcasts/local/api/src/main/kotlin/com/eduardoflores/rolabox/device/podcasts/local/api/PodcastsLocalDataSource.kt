@@ -43,4 +43,17 @@ interface PodcastsLocalDataSource {
      * item key, in one transaction. What is already there is kept as it is. Returns the episode's id.
      */
     suspend fun addEpisode(show: ShowWrite, episode: EpisodeWrite, addedAt: Instant): Either<PodcastError, EpisodeId>
+
+    /** Where the episode's artwork comes from, or `null` when there is no such episode. */
+    suspend fun getArtworkSource(episodeId: EpisodeId): Either<PodcastError, ArtworkSource?>
+
+    /**
+     * Stores the image URLs the show's feed names: the show's [showImageUrl], and each of its episodes' by item key, in
+     * [episodeImageUrls]. An episode of the show that isn't in the map keeps what it has.
+     */
+    suspend fun setImageUrls(
+        showId: ShowId,
+        showImageUrl: String?,
+        episodeImageUrls: Map<String, String>,
+    ): Either<PodcastError, Unit>
 }

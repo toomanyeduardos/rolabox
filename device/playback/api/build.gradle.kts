@@ -8,4 +8,6 @@ dependencies {
     api(libs.arrow.core)
     // Consumers declare the module of SongId and LibraryError themselves (ADR-003, rule 15).
     implementation(project(":device:library:api"))
+    // EpisodeId in PlaybackItemId.Episode, and PodcastError (ADR-031, The layout).
+    implementation(project(":device:podcasts:api"))
 }
