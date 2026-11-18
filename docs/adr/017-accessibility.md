@@ -21,6 +21,11 @@
   no place for a text that is reached by an input and not by layout (39.09).
 - **Revised 2026-10-27:** Rule 12 is in the code (Conformance). 39.09 built it, with a golden for
   each of its three cases and a unit test of the scrolling. No rule changes.
+- **Revised 2026-11-18:** The device's text field, from [ADR-032](032-typing-on-the-device.md), gets
+  rule 13. It is one line like a row, its hint is the app's text and is never cut, so a short hint
+  replaces it when it doesn't fit, and TalkBack reads it as an edit field. Search's hint ("Shows,
+  creators, episodes") doesn't fit the display at 1.5x, and rule 4 forbids an ellipsis on it. Reading
+  the device's lists with TalkBack is still the screen reader section's (device/01).
 
 ## Context
 
@@ -241,6 +246,11 @@ The Google sign-in button is, within Google's branding rules.
     fit ends in an ellipsis, and the highlighted row scrolls it sideways until all of it has been
     shown, or wraps it where the system's animations are off, so every row's full text can be read
     at 1.5x. This is the only exception to rules 4 and 5, and it covers those rows only.
+13. `[convention]` The device's text field (ADR-032) is one line that follows the font scale. Its
+    hint is never cut: the screen gives a short hint too, and the field shows it when the hint
+    doesn't fit. The query is the user's text: it scrolls to keep the caret in view while typing, and
+    ends in an ellipsis otherwise. TalkBack reads the field as an edit field, with its hint as its
+    label.
 
 **Conformance.** Rule 2 is checked by detekt's `ForbiddenMethodCall` in `detektMain` and
 `detektTest`, and rule 3 by `FixedHeightAroundText` in `detekt`, all part of `./gradlew check` and
@@ -250,4 +260,7 @@ build check: one line, an ellipsis and a scrolling text are properties of one de
 component, the device's list, and not a pattern in the code of its callers. Its three cases are in
 the goldens of the `DeviceListLongRows` previews: the rows that end in an ellipsis, the highlighted
 row at rest before it scrolls, and the highlighted row that wraps where the system's animations are
-off. When the scrolling starts and stops is covered by `RowTextScrollTest`.
+off. When the scrolling starts and stops is covered by `RowTextScrollTest`. Rule 13 has no build
+check either: it is one design-system component, `DeviceTextField`. Its goldens, in light, dark and at
+1.5x, empty with the hint and with a query, show the short hint and the one line, and TalkBack's
+reading of it is checked on a device by the ticket that builds it (device/02).

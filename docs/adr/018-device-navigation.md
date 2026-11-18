@@ -1,7 +1,8 @@
 # ADR-018: Device navigation: a linear screen stack driven by the wheel
 
 - **Status:** Accepted. Rules 1, 5 and 12 superseded by [ADR-020](020-modules-by-product-area.md),
-  in the parts that name `:app`. Rule 17 superseded for episodes by [ADR-031](031-podcasts.md)
+  in the parts that name `:app`. Rule 17 superseded for episodes by [ADR-031](031-podcasts.md).
+  Rule 11 superseded for the keyboard by [ADR-032](032-typing-on-the-device.md)
 - **Date:** 2026-10-01
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review
@@ -146,6 +147,13 @@
   episode queues it alone, so when it ends the queue ends and Now Playing is popped (rule 8). ⏮ and
   ⏭ skip back 15 s and forward 30 s in it, and a hold scrubs as for a song. Who handles ⏮ and ⏭ is
   unchanged: the playback area decides what they do for the loaded item. playback/09 builds it.
+- **Revised 2026-11-18:** Text input is decided by [ADR-032](032-typing-on-the-device.md) (What was
+  not decided, Consequences, rule 11). A device screen may take text, with the phone's keyboard drawn
+  over the wheel, into a field that is a row of the display, and the host owns the keyboard. Rule 11
+  still holds for everything else operated by touch or the keyboard, and `TouchComponentInDeviceScreen`
+  still reports it. Rule 9 is unchanged: the keyboard takes the system's back while it is shown, and
+  nothing on the device handles back. Search needed it (device/01), and neither a letter picker nor a
+  full screen let the user see results while typing.
 
 ## Context
 
@@ -453,9 +461,9 @@ as ADR-017's rule 10 requires.
 
 ### What was not decided
 
-- **Text input on the device,** which search needs. A letter picker driven by the wheel and a full
-  screen with the system keyboard are both open, and it will be decided with the first search
-  ticket, as a revision of this ADR.
+- **Text input on the device,** which search needs. It was left here, and is decided by
+  [ADR-032](032-typing-on-the-device.md): the phone's keyboard over the wheel, into a field that is a
+  row of the display.
 - **Screen readers.** A display that isn't touched and a wheel that is a custom gesture both need a
   TalkBack design. It comes as a section of ADR-017, and may add rules here.
 - **Queue rules** beyond the whole list, started from the selected row: shuffle and repeat. They
@@ -551,7 +559,8 @@ as ADR-017's rule 10 requires.
   orientation lock on large screens, so there the device has to be drawn at its own proportions in
   whatever window it gets.
 - The sign-in screens are locked to portrait too.
-- Search can't be built on the device until text input is decided.
+- Search can't be built on the device until text input is decided. It is, by
+  [ADR-032](032-typing-on-the-device.md).
 
 ## Rules
 
