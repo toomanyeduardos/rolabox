@@ -52,6 +52,7 @@ class DeviceComponentOutsideDesignSystem(config: Config) :
             "DeviceDisplay",
             "DeviceHeader",
             "DeviceList",
+            "DeviceListAndText",
             "DeviceListRow",
             "DeviceMessage",
             "DeviceProgressBar",

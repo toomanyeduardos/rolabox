@@ -128,16 +128,21 @@ private fun DrawScope.drawScrollbar(state: LazyListState, track: Color, thumb: C
     val contentHeight = averageRow * info.totalItemsCount
     val viewport = (info.viewportEndOffset - info.viewportStartOffset).toFloat()
     val scrolled = first.index * averageRow - first.offset
+    drawScrollbar(viewport / contentHeight, scrolled / (contentHeight - viewport), track, thumb)
+}
+
+/**
+ * Draws the display's scrollbar on the right: the track, and a thumb [shown] of it long (the share of the content
+ * in view) at [scrolled] of the way down. A list's rows and a screen of text draw the same one.
+ */
+internal fun DrawScope.drawScrollbar(shown: Float, scrolled: Float, track: Color, thumb: Color) {
     val inset = TrackVerticalInset.toPx()
     val trackHeight = size.height - 2f * inset
     val trackLeft = size.width - TrackEdgeInset.toPx() - TrackWidth.toPx()
     val corner = CornerRadius(TrackWidth.toPx() / 2f)
     drawRoundRect(track, Offset(trackLeft, inset), Size(TrackWidth.toPx(), trackHeight), corner)
-    val thumbHeight = (viewport / contentHeight * trackHeight).coerceIn(ThumbMinHeight.toPx(), trackHeight)
-    val thumbTop = (scrolled / (contentHeight - viewport) * (trackHeight - thumbHeight)).coerceIn(
-        0f,
-        trackHeight - thumbHeight,
-    )
+    val thumbHeight = (shown * trackHeight).coerceIn(ThumbMinHeight.toPx(), trackHeight)
+    val thumbTop = (scrolled * (trackHeight - thumbHeight)).coerceIn(0f, trackHeight - thumbHeight)
     drawRoundRect(thumb, Offset(trackLeft, inset + thumbTop), Size(TrackWidth.toPx(), thumbHeight), corner)
 }
 

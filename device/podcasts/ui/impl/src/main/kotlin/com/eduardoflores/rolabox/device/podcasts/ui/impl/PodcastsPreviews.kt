@@ -13,7 +13,9 @@ import com.eduardoflores.rolabox.common.designsystem.component.DeviceRecord
 import com.eduardoflores.rolabox.common.designsystem.component.PreviewLightDark
 import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxTheme
 import com.eduardoflores.rolabox.device.host.DeviceScreen
+import com.eduardoflores.rolabox.device.podcasts.api.DirectoryEpisode
 import com.eduardoflores.rolabox.device.podcasts.api.DirectoryId
+import com.eduardoflores.rolabox.device.podcasts.api.DirectoryShow
 import com.eduardoflores.rolabox.device.podcasts.api.DownloadState
 import com.eduardoflores.rolabox.device.podcasts.api.Episode
 import com.eduardoflores.rolabox.device.podcasts.api.EpisodeId
@@ -22,10 +24,14 @@ import com.eduardoflores.rolabox.device.podcasts.api.OwnerId
 import com.eduardoflores.rolabox.device.podcasts.api.PlayedState
 import com.eduardoflores.rolabox.device.podcasts.api.Show
 import com.eduardoflores.rolabox.device.podcasts.api.ShowId
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 
-// The screens as the designs show them (player-designs/device, frames 09 and 22 to 25), on the assembled device. They
-// call the stateless list with the rows the routes build (ADR-016, rule 3).
+// The screens as the designs show them (player-designs/device, frames 09, 22 to 26 and 32), on the assembled
+// device. They call the stateless list with the rows the routes build (ADR-016, rule 3).
 
 private val Owners = listOf("Field Notes Media", "Harbor Audio", "NY Times", "Small Rooms", "Weekly Bench")
     .map { Owner(OwnerId(it.lowercase()), it) }
@@ -146,6 +152,99 @@ private fun ShowFollowOffPreview() = DevicePreview(title = "The Daily") {
     val downloaded = TheDailyEpisodes.filter { it.download != DownloadState.NotDownloaded }
     val content = ShowContent(TheDaily.copy(isFollowed = false), downloaded)
     PodcastsList(ListUiState.Loaded(showRows(content, showWords())), highlightedIndex = 0)
+}
+
+// The Episode screen. The previews' today is in the year of the designs, so the dates show no year.
+private val PreviewToday = LocalDate.parse("2026-11-17")
+
+private const val PORT_STRIKE =
+    "Dockworkers on both coasts walked off the job for nine days. We look at what the strike won, " +
+        "what it cost the ports, and why the next contract talks may be harder. Then the deal's fine " +
+        "print: what it means for shipping prices this winter, for the warehouses inland that wait on " +
+        "the ports, and for the workers who will be back at the table in three years, with automation " +
+        "the one question no one could settle."
+
+private const val THE_TALKS =
+    "Our reporters spent the strike on the docks in Los Angeles, Savannah and Newark. They talked to crane " +
+        "operators, truck drivers waiting in lines that stretched for miles, and the shippers who rerouted " +
+        "their cargo to Canada and Mexico. Some of that cargo may never come back. We also hear from the " +
+        "negotiators on both sides, who describe the night the deal came together, and what each of them " +
+        "had to give up to get there."
+
+private const val WHATS_NEXT =
+    "Finally, what comes next. The contract runs for six years, but the question of automation was only " +
+        "set aside, not settled, and both sides say they are already preparing for the next round. We look " +
+        "at the ports in Rotterdam and Singapore, where machines already move most of the containers, and " +
+        "ask what American ports would look like if they followed. Plus: a listener asks why her furniture " +
+        "order took four months, and we trace its trip from the factory to her front door, one port at a time."
+
+private fun partOfTheDaily(position: Duration, played: PlayedState, description: String? = PORT_STRIKE) =
+    TheDailyEpisodes.first { it.playedState == PlayedState.PartlyPlayed }.copy(
+        publishedAt = Instant.parse("2026-11-08T12:00:00Z"),
+        length = 32.minutes,
+        position = position,
+        playedState = played,
+        description = description,
+    )
+
+@Composable
+private fun EpisodePreview(content: EpisodeContent, wheel: EpisodeWheel = EpisodeWheel()) =
+    DevicePreview(title = content.showTitle) {
+        EpisodeScreen(
+            state = ListUiState.Loaded(content),
+            wheel = wheel,
+            today = PreviewToday,
+            zone = ZoneOffset.UTC,
+            onScrollableLinesChange = {},
+        )
+    }
+
+/** Frame 26: partly played, so Resume and Play from Start, with the time left, and the highlight on Resume. */
+@PreviewLightDark
+@Composable
+private fun EpisodePartlyPlayedPreview() = EpisodePreview(
+    episodeContent(TheDaily, partOfTheDaily(12.minutes, PlayedState.PartlyPlayed)),
+)
+
+/** An unplayed episode: Play only, and no time left. */
+@PreviewLightDark
+@Composable
+private fun EpisodeUnplayedPreview() =
+    EpisodePreview(episodeContent(TheDaily, partOfTheDaily(Duration.ZERO, PlayedState.Unplayed)))
+
+/** Turned past Play from Start: the description scrolled up, Play from Start still highlighted. */
+@PreviewLightDark
+@Composable
+private fun EpisodeScrolledPreview() = EpisodePreview(
+    episodeContent(
+        TheDaily,
+        partOfTheDaily(12.minutes, PlayedState.PartlyPlayed, "$PORT_STRIKE\n\n$THE_TALKS\n\n$WHATS_NEXT"),
+    ),
+    wheel = EpisodeWheel(row = 1, lines = 4),
+)
+
+/** An episode whose feed has no description: the info line alone under the rows. */
+@PreviewLightDark
+@Composable
+private fun EpisodeNoDescriptionPreview() = EpisodePreview(
+    episodeContent(TheDaily, partOfTheDaily(Duration.ZERO, PlayedState.Played, description = null)),
+)
+
+/** Frame 32 opens the same screen for an episode of a show from search: Play only. */
+@PreviewLightDark
+@Composable
+private fun EpisodeFromSearchPreview() {
+    val episode = partOfTheDaily(Duration.ZERO, PlayedState.Unplayed)
+    val found = DirectoryEpisode(
+        guid = null,
+        title = episode.title,
+        publishedAt = Instant.parse("2025-03-02T12:00:00Z"),
+        length = 72.minutes,
+        description = episode.description,
+        audioUrl = episode.audioUrl,
+    )
+    val show = DirectoryShow(TheDaily.directoryId, TheDaily.title, "NY Times", "https://example.com/the-daily.xml")
+    EpisodePreview(foundEpisodeContent(show, found))
 }
 
 /** The show was removed while its screen was open: MENU goes back. */

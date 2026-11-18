@@ -9,6 +9,19 @@
     <string name="podcasts_on">On</string>
     <string name="podcasts_off">Off</string>
     <string name="podcasts_follow_failed">Couldn\'t change Follow. Try again.</string>
+    <string name="podcasts_play">Play</string>
+    <string name="podcasts_resume">Resume</string>
+    <string name="podcasts_play_from_start">Play from Start</string>
+    <!-- The episode's date on its screen, drawn in capitals: NOV 8. A date of another year adds it. -->
+    <string name="podcasts_date_this_year" translatable="false">MMM d</string>
+    <string name="podcasts_date_other_year" translatable="false">MMM d, yyyy</string>
+    <!-- An episode's length or time left, in whole minutes: 32 MIN, 1 HR 12 MIN, 2 HR, <1 MIN. -->
+    <string name="podcasts_minutes">%d MIN</string>
+    <string name="podcasts_hours">%d HR</string>
+    <string name="podcasts_hours_minutes">%1$d HR %2$d MIN</string>
+    <string name="podcasts_under_a_minute">&lt;1 MIN</string>
+    <!-- The time left of a partly played episode: 20 MIN LEFT. -->
+    <string name="podcasts_time_left">%s LEFT</string>
     <string name="podcasts_no_longer_here">No longer in your podcasts</string>
     <string name="podcasts_unavailable">Can\'t read your podcasts</string>
 </resources>
