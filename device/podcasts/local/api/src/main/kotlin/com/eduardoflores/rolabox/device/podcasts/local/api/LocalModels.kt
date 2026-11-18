@@ -63,3 +63,17 @@ data class EpisodeRecord(
     val audioSizeBytes: Long?,
     val progress: ProgressRecord?,
 )
+
+/**
+ * What an episode's artwork is downloaded from (ADR-031, Artwork): its own image and its show's, as the feed named
+ * them, `null` when it named none or it wasn't read for them yet, and the show's [feedUrl] to read them from.
+ * [itemKey] finds the episode in its feed.
+ */
+data class ArtworkSource(
+    val episodeId: EpisodeId,
+    val showId: ShowId,
+    val itemKey: String,
+    val feedUrl: String,
+    val episodeImageUrl: String?,
+    val showImageUrl: String?,
+)

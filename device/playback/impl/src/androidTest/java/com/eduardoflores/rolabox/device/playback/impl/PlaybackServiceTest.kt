@@ -31,6 +31,9 @@ import com.eduardoflores.rolabox.device.library.testing.audio.Mp3Tags
 import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
 import com.eduardoflores.rolabox.device.playback.testing.FakePlaybackLocalDataSource
+import com.eduardoflores.rolabox.device.podcasts.testing.FakeEpisodeProgressRepository
+import com.eduardoflores.rolabox.device.podcasts.testing.FakePodcastArtworkRepository
+import com.eduardoflores.rolabox.device.podcasts.testing.FakePodcastsRepository
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import java.io.File
@@ -188,6 +191,7 @@ class PlaybackServiceTest {
             FakeUserDataRepository(),
             PlayOrders(Random(0)),
             FakeNonFatalReport(),
+            Podcasts(FakePodcastsRepository(), FakeEpisodeProgressRepository(), FakePodcastArtworkRepository()),
         )
         playback.play(PlaybackSource.AllSongs, PlaybackItemId.Song(song.id))
         val started = playback.startCount.first()
@@ -237,6 +241,7 @@ class PlaybackServiceTest {
                 FakeUserDataRepository(),
                 PlayOrders(Random(0)),
                 FakeNonFatalReport(),
+                Podcasts(FakePodcastsRepository(), FakeEpisodeProgressRepository(), FakePodcastArtworkRepository()),
             )
 
         playback.changeVolume(-2)

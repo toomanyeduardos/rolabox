@@ -43,7 +43,7 @@ class FakePlayback @Inject constructor() :
     /** What [play] answers with. */
     var playResult: Either<PlaybackError, Unit> = Unit.right()
 
-    data class PlayCall(val source: PlaybackSource, val from: PlaybackItemId)
+    data class PlayCall(val source: PlaybackSource, val from: PlaybackItemId, val resume: Boolean = false)
 
     val playCalls = mutableListOf<PlayCall>()
 
@@ -131,8 +131,12 @@ class FakePlayback @Inject constructor() :
         volumeState.value = level
     }
 
-    override suspend fun play(source: PlaybackSource, from: PlaybackItemId): Either<PlaybackError, Unit> {
-        playCalls += PlayCall(source, from)
+    override suspend fun play(
+        source: PlaybackSource,
+        from: PlaybackItemId,
+        resume: Boolean,
+    ): Either<PlaybackError, Unit> {
+        playCalls += PlayCall(source, from, resume)
         return playResult
     }
 

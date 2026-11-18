@@ -5,8 +5,11 @@ import com.eduardoflores.rolabox.device.playback.local.api.ShuffledBy
 import javax.inject.Inject
 import kotlin.random.Random
 
-/** Where an item is in its album, which the Albums order keeps (ADR-028): an album's list is by disc, then track. */
-internal data class AlbumPlace(val album: AlbumId, val disc: Int?, val track: Int?)
+/**
+ * Where an item is in its album, which the Albums order keeps (ADR-028): an album's list is by disc, then track. An
+ * episode has no album, and is never shuffled (ADR-031).
+ */
+internal data class AlbumPlace(val album: AlbumId?, val disc: Int?, val track: Int?)
 
 /**
  * The shuffled orders of ADR-028, as indices into the list. Every order is uniform, drawn from [random], which the

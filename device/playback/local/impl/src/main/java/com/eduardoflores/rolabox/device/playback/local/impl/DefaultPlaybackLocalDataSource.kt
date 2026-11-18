@@ -13,6 +13,7 @@ import com.eduardoflores.rolabox.device.playback.local.api.PlayOrder
 import com.eduardoflores.rolabox.device.playback.local.api.PlaybackLocalDataSource
 import com.eduardoflores.rolabox.device.playback.local.api.ResumePoint
 import com.eduardoflores.rolabox.device.playback.local.api.ShuffledBy
+import com.eduardoflores.rolabox.device.podcasts.api.EpisodeId
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.flow.first
@@ -86,6 +87,7 @@ private fun PlaybackSource.encoded(): String = when (this) {
     is PlaybackSource.ByAlbum -> "$ALBUM:${albumId.value}"
     is PlaybackSource.ByGenreAndArtist -> "$GENRE_ARTIST:${genreId.value}:${artistId.value}"
     is PlaybackSource.ByGenreAndAlbum -> "$GENRE_ALBUM:${genreId.value}:${albumId.value}"
+    is PlaybackSource.Episode -> "$EPISODE:${id.value}"
 }
 
 // The kind, then its ids: one, or a genre's and the artist's or album's in it.
@@ -99,6 +101,7 @@ private fun String.toSource(): PlaybackSource? {
         kind == ALBUM && ids.size == 1 -> PlaybackSource.ByAlbum(AlbumId(ids[0]))
         kind == GENRE_ARTIST && ids.size == 2 -> PlaybackSource.ByGenreAndArtist(GenreId(ids[0]), ArtistId(ids[1]))
         kind == GENRE_ALBUM && ids.size == 2 -> PlaybackSource.ByGenreAndAlbum(GenreId(ids[0]), AlbumId(ids[1]))
+        kind == EPISODE && ids.size == 1 -> PlaybackSource.Episode(EpisodeId(ids[0]))
         else -> null
     }
 }
@@ -106,11 +109,16 @@ private fun String.toSource(): PlaybackSource? {
 // Named by its kind, so an episode gets its own (ADR-023, rule 4).
 private fun PlaybackItemId.encoded(): String = when (this) {
     is PlaybackItemId.Song -> "$SONG:${id.value}"
+    is PlaybackItemId.Episode -> "$EPISODE:${id.value}"
 }
 
 private fun String.toItem(): PlaybackItemId? {
-    val id = substringAfter(':', "").toLongOrNull()
-    return if (id != null && startsWith("$SONG:")) PlaybackItemId.Song(SongId(id)) else null
+    val id = substringAfter(':', "").toLongOrNull() ?: return null
+    return when (substringBefore(':')) {
+        SONG -> PlaybackItemId.Song(SongId(id))
+        EPISODE -> PlaybackItemId.Episode(EpisodeId(id))
+        else -> null
+    }
 }
 
 private const val RESUME_POINT_KEY = "playback_resume_point"
@@ -126,3 +134,4 @@ private const val ALBUM = "album"
 private const val GENRE_ARTIST = "genre-artist"
 private const val GENRE_ALBUM = "genre-album"
 private const val SONG = "song"
+private const val EPISODE = "episode"

@@ -107,6 +107,7 @@ private object NoPodcastsEntries : PodcastsEntries {
         onOwnerClick: (ownerId: String) -> Unit,
         onShowClick: (showId: Long) -> Unit,
         onEpisodeClick: (episodeId: Long) -> Unit,
+        onPlaying: () -> Unit,
     ) = Unit
 }
 

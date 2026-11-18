@@ -42,7 +42,8 @@ internal sealed interface NowPlayingUiState {
      * the level from 0 to 100 that the bar shows in [NowPlayingMode.Volume]. [skipped] is what was just skipped
      * to get here, which takes the cover art's place for a moment. [artwork] is the song's cover, `null` while it loads
      * and when it has none, which the placeholder stands for (ADR-026). [shuffled] and [repeat] are how the queue
-     * plays, which icons after its place show (ADR-028).
+     * plays, which icons after its place show (ADR-028). [isEpisode] is an episode, which is queued alone and never
+     * shuffled or repeated, so neither its place nor the icons are shown (ADR-031, frame 27).
      */
     data class Playing(
         val title: String?,
@@ -58,6 +59,7 @@ internal sealed interface NowPlayingUiState {
         val artwork: ArtworkImage? = null,
         val shuffled: Boolean = false,
         val repeat: RepeatMode = RepeatMode.Off,
+        val isEpisode: Boolean = false,
     ) : NowPlayingUiState {
         /** How full the volume is, from 0 to 1. */
         val volumeFraction: Float

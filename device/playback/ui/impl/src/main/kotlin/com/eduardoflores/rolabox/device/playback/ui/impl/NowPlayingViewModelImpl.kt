@@ -6,8 +6,10 @@ import com.eduardoflores.rolabox.device.library.api.ArtworkRepository
 import com.eduardoflores.rolabox.device.playback.api.PlaybackController
 import com.eduardoflores.rolabox.device.playback.api.PlaybackError
 import com.eduardoflores.rolabox.device.playback.api.PlaybackItem
+import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
 import com.eduardoflores.rolabox.device.playback.api.PlaybackState
 import com.eduardoflores.rolabox.device.playback.api.SkippedItems
+import com.eduardoflores.rolabox.device.podcasts.api.PodcastArtworkRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlin.time.Duration
@@ -48,6 +50,7 @@ internal class NowPlayingViewModelImpl @Inject constructor(
     private val playbackState: PlaybackState,
     private val playbackController: PlaybackController,
     artworkRepository: ArtworkRepository,
+    podcastArtworkRepository: PodcastArtworkRepository,
 ) : NowPlayingViewModel() {
     /** Where a turn left the marker, and the start of the item it was turned on. */
     private data class ScrubMarker(val start: Int, val position: Duration)
@@ -61,7 +64,7 @@ internal class NowPlayingViewModelImpl @Inject constructor(
     /** The start of the item scrub was selected on: ⏮ can start the same item again. */
     private var scrubStart: Int? = null
 
-    private val artwork = artworkRepository.coversOf(playbackState.currentItem)
+    private val artwork = playbackState.currentItem.artworkOf(artworkRepository, podcastArtworkRepository)
 
     override val uiState: StateFlow<NowPlayingUiState> = combine(
         combine(playbackState.currentItem, playbackState.startCount, ::Pair)
@@ -90,6 +93,7 @@ internal class NowPlayingViewModelImpl @Inject constructor(
                 artwork = artwork,
                 shuffled = shuffled,
                 repeat = repeat,
+                isEpisode = item.id is PlaybackItemId.Episode,
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), NowPlayingUiState.Loading)
@@ -183,17 +187,24 @@ internal class NowPlayingViewModelImpl @Inject constructor(
 }
 
 /**
- * The cover of the item playing, `null` while it loads and when it has none (ADR-026). Another item clears it first,
- * so the last song's cover never stands for this one. A cover that arrives while the item plays, downloaded for its
- * album, replaces the placeholder (ADR-027). One that can't be read has none: the screen has nothing to say about it.
+ * The artwork of the item playing, `null` while it loads and when it has none (ADR-026): a song's cover, or an
+ * episode's artwork, from the podcasts (ADR-031, Artwork). Another item clears it first, so the last item's artwork
+ * never stands for this one. Artwork that arrives while the item plays, downloaded for its album or its episode,
+ * replaces the placeholder (ADR-027). One that can't be read has none: the screen has nothing to say about it.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-private fun ArtworkRepository.coversOf(items: Flow<PlaybackItem?>): Flow<ArtworkImage?> = items
-    .map { it?.artwork }
+private fun Flow<PlaybackItem?>.artworkOf(
+    songs: ArtworkRepository,
+    episodes: PodcastArtworkRepository,
+): Flow<ArtworkImage?> = map { it?.id to it?.artwork }
     .distinctUntilChanged()
-    .transformLatest { ref ->
+    .transformLatest { (id, ref) ->
         emit(null)
-        if (ref != null) emitAll(observeArtwork(ref).map { it.getOrNull() })
+        when (id) {
+            is PlaybackItemId.Song -> if (ref != null) emitAll(songs.observeArtwork(ref).map { it.getOrNull() })
+            is PlaybackItemId.Episode -> emitAll(episodes.observeArtwork(id.id).map { it.getOrNull() })
+            null -> Unit
+        }
     }
     .distinctUntilChanged()
 

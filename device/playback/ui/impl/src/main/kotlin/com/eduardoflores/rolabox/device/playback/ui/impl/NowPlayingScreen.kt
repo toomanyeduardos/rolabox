@@ -138,20 +138,23 @@ private fun NowPlayingContent(state: NowPlayingUiState.Playing) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             // The icons follow the place in the queue, since both describe the queue (ADR-028). At large font scales
-            // the place gives way first, so the icons and the mode always fit.
+            // the place gives way first, so the icons and the mode always fit. An episode is a queue of its own, with
+            // neither (ADR-031, frame 27).
             Row(
                 Modifier.weight(1f, fill = false),
                 horizontalArrangement = Arrangement.spacedBy(QueueIconsGap),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    stringResource(R.string.now_playing_position, state.number, state.count),
-                    style = RolaboxType.styles.displayMeta,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false),
-                )
-                DeviceQueueIcons(state.queueIcons)
+                if (!state.isEpisode) {
+                    Text(
+                        stringResource(R.string.now_playing_position, state.number, state.count),
+                        style = RolaboxType.styles.displayMeta,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    DeviceQueueIcons(state.queueIcons)
+                }
             }
             when (state.mode) {
                 NowPlayingMode.Time -> Unit

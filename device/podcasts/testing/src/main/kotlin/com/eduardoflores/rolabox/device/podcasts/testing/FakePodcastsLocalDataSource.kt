@@ -12,6 +12,7 @@ import com.eduardoflores.rolabox.device.podcasts.api.OwnerId
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastError
 import com.eduardoflores.rolabox.device.podcasts.api.Show
 import com.eduardoflores.rolabox.device.podcasts.api.ShowId
+import com.eduardoflores.rolabox.device.podcasts.local.api.ArtworkSource
 import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeProgressLocalDataSource
 import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeRecord
 import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeWrite
@@ -146,9 +147,63 @@ class FakePodcastsLocalDataSource @Inject constructor() :
     private fun <T> now(answer: (Stored) -> T): Either<PodcastError, T> =
         readError?.let { PodcastError.Storage(it).left() } ?: answer(state.value).right()
 
-    private data class StoredShow(val id: ShowId, val write: ShowWrite)
+    override suspend fun getArtworkSource(episodeId: EpisodeId): Either<PodcastError, ArtworkSource?> {
+        readError?.let { return PodcastError.Storage(it).left() }
+        val stored = state.value
+        val episode = stored.episodes.firstOrNull { it.id == episodeId }
+        val show = stored.shows.firstOrNull { it.id == episode?.showId }
+        val source = if (episode != null && show != null) {
+            ArtworkSource(
+                episodeId = episode.id,
+                showId = show.id,
+                itemKey = episode.write.itemKey,
+                feedUrl = show.write.feedUrl,
+                episodeImageUrl = episode.imageUrl,
+                showImageUrl = show.imageUrl,
+            )
+        } else {
+            null
+        }
+        return source.right()
+    }
 
-    private data class StoredEpisode(val id: EpisodeId, val showId: ShowId, val write: EpisodeWrite)
+    override suspend fun setImageUrls(
+        showId: ShowId,
+        showImageUrl: String?,
+        episodeImageUrls: Map<String, String>,
+    ): Either<PodcastError, Unit> {
+        readError?.let { return PodcastError.Storage(it).left() }
+        state.update { stored ->
+            stored.copy(
+                shows = stored.shows.map { if (it.id == showId) it.copy(imageUrl = showImageUrl) else it },
+                episodes = stored.episodes.map { episode ->
+                    val url = episodeImageUrls[episode.write.itemKey]
+                    if (episode.showId == showId && url != null) episode.copy(imageUrl = url) else episode
+                },
+            )
+        }
+        return Unit.right()
+    }
+
+    /** Sets the image URLs the feed would have named, as [setImageUrls] stores them. */
+    fun setImages(episodeId: EpisodeId, episodeImageUrl: String?, showImageUrl: String?) {
+        state.update { stored ->
+            val showId = stored.episodes.first { it.id == episodeId }.showId
+            stored.copy(
+                shows = stored.shows.map { if (it.id == showId) it.copy(imageUrl = showImageUrl) else it },
+                episodes = stored.episodes.map { if (it.id == episodeId) it.copy(imageUrl = episodeImageUrl) else it },
+            )
+        }
+    }
+
+    private data class StoredShow(val id: ShowId, val write: ShowWrite, val imageUrl: String? = null)
+
+    private data class StoredEpisode(
+        val id: EpisodeId,
+        val showId: ShowId,
+        val write: EpisodeWrite,
+        val imageUrl: String? = null,
+    )
 
     private data class Stored(
         val shows: List<StoredShow> = emptyList(),

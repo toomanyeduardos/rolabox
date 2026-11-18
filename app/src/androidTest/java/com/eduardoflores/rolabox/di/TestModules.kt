@@ -24,10 +24,12 @@ import com.eduardoflores.rolabox.device.playback.api.PlaybackState
 import com.eduardoflores.rolabox.device.playback.impl.di.PlaybackModule
 import com.eduardoflores.rolabox.device.playback.testing.FakePlayback
 import com.eduardoflores.rolabox.device.podcasts.api.EpisodeProgressRepository
+import com.eduardoflores.rolabox.device.podcasts.api.PodcastArtworkRepository
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastDirectory
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastsRepository
 import com.eduardoflores.rolabox.device.podcasts.impl.di.PodcastsModule
 import com.eduardoflores.rolabox.device.podcasts.testing.FakeEpisodeProgressRepository
+import com.eduardoflores.rolabox.device.podcasts.testing.FakePodcastArtworkRepository
 import com.eduardoflores.rolabox.device.podcasts.testing.FakePodcastDirectory
 import com.eduardoflores.rolabox.device.podcasts.testing.FakePodcastsRepository
 import dagger.Binds
@@ -109,6 +111,10 @@ abstract class TestPodcastsModule {
 
     @Binds
     abstract fun bindsPodcastDirectory(fake: FakePodcastDirectory): PodcastDirectory
+
+    // No episode of the tests has artwork, so Now Playing shows the placeholder, and nothing is downloaded (ADR-031).
+    @Binds
+    abstract fun bindsPodcastArtworkRepository(fake: FakePodcastArtworkRepository): PodcastArtworkRepository
 }
 
 @Module

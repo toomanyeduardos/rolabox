@@ -11,6 +11,7 @@ import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
 import com.eduardoflores.rolabox.device.playback.local.api.PlayOrder
 import com.eduardoflores.rolabox.device.playback.local.api.ResumePoint
 import com.eduardoflores.rolabox.device.playback.local.api.ShuffledBy
+import com.eduardoflores.rolabox.device.podcasts.api.EpisodeId
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -43,6 +44,16 @@ class DefaultPlaybackLocalDataSourceTest {
     }
 
     @Test
+    fun anEpisodesPoint_comesBackAsItWasStored() = runTest {
+        val episode = EpisodeId(42)
+        val point = ResumePoint(PlaybackSource.Episode(episode), PlaybackItemId.Episode(episode), 0, 754.seconds)
+
+        dataSource.store(point)
+
+        assertEquals(point.right(), dataSource.resumePoint())
+    }
+
+    @Test
     fun aClearedPoint_isNoPoint() = runTest {
         dataSource.store(ResumePoint(PlaybackSource.AllSongs, PlaybackItemId.Song(SongId(1)), 0, 1.seconds))
 
@@ -53,7 +64,14 @@ class DefaultPlaybackLocalDataSourceTest {
 
     @Test
     fun aValueThatCantBeRead_isNoPoint() = runTest {
-        listOf("nonsense", "all|song:1|0", "album:x|song:1|0|0", "all|episode:1|0|0", "all|song:1|-1|0").forEach {
+        listOf(
+            "nonsense",
+            "all|song:1|0",
+            "album:x|song:1|0|0",
+            "all|podcast:1|0|0",
+            "episode:x|episode:1|0|0",
+            "all|song:1|-1|0",
+        ).forEach {
             preferences.setString("playback_resume_point", it)
 
             assertEquals(null.right(), dataSource.resumePoint())
@@ -104,7 +122,7 @@ class DefaultPlaybackLocalDataSourceTest {
 
     @Test
     fun anOrderThatCantBeRead_isNoOrder() = runTest {
-        listOf("nonsense", "songs", "songs|song:1|song:1", "artists|song:1", "songs|song:1|episode:2").forEach {
+        listOf("nonsense", "songs", "songs|song:1|song:1", "artists|song:1", "songs|song:1|podcast:2").forEach {
             preferences.setString("playback_play_order", it)
 
             assertEquals(null.right(), dataSource.playOrder())

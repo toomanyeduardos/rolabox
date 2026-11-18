@@ -14,6 +14,8 @@ dependencies {
     implementation(project(":device:playback:api"))
     // The cover of the song playing, loaded from where the playback state says it is (ADR-026).
     implementation(project(":device:library:api"))
+    // An episode's artwork, which is the podcasts' (ADR-031, Artwork).
+    implementation(project(":device:podcasts:api"))
 
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
@@ -21,6 +23,7 @@ dependencies {
     testImplementation(project(":common:testing"))
     testImplementation(project(":device:library:testing"))
     testImplementation(project(":device:playback:testing"))
+    testImplementation(project(":device:podcasts:testing"))
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
 }

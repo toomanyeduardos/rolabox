@@ -12,7 +12,7 @@ import com.eduardoflores.rolabox.device.playback.api.RepeatMode
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
-// The screen as the design shows it (player-designs/device, frames 06 to 08, 20 and 21), on the assembled device.
+// The screen as the design shows it (player-designs/device, frames 06 to 08, 20, 21 and 27), on the assembled device.
 // They call the stateless composable with explicit state (ADR-016, rule 3).
 
 private val Glasshouse = NowPlayingUiState.Playing(
@@ -124,4 +124,24 @@ private fun NowPlayingRepeatOnePreview() = DevicePreview(Glasshouse.copy(repeat 
 @Composable
 private fun NowPlayingQueueIconsWithVolumePreview() = DevicePreview(
     ChangingVolume.copy(number = 1234, count = 12345, shuffled = true, repeat = RepeatMode.One),
+)
+
+// An episode, as frame 27 shows it: its title, its show and its owner, and no place in a queue or icons of one, even
+// with Shuffle and Repeat on (ADR-031). At 1.5x the artwork is smaller, above the text, and the title wraps.
+@PreviewLightDark
+@Composable
+private fun NowPlayingEpisodePreview() = DevicePreview(
+    NowPlayingUiState.Playing(
+        title = "The Strike That Shut Down the Ports",
+        artist = "The Daily",
+        album = "NY Times",
+        number = 1,
+        count = 1,
+        position = 12.minutes + 4.seconds,
+        duration = 32.minutes + 35.seconds,
+        artwork = SampleCover,
+        shuffled = true,
+        repeat = RepeatMode.All,
+        isEpisode = true,
+    ),
 )

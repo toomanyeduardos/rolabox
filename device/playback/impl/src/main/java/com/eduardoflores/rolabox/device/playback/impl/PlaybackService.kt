@@ -17,6 +17,7 @@ import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import com.eduardoflores.rolabox.common.designsystem.R
 import com.eduardoflores.rolabox.device.library.api.ArtworkRepository
+import com.eduardoflores.rolabox.device.podcasts.api.PodcastArtworkRepository
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import dagger.hilt.android.AndroidEntryPoint
@@ -42,6 +43,10 @@ internal class PlaybackService : MediaSessionService() {
     @Inject
     lateinit var artwork: Optional<ArtworkRepository>
 
+    // Absent there too: an episode then has no artwork in the notification.
+    @Inject
+    lateinit var episodeArtwork: Optional<PodcastArtworkRepository>
+
     private var session: MediaSession? = null
 
     // Where the artwork loads, for as long as the service lives.
@@ -58,7 +63,8 @@ internal class PlaybackService : MediaSessionService() {
         val player = buildPlayer(this)
         // The play order that Rolabox's controller sends, which only the ExoPlayer can take (ADR-028, rule 6).
         player.addListener(PlayOrderKeeper(player))
-        session = MediaSession.Builder(this, player)
+        // ⏮ and ⏭ of every controller skip by seconds while an episode is loaded (ADR-031, rule 11).
+        session = MediaSession.Builder(this, EpisodeSkips(player))
             .setCallback(SessionCallback(resumption.orElse(null), packageName))
             .apply { artwork.ifPresent { setBitmapLoader(artworkLoader(it)) } }
             .apply { theApp()?.let(::setSessionActivity) }
@@ -67,8 +73,12 @@ internal class PlaybackService : MediaSessionService() {
 
     /** The artwork of the notification and the lock screen, as Now Playing shows it (ADR-026, rule 6). */
     @OptIn(UnstableApi::class)
-    private fun artworkLoader(artwork: ArtworkRepository) =
-        ArtworkBitmapLoader(artwork, DataSourceBitmapLoader(this), scope)
+    private fun artworkLoader(artwork: ArtworkRepository) = ArtworkBitmapLoader(
+        artwork = artwork,
+        fallback = DataSourceBitmapLoader(this),
+        scope = scope,
+        episodeArtwork = episodeArtwork.orElse(null),
+    )
 
     /** What the notification opens: the app's launcher activity, which only `:app` knows (ADR-023, rule 2). */
     private fun theApp(): PendingIntent? = packageManager.getLaunchIntentForPackage(packageName)?.let {
@@ -117,9 +127,10 @@ internal class PlaybackService : MediaSessionService() {
 }
 
 /**
- * The player of the service, with the threshold of ⏮ (ADR-023, rule 7) and the phone's media volume as the
- * volume (rule 6). It handles audio focus as music, and pauses when the headphones go (ADR-023, "Audio focus, noise
- * and buttons"). [configure] is for the tests, which set Media3's fake clock.
+ * The player of the service, with the threshold of ⏮ (ADR-023, rule 7), the skips of an episode (ADR-031, rule 11)
+ * and the phone's media volume as the volume (rule 6). It handles audio focus as music, and pauses when the
+ * headphones go (ADR-023, "Audio focus, noise and buttons"). [configure] is for the tests, which set Media3's fake
+ * clock.
  */
 // The threshold and the device volume are what ADR-023 decides, and Media3 marks them unstable: an upgrade may
 // change them.
@@ -127,6 +138,8 @@ internal class PlaybackService : MediaSessionService() {
 internal fun buildPlayer(context: Context, configure: ExoPlayer.Builder.() -> Unit = {}): ExoPlayer =
     ExoPlayer.Builder(context)
         .setMaxSeekToPreviousPositionMs(RestartThreshold.inWholeMilliseconds)
+        .setSeekBackIncrementMs(SkipBack.inWholeMilliseconds)
+        .setSeekForwardIncrementMs(SkipForward.inWholeMilliseconds)
         .setDeviceVolumeControlEnabled(true)
         .setAudioAttributes(MusicAttributes, true)
         .setHandleAudioBecomingNoisy(true)
