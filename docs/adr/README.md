@@ -26,8 +26,8 @@ New ADR: copy [`template.md`](template.md), take the next number, and add it to 
 | [015](015-design-system-owns-visual-language.md) | The design system is the only home of Rolabox's visual language | Accepted |
 | [016](016-screenshot-testing.md) | Screenshot tests with Paparazzi, run on the JVM with goldens in Git LFS | Accepted |
 | [017](017-accessibility.md) | Accessibility is an architectural rule, starting with large text | Accepted |
-| [018](018-device-navigation.md) | Device navigation: a linear screen stack driven by the wheel | Accepted, partly superseded by ADR-020 and ADR-031 |
-| [019](019-device-host-module.md) | The device is a host module, `:core:device`, that receives its screens from `:app` | Accepted, partly superseded by ADR-020 |
+| [018](018-device-navigation.md) | Device navigation: a linear screen stack driven by the wheel | Accepted, partly superseded by ADR-020, ADR-031 and ADR-032 |
+| [019](019-device-host-module.md) | The device is a host module, `:core:device`, that receives its screens from `:app` | Accepted, partly superseded by ADR-020 and ADR-032 |
 | [020](020-modules-by-product-area.md) | Modules grouped by product area, with the device assembling its own screens | Accepted |
 | [021](021-data-flow-through-layers.md) | Every layer is reached through an abstraction, from the screen to the data source | Accepted |
 | [022](022-data-source-sub-parts.md) | A data part's local and network sides are sub-parts, and the part that owns synced data syncs it | Accepted, partly superseded by ADR-031 |
@@ -40,3 +40,4 @@ New ADR: copy [`template.md`](template.md), take the next number, and add it to 
 | [029](029-sync-failures-are-logged.md) | Sync failures are logged, with the backend's reason where the exception is converted | Accepted |
 | [030](030-crash-reporting.md) | Crashlytics reports crashes, ANRs and named non-fatal errors from every user, with nothing that identifies them | Accepted |
 | [031](031-podcasts.md) | Podcasts: Apple's directory, feeds read on the phone, downloads in playback's Media3 cache, and follows synced per show | Accepted |
+| [032](032-typing-on-the-device.md) | Typing on the device: the phone's keyboard over the wheel, into a field that is a row of the display | Accepted |

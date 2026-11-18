@@ -24,6 +24,7 @@ class RolaboxRuleSetProvider : RuleSetProvider {
             ::TouchInputInDeviceScreen,
             ::TouchComponentInDeviceScreen,
             ::SystemBackInDevice,
+            ::KeyboardInDeviceScreen,
             ::DeviceComponentOutsideDesignSystem,
             ::DeviceDisplayOutsideHost,
             ::MediaStoreOutsideLibrary,

@@ -123,6 +123,12 @@ rolabox:
       - 'Checkbox'
       - 'RadioButton'
       - 'Slider'
+  KeyboardInDeviceScreen:
+    # ADR-032 rule 2: only the device host shows the keyboard, gives focus and reads the keyboard's inset,
+    # and a device screen types only through the host's field, not the design system's DeviceTextField.
+    # The host and the design system implement them, and are left out.
+    active: true
+    excludes: ['**/device/host/**', '**/common/designsystem/**']
   SystemBackInDevice:
     # ADR-018 rule 9: the system's back leaves the app from every device screen. The rule reports a back
     # handler, or a NavDisplay that isn't built from its sceneState, in the device host and in a device

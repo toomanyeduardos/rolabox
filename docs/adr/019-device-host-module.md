@@ -1,6 +1,7 @@
 # ADR-019: The device is a host module, `:core:device`, that receives its screens from `:app`
 
-- **Status:** Accepted. Rules 2 and 4 superseded by [ADR-020](020-modules-by-product-area.md)
+- **Status:** Accepted. Rules 2 and 4 superseded by [ADR-020](020-modules-by-product-area.md).
+  Rule 6 superseded for text by [ADR-032](032-typing-on-the-device.md)
 - **Date:** 2026-10-01
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review
@@ -52,6 +53,12 @@
   what they do, also when they change nothing in the playback state, so the screen can't learn of
   them from that state. Building ⏮ (39.04) needed it. The screen is told and doesn't take the
   button: the handlers receive every one, as before, and the screen isn't told which one it was.
+- **Revised 2026-11-18:** The host owns typing on the device, decided by
+  [ADR-032](032-typing-on-the-device.md) (rule 6). It shows and hides the phone's keyboard over the
+  wheel, moves the device up when the keyboard would cover the display, and sends no wheel event
+  while the user types. A screen places the host's field and receives the text, and a screen with a
+  field takes MENU while a row other than the field is highlighted, to highlight the field. Search
+  needed it (device/01). The host still never reads a screen's data: the text is the screen's.
 
 ## Context
 
