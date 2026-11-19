@@ -1,7 +1,8 @@
 # ADR-022: A data part's local and network sides are sub-parts, and the part that owns synced data syncs it
 
 - **Status:** Accepted. Rule 2 superseded by [ADR-031](031-podcasts.md) for a podcast directory's
-  answers and a show opened from search
+  answers and a show opened from search. Rule 3 superseded by [ADR-033](033-shared-firestore-module.md):
+  Firestore is also a dependency of `:common:firestore`
 - **Date:** 2026-10-12
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review
