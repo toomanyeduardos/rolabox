@@ -3,6 +3,7 @@ package com.eduardoflores.rolabox.device.podcasts.local.api
 import com.eduardoflores.rolabox.device.podcasts.api.DirectoryId
 import com.eduardoflores.rolabox.device.podcasts.api.EpisodeId
 import com.eduardoflores.rolabox.device.podcasts.api.OwnerId
+import com.eduardoflores.rolabox.device.podcasts.api.Show
 import com.eduardoflores.rolabox.device.podcasts.api.ShowId
 import java.time.Instant
 import kotlin.time.Duration
@@ -23,7 +24,7 @@ data class ShowWrite(
 
 /**
  * An episode to add. [itemKey] is what identifies it within its show: its GUID, or its enclosure URL when it has none
- * (ADR-031, Feeds).
+ * (ADR-031, Feeds). [imageUrl] is the item's own image, which only a feed names.
  */
 data class EpisodeWrite(
     val itemKey: String,
@@ -35,6 +36,7 @@ data class EpisodeWrite(
     val audioUrl: String,
     val audioSizeBytes: Long? = null,
     val audioType: String? = null,
+    val imageUrl: String? = null,
 )
 
 /**
@@ -51,7 +53,7 @@ data class ProgressRecord(
 /**
  * An episode as stored, with its progress apart from what the feed says (ADR-031, The database): [feedLength] is the
  * feed's, and [progress] is `null` for an episode never started. [itemKey] identifies it within its show, as
- * [EpisodeWrite.itemKey] does.
+ * [EpisodeWrite.itemKey] does. [leftFeedAt] is when a check last found its feed without it, `null` while it is in it.
  */
 data class EpisodeRecord(
     val id: EpisodeId,
@@ -64,6 +66,7 @@ data class EpisodeRecord(
     val audioUrl: String,
     val audioSizeBytes: Long?,
     val progress: ProgressRecord?,
+    val leftFeedAt: Instant? = null,
 )
 
 /**
@@ -78,4 +81,30 @@ data class ArtworkSource(
     val feedUrl: String,
     val episodeImageUrl: String?,
     val showImageUrl: String?,
+)
+
+/**
+ * A show whose follow is On, as the follow check reads it (ADR-031, Follow checks): its [feedUrl], the show's own when
+ * it is in the library, else the follow's, and the `ETag` and `Last-Modified` of the feed's last answer. [show] is
+ * `null` while the show isn't in the library, because its follow arrived by sync.
+ */
+data class FollowedFeed(
+    val directoryId: DirectoryId,
+    val feedUrl: String,
+    val show: Show?,
+    val etag: String?,
+    val lastModified: String?,
+)
+
+/**
+ * A show's feed, read whole, to apply to the library (ADR-031, Follow checks). [show] is the show as the feed has it,
+ * with the URL the feed is now at. [imageUrl] is the show's image, and [etag] and [lastModified] the validators of
+ * this answer. [episodes] are every episode the feed has.
+ */
+data class FeedWrite(
+    val show: ShowWrite,
+    val imageUrl: String?,
+    val etag: String?,
+    val lastModified: String?,
+    val episodes: List<EpisodeWrite>,
 )

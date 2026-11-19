@@ -22,6 +22,8 @@ import com.eduardoflores.rolabox.device.podcasts.api.ShowId
 import com.eduardoflores.rolabox.device.podcasts.local.api.ArtworkSource
 import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeRecord
 import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeWrite
+import com.eduardoflores.rolabox.device.podcasts.local.api.FeedWrite
+import com.eduardoflores.rolabox.device.podcasts.local.api.FollowedFeed
 import com.eduardoflores.rolabox.device.podcasts.local.api.PodcastsLocalDataSource
 import com.eduardoflores.rolabox.device.podcasts.local.api.ShowWrite
 import java.time.Instant
@@ -106,6 +108,36 @@ internal class RoomPodcastsLocalDataSource @Inject constructor(
         episodeImageUrls: Map<String, String>,
     ): Either<PodcastError, Unit> = catchNamed(::toError) {
         dao.setImageUrls(showId.value, showImageUrl, episodeImageUrls)
+    }
+
+    override suspend fun getFollowedFeeds(): Either<PodcastError, List<FollowedFeed>> = catchNamed(::toError) {
+        dao.getFollowedFeeds().map { row ->
+            FollowedFeed(
+                directoryId = DirectoryId(row.directoryId),
+                feedUrl = row.feedUrl,
+                show = row.showId?.let { dao.getShow(it)?.toShow() },
+                etag = row.etag,
+                lastModified = row.lastModified,
+            )
+        }
+    }
+
+    override suspend fun applyFeed(feed: FeedWrite, readAt: Instant): Either<PodcastError, ShowId?> =
+        catchNamed(::toError) {
+            val show = feed.show.toEntity(readAt).copy(
+                imageUrl = feed.imageUrl,
+                etag = feed.etag,
+                lastModified = feed.lastModified,
+            )
+            dao.applyFeed(show, feed.episodes.map { it.toEntity(readAt) }, readAt.toEpochMilli())?.let(::ShowId)
+        }
+
+    override suspend fun applyFeedNotModified(
+        directoryId: DirectoryId,
+        feedUrl: String,
+        readAt: Instant,
+    ): Either<PodcastError, Unit> = catchNamed(::toError) {
+        dao.applyFeedNotModified(directoryId.value, feedUrl, readAt.toEpochMilli())
     }
 
     private fun <T> Flow<T>.asRead(): Flow<Either<PodcastError, T>> = flowOn(ioDispatcher).catchNamed(::toError)

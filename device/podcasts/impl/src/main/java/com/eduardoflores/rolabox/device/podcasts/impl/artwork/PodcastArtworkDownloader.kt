@@ -7,12 +7,12 @@ import arrow.core.raise.ensure
 import arrow.core.raise.ensureNotNull
 import com.eduardoflores.rolabox.device.library.api.ArtworkRepository
 import com.eduardoflores.rolabox.device.podcasts.api.EpisodeId
+import com.eduardoflores.rolabox.device.podcasts.impl.itemKey
 import com.eduardoflores.rolabox.device.podcasts.local.api.ArtworkName
 import com.eduardoflores.rolabox.device.podcasts.local.api.ArtworkSource
 import com.eduardoflores.rolabox.device.podcasts.local.api.PodcastArtworkLocalDataSource
 import com.eduardoflores.rolabox.device.podcasts.local.api.PodcastsLocalDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.api.FeedAnswer
-import com.eduardoflores.rolabox.device.podcasts.network.api.FeedEpisode
 import com.eduardoflores.rolabox.device.podcasts.network.api.FeedNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.api.FeedNetworkError
 import com.eduardoflores.rolabox.device.podcasts.network.api.ImageNetworkDataSource
@@ -98,7 +98,3 @@ internal fun ArtworkSource.names(): List<ArtworkName> = listOfNotNull(
     episodeImageUrl?.let { ArtworkName.OfEpisode(episodeId, it) },
     showImageUrl?.let { ArtworkName.OfShow(showId, it) },
 )
-
-/** What identifies an episode within its feed, as the database keeps it (ADR-031, rule 2). */
-private val FeedEpisode.itemKey: String
-    get() = guid?.takeIf { it.isNotBlank() } ?: audioUrl

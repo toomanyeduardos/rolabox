@@ -71,4 +71,29 @@ interface PodcastsLocalDataSource {
         showImageUrl: String?,
         episodeImageUrls: Map<String, String>,
     ): Either<PodcastError, Unit>
+
+    /** Every show whose follow is On, whether or not the show is in the library yet. */
+    suspend fun getFollowedFeeds(): Either<PodcastError, List<FollowedFeed>>
+
+    /**
+     * Applies a feed read whole to its show (ADR-031, Follow checks), in one transaction, and only while the show's
+     * follow is On: adds the show unless one with its directory id is there, or updates it from [feed]; adds each
+     * episode its show hasn't by item key, as listed at [readAt]; updates what the feed says of the others, and clears
+     * when they left it; and stores [readAt] as when the episodes the show has and the feed hasn't left it, unless
+     * they already had. The follow's feed URL becomes the show's, and its `updatedAt` stays. A show's image URL, and
+     * an episode's, is kept when the feed names none. No progress is touched. Returns the show's id, or `null` when
+     * its follow isn't On, and nothing was written.
+     */
+    suspend fun applyFeed(feed: FeedWrite, readAt: Instant): Either<PodcastError, ShowId?>
+
+    /**
+     * Records that the feed of the show with [directoryId] answered 304 at [readAt], from [feedUrl], the URL it is now
+     * at: the show's and its follow's feed URL become it, and no episode changes. Nothing is written when the show
+     * isn't in the library or its follow isn't On.
+     */
+    suspend fun applyFeedNotModified(
+        directoryId: DirectoryId,
+        feedUrl: String,
+        readAt: Instant,
+    ): Either<PodcastError, Unit>
 }

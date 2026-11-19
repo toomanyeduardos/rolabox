@@ -11,6 +11,7 @@ import com.eduardoflores.rolabox.device.podcasts.api.ShowId
 import com.eduardoflores.rolabox.device.podcasts.local.api.ArtworkSource
 import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeProgressLocalDataSource
 import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeWrite
+import com.eduardoflores.rolabox.device.podcasts.local.api.FeedWrite
 import com.eduardoflores.rolabox.device.podcasts.local.api.PodcastsLocalDataSource
 import com.eduardoflores.rolabox.device.podcasts.local.api.ProgressRecord
 import com.eduardoflores.rolabox.device.podcasts.local.api.ShowWrite
@@ -30,6 +31,9 @@ import org.junit.Test
 abstract class PodcastsLocalContract {
     protected abstract val local: PodcastsLocalDataSource
     protected abstract val progress: EpisodeProgressLocalDataSource
+
+    /** Stores a follow as sync would, of a show that may not be in the library. */
+    protected abstract suspend fun storeFollow(directoryId: DirectoryId, feedUrl: String, followed: Boolean)
 
     // The sort keys are the :impl's to make. These stand for them: lower case, without a leading "The".
     private fun show(
@@ -330,6 +334,134 @@ abstract class PodcastsLocalContract {
         assertEquals(listOf("b", "a"), episodes.map { it.itemKey })
         assertEquals("As played", episodes.single { it.id == played }.title)
     }
+
+    private fun feed(show: ShowWrite, vararg episodes: EpisodeWrite, etag: String? = "e1") = FeedWrite(
+        show = show,
+        imageUrl = null,
+        etag = etag,
+        lastModified = null,
+        episodes = episodes.toList(),
+    )
+
+    private suspend fun episodesOf(showId: ShowId) = local.observeEpisodesByShow(showId).first().getOrNull()!!
+
+    @Test
+    fun followedFeeds_areTheFollowsThatAreOn_withTheirShowWhenItIsThere() = runTest {
+        val daily = addShow(1)
+        local.setFollow(daily, followed = true, NOW)
+        addShow(2, title = "Unfollowed")
+        storeFollow(DirectoryId.itunes(3), "https://example.com/3/feed", followed = true)
+        storeFollow(DirectoryId.itunes(4), "https://example.com/4/feed", followed = false)
+
+        val feeds = local.getFollowedFeeds().getOrNull()!!
+
+        assertEquals(listOf(DirectoryId.itunes(1), DirectoryId.itunes(3)), feeds.map { it.directoryId })
+        assertEquals(daily, feeds[0].show?.id)
+        assertEquals(listOf("https://example.com/1/feed", "https://example.com/3/feed"), feeds.map { it.feedUrl })
+        assertNull(feeds[1].show)
+    }
+
+    @Test
+    fun applyingAFeed_addsTheNewEpisodes_updatesTheOthers_andKeepsTheirProgress() = runTest {
+        val daily = show(1, "The Daily", "NY Times")
+        val playedId = add(daily, episode("a", 10, title = "Old title"))
+        val showId = local.getEpisode(playedId).getOrNull()!!.showId
+        local.setFollow(showId, followed = true, NOW)
+        val stored = ProgressRecord(12.minutes, isPlayed = false, playerLength = null, lastPlayedAt = NOW)
+        progress.setProgress(playedId, stored)
+
+        val applied = local.applyFeed(feed(daily, episode("a", 10, title = "New title"), episode("b", 20)), LATER)
+
+        assertEquals(showId.right(), applied)
+        val episodes = episodesOf(showId)
+        assertEquals(listOf("b", "a"), episodes.map { it.itemKey })
+        assertEquals("New title", episodes.single { it.id == playedId }.title)
+        assertEquals(stored, episodes.single { it.id == playedId }.progress)
+        assertEquals("e1", local.getFollowedFeeds().getOrNull()!!.single().etag)
+    }
+
+    @Test
+    fun anEpisodeThatLeavesTheFeed_isKept_withWhenItLeft_andClearedWhenItComesBack() = runTest {
+        val daily = show(1, "The Daily", "NY Times")
+        val showId = addShow(1)
+        local.setFollow(showId, followed = true, NOW)
+        local.applyFeed(feed(daily, episode("a", 10), episode("b", 20)), NOW)
+
+        local.applyFeed(feed(daily, episode("b", 20)), LATER)
+        val left = episodesOf(showId).associate { it.itemKey to it.leftFeedAt }
+        local.applyFeed(feed(daily, episode("a", 10), episode("b", 20)), LATER.plusSeconds(1))
+        val back = episodesOf(showId).associate { it.itemKey to it.leftFeedAt }
+
+        assertEquals(LATER, left["a"])
+        assertNull(left["b"])
+        assertNull(back["a"])
+    }
+
+    @Test
+    fun anEpisodeThatLeftTheFeed_keepsWhenItFirstLeft() = runTest {
+        val daily = show(1, "The Daily", "NY Times")
+        val showId = addShow(1)
+        local.setFollow(showId, followed = true, NOW)
+
+        local.applyFeed(feed(daily, episode("b", 20)), NOW)
+        local.applyFeed(feed(daily, episode("b", 20)), LATER)
+
+        assertEquals(NOW, episodesOf(showId).single { it.itemKey != "b" }.leftFeedAt)
+    }
+
+    @Test
+    fun applyingAFeed_ofAShowNotFollowed_writesNothing() = runTest {
+        val daily = show(1, "The Daily", "NY Times")
+        val showId = addShow(1)
+
+        val applied = local.applyFeed(feed(daily.copy(title = "Renamed"), episode("new", 10)), LATER)
+
+        assertEquals(null.right(), applied)
+        assertEquals("The Daily", local.getShow(showId).getOrNull()?.title)
+        assertEquals(1, episodesOf(showId).size)
+        assertEquals(null.right(), local.applyFeed(feed(show(2, "Not here", null), episode("x")), LATER))
+        assertNull(local.observeShowByDirectoryId(DirectoryId.itunes(2)).first().getOrNull())
+    }
+
+    @Test
+    fun applyingAFeed_ofAFollowedShowNotInTheLibrary_addsIt() = runTest {
+        storeFollow(DirectoryId.itunes(3), "https://example.com/3/feed", followed = true)
+
+        val showId = local.applyFeed(feed(show(3, "Synced", "Someone"), episode("a", 10)), NOW).getOrNull()!!
+
+        val show = local.getShow(showId).getOrNull()!!
+        assertEquals("Synced" to true, show.title to show.isFollowed)
+        assertEquals(listOf("a"), episodesOf(showId).map { it.itemKey })
+        assertEquals(showId, local.getFollowedFeeds().getOrNull()!!.single().show?.id)
+    }
+
+    @Test
+    fun aFeedThatMoved_movesTheShowAndItsFollow() = runTest {
+        val daily = show(1, "The Daily", "NY Times")
+        val showId = addShow(1)
+        local.setFollow(showId, followed = true, NOW)
+
+        local.applyFeed(feed(daily.copy(feedUrl = "https://example.com/moved"), episode("a")), LATER)
+
+        assertEquals("https://example.com/moved", local.getFollowedFeeds().getOrNull()!!.single().feedUrl)
+        assertFollowFeedUrl(DirectoryId.itunes(1), "https://example.com/moved")
+    }
+
+    @Test
+    fun aFeedNotModified_changesNoEpisode_andMovesTheShowWhenItMoved() = runTest {
+        val showId = addShow(1)
+        local.setFollow(showId, followed = true, NOW)
+        val before = episodesOf(showId)
+
+        local.applyFeedNotModified(DirectoryId.itunes(1), "https://example.com/moved", LATER)
+
+        assertEquals(before, episodesOf(showId))
+        assertEquals("https://example.com/moved", local.getFollowedFeeds().getOrNull()!!.single().feedUrl)
+        assertFollowFeedUrl(DirectoryId.itunes(1), "https://example.com/moved")
+    }
+
+    /** That the follow keeps [feedUrl] for sync, with its `updatedAt` as it was set. */
+    protected abstract suspend fun assertFollowFeedUrl(directoryId: DirectoryId, feedUrl: String)
 
     protected companion object {
         val NOW: Instant = Instant.ofEpochMilli(1_000)

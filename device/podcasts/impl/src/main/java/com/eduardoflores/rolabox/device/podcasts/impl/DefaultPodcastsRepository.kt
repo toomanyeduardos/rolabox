@@ -17,6 +17,7 @@ import com.eduardoflores.rolabox.device.podcasts.api.Show
 import com.eduardoflores.rolabox.device.podcasts.api.ShowFeed
 import com.eduardoflores.rolabox.device.podcasts.api.ShowId
 import com.eduardoflores.rolabox.device.podcasts.api.ShowInLibrary
+import com.eduardoflores.rolabox.device.podcasts.impl.follow.FollowCheckScheduler
 import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeRecord
 import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeWrite
 import com.eduardoflores.rolabox.device.podcasts.local.api.PodcastsLocalDataSource
@@ -38,6 +39,7 @@ internal class DefaultPodcastsRepository @Inject constructor(
     private val local: PodcastsLocalDataSource,
     private val downloads: EpisodeDownloads,
     private val clock: Clock,
+    private val followCheck: FollowCheckScheduler,
 ) : PodcastsRepository {
     override fun observeOwners(): Flow<Either<PodcastError, List<Owner>>> = local.observeOwners()
 
@@ -58,9 +60,13 @@ internal class DefaultPodcastsRepository @Inject constructor(
     ) { show, records, downloaded ->
         show.flatMap { it?.right() ?: PodcastError.ShowNotFound(showId).left() }.flatMap { found ->
             records.map { list ->
-                list.map { it.toEpisode(downloaded[it.id]) }
-                    // Follow Off lists only what has a download, done or in progress (ADR-031, The database).
-                    .filter { found.isFollowed || it.download != DownloadState.NotDownloaded }
+                list.mapNotNull { record ->
+                    val episode = record.toEpisode(downloaded[record.id])
+                    // Follow Off, and an episode that left its feed, list only what has a download, done or in
+                    // progress (ADR-031, The database).
+                    val listedWithoutDownload = found.isFollowed && record.leftFeedAt == null
+                    episode.takeIf { listedWithoutDownload || it.download != DownloadState.NotDownloaded }
+                }
             }
         }
     }.endingAtFirstLeft()
@@ -76,7 +82,10 @@ internal class DefaultPodcastsRepository @Inject constructor(
         }
 
     override suspend fun setFollowed(showId: ShowId, followed: Boolean): Either<PodcastError, Unit> =
-        local.setFollow(showId, followed, clock.instant())
+        local.setFollow(showId, followed, clock.instant()).onRight {
+            // Turning Follow On reads the show's feed at once, so its new episodes show (ADR-031, Follow checks).
+            if (followed) local.getShow(showId).getOrNull()?.let { show -> followCheck.checkShow(show.directoryId) }
+        }
 
     override suspend fun addEpisode(show: DirectoryShow, episode: DirectoryEpisode): Either<PodcastError, EpisodeId> =
         // Until its feed is read, a show's owner is the directory's creator (ADR-031, The directory).

@@ -33,7 +33,8 @@ internal data class ShowEntity(
 
 /**
  * An episode, as its feed says. [itemKey] identifies it within its show: its GUID, or its enclosure URL when it has
- * none. [lengthMillis] is the feed's length. [listedAt] is when it was first stored.
+ * none. [lengthMillis] is the feed's length. [listedAt] is when it was first stored, and [leftFeedAt] when a check last
+ * found the feed without it, `null` while it is in it (ADR-031, The database).
  */
 @Entity(
     tableName = "episodes",
@@ -54,6 +55,7 @@ internal data class EpisodeEntity(
     val audioType: String?,
     val imageUrl: String? = null,
     val listedAt: Long,
+    val leftFeedAt: Long? = null,
 )
 
 /**

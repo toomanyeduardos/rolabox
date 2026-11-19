@@ -17,11 +17,11 @@ private const val SHOWS = "SELECT s.id AS id, s.directoryId AS directoryId, s.ti
 private const val EPISODES = "SELECT e.id AS id, e.showId AS showId, e.itemKey AS itemKey, e.title AS title, " +
     "e.publishedAt AS publishedAt, e.lengthMillis AS lengthMillis, e.description AS description, " +
     "e.audioUrl AS audioUrl, e.audioSize AS audioSize, p.positionMillis AS positionMillis, p.played AS played, " +
-    "p.playerLengthMillis AS playerLengthMillis, p.lastPlayedAt AS lastPlayedAt " +
+    "p.playerLengthMillis AS playerLengthMillis, p.lastPlayedAt AS lastPlayedAt, e.leftFeedAt AS leftFeedAt " +
     "FROM episodes e LEFT JOIN progress p ON p.episodeId = e.id"
 
 /** The shows, their episodes and the follows. */
-@Suppress("TooManyFunctions") // One interface for the part's lists, and the steps of its two transactions.
+@Suppress("TooManyFunctions") // One interface for the part's lists, and the steps of its transactions.
 @Dao
 internal interface PodcastsDao {
     // Each owner's name is the spelling most of its shows have. The sort keys are the :impl's, ignoring case and
@@ -127,6 +127,120 @@ internal interface PodcastsDao {
         upsertFollow(follow)
         return showId
     }
+
+    @Query(
+        "SELECT f.directoryId AS directoryId, COALESCE(s.feedUrl, f.feedUrl) AS feedUrl, s.id AS showId, " +
+            "s.etag AS etag, s.lastModified AS lastModified " +
+            "FROM follows f LEFT JOIN shows s ON s.directoryId = f.directoryId " +
+            "WHERE f.followed = 1 ORDER BY f.directoryId",
+    )
+    suspend fun getFollowedFeeds(): List<FollowedFeedRow>
+
+    @Query(
+        "UPDATE shows SET feedUrl = :feedUrl, title = :title, titleSortKey = :titleSortKey, ownerName = :ownerName, " +
+            "ownerKey = :ownerKey, ownerSortKey = :ownerSortKey, imageUrl = COALESCE(:imageUrl, imageUrl), " +
+            "etag = :etag, lastModified = :lastModified, feedReadAt = :feedReadAt WHERE id = :id",
+    )
+    @Suppress("LongParameterList") // One for each column the feed writes.
+    suspend fun updateShowFromFeed(
+        id: Long,
+        feedUrl: String,
+        title: String,
+        titleSortKey: String,
+        ownerName: String?,
+        ownerKey: String,
+        ownerSortKey: String?,
+        imageUrl: String?,
+        etag: String?,
+        lastModified: String?,
+        feedReadAt: Long,
+    )
+
+    @Query(
+        "UPDATE episodes SET guid = :guid, title = :title, publishedAt = :publishedAt, lengthMillis = :lengthMillis, " +
+            "description = :description, audioUrl = :audioUrl, audioSize = :audioSize, audioType = :audioType, " +
+            "imageUrl = COALESCE(:imageUrl, imageUrl), leftFeedAt = NULL WHERE id = :id",
+    )
+    @Suppress("LongParameterList") // One for each column the feed writes.
+    suspend fun updateEpisodeFromFeed(
+        id: Long,
+        guid: String?,
+        title: String?,
+        publishedAt: Long?,
+        lengthMillis: Long?,
+        description: String?,
+        audioUrl: String,
+        audioSize: Long?,
+        audioType: String?,
+        imageUrl: String?,
+    )
+
+    @Query("SELECT id, itemKey FROM episodes WHERE showId = :showId AND leftFeedAt IS NULL")
+    suspend fun getEpisodesInFeed(showId: Long): List<EpisodeKeyRow>
+
+    @Query("UPDATE episodes SET leftFeedAt = :leftFeedAt WHERE id = :id")
+    suspend fun setLeftFeedAt(id: Long, leftFeedAt: Long)
+
+    @Query("UPDATE shows SET feedUrl = :feedUrl, feedReadAt = :feedReadAt WHERE directoryId = :directoryId")
+    suspend fun setFeedRead(directoryId: String, feedUrl: String, feedReadAt: Long): Int
+
+    /**
+     * Applies a feed read whole to its show, while its follow is On, and returns the show's id, or `null` when the
+     * follow isn't On. [show] is the show as the feed has it, and [episodes] every episode of the feed.
+     */
+    @Transaction
+    suspend fun applyFeed(show: ShowEntity, episodes: List<EpisodeEntity>, readAt: Long): Long? {
+        val follow = getFollow(show.directoryId)?.takeIf { it.followed } ?: return null
+        val showId = showIdOf(show.directoryId)?.also { id ->
+            updateShowFromFeed(
+                id = id,
+                feedUrl = show.feedUrl,
+                title = show.title,
+                titleSortKey = show.titleSortKey,
+                ownerName = show.ownerName,
+                ownerKey = show.ownerKey,
+                ownerSortKey = show.ownerSortKey,
+                imageUrl = show.imageUrl,
+                etag = show.etag,
+                lastModified = show.lastModified,
+                feedReadAt = readAt,
+            )
+        } ?: insertShow(show.copy(feedReadAt = readAt, joinedAt = readAt))
+        // The move isn't the user's choice: updatedAt stays, so it can't win over a newer Follow from another phone.
+        if (follow.feedUrl != show.feedUrl) upsertFollow(follow.copy(feedUrl = show.feedUrl))
+        val inFeed = HashSet<String>()
+        episodes.forEach { episode ->
+            if (!inFeed.add(episode.itemKey)) return@forEach
+            val id = episodeIdOf(showId, episode.itemKey)
+            if (id == null) {
+                insertEpisode(episode.copy(showId = showId, listedAt = readAt, leftFeedAt = null))
+            } else {
+                updateEpisodeFromFeed(
+                    id = id,
+                    guid = episode.guid,
+                    title = episode.title,
+                    publishedAt = episode.publishedAt,
+                    lengthMillis = episode.lengthMillis,
+                    description = episode.description,
+                    audioUrl = episode.audioUrl,
+                    audioSize = episode.audioSize,
+                    audioType = episode.audioType,
+                    imageUrl = episode.imageUrl,
+                )
+            }
+        }
+        getEpisodesInFeed(showId).forEach { if (it.itemKey !in inFeed) setLeftFeedAt(it.id, readAt) }
+        return showId
+    }
+
+    /** Records a 304 of the show's feed, from [feedUrl], while its follow is On. No episode changes. */
+    @Transaction
+    suspend fun applyFeedNotModified(directoryId: String, feedUrl: String, readAt: Long) {
+        val follow = getFollow(directoryId)?.takeIf { it.followed } ?: return
+        if (setFeedRead(directoryId, feedUrl, readAt) > 0 && follow.feedUrl != feedUrl) {
+            upsertFollow(follow.copy(feedUrl = feedUrl))
+        }
+    }
 }
 
 /** The progress of the episodes. */
@@ -164,7 +278,18 @@ internal data class EpisodeRow(
     val played: Boolean?,
     val playerLengthMillis: Long?,
     val lastPlayedAt: Long?,
+    val leftFeedAt: Long?,
 )
+
+internal data class FollowedFeedRow(
+    val directoryId: String,
+    val feedUrl: String,
+    val showId: Long?,
+    val etag: String?,
+    val lastModified: String?,
+)
+
+internal data class EpisodeKeyRow(val id: Long, val itemKey: String)
 
 internal data class ArtworkSourceRow(
     val episodeId: Long,

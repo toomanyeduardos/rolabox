@@ -1,5 +1,6 @@
 plugins {
     id("rolabox.android.library")
+    id("rolabox.android.robolectric")
     id("rolabox.hilt")
 }
 
@@ -15,8 +16,11 @@ dependencies {
     implementation(project(":device:playback:api"))
     // The Online Artwork setting, which stops the artwork download too, and ArtworkImage (ADR-031, Artwork).
     implementation(project(":device:library:api"))
-    // The artwork download is WorkManager work (ADR-031, Artwork).
+    // The artwork download and the follow check are WorkManager work (ADR-031, Artwork and Follow checks).
     implementation(libs.androidx.work.runtime)
+    // The follow check is requested at process start, and again when the app comes back to the front (ADR-025).
+    implementation(project(":common:util"))
+    implementation(libs.androidx.lifecycle.process)
 
     testImplementation(project(":device:podcasts:testing"))
     testImplementation(project(":device:playback:testing"))
@@ -24,4 +28,8 @@ dependencies {
     testImplementation(project(":common:storage:api"))
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    // That the follow check is enqueued as WorkManager work, with its constraint (podcasts/09).
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.work.testing)
 }

@@ -16,6 +16,8 @@ import com.eduardoflores.rolabox.device.podcasts.local.api.ArtworkSource
 import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeProgressLocalDataSource
 import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeRecord
 import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeWrite
+import com.eduardoflores.rolabox.device.podcasts.local.api.FeedWrite
+import com.eduardoflores.rolabox.device.podcasts.local.api.FollowedFeed
 import com.eduardoflores.rolabox.device.podcasts.local.api.PodcastsLocalDataSource
 import com.eduardoflores.rolabox.device.podcasts.local.api.ProgressRecord
 import com.eduardoflores.rolabox.device.podcasts.local.api.ShowWrite
@@ -50,6 +52,24 @@ class FakePodcastsLocalDataSource @Inject constructor() :
     /** The follows as stored, by directory id, with when each was last set. */
     val follows: Map<DirectoryId, Pair<Boolean, Instant>>
         get() = state.value.follows
+
+    /** The feed URL each follow keeps for sync, by directory id. */
+    val followFeedUrls: Map<DirectoryId, String>
+        get() = state.value.followFeedUrls
+
+    /** The feed URL each show in the library is read from, by directory id. */
+    val showFeedUrls: Map<DirectoryId, String>
+        get() = state.value.shows.associate { it.write.directoryId to it.write.feedUrl }
+
+    /** Stores a follow of a show that may not be in the library, as sync would (ADR-031, Syncing follows). */
+    fun storeFollow(directoryId: DirectoryId, feedUrl: String, followed: Boolean, updatedAt: Instant) {
+        state.update {
+            it.copy(
+                follows = it.follows + (directoryId to (followed to updatedAt)),
+                followFeedUrls = it.followFeedUrls + (directoryId to feedUrl),
+            )
+        }
+    }
 
     // Each owner's name is the spelling most of its shows have. Owners and shows are sorted by the sort keys they were
     // written with, the owner with none last.
@@ -109,7 +129,7 @@ class FakePodcastsLocalDataSource @Inject constructor() :
     override suspend fun setFollow(showId: ShowId, followed: Boolean, updatedAt: Instant): Either<PodcastError, Unit> =
         now { stored -> stored.shows.firstOrNull { it.id == showId } }.flatMap { show ->
             if (show == null) return@flatMap PodcastError.ShowNotFound(showId).left()
-            state.update { it.copy(follows = it.follows + (show.write.directoryId to (followed to updatedAt))) }
+            storeFollow(show.write.directoryId, show.write.feedUrl, followed, updatedAt)
             Unit.right()
         }
 
@@ -162,6 +182,7 @@ class FakePodcastsLocalDataSource @Inject constructor() :
                 shows = if (existingShow == null) stored.shows + storedShow else stored.shows,
                 episodes = all,
                 follows = stored.follows + (show.directoryId to (true to followedAt)),
+                followFeedUrls = stored.followFeedUrls + (show.directoryId to show.feedUrl),
             )
         }
         return followed.right()
@@ -220,6 +241,82 @@ class FakePodcastsLocalDataSource @Inject constructor() :
         return Unit.right()
     }
 
+    override suspend fun getFollowedFeeds(): Either<PodcastError, List<FollowedFeed>> = now { stored ->
+        stored.follows.filterValues { it.first }.keys.sortedBy { it.value }.map { directoryId ->
+            val show = stored.shows.firstOrNull { it.write.directoryId == directoryId }
+            FollowedFeed(
+                directoryId = directoryId,
+                feedUrl = show?.write?.feedUrl ?: stored.followFeedUrls.getValue(directoryId),
+                show = show?.let(stored::showOf),
+                etag = show?.etag,
+                lastModified = show?.lastModified,
+            )
+        }
+    }
+
+    override suspend fun applyFeed(feed: FeedWrite, readAt: Instant): Either<PodcastError, ShowId?> {
+        readError?.let { return PodcastError.Storage(it).left() }
+        val directoryId = feed.show.directoryId
+        var applied: ShowId? = null
+        state.update { stored ->
+            if (stored.follows[directoryId]?.first != true) return@update stored
+            val existing = stored.shows.firstOrNull { it.write.directoryId == directoryId }
+            val show = StoredShow(
+                id = existing?.id ?: ShowId(stored.shows.size + 1L),
+                write = feed.show,
+                imageUrl = feed.imageUrl ?: existing?.imageUrl,
+                etag = feed.etag,
+                lastModified = feed.lastModified,
+            )
+            applied = show.id
+            val inFeed = feed.episodes.distinctBy { it.itemKey }.associateBy { it.itemKey }
+            var episodes = stored.episodes.map { episode ->
+                if (episode.showId == show.id) episode.readFrom(inFeed[episode.write.itemKey], readAt) else episode
+            }
+            inFeed.values.forEach { read ->
+                if (episodes.none { it.showId == show.id && it.write.itemKey == read.itemKey }) {
+                    episodes = episodes + StoredEpisode(EpisodeId(episodes.size + 1L), show.id, read, read.imageUrl)
+                }
+            }
+            stored.copy(
+                shows = if (existing ==
+                    null
+                ) {
+                    stored.shows + show
+                } else {
+                    stored.shows.map { if (it.id == show.id) show else it }
+                },
+                episodes = episodes,
+                followFeedUrls = stored.followFeedUrls + (directoryId to feed.show.feedUrl),
+            )
+        }
+        return applied.right()
+    }
+
+    override suspend fun applyFeedNotModified(
+        directoryId: DirectoryId,
+        feedUrl: String,
+        readAt: Instant,
+    ): Either<PodcastError, Unit> {
+        readError?.let { return PodcastError.Storage(it).left() }
+        state.update { stored ->
+            val show = stored.shows.firstOrNull { it.write.directoryId == directoryId }
+            if (stored.follows[directoryId]?.first != true || show == null) return@update stored
+            stored.copy(
+                shows = stored.shows.map { if (it == show) it.copy(write = it.write.copy(feedUrl = feedUrl)) else it },
+                followFeedUrls = stored.followFeedUrls + (directoryId to feedUrl),
+            )
+        }
+        return Unit.right()
+    }
+
+    /** The episode as a feed read at [readAt] leaves it: updated from [read], or marked as left when it is `null`. */
+    private fun StoredEpisode.readFrom(read: EpisodeWrite?, readAt: Instant): StoredEpisode = when {
+        read != null -> copy(write = read, imageUrl = read.imageUrl ?: imageUrl, leftFeedAt = null)
+        leftFeedAt == null -> copy(leftFeedAt = readAt)
+        else -> this
+    }
+
     /** Sets the image URLs the feed would have named, as [setImageUrls] stores them. */
     fun setImages(episodeId: EpisodeId, episodeImageUrl: String?, showImageUrl: String?) {
         state.update { stored ->
@@ -231,13 +328,20 @@ class FakePodcastsLocalDataSource @Inject constructor() :
         }
     }
 
-    private data class StoredShow(val id: ShowId, val write: ShowWrite, val imageUrl: String? = null)
+    private data class StoredShow(
+        val id: ShowId,
+        val write: ShowWrite,
+        val imageUrl: String? = null,
+        val etag: String? = null,
+        val lastModified: String? = null,
+    )
 
     private data class StoredEpisode(
         val id: EpisodeId,
         val showId: ShowId,
         val write: EpisodeWrite,
         val imageUrl: String? = null,
+        val leftFeedAt: Instant? = null,
     )
 
     private data class Stored(
@@ -245,6 +349,7 @@ class FakePodcastsLocalDataSource @Inject constructor() :
         val episodes: List<StoredEpisode> = emptyList(),
         val progress: Map<EpisodeId, ProgressRecord> = emptyMap(),
         val follows: Map<DirectoryId, Pair<Boolean, Instant>> = emptyMap(),
+        val followFeedUrls: Map<DirectoryId, String> = emptyMap(),
     ) {
         fun showOf(show: StoredShow) = Show(
             id = show.id,
@@ -266,6 +371,7 @@ class FakePodcastsLocalDataSource @Inject constructor() :
             audioUrl = episode.write.audioUrl,
             audioSizeBytes = episode.write.audioSizeBytes,
             progress = progress[episode.id],
+            leftFeedAt = episode.leftFeedAt,
         )
     }
 }
