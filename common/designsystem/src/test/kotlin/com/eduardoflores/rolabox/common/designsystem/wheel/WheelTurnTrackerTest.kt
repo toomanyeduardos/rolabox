@@ -11,7 +11,7 @@ import org.junit.Test
 class WheelTurnTrackerTest {
     private val tracker = WheelTurnTracker()
 
-    /** Slow enough that acceleration never applies: 10 ms per degree is under 7 steps per second. */
+    /** Slow enough that acceleration never applies: 10 ms per degree is under a third of a turn per second. */
     private fun slowTurn(from: Int, to: Int): List<Int> {
         val direction = if (to > from) 1 else -1
         var time = 0L
@@ -27,59 +27,59 @@ class WheelTurnTrackerTest {
     }
 
     @Test
-    fun `a clockwise quarter turn is six steps`() {
-        assertEquals(6, slowTurn(from = 0, to = 90).sum())
+    fun `a clockwise third of a turn is five steps`() {
+        assertEquals(5, slowTurn(from = 0, to = 130).sum())
     }
 
     @Test
-    fun `a full turn is 24 steps (plus a degree to clear the boundary)`() {
-        assertEquals(24, slowTurn(from = 0, to = 361).sum())
+    fun `a full turn is 16 steps (plus a degree to clear the boundary)`() {
+        assertEquals(16, slowTurn(from = 0, to = 361).sum())
     }
 
     @Test
     fun `counter-clockwise turns are negative`() {
-        assertEquals(-6, slowTurn(from = 90, to = 0).sum())
+        assertEquals(-5, slowTurn(from = 130, to = 0).sum())
     }
 
     @Test
     fun `a move short of a step reports nothing`() {
         tracker.down(x(0), y(0), 0)
-        assertNull(tracker.move(x(14), y(14), 100))
+        assertNull(tracker.move(x(22), y(22), 100))
     }
 
     @Test
     fun `a move of a step reports one`() {
         tracker.down(x(0), y(0), 0)
-        assertEquals(WheelEvent.Turn(1), tracker.move(x(16), y(16), 1_000))
+        assertEquals(WheelEvent.Turn(1), tracker.move(x(25), y(25), 1_000))
     }
 
     @Test
     fun `the part of a step left over carries to the next move`() {
         tracker.down(x(0), y(0), 0)
-        assertNull(tracker.move(x(10), y(10), 1_000))
-        assertEquals(WheelEvent.Turn(1), tracker.move(x(20), y(20), 2_000))
-        assertNull(tracker.move(x(25), y(25), 3_000))
-        assertEquals(WheelEvent.Turn(1), tracker.move(x(31), y(31), 4_000))
+        assertNull(tracker.move(x(15), y(15), 1_000))
+        assertEquals(WheelEvent.Turn(1), tracker.move(x(30), y(30), 2_000))
+        assertNull(tracker.move(x(40), y(40), 3_000))
+        assertEquals(WheelEvent.Turn(1), tracker.move(x(50), y(50), 4_000))
     }
 
     @Test
     fun `reversing direction counts back from where the finger is`() {
         tracker.down(x(0), y(0), 0)
-        assertEquals(WheelEvent.Turn(2), tracker.move(x(32), y(32), 1_000))
-        assertEquals(WheelEvent.Turn(-1), tracker.move(x(14), y(14), 2_000))
+        assertEquals(WheelEvent.Turn(2), tracker.move(x(50), y(50), 1_000))
+        assertEquals(WheelEvent.Turn(-1), tracker.move(x(20), y(20), 2_000))
     }
 
     @Test
     fun `clockwise across the seam keeps counting forward`() {
-        // 350° to 10° is 20° clockwise through 0°, not 340° back.
-        tracker.down(x(350), y(350), 0)
-        assertEquals(WheelEvent.Turn(1), tracker.move(x(10), y(10), 1_000))
+        // 345° to 15° is 30° clockwise through 0°, not 330° back.
+        tracker.down(x(345), y(345), 0)
+        assertEquals(WheelEvent.Turn(1), tracker.move(x(15), y(15), 1_000))
     }
 
     @Test
     fun `counter-clockwise across the seam keeps counting backward`() {
-        tracker.down(x(10), y(10), 0)
-        assertEquals(WheelEvent.Turn(-1), tracker.move(x(350), y(350), 1_000))
+        tracker.down(x(15), y(15), 0)
+        assertEquals(WheelEvent.Turn(-1), tracker.move(x(345), y(345), 1_000))
     }
 
     @Test
@@ -95,14 +95,14 @@ class WheelTurnTrackerTest {
 
     @Test
     fun `a slow turn is not accelerated`() {
-        val turns = slowTurn(from = 0, to = 180)
+        val turns = slowTurn(from = 0, to = 190)
         assertTrue(turns.all { it == 1 })
-        assertEquals(12, turns.sum())
+        assertEquals(8, turns.sum())
     }
 
     @Test
     fun `a fast spin counts each step several times`() {
-        // 90° in 100 ms is 60 steps per second.
+        // 144° in 96 ms is over four turns per second.
         tracker.down(x(0), y(0), 0)
         val steps = (1..FAST_FRAMES).sumOf { frame ->
             val angle = frame * FAST_DEGREES_PER_FRAME
@@ -131,19 +131,19 @@ class WheelTurnTrackerTest {
             time += FAST_FRAME_MILLIS
             tracker.move(x(angle), y(angle), time)
         }
-        // Then 16° very slowly: well after the speed window has emptied.
+        // Then 25° very slowly: well after the speed window has emptied.
         time += 1_000
-        angle += 16
+        angle += 25
         assertEquals(WheelEvent.Turn(1), tracker.move(x(angle), y(angle), time))
     }
 
     @Test
     fun `acceleration multiplier grows with speed`() {
         assertEquals(1, WheelAcceleration.multiplier(0.0))
-        assertEquals(1, WheelAcceleration.multiplier(11.9))
-        assertEquals(2, WheelAcceleration.multiplier(12.0))
-        assertEquals(4, WheelAcceleration.multiplier(30.0))
-        assertEquals(8, WheelAcceleration.multiplier(100.0))
+        assertEquals(1, WheelAcceleration.multiplier(0.99))
+        assertEquals(2, WheelAcceleration.multiplier(1.0))
+        assertEquals(3, WheelAcceleration.multiplier(2.5))
+        assertEquals(6, WheelAcceleration.multiplier(5.0))
     }
 
     @Test
@@ -163,14 +163,14 @@ class WheelTurnTrackerTest {
     @Test
     fun `a touch that turns the ring by a step is not a press`() {
         tracker.down(x(0), y(0), 0)
-        tracker.move(x(20), y(20), 1_000)
+        tracker.move(x(25), y(25), 1_000)
         assertFalse(tracker.up())
     }
 
     @Test
     fun `a drag short of a step is not a press`() {
         tracker.down(x(0), y(0), 0)
-        tracker.move(x(10), y(10), 1_000)
+        tracker.move(x(15), y(15), 1_000)
         assertFalse(tracker.up())
     }
 
@@ -195,11 +195,11 @@ class WheelTurnTrackerTest {
     @Test
     fun `a leftover fraction of a step does not carry into the next gesture`() {
         tracker.down(x(0), y(0), 0)
-        tracker.move(x(10), y(10), 1_000)
+        tracker.move(x(15), y(15), 1_000)
         tracker.up()
 
         tracker.down(x(0), y(0), 5_000)
-        assertNull(tracker.move(x(10), y(10), 6_000))
+        assertNull(tracker.move(x(15), y(15), 6_000))
     }
 
     @Test
@@ -231,7 +231,7 @@ class WheelTurnTrackerTest {
         const val EPSILON = 1e-9
         const val SLOW_MILLIS_PER_DEGREE = 10L
         const val FAST_FRAMES = 6
-        const val FAST_DEGREES_PER_FRAME = 15
+        const val FAST_DEGREES_PER_FRAME = 24
         const val FAST_FRAME_MILLIS = 16L
     }
 }

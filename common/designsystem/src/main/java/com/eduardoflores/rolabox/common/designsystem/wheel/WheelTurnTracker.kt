@@ -3,8 +3,8 @@ package com.eduardoflores.rolabox.common.designsystem.wheel
 import kotlin.math.abs
 import kotlin.math.atan2
 
-/** One step of the wheel, in degrees: 24 steps make a full turn. */
-internal const val STEP_DEGREES = 15.0
+/** One step of the wheel, in degrees: 16 steps make a full turn, so a slow turn is easy to stop on a row. */
+internal const val STEP_DEGREES = 22.5
 
 private const val HALF_TURN_DEGREES = 180.0
 private const val FULL_TURN_DEGREES = 360.0
@@ -74,13 +74,13 @@ internal class WheelTurnTracker {
         travelledDegrees += abs(delta)
         pendingDegrees += delta
 
-        val multiplier = WheelAcceleration.multiplier(speedStepsPerSecond(timeMillis))
+        val multiplier = WheelAcceleration.multiplier(speedTurnsPerSecond(timeMillis))
         val steps = (pendingDegrees / STEP_DEGREES).toInt()
         pendingDegrees -= steps * STEP_DEGREES
         return if (steps == 0) null else WheelEvent.Turn(steps * multiplier)
     }
 
-    private fun speedStepsPerSecond(timeMillis: Long): Double {
+    private fun speedTurnsPerSecond(timeMillis: Long): Double {
         samples.addLast(Sample(timeMillis, travelledDegrees))
         while (samples.size > 2 && timeMillis - samples[1].timeMillis >= SPEED_WINDOW_MILLIS) {
             samples.removeFirst()
@@ -89,7 +89,7 @@ internal class WheelTurnTracker {
         val elapsed = timeMillis - first.timeMillis
         if (elapsed <= 0) return 0.0
         val degrees = travelledDegrees - first.travelledDegrees
-        return degrees / STEP_DEGREES / (elapsed / MILLIS_PER_SECOND)
+        return degrees / FULL_TURN_DEGREES / (elapsed / MILLIS_PER_SECOND)
     }
 
     private class Sample(val timeMillis: Long, val travelledDegrees: Double)
