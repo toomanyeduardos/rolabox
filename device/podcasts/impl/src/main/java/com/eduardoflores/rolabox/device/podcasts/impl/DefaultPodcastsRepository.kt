@@ -14,20 +14,26 @@ import com.eduardoflores.rolabox.device.podcasts.api.OwnerId
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastError
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastsRepository
 import com.eduardoflores.rolabox.device.podcasts.api.Show
+import com.eduardoflores.rolabox.device.podcasts.api.ShowFeed
 import com.eduardoflores.rolabox.device.podcasts.api.ShowId
+import com.eduardoflores.rolabox.device.podcasts.api.ShowInLibrary
 import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeRecord
 import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeWrite
 import com.eduardoflores.rolabox.device.podcasts.local.api.PodcastsLocalDataSource
 import com.eduardoflores.rolabox.device.podcasts.local.api.ShowWrite
 import java.time.Clock
 import javax.inject.Inject
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.transformWhile
 
 /** The podcasts as the database holds them (ADR-031, rule 4), with each episode's download from playback. */
+@Suppress("TooManyFunctions") // One for each function of the repository.
 internal class DefaultPodcastsRepository @Inject constructor(
     private val local: PodcastsLocalDataSource,
     private val downloads: EpisodeDownloads,
@@ -72,35 +78,66 @@ internal class DefaultPodcastsRepository @Inject constructor(
     override suspend fun setFollowed(showId: ShowId, followed: Boolean): Either<PodcastError, Unit> =
         local.setFollow(showId, followed, clock.instant())
 
-    override suspend fun addEpisode(show: DirectoryShow, episode: DirectoryEpisode): Either<PodcastError, EpisodeId> {
+    override suspend fun addEpisode(show: DirectoryShow, episode: DirectoryEpisode): Either<PodcastError, EpisodeId> =
         // Until its feed is read, a show's owner is the directory's creator (ADR-031, The directory).
-        val owner = cleanedName(show.creator)
-        val showWrite = ShowWrite(
-            directoryId = show.directoryId,
-            feedUrl = show.feedUrl,
-            title = show.title,
-            ownerName = owner,
-            ownerKey = ownerIdOf(owner),
-            titleSortKey = sortKeyOf(show.title),
-            ownerSortKey = owner?.let(::sortKeyOf),
-        )
-        val episodeWrite = EpisodeWrite(
-            itemKey = episode.itemKey,
-            guid = episode.guid,
-            title = episode.title,
-            publishedAt = episode.publishedAt,
-            length = episode.length,
-            description = episode.description,
-            audioUrl = episode.audioUrl,
-            audioSizeBytes = episode.audioSizeBytes,
-            audioType = episode.audioType,
-        )
-        return local.addEpisode(showWrite, episodeWrite, clock.instant())
-    }
+        local.addEpisode(show.toWrite(owner = show.creator), episode.toWrite(), clock.instant())
+
+    override suspend fun follow(feed: ShowFeed): Either<PodcastError, ShowId> =
+        local.follow(feed.show.toWrite(owner = feed.ownerName), feed.episodes.map { it.toWrite() }, clock.instant())
+
+    override suspend fun findShow(show: DirectoryShow): Either<PodcastError, Show?> =
+        local.observeShowByDirectoryId(show.directoryId).first()
+
+    override suspend fun findEpisode(show: DirectoryShow, episode: DirectoryEpisode): Either<PodcastError, EpisodeId?> =
+        local.getEpisodeId(show.directoryId, episode.itemKey)
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override fun observeInLibrary(feed: ShowFeed): Flow<Either<PodcastError, ShowInLibrary?>> =
+        local.observeShowByDirectoryId(feed.show.directoryId).flatMapLatest { found ->
+            val show = found.getOrNull()
+                ?: return@flatMapLatest flowOf<Either<PodcastError, ShowInLibrary?>>(found.map { null })
+            // Every episode the library has of the show, whatever its Follow says: the feed decides what is listed.
+            combine(local.observeEpisodesByShow(show.id), downloads.observe()) { records, downloaded ->
+                records.map<ShowInLibrary?> { list ->
+                    val byItemKey = list.associateBy { it.itemKey }
+                    ShowInLibrary(
+                        show = show,
+                        episodes = feed.episodes.map { episode ->
+                            byItemKey[episode.itemKey]?.let { it.toEpisode(downloaded[it.id]) }
+                        },
+                    )
+                }
+            }
+        }.endingAtFirstLeft()
 
     private fun notFound(episodeId: EpisodeId): Either<PodcastError, Episode> =
         PodcastError.EpisodeNotFound(episodeId).left()
 }
+
+private fun DirectoryShow.toWrite(owner: String?): ShowWrite {
+    val name = cleanedName(owner)
+    return ShowWrite(
+        directoryId = directoryId,
+        feedUrl = feedUrl,
+        title = title,
+        ownerName = name,
+        ownerKey = ownerIdOf(name),
+        titleSortKey = sortKeyOf(title),
+        ownerSortKey = name?.let(::sortKeyOf),
+    )
+}
+
+private fun DirectoryEpisode.toWrite() = EpisodeWrite(
+    itemKey = itemKey,
+    guid = guid,
+    title = title,
+    publishedAt = publishedAt,
+    length = length,
+    description = description,
+    audioUrl = audioUrl,
+    audioSizeBytes = audioSizeBytes,
+    audioType = audioType,
+)
 
 private fun EpisodeRecord.toEpisode(download: DownloadState?): Episode = Episode(
     id = id,

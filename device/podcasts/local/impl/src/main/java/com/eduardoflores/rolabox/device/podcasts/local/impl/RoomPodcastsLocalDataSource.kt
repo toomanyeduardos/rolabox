@@ -12,6 +12,7 @@ import com.eduardoflores.rolabox.common.util.Dispatcher
 import com.eduardoflores.rolabox.common.util.NonFatalReport
 import com.eduardoflores.rolabox.common.util.RolaboxDispatchers.IO
 import com.eduardoflores.rolabox.common.util.catchNamed
+import com.eduardoflores.rolabox.device.podcasts.api.DirectoryId
 import com.eduardoflores.rolabox.device.podcasts.api.EpisodeId
 import com.eduardoflores.rolabox.device.podcasts.api.Owner
 import com.eduardoflores.rolabox.device.podcasts.api.OwnerId
@@ -49,6 +50,12 @@ internal class RoomPodcastsLocalDataSource @Inject constructor(
     override suspend fun getShow(showId: ShowId): Either<PodcastError, Show?> =
         catchNamed(::toError) { dao.getShow(showId.value)?.toShow() }
 
+    override fun observeShowByDirectoryId(directoryId: DirectoryId): Flow<Either<PodcastError, Show?>> =
+        dao.observeShowByDirectoryId(directoryId.value).map { it?.toShow() }.asRead()
+
+    override suspend fun getEpisodeId(directoryId: DirectoryId, itemKey: String): Either<PodcastError, EpisodeId?> =
+        catchNamed(::toError) { dao.episodeIdOf(directoryId.value, itemKey)?.let(::EpisodeId) }
+
     override fun observeEpisodesByShow(showId: ShowId): Flow<Either<PodcastError, List<EpisodeRecord>>> =
         dao.observeEpisodesByShow(showId.value).map { rows -> rows.map(EpisodeRow::toRecord) }.asRead()
 
@@ -68,6 +75,15 @@ internal class RoomPodcastsLocalDataSource @Inject constructor(
         addedAt: Instant,
     ): Either<PodcastError, EpisodeId> = catchNamed(::toError) {
         EpisodeId(dao.addEpisode(show.toEntity(addedAt), episode.toEntity(addedAt)))
+    }
+
+    override suspend fun follow(
+        show: ShowWrite,
+        episodes: List<EpisodeWrite>,
+        followedAt: Instant,
+    ): Either<PodcastError, ShowId> = catchNamed(::toError) {
+        val follow = FollowEntity(show.directoryId.value, show.feedUrl, true, followedAt.toEpochMilli())
+        ShowId(dao.follow(show.toEntity(followedAt), episodes.map { it.toEntity(followedAt) }, follow))
     }
 
     override suspend fun getArtworkSource(episodeId: EpisodeId): Either<PodcastError, ArtworkSource?> =

@@ -13,8 +13,8 @@ import androidx.navigation3.runtime.NavKey
  */
 interface PodcastsEntries {
     /**
-     * Adds the entries of [PodcastsKey], [PodcastOwnerKey], [PodcastShowKey] and [PodcastEpisodeKey], for the screen
-     * stack inside the display.
+     * Adds the entries of [PodcastsKey], [PodcastOwnerKey], [PodcastShowKey], [PodcastEpisodeKey], [PodcastSearchKey],
+     * [PodcastSearchShowKey] and [PodcastSearchEpisodeKey], for the screen stack inside the display.
      *
      * The exits: center on Search in Podcasts is [onSearchClick]; on an owner, [onOwnerClick] with its grouping key;
      * on a show of an owner, [onShowClick]; on an episode of a show, [onEpisodeClick], which opens its
@@ -22,6 +22,10 @@ interface PodcastsEntries {
      * opens Now Playing; and on Needs Wi-Fi of an episode, [onAllowMobileData], which opens the podcasts' settings,
      * where Use Mobile Data is (ADR-031, frame 36). Follow, the first row of a show, is toggled in place and isn't an
      * exit.
+     *
+     * From Search and a show opened from it (ADR-031, Search): a show or an episode that isn't in the library is
+     * [onSearchShowClick] or [onSearchEpisodeClick], with the key to push, since such a show has no id of the
+     * library's. One that is in the library is [onShowClick] or [onEpisodeClick], as from the library.
      */
     @Suppress("LongParameterList") // One lambda per exit, so the contract lists how its screens are left.
     fun screenStackEntries(
@@ -32,5 +36,7 @@ interface PodcastsEntries {
         onEpisodeClick: (episodeId: Long) -> Unit,
         onPlaying: () -> Unit,
         onAllowMobileData: () -> Unit,
+        onSearchShowClick: (PodcastSearchShowKey) -> Unit,
+        onSearchEpisodeClick: (PodcastSearchEpisodeKey) -> Unit,
     )
 }

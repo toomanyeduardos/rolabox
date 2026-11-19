@@ -2,6 +2,7 @@ import com.android.build.api.dsl.ApplicationExtension
 import com.android.build.api.variant.ApplicationAndroidComponentsExtension
 import com.eduardoflores.rolabox.buildlogic.DEFAULT_ANDROID_UNIT_TEST_TASK
 import com.eduardoflores.rolabox.buildlogic.ProjectConfig
+import com.eduardoflores.rolabox.buildlogic.alignCoroutines
 import com.eduardoflores.rolabox.buildlogic.applyStaticAnalysis
 import com.eduardoflores.rolabox.buildlogic.configureReleaseOptimization
 import com.eduardoflores.rolabox.buildlogic.enforceReleaseOptimization
@@ -21,6 +22,7 @@ class RolaboxAndroidApplicationConventionPlugin : Plugin<Project> {
             pluginManager.apply("com.android.application")
             enforceModuleRules()
             applyStaticAnalysis()
+            alignCoroutines()
             registerUnitTestTask(DEFAULT_ANDROID_UNIT_TEST_TASK)
             registerDesignSystemResourceCheck()
             registerReleaseAudioCheck()

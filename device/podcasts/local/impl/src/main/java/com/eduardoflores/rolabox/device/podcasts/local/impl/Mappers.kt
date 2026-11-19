@@ -24,6 +24,7 @@ internal fun ShowRow.toShow(): Show = Show(
 internal fun EpisodeRow.toRecord(): EpisodeRecord = EpisodeRecord(
     id = EpisodeId(id),
     showId = ShowId(showId),
+    itemKey = itemKey,
     title = title,
     publishedAt = publishedAt?.let(Instant::ofEpochMilli),
     feedLength = lengthMillis?.milliseconds,

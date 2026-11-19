@@ -15,6 +15,7 @@ import com.eduardoflores.rolabox.device.podcasts.network.api.FeedAnswer
 import com.eduardoflores.rolabox.device.podcasts.network.api.FeedEpisode
 import com.eduardoflores.rolabox.device.podcasts.network.api.FeedNetworkError
 import com.eduardoflores.rolabox.device.podcasts.network.api.FeedValidators
+import com.eduardoflores.rolabox.device.podcasts.testing.FakeConnectionNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.testing.FakeDirectoryNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.testing.FakeDirectoryNetworkDataSource.Kind
 import com.eduardoflores.rolabox.device.podcasts.testing.FakeFeedNetworkDataSource
@@ -27,7 +28,8 @@ import org.junit.Test
 class DefaultPodcastDirectoryTest {
     private val network = FakeDirectoryNetworkDataSource()
     private val feeds = FakeFeedNetworkDataSource()
-    private val directory = DefaultPodcastDirectory(network, feeds)
+    private val connection = FakeConnectionNetworkDataSource()
+    private val directory = DefaultPodcastDirectory(network, feeds, connection)
 
     private val rome = DirectoryShow(DirectoryId.itunes(1), "Emperors of Rome", "Nightlight", "https://e.com/rome.xml")
     private val gracchi = FoundEpisode(

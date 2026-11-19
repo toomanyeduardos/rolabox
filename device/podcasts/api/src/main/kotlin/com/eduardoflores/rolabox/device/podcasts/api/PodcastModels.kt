@@ -130,3 +130,9 @@ data class DirectoryResults(val shows: List<DirectoryShow>, val episodes: List<F
  * episode of the feed with audio, newest first.
  */
 data class ShowFeed(val show: DirectoryShow, val ownerName: String?, val episodes: List<DirectoryEpisode>)
+
+/**
+ * A show opened from search that is in the library (ADR-031, Search): the library's [show], with its Follow switch, and
+ * for each episode of the feed, in the feed's order, the library's episode, or `null` when the library hasn't it.
+ */
+data class ShowInLibrary(val show: Show, val episodes: List<Episode?>)

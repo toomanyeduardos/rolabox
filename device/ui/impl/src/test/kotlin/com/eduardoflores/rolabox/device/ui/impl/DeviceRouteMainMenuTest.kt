@@ -16,6 +16,8 @@ import com.eduardoflores.rolabox.device.music.ui.api.MusicEntries
 import com.eduardoflores.rolabox.device.playback.api.PlaybackSource
 import com.eduardoflores.rolabox.device.playback.api.SeekDirection
 import com.eduardoflores.rolabox.device.playback.ui.api.PlaybackEntries
+import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastSearchEpisodeKey
+import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastSearchShowKey
 import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastsEntries
 import com.eduardoflores.rolabox.device.settings.api.SettingsEntries
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -109,6 +111,8 @@ private object NoPodcastsEntries : PodcastsEntries {
         onEpisodeClick: (episodeId: Long) -> Unit,
         onPlaying: () -> Unit,
         onAllowMobileData: () -> Unit,
+        onSearchShowClick: (PodcastSearchShowKey) -> Unit,
+        onSearchEpisodeClick: (PodcastSearchEpisodeKey) -> Unit,
     ) = Unit
 }
 

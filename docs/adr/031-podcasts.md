@@ -22,6 +22,16 @@
   the ADR had paused. The free-space check uses only the 50 MB when the feed gives no size.
   DOWNLOADING and WAITING FOR WI-FI are in the screen's top corner, as frames 28 and 37 draw them,
   not in place of the bar's right label, as this ADR first said.
+- **Revised 2026-11-19:** Search's screens, for podcasts/08 ("Search"). A show and an episode
+  opened from search have keys of their own, with the directory id and the feed URL, and for an
+  episode its GUID and enclosure URL, so a screen can read them from the feed after process death.
+  A result already in the library opens from the library, but a show with Follow Off, which would
+  hide most of its feed there. Turning Follow On from search adds the show with every episode of
+  the feed just read, through a new `PodcastsRepository.follow`. Search comes back by itself when
+  the connection does, through `PodcastDirectory.observeConnected`, which a network data source of
+  the part's own answers. Rule 4 says what "never written" meant: the answers aren't kept as a
+  cache, and only what the user plays or follows joins the library, as this ADR already said. The
+  Android back of frame 29 only hides the keyboard, as ADR-032 (rule 4) says.
 
 ## Context
 
@@ -209,6 +219,42 @@ rule 2, and the only one in the part:
   one of its episodes is played or it is followed.
 - **No connection** is `PodcastError.NoConnection`, and search shows its message (frame 33). No
   results is an empty answer, not an error, and search shows its own message for it.
+
+### Search
+
+Search is the device screen of `PodcastSearchKey` (frames 29 to 34), with the field of ADR-032 at
+the top of its list. podcasts/08 builds it.
+
+- **As the user types,** the ViewModel sends the text once typing has paused for 400 ms and it has
+  at least 2 characters, and cancels the search of an older text (rule 1). Shows come first, with
+  their creator on the right in the row's quieter value, then Episodes, under section labels.
+- **No connection** keeps the text and shows frame 33. `PodcastDirectory.observeConnected` says
+  when the phone has a network that reaches the internet, and the search of the text is sent again
+  when it does. It is answered by `ConnectionNetworkDataSource`, in `:device:podcasts:network:api`,
+  from `ConnectivityManager`'s default network in its `:impl`, as playback reads it for downloads.
+- **The directory busy** (`PodcastError.DirectoryBusy`) keeps the text and says "Too many
+  searches", "Wait a moment, then search again." It isn't sent again by itself, which would spend
+  more of the limit: the next change of the text, or the search key, sends it.
+- **A show opened from search** (frame 32) is `PodcastSearchShowKey`, with the show's directory id,
+  title, creator and feed URL: what `PodcastDirectory.show` needs, and the header's title before the
+  feed is read. Follow, then every episode of the feed, newest first, with the download arrow and
+  no dots. A feed that can't be read says "Can't open this show", "Its feed couldn't be read. Try
+  again later.", and no connection says frame 33's words.
+- **An episode found by search** is `PodcastSearchEpisodeKey`, with its show's fields and its GUID
+  and enclosure URL. Its Episode screen (frame 26, with Play) reads the show's feed and finds the
+  episode there by GUID, else by enclosure URL, so that playing it adds the enclosure's size and
+  type, which the directory doesn't give. The keys carry the identities the directory and the feed
+  give a show and an episode, and not the episode's text, which can be long.
+- **Already in the library:** center on an episode result that is in the library opens its own
+  Episode screen, and on a show with Follow On, its own Show screen, with their dots and downloads.
+  A show in the library with Follow Off opens frame 32 from the feed, since its own screen lists
+  only what was downloaded: Follow then reads Off from the library, and the episodes the library has
+  show their dots and downloads, and open their own Episode screen.
+- **Follow On from search** is `PodcastsRepository.follow(feed)`: in one transaction it adds the
+  show, unless it is there, with the feed's owner, every episode of the feed it doesn't have, and the
+  follow On. The feed was just read, so there is nothing for the follow check to read at once. Off
+  is `setFollowed`, as on a show of the library.
+- **Playing from search** is `addEpisode` then `play`, as before.
 
 ### The database
 
@@ -588,8 +634,9 @@ Every call that can fail returns an `Either` ([ADR-007](007-error-handling.md)).
    `:device:podcasts:local:{api,impl}` and `:device:podcasts:network:{api,impl}`, and its screens
    `:device:podcasts:ui:{api,impl}`. Search is part of it.
 4. `[convention]` Only `PodcastDirectory` reads the network to answer a screen: search, and a show
-   opened from search. Its answers are never written to the database. Everything else a screen shows
-   of podcasts is read from the database.
+   opened from search. Its answers are never kept in the database as a cache: a show and its
+   episodes join the library only when the user plays one of them or follows the show. Everything
+   else a screen shows of podcasts is read from the database.
 5. `[convention]` The podcasts' relational data is in their own Room database, every table of it is
    the user's data, and download state and audio are not in it.
 6. `[convention]` An episode is played once its position reaches 90% of its length, or it ends. The

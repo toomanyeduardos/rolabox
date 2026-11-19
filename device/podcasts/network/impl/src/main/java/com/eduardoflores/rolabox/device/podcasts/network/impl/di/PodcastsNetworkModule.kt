@@ -1,8 +1,10 @@
 package com.eduardoflores.rolabox.device.podcasts.network.impl.di
 
+import com.eduardoflores.rolabox.device.podcasts.network.api.ConnectionNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.api.DirectoryNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.api.FeedNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.api.ImageNetworkDataSource
+import com.eduardoflores.rolabox.device.podcasts.network.impl.ConnectivityConnectionNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.impl.DeviceCountry
 import com.eduardoflores.rolabox.device.podcasts.network.impl.DirectorySearchUrl
 import com.eduardoflores.rolabox.device.podcasts.network.impl.ITunesDirectoryNetworkDataSource
@@ -31,6 +33,11 @@ abstract class PodcastsNetworkModule {
 
     @Binds
     internal abstract fun bindsFeedNetworkDataSource(dataSource: RssFeedNetworkDataSource): FeedNetworkDataSource
+
+    @Binds
+    internal abstract fun bindsConnectionNetworkDataSource(
+        dataSource: ConnectivityConnectionNetworkDataSource,
+    ): ConnectionNetworkDataSource
 
     @Binds
     internal abstract fun bindsImageNetworkDataSource(dataSource: OkHttpImageNetworkDataSource): ImageNetworkDataSource

@@ -7,4 +7,6 @@ dependencies {
     // (ADR-003, rule 15).
     api(libs.arrow.core)
     implementation(project(":device:podcasts:api"))
+    // Flow, for whether the phone is connected.
+    implementation(libs.kotlinx.coroutines.core)
 }

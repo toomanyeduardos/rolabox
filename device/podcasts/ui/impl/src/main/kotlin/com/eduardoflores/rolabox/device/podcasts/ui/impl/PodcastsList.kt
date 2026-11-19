@@ -79,5 +79,21 @@ internal fun PodcastsList(
         ListUiState.Failed -> DeviceMessage(stringResource(R.string.podcasts_unavailable))
 
         ListUiState.Gone -> DeviceMessage(stringResource(R.string.podcasts_no_longer_here))
+
+        ListUiState.NoConnection,
+        ListUiState.FeedUnreadable,
+        ListUiState.NotInFeed,
+        -> FromSearchMessage(state)
     }
+}
+
+/** Why a show or an episode from search, read from its feed, can't be shown (ADR-031, Search). */
+@Composable
+internal fun FromSearchMessage(state: ListUiState<*>) {
+    val (title, body) = when (state) {
+        ListUiState.NoConnection -> R.string.podcasts_search_offline_title to R.string.podcasts_search_offline_body
+        ListUiState.NotInFeed -> R.string.podcasts_not_in_feed_title to R.string.podcasts_not_in_feed_body
+        else -> R.string.podcasts_feed_unreadable_title to R.string.podcasts_feed_unreadable_body
+    }
+    DeviceMessage(stringResource(title), stringResource(body))
 }

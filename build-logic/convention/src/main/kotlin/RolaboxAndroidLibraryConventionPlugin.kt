@@ -2,6 +2,7 @@ import com.android.build.api.dsl.LibraryExtension
 import com.android.build.api.variant.LibraryAndroidComponentsExtension
 import com.eduardoflores.rolabox.buildlogic.DEFAULT_ANDROID_UNIT_TEST_TASK
 import com.eduardoflores.rolabox.buildlogic.ProjectConfig
+import com.eduardoflores.rolabox.buildlogic.alignCoroutines
 import com.eduardoflores.rolabox.buildlogic.applyStaticAnalysis
 import com.eduardoflores.rolabox.buildlogic.enforceModuleRules
 import com.eduardoflores.rolabox.buildlogic.enforceNoProductFlavors
@@ -18,6 +19,7 @@ class RolaboxAndroidLibraryConventionPlugin : Plugin<Project> {
             pluginManager.apply("com.android.library")
             enforceModuleRules()
             applyStaticAnalysis()
+            alignCoroutines()
             registerUnitTestTask(DEFAULT_ANDROID_UNIT_TEST_TASK)
             registerDesignSystemResourceCheck()
             registerScreenshotPluginCheck()

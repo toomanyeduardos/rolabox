@@ -5,6 +5,9 @@ import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastEpisodeKey
 import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastOwnerKey
+import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastSearchEpisodeKey
+import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastSearchKey
+import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastSearchShowKey
 import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastShowKey
 import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastsEntries
 import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastsKey
@@ -24,6 +27,8 @@ internal class DefaultPodcastsEntries @Inject constructor() : PodcastsEntries {
         onEpisodeClick: (episodeId: Long) -> Unit,
         onPlaying: () -> Unit,
         onAllowMobileData: () -> Unit,
+        onSearchShowClick: (PodcastSearchShowKey) -> Unit,
+        onSearchEpisodeClick: (PodcastSearchEpisodeKey) -> Unit,
     ) = with(scope) {
         entry<PodcastsKey> {
             PodcastsRoute(
@@ -57,5 +62,53 @@ internal class DefaultPodcastsEntries @Inject constructor() : PodcastsEntries {
                 onAllowMobileData = onAllowMobileData,
             )
         }
+        searchEntries(
+            onShowClick,
+            onEpisodeClick,
+            onPlaying,
+            onAllowMobileData,
+            onSearchShowClick,
+            onSearchEpisodeClick,
+        )
+    }
+}
+
+/** The entries of Search and of a show and an episode opened from it (ADR-031, Search). */
+@Suppress("LongParameterList") // The exits of the three screens, as the contract names them.
+private fun EntryProviderScope<NavKey>.searchEntries(
+    onShowClick: (showId: Long) -> Unit,
+    onEpisodeClick: (episodeId: Long) -> Unit,
+    onPlaying: () -> Unit,
+    onAllowMobileData: () -> Unit,
+    onSearchShowClick: (PodcastSearchShowKey) -> Unit,
+    onSearchEpisodeClick: (PodcastSearchEpisodeKey) -> Unit,
+) {
+    entry<PodcastSearchKey> {
+        SearchRoute(
+            viewModel = hiltViewModel<SearchViewModelImpl>(),
+            onShowClick = onShowClick,
+            onEpisodeClick = onEpisodeClick,
+            onSearchShowClick = onSearchShowClick,
+            onSearchEpisodeClick = onSearchEpisodeClick,
+        )
+    }
+    entry<PodcastSearchShowKey> { key ->
+        FoundShowRoute(
+            viewModel = hiltViewModel<FoundShowViewModelImpl, FoundShowViewModelImpl.Factory>(
+                creationCallback = { factory -> factory.create(key) },
+            ),
+            title = key.title,
+            onEpisodeClick = onEpisodeClick,
+            onSearchEpisodeClick = onSearchEpisodeClick,
+        )
+    }
+    entry<PodcastSearchEpisodeKey> { key ->
+        EpisodeRoute(
+            viewModel = hiltViewModel<FoundEpisodeViewModelImpl, FoundEpisodeViewModelImpl.Factory>(
+                creationCallback = { factory -> factory.create(key) },
+            ),
+            onPlaying = onPlaying,
+            onAllowMobileData = onAllowMobileData,
+        )
     }
 }

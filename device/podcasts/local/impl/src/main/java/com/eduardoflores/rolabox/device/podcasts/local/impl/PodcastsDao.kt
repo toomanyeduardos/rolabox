@@ -14,7 +14,7 @@ private const val SHOWS = "SELECT s.id AS id, s.directoryId AS directoryId, s.ti
     "FROM shows s LEFT JOIN follows f ON f.directoryId = s.directoryId"
 
 // An episode and its progress, null when it was never started.
-private const val EPISODES = "SELECT e.id AS id, e.showId AS showId, e.title AS title, " +
+private const val EPISODES = "SELECT e.id AS id, e.showId AS showId, e.itemKey AS itemKey, e.title AS title, " +
     "e.publishedAt AS publishedAt, e.lengthMillis AS lengthMillis, e.description AS description, " +
     "e.audioUrl AS audioUrl, e.audioSize AS audioSize, p.positionMillis AS positionMillis, p.played AS played, " +
     "p.playerLengthMillis AS playerLengthMillis, p.lastPlayedAt AS lastPlayedAt " +
@@ -42,6 +42,15 @@ internal interface PodcastsDao {
 
     @Query("$SHOWS WHERE s.id = :id")
     suspend fun getShow(id: Long): ShowRow?
+
+    @Query("$SHOWS WHERE s.directoryId = :directoryId")
+    fun observeShowByDirectoryId(directoryId: String): Flow<ShowRow?>
+
+    @Query(
+        "SELECT e.id FROM episodes e JOIN shows s ON s.id = e.showId " +
+            "WHERE s.directoryId = :directoryId AND e.itemKey = :itemKey",
+    )
+    suspend fun episodeIdOf(directoryId: String, itemKey: String): Long?
 
     @Query("$EPISODES WHERE e.showId = :showId ORDER BY e.publishedAt IS NULL, e.publishedAt DESC, e.id DESC")
     fun observeEpisodesByShow(showId: Long): Flow<List<EpisodeRow>>
@@ -107,6 +116,17 @@ internal interface PodcastsDao {
         val showId = showIdOf(show.directoryId) ?: insertShow(show)
         return episodeIdOf(showId, episode.itemKey) ?: insertEpisode(episode.copy(showId = showId))
     }
+
+    /** Adds the show and the episodes that aren't there yet, turns its follow On, and returns the show's id. */
+    @Transaction
+    suspend fun follow(show: ShowEntity, episodes: List<EpisodeEntity>, follow: FollowEntity): Long {
+        val showId = showIdOf(show.directoryId) ?: insertShow(show)
+        episodes.forEach { episode ->
+            if (episodeIdOf(showId, episode.itemKey) == null) insertEpisode(episode.copy(showId = showId))
+        }
+        upsertFollow(follow)
+        return showId
+    }
 }
 
 /** The progress of the episodes. */
@@ -133,6 +153,7 @@ internal data class ShowRow(
 internal data class EpisodeRow(
     val id: Long,
     val showId: Long,
+    val itemKey: String,
     val title: String?,
     val publishedAt: Long?,
     val lengthMillis: Long?,

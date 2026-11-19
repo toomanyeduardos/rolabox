@@ -10,6 +10,7 @@ import com.eduardoflores.rolabox.device.podcasts.api.EpisodeId
 import com.eduardoflores.rolabox.device.podcasts.api.Owner
 import com.eduardoflores.rolabox.device.podcasts.api.OwnerId
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastError
+import com.eduardoflores.rolabox.device.podcasts.api.ShowFeed
 import com.eduardoflores.rolabox.device.podcasts.api.ShowId
 import com.eduardoflores.rolabox.device.podcasts.testing.FakePodcastsLocalDataSource
 import java.time.Clock
@@ -144,6 +145,47 @@ class DefaultPodcastsRepositoryTest {
         assertEquals(listOf(PodcastError.EpisodeNotFound(episode).left()), repository.observeEpisode(episode).toList())
         assertEquals(PodcastError.EpisodeNotFound(episode).left(), repository.getEpisode(episode))
         assertEquals(PodcastError.ShowNotFound(show).left(), repository.setFollowed(show, followed = true))
+    }
+
+    @Test
+    fun followingFromSearch_addsTheShowWithTheFeedsOwner_everyEpisode_andFollowOn() = runTest {
+        val feed = ShowFeed(daily, "The New York Times", listOf(episode("g2", day = 2), episode("g1")))
+
+        val showId = repository.follow(feed).getOrNull()!!
+
+        val show = repository.observeShow(showId).first().getOrNull()!!
+        assertEquals(true, show.isFollowed)
+        assertEquals("The New York Times", show.ownerName)
+        assertEquals(
+            listOf("Episode g2", "Episode g1"),
+            repository.observeEpisodesByShow(showId).first().getOrNull()?.map { it.title },
+        )
+    }
+
+    @Test
+    fun aShowAndAnEpisodeFromSearch_areFoundInTheLibrary_onlyOnceAdded() = runTest {
+        assertEquals(null, repository.findShow(daily).getOrNull())
+        assertEquals(null, repository.findEpisode(daily, episode("g1")).getOrNull())
+
+        val id = add(episode("g1"))
+
+        assertEquals(showOf(id), repository.findShow(daily).getOrNull()?.id)
+        assertEquals(id, repository.findEpisode(daily, episode("g1")).getOrNull())
+        assertEquals(null, repository.findEpisode(daily, episode("g2")).getOrNull())
+    }
+
+    @Test
+    fun aFeedInTheLibrary_hasTheLibrarysEpisodes_inTheFeedsOrder_whateverItsFollowSays() = runTest {
+        val feed = ShowFeed(daily, "NY Times", listOf(episode("g3", day = 3), episode("g2", day = 2), episode("g1")))
+        assertEquals(null, repository.observeInLibrary(feed).first().getOrNull())
+
+        val played = add(episode("g2", day = 2))
+        downloads.states.value = mapOf(played to DownloadState.Downloading(0.5f))
+
+        val inLibrary = repository.observeInLibrary(feed).first().getOrNull()!!
+        assertEquals(false, inLibrary.show.isFollowed)
+        assertEquals(listOf(null, played, null), inLibrary.episodes.map { it?.id })
+        assertEquals(DownloadState.Downloading(0.5f), inLibrary.episodes[1]?.download)
     }
 
     @Test

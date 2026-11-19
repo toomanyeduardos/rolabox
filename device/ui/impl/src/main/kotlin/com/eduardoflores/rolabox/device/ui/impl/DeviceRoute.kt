@@ -38,6 +38,7 @@ import com.eduardoflores.rolabox.device.playback.ui.api.NowPlayingKey
 import com.eduardoflores.rolabox.device.playback.ui.api.PlaybackEntries
 import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastEpisodeKey
 import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastOwnerKey
+import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastSearchKey
 import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastShowKey
 import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastsEntries
 import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastsKey
@@ -114,14 +115,15 @@ internal fun DeviceRoute(
             musicScreens(musicEntries, stack, viewModel)
             podcastsEntries.screenStackEntries(
                 scope = this,
-                // Search comes with podcasts/08, with its entry.
-                onSearchClick = {},
+                onSearchClick = { stack.push(PodcastSearchKey) },
                 onOwnerClick = { ownerId -> stack.push(PodcastOwnerKey(ownerId)) },
                 onShowClick = { showId -> stack.push(PodcastShowKey(showId)) },
                 onEpisodeClick = { episodeId -> stack.push(PodcastEpisodeKey(episodeId)) },
                 onPlaying = { stack.push(NowPlayingKey) },
                 // The podcasts' settings, a device screen, so MENU comes back to the episode (ADR-031, frame 36).
                 onAllowMobileData = { stack.push(PodcastSettingsKey) },
+                onSearchShowClick = { key -> stack.push(key) },
+                onSearchEpisodeClick = { key -> stack.push(key) },
             )
             playbackEntries.screenStackEntries(scope = this)
             settingsEntries.screenStackEntries(

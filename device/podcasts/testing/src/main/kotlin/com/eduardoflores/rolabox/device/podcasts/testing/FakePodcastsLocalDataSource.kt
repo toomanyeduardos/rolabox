@@ -79,6 +79,15 @@ class FakePodcastsLocalDataSource @Inject constructor() :
     override suspend fun getShow(showId: ShowId): Either<PodcastError, Show?> =
         now { stored -> stored.shows.firstOrNull { it.id == showId }?.let(stored::showOf) }
 
+    override fun observeShowByDirectoryId(directoryId: DirectoryId): Flow<Either<PodcastError, Show?>> =
+        read { stored -> stored.shows.firstOrNull { it.write.directoryId == directoryId }?.let(stored::showOf) }
+
+    override suspend fun getEpisodeId(directoryId: DirectoryId, itemKey: String): Either<PodcastError, EpisodeId?> =
+        now { stored ->
+            val show = stored.shows.firstOrNull { it.write.directoryId == directoryId }
+            stored.episodes.firstOrNull { it.showId == show?.id && it.write.itemKey == itemKey }?.id
+        }
+
     override fun observeEpisodesByShow(showId: ShowId): Flow<Either<PodcastError, List<EpisodeRecord>>> =
         read { stored ->
             // Newest first, those with no date last, and the last added first among the same date.
@@ -130,6 +139,32 @@ class FakePodcastsLocalDataSource @Inject constructor() :
             )
         }
         return added.right()
+    }
+
+    override suspend fun follow(
+        show: ShowWrite,
+        episodes: List<EpisodeWrite>,
+        followedAt: Instant,
+    ): Either<PodcastError, ShowId> {
+        readError?.let { return PodcastError.Storage(it).left() }
+        var followed = ShowId(0)
+        state.update { stored ->
+            val existingShow = stored.shows.firstOrNull { it.write.directoryId == show.directoryId }
+            val storedShow = existingShow ?: StoredShow(ShowId(stored.shows.size + 1L), show)
+            followed = storedShow.id
+            var all = stored.episodes
+            episodes.forEach { episode ->
+                if (all.none { it.showId == storedShow.id && it.write.itemKey == episode.itemKey }) {
+                    all = all + StoredEpisode(EpisodeId(all.size + 1L), storedShow.id, episode)
+                }
+            }
+            stored.copy(
+                shows = if (existingShow == null) stored.shows + storedShow else stored.shows,
+                episodes = all,
+                follows = stored.follows + (show.directoryId to (true to followedAt)),
+            )
+        }
+        return followed.right()
     }
 
     override suspend fun setProgress(episodeId: EpisodeId, progress: ProgressRecord): Either<PodcastError, Unit> =
@@ -223,6 +258,7 @@ class FakePodcastsLocalDataSource @Inject constructor() :
         fun recordOf(episode: StoredEpisode) = EpisodeRecord(
             id = episode.id,
             showId = episode.showId,
+            itemKey = episode.write.itemKey,
             title = episode.write.title,
             publishedAt = episode.write.publishedAt,
             feedLength = episode.write.length,
