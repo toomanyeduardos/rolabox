@@ -1,11 +1,12 @@
 package com.eduardoflores.rolabox.device.podcasts.api
 
 import arrow.core.Either
+import kotlinx.coroutines.flow.Flow
 
 /**
  * The podcast directory and the feeds of the shows it finds, read from the network on each call (ADR-031, rule 4).
- * It isn't a repository: its answers are never written to the database. A show joins the library only when one of
- * its episodes is played or it is followed, through [PodcastsRepository].
+ * It isn't a repository: its answers are never kept in the database as a cache. A show joins the library only when
+ * one of its episodes is played or it is followed, through [PodcastsRepository].
  *
  * No connection is [PodcastError.NoConnection]. Nothing is sent about the user or the account, so it works without
  * one.
@@ -27,4 +28,10 @@ interface PodcastDirectory {
      * RSS or ends early is [PodcastError.FeedUnreadable].
      */
     suspend fun show(show: DirectoryShow): Either<PodcastError, ShowFeed>
+
+    /**
+     * Whether the phone has a network that reaches the internet: the state now, and each change after it. Search asks
+     * again when it turns `true` after [PodcastError.NoConnection] (ADR-031, Search).
+     */
+    fun observeConnected(): Flow<Boolean>
 }

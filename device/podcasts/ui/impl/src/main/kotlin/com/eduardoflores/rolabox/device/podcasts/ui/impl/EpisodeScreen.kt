@@ -90,6 +90,11 @@ internal fun EpisodeScreen(
         ListUiState.Failed -> DeviceMessage(stringResource(R.string.podcasts_unavailable))
 
         ListUiState.Gone -> DeviceMessage(stringResource(R.string.podcasts_no_longer_here))
+
+        ListUiState.NoConnection,
+        ListUiState.FeedUnreadable,
+        ListUiState.NotInFeed,
+        -> FromSearchMessage(state)
     }
 }
 

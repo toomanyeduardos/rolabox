@@ -282,6 +282,55 @@ abstract class PodcastsLocalContract {
         assertEquals(PodcastError.EpisodeNotFound(EpisodeId(9)).left(), progress.setProgress(EpisodeId(9), stored))
     }
 
+    @Test
+    fun aShow_isFoundByItsDirectoryId_andAnEpisodeByItsShowsDirectoryIdAndItemKey() = runTest {
+        val daily = show(1, "The Daily", "NY Times")
+        val episodeId = add(daily, episode("a"))
+        add(show(2, "Hard Fork", "NY Times"), episode("b"))
+
+        val found = local.observeShowByDirectoryId(daily.directoryId).first().getOrNull()
+        assertEquals("The Daily", found?.title)
+        assertEquals(episodeId, local.getEpisodeId(daily.directoryId, "a").getOrNull())
+        assertEquals("a", local.getEpisode(episodeId).getOrNull()?.itemKey)
+        assertEquals(null.right(), local.getEpisodeId(daily.directoryId, "b"))
+        assertEquals(null.right(), local.getEpisodeId(DirectoryId.itunes(9), "a"))
+        assertEquals(null.right(), local.observeShowByDirectoryId(DirectoryId.itunes(9)).first())
+    }
+
+    @Test
+    fun following_addsTheShowAndEachEpisode_andTurnsItsFollowOn() = runTest {
+        val daily = show(1, "The Daily", "NY Times")
+
+        val showId = local.follow(daily, listOf(episode("a", 10), episode("b", 20)), NOW).getOrNull()!!
+
+        assertEquals(true, local.observeShow(showId).first().getOrNull()?.isFollowed)
+        assertEquals(
+            listOf("b", "a"),
+            local.observeEpisodesByShow(showId).first().getOrNull()!!.map { it.itemKey },
+        )
+    }
+
+    @Test
+    fun following_aShowInTheLibrary_keepsWhatIsThere_andAddsOnlyTheNewEpisodes() = runTest {
+        val daily = show(1, "The Daily", "NY Times")
+        val played = add(daily, episode("a", 10, title = "As played"))
+        val showId = local.getEpisode(played).getOrNull()!!.showId
+
+        val followed = local.follow(
+            daily.copy(title = "Renamed"),
+            listOf(episode("a", 10, title = "As the feed says now"), episode("b", 20)),
+            LATER,
+        ).getOrNull()
+
+        assertEquals(showId, followed)
+        val show = local.observeShow(showId).first().getOrNull()!!
+        assertEquals("The Daily", show.title)
+        assertEquals(true, show.isFollowed)
+        val episodes = local.observeEpisodesByShow(showId).first().getOrNull()!!
+        assertEquals(listOf("b", "a"), episodes.map { it.itemKey })
+        assertEquals("As played", episodes.single { it.id == played }.title)
+    }
+
     protected companion object {
         val NOW: Instant = Instant.ofEpochMilli(1_000)
         val LATER: Instant = Instant.ofEpochMilli(2_000)

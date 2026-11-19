@@ -19,6 +19,15 @@ internal sealed interface ListUiState<out T> {
      * back, as Music's screens do.
      */
     data object Gone : ListUiState<Nothing>
+
+    /** A show or an episode from search, read from its feed, and there is no connection (frame 33's words). */
+    data object NoConnection : ListUiState<Nothing>
+
+    /** A show from search whose feed couldn't be read (ADR-031, Search). */
+    data object FeedUnreadable : ListUiState<Nothing>
+
+    /** An episode from search that its show's feed no longer lists. */
+    data object NotInFeed : ListUiState<Nothing>
 }
 
 internal fun <T> Flow<Either<PodcastError, T>>.asListState(): Flow<ListUiState<T>> = map { result ->
@@ -29,6 +38,10 @@ internal fun <T> Flow<Either<PodcastError, T>>.asListState(): Flow<ListUiState<T
                 is PodcastError.ShowNotFound,
                 is PodcastError.EpisodeNotFound,
                 -> ListUiState.Gone
+
+                PodcastError.NoConnection -> ListUiState.NoConnection
+
+                PodcastError.FeedUnreadable -> ListUiState.FeedUnreadable
 
                 else -> ListUiState.Failed
             }
@@ -42,6 +55,9 @@ internal fun <T, R> ListUiState<T>.map(transform: (T) -> R): ListUiState<R> = wh
     is ListUiState.Loaded -> ListUiState.Loaded(transform(value))
     ListUiState.Failed -> ListUiState.Failed
     ListUiState.Gone -> ListUiState.Gone
+    ListUiState.NoConnection -> ListUiState.NoConnection
+    ListUiState.FeedUnreadable -> ListUiState.FeedUnreadable
+    ListUiState.NotInFeed -> ListUiState.NotInFeed
 }
 
 internal const val STOP_TIMEOUT_MILLIS = 5_000L

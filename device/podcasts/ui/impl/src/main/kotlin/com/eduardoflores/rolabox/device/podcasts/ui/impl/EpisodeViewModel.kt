@@ -25,6 +25,7 @@ import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.Instant
 import kotlin.time.Duration
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -145,7 +146,7 @@ internal abstract class EpisodeViewModel : ViewModel() {
 @HiltViewModel(assistedFactory = EpisodeViewModelImpl.Factory::class)
 internal class EpisodeViewModelImpl @AssistedInject constructor(
     @Assisted episodeKey: Long,
-    private val savedState: SavedStateHandle,
+    savedState: SavedStateHandle,
     podcastsRepository: PodcastsRepository,
     private val playbackController: PlaybackController,
     episodeNetwork: EpisodeNetwork,
@@ -166,33 +167,23 @@ internal class EpisodeViewModelImpl @AssistedInject constructor(
             .asListState()
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ListUiState.Loading)
 
-    override val wheel: StateFlow<EpisodeWheel> = combine(
-        savedState.getStateFlow(ROW_KEY, 0),
-        savedState.getStateFlow(LINES_KEY, 0),
-    ) { row, lines -> EpisodeWheel(row, lines) }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, currentWheel())
-
-    private var scrollableLines = 0
+    private val savedWheel = SavedEpisodeWheel(savedState, viewModelScope)
+    override val wheel: StateFlow<EpisodeWheel> = savedWheel.wheel
 
     private val playFailureState = MutableStateFlow<EpisodePlayFailure?>(null)
     override val playFailure: StateFlow<EpisodePlayFailure?> = playFailureState.asStateFlow()
 
     override fun onTurn(steps: Int) {
         val rowCount = (uiState.value as? ListUiState.Loaded)?.value?.rows?.size ?: return
-        save(currentWheel().turned(steps, rowCount, scrollableLines))
+        savedWheel.turn(steps, rowCount)
     }
 
-    override fun onScrollableLinesChange(lines: Int) {
-        scrollableLines = lines.coerceAtLeast(0)
-        // A larger font or a shorter text leaves fewer lines to scroll: the text stays at its end.
-        val wheel = currentWheel()
-        if (wheel.lines > scrollableLines) save(wheel.copy(lines = scrollableLines))
-    }
+    override fun onScrollableLinesChange(lines: Int) = savedWheel.setScrollableLines(lines)
 
     // Playing downloads the episode, and plays it as it arrives (ADR-031, rule 8).
     override fun onCenter(onPlaying: () -> Unit, onAllowMobileData: () -> Unit) {
         val rows = (uiState.value as? ListUiState.Loaded)?.value?.rows ?: return
-        val row = rows.getOrNull(currentWheel().row.coerceIn(0, rows.lastIndex)) ?: return
+        val row = rows.getOrNull(savedWheel.current().row.coerceIn(0, rows.lastIndex)) ?: return
         if (row == EpisodeRow.NeedsWifi) onAllowMobileData() else play(row, onPlaying)
     }
 
@@ -213,16 +204,40 @@ internal class EpisodeViewModelImpl @AssistedInject constructor(
         playFailureState.value = null
     }
 
-    private fun currentWheel() = EpisodeWheel(savedState[ROW_KEY] ?: 0, savedState[LINES_KEY] ?: 0)
+    @AssistedFactory
+    interface Factory {
+        fun create(episodeKey: Long): EpisodeViewModelImpl
+    }
+}
+
+/**
+ * The Episode screen's wheel, saved with its entry (ADR-018, rule 7): the highlighted row and how far the description
+ * is scrolled, for the episodes of the library and those from search alike.
+ */
+internal class SavedEpisodeWheel(private val savedState: SavedStateHandle, scope: CoroutineScope) {
+    val wheel: StateFlow<EpisodeWheel> = combine(
+        savedState.getStateFlow(ROW_KEY, 0),
+        savedState.getStateFlow(LINES_KEY, 0),
+    ) { row, lines -> EpisodeWheel(row, lines) }
+        .stateIn(scope, SharingStarted.Eagerly, current())
+
+    private var scrollableLines = 0
+
+    fun current() = EpisodeWheel(savedState[ROW_KEY] ?: 0, savedState[LINES_KEY] ?: 0)
+
+    /** The wheel turned by [steps], over [rowCount] rows and then the description. */
+    fun turn(steps: Int, rowCount: Int) = save(current().turned(steps, rowCount, scrollableLines))
+
+    fun setScrollableLines(lines: Int) {
+        scrollableLines = lines.coerceAtLeast(0)
+        // A larger font or a shorter text leaves fewer lines to scroll: the text stays at its end.
+        val wheel = current()
+        if (wheel.lines > scrollableLines) save(wheel.copy(lines = scrollableLines))
+    }
 
     private fun save(wheel: EpisodeWheel) {
         savedState[ROW_KEY] = wheel.row
         savedState[LINES_KEY] = wheel.lines
-    }
-
-    @AssistedFactory
-    interface Factory {
-        fun create(episodeKey: Long): EpisodeViewModelImpl
     }
 
     private companion object {
@@ -266,17 +281,21 @@ internal fun episodeContent(show: Show, episode: Episode, needWifi: Boolean = fa
 }
 
 /**
- * An episode of a show opened from search (frame 32): it isn't in the library, so it has no position, and Play is its
- * only row. Search's own ViewModel builds it, with podcasts/08.
+ * An episode from search that isn't in the library (ADR-031, Search): it has no position and no download, so Play is
+ * its only row, or Needs Wi-Fi while episodes [needWifi].
  */
-internal fun foundEpisodeContent(show: DirectoryShow, episode: DirectoryEpisode): EpisodeContent = EpisodeContent(
+internal fun foundEpisodeContent(
+    show: DirectoryShow,
+    episode: DirectoryEpisode,
+    needWifi: Boolean = false,
+): EpisodeContent = EpisodeContent(
     showTitle = show.title,
-    rows = listOf(EpisodeRow.Play),
+    rows = listOf(if (needWifi) EpisodeRow.NeedsWifi else EpisodeRow.Play),
     info = EpisodeInfo(publishedAt = episode.publishedAt, length = episode.length, left = null),
     description = episode.description?.takeIf { it.isNotBlank() },
 )
 
-private fun PlaybackError.toEpisodePlayFailure(): EpisodePlayFailure = when (this) {
+internal fun PlaybackError.toEpisodePlayFailure(): EpisodePlayFailure = when (this) {
     PlaybackError.PlayerUnavailable -> EpisodePlayFailure.PlayerUnavailable
 
     PlaybackError.StorageFull -> EpisodePlayFailure.StorageFull

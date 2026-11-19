@@ -31,4 +31,24 @@
     <string name="podcasts_time_left">%s LEFT</string>
     <string name="podcasts_no_longer_here">No longer in your podcasts</string>
     <string name="podcasts_unavailable">Can\'t read your podcasts</string>
+    <!-- Search (ADR-031, Search; frames 29 to 34). The short hint replaces the hint when it doesn't fit. -->
+    <string name="podcasts_search_hint">Shows, creators, episodes</string>
+    <string name="podcasts_search_short_hint">Search</string>
+    <string name="podcasts_search_shows">Shows</string>
+    <string name="podcasts_search_episodes">Episodes</string>
+    <string name="podcasts_search_offline_title">No connection</string>
+    <string name="podcasts_search_offline_body">Search needs the internet. Downloaded episodes still play.</string>
+    <string name="podcasts_search_none_title">No results</string>
+    <string name="podcasts_search_none_body">Try a show name, a creator, or words from an episode title.</string>
+    <!-- The directory refused for the rate of searches, about 10 a minute. Not sent again by itself. -->
+    <string name="podcasts_search_busy_title">Too many searches</string>
+    <string name="podcasts_search_busy_body">Wait a moment, then search again.</string>
+    <!-- Any other answer of the directory that can't be used. -->
+    <string name="podcasts_search_failed_title">Can\'t search right now</string>
+    <string name="podcasts_search_failed_body">Try again in a moment.</string>
+    <!-- A show opened from search whose feed couldn't be read, and an episode its feed no longer lists. -->
+    <string name="podcasts_feed_unreadable_title">Can\'t open this show</string>
+    <string name="podcasts_feed_unreadable_body">Its feed couldn\'t be read. Try again later.</string>
+    <string name="podcasts_not_in_feed_title">Can\'t open this episode</string>
+    <string name="podcasts_not_in_feed_body">Its show\'s feed no longer lists it.</string>
 </resources>

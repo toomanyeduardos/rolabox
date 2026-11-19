@@ -9,6 +9,7 @@ import com.eduardoflores.rolabox.device.podcasts.api.DirectoryShow
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastDirectory
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastError
 import com.eduardoflores.rolabox.device.podcasts.api.ShowFeed
+import com.eduardoflores.rolabox.device.podcasts.network.api.ConnectionNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.api.DirectoryNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.api.DirectoryNetworkError
 import com.eduardoflores.rolabox.device.podcasts.network.api.FeedAnswer
@@ -20,6 +21,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
 
 /** How many searches' answers are kept in memory (ADR-031, The directory). */
 internal const val REMEMBERED_SEARCHES = 20
@@ -35,6 +37,7 @@ private val Whitespace = Regex("\\s+")
 internal class DefaultPodcastDirectory @Inject constructor(
     private val directory: DirectoryNetworkDataSource,
     private val feeds: FeedNetworkDataSource,
+    private val connection: ConnectionNetworkDataSource,
 ) : PodcastDirectory {
     private val remembered = RecentAnswers<String, DirectoryResults>(REMEMBERED_SEARCHES)
 
@@ -54,6 +57,8 @@ internal class DefaultPodcastDirectory @Inject constructor(
             }
         }.onRight { remembered[key] = it }
     }
+
+    override fun observeConnected(): Flow<Boolean> = connection.observeConnected()
 
     override suspend fun show(show: DirectoryShow): Either<PodcastError, ShowFeed> = either {
         when (val answer = feeds.fetch(show.feedUrl).mapLeft(::errorOf).bind()) {

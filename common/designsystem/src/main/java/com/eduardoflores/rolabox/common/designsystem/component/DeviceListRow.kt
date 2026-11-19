@@ -31,6 +31,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.eduardoflores.rolabox.common.designsystem.R
@@ -179,13 +180,25 @@ private fun RowEnd(row: DeviceListRow, ink: Color, quietInk: Color) {
 
         row.value != null -> Text(row.value, style = styles.displayRowValue.copy(color = ink), maxLines = 1)
 
-        row.secondaryValue != null -> Text(
-            row.secondaryValue,
-            style = styles.displayRowSecondary.copy(color = quietInk),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.atMostFractionOfRow(SECONDARY_VALUE_MAX_FRACTION),
-        )
+        row.secondaryValue != null -> {
+            // The label comes first: the value takes what the label's whole width leaves, and never more than its
+            // share, so at a large font scale the value is shortened with "…" before the label is.
+            val measurer = rememberTextMeasurer()
+            val density = LocalDensity.current
+            val before = with(density) {
+                RowGap.roundToPx() +
+                    if (row.dot != null) (DotSize * density.fontScale).roundToPx() + RowGap.roundToPx() else 0
+            }
+            Text(
+                row.secondaryValue,
+                style = styles.displayRowSecondary.copy(color = quietInk),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.leavingRoomForLabel(SECONDARY_VALUE_MAX_FRACTION) {
+                    measurer.measure(row.label, styles.displayRow, maxLines = 1, softWrap = false).size.width + before
+                },
+            )
+        }
 
         row.opensSubmenu ->
             // Decorative: the row opens something whether or not the arrow is read out.
@@ -198,14 +211,20 @@ private fun RowEnd(row: DeviceListRow, ink: Color, quietInk: Color) {
 }
 
 /**
- * Caps the width at [fraction] of the row's. In a [Row], an element without a weight is measured
- * before the weighted label, with the whole width of the row's content.
+ * Caps the width at what the label leaves of the row, [labelWidth] with the marks and gaps before the value, and at
+ * most [fraction] of the row's. In a [Row], an element without a weight is measured before the weighted label, with
+ * the whole width of the row's content.
  */
-private fun Modifier.atMostFractionOfRow(fraction: Float): Modifier = layout { measurable, constraints ->
-    val cap = if (constraints.hasBoundedWidth) (constraints.maxWidth * fraction).toInt() else constraints.maxWidth
-    val placeable = measurable.measure(constraints.copy(minWidth = 0, maxWidth = cap))
-    layout(placeable.width, placeable.height) { placeable.place(0, 0) }
-}
+private fun Modifier.leavingRoomForLabel(fraction: Float, labelWidth: () -> Int): Modifier =
+    layout { measurable, constraints ->
+        val cap = if (constraints.hasBoundedWidth) {
+            minOf((constraints.maxWidth * fraction).toInt(), (constraints.maxWidth - labelWidth()).coerceAtLeast(0))
+        } else {
+            constraints.maxWidth
+        }
+        val placeable = measurable.measure(constraints.copy(minWidth = 0, maxWidth = cap))
+        layout(placeable.width, placeable.height) { placeable.place(0, 0) }
+    }
 
 /**
  * The dot of an unplayed item, full, or of a partly played one, with its left half full. It is sized

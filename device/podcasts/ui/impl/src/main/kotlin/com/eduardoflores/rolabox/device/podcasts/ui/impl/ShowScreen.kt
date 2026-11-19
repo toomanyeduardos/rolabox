@@ -84,7 +84,7 @@ private fun percentOf(fraction: Float): Int =
  * failed action is never silent (ADR-007). A toast is the system's, drawn over the device (ADR-018).
  */
 @Composable
-private fun FollowFailureToast(failed: Boolean, onShow: () -> Unit) {
+internal fun FollowFailureToast(failed: Boolean, onShow: () -> Unit) {
     val context = LocalContext.current
     val currentOnShow by rememberUpdatedState(onShow)
     LaunchedEffect(failed) {

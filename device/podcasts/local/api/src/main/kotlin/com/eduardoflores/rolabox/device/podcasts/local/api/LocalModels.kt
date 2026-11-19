@@ -50,11 +50,13 @@ data class ProgressRecord(
 
 /**
  * An episode as stored, with its progress apart from what the feed says (ADR-031, The database): [feedLength] is the
- * feed's, and [progress] is `null` for an episode never started.
+ * feed's, and [progress] is `null` for an episode never started. [itemKey] identifies it within its show, as
+ * [EpisodeWrite.itemKey] does.
  */
 data class EpisodeRecord(
     val id: EpisodeId,
     val showId: ShowId,
+    val itemKey: String,
     val title: String?,
     val publishedAt: Instant?,
     val feedLength: Duration?,

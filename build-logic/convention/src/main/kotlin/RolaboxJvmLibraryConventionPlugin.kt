@@ -1,4 +1,5 @@
 import com.eduardoflores.rolabox.buildlogic.ProjectConfig
+import com.eduardoflores.rolabox.buildlogic.alignCoroutines
 import com.eduardoflores.rolabox.buildlogic.applyStaticAnalysis
 import com.eduardoflores.rolabox.buildlogic.enforceModuleRules
 import com.eduardoflores.rolabox.buildlogic.registerUnitTestTask
@@ -16,6 +17,7 @@ class RolaboxJvmLibraryConventionPlugin : Plugin<Project> {
             pluginManager.apply("org.jetbrains.kotlin.jvm")
             enforceModuleRules()
             applyStaticAnalysis()
+            alignCoroutines()
             registerUnitTestTask("test")
 
             extensions.configure<JavaPluginExtension> {

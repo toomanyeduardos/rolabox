@@ -1,6 +1,7 @@
 package com.eduardoflores.rolabox.device.podcasts.local.api
 
 import arrow.core.Either
+import com.eduardoflores.rolabox.device.podcasts.api.DirectoryId
 import com.eduardoflores.rolabox.device.podcasts.api.EpisodeId
 import com.eduardoflores.rolabox.device.podcasts.api.Owner
 import com.eduardoflores.rolabox.device.podcasts.api.OwnerId
@@ -15,6 +16,7 @@ import kotlinx.coroutines.flow.Flow
  * [com.eduardoflores.rolabox.device.podcasts.api.PodcastsRepository] promises. A `Left` ends a flow. A show or an
  * episode that isn't there is `null`, which only the repository turns into an error.
  */
+@Suppress("TooManyFunctions") // One for each read and write of the repositories it serves.
 interface PodcastsLocalDataSource {
     /** Every owner of a show, each with the spelling most of its shows have. */
     fun observeOwners(): Flow<Either<PodcastError, List<Owner>>>
@@ -24,6 +26,12 @@ interface PodcastsLocalDataSource {
     fun observeShow(showId: ShowId): Flow<Either<PodcastError, Show?>>
 
     suspend fun getShow(showId: ShowId): Either<PodcastError, Show?>
+
+    /** The show with that directory id, which names it across phones, or `null` when the library hasn't it. */
+    fun observeShowByDirectoryId(directoryId: DirectoryId): Flow<Either<PodcastError, Show?>>
+
+    /** The id of the episode with [itemKey] in the show with [directoryId], or `null` when the library hasn't it. */
+    suspend fun getEpisodeId(directoryId: DirectoryId, itemKey: String): Either<PodcastError, EpisodeId?>
 
     /** Every episode stored for the show, newest first, and those with no date last. */
     fun observeEpisodesByShow(showId: ShowId): Flow<Either<PodcastError, List<EpisodeRecord>>>
@@ -43,6 +51,13 @@ interface PodcastsLocalDataSource {
      * item key, in one transaction. What is already there is kept as it is. Returns the episode's id.
      */
     suspend fun addEpisode(show: ShowWrite, episode: EpisodeWrite, addedAt: Instant): Either<PodcastError, EpisodeId>
+
+    /**
+     * Follows the show, as following it from search does (ADR-031, Search): in one transaction, adds the show unless
+     * one with its directory id is there, each of [episodes] its show hasn't by item key, and its follow On at
+     * [followedAt]. What is already there is kept as it is. Returns the show's id.
+     */
+    suspend fun follow(show: ShowWrite, episodes: List<EpisodeWrite>, followedAt: Instant): Either<PodcastError, ShowId>
 
     /** Where the episode's artwork comes from, or `null` when there is no such episode. */
     suspend fun getArtworkSource(episodeId: EpisodeId): Either<PodcastError, ArtworkSource?>
