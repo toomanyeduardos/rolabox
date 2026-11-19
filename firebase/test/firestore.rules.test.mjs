@@ -9,6 +9,7 @@ import {
 import {
   collection,
   deleteDoc,
+  deleteField,
   doc,
   getDoc,
   getDocs,
@@ -341,6 +342,139 @@ describe('users/{uid}/settings/preferences with every field', () => {
     const db = firestoreAs(ALICE);
     await assertSucceeds(setDoc(preferencesDoc(db, ALICE), all));
     await assertFails(setDoc(preferencesDoc(db, ALICE), { ...all, mainMenuSettings: synced('HIDDEN', NEWER) }));
+  });
+});
+
+// ADR-031 (Syncing follows, rule 14): users/{uid}/podcastFollows/{showKey}, one document per show.
+const DAILY = 'itunes-1200361736';
+const followDoc = (db, uid, showKey = DAILY) => doc(db, 'users', uid, 'podcastFollows', showKey);
+const follow = (followed, date, feedUrl = 'https://feeds.example.com/daily') => ({
+  feedUrl,
+  followed,
+  updatedAt: Timestamp.fromDate(date),
+});
+
+async function seedFollow(uid, data, showKey = DAILY) {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await setDoc(followDoc(context.firestore(), uid, showKey), data);
+  });
+}
+
+describe('users/{uid}/podcastFollows access', () => {
+  it('lets the owner write, read and list their follows', async () => {
+    const db = firestoreAs(ALICE);
+    await assertSucceeds(setDoc(followDoc(db, ALICE), follow(true, OLDER)));
+    await assertSucceeds(getDoc(followDoc(db, ALICE)));
+    await assertSucceeds(getDocs(collection(db, 'users', ALICE, 'podcastFollows')));
+  });
+
+  it("denies reading and listing another user's follows", async () => {
+    await seedFollow(BOB, follow(true, OLDER));
+    const db = firestoreAs(ALICE);
+    await assertFails(getDoc(followDoc(db, BOB)));
+    await assertFails(getDocs(collection(db, 'users', BOB, 'podcastFollows')));
+  });
+
+  it("denies writing another user's follows", async () => {
+    await assertFails(setDoc(followDoc(firestoreAs(ALICE), BOB), follow(true, OLDER)));
+  });
+
+  it('denies reading and writing when signed out', async () => {
+    await seedFollow(ALICE, follow(true, OLDER));
+    const db = firestoreAs(null);
+    await assertFails(getDoc(followDoc(db, ALICE)));
+    await assertFails(setDoc(followDoc(db, ALICE), follow(false, NEWER)));
+  });
+
+  it('denies deleting a follow: an unfollow is kept as followed: false', async () => {
+    await seedFollow(ALICE, follow(true, OLDER));
+    await assertFails(deleteDoc(followDoc(firestoreAs(ALICE), ALICE)));
+  });
+});
+
+describe('users/{uid}/podcastFollows validation', () => {
+  const write = (data, showKey = DAILY) => setDoc(followDoc(firestoreAs(ALICE), ALICE, showKey), data);
+
+  it('accepts a follow and an unfollow', async () => {
+    await assertSucceeds(write(follow(true, OLDER)));
+    await assertSucceeds(write(follow(false, OLDER), 'itunes-1'));
+  });
+
+  it('accepts only a show key of itunes- and digits', async () => {
+    await assertFails(write(follow(true, OLDER), 'itunes-'));
+    await assertFails(write(follow(true, OLDER), 'itunes-12a'));
+    await assertFails(write(follow(true, OLDER), 'podcastindex-12'));
+    await assertFails(write(follow(true, OLDER), '1200361736'));
+  });
+
+  it('rejects unknown fields, and a missing one', async () => {
+    await assertFails(write({ ...follow(true, OLDER), title: 'The Daily' }));
+    const { feedUrl, ...withoutFeed } = follow(true, OLDER);
+    await assertFails(write(withoutFeed));
+    const { followed, ...withoutFollowed } = follow(true, OLDER);
+    await assertFails(write(withoutFollowed));
+    const { updatedAt, ...withoutUpdatedAt } = follow(true, OLDER);
+    await assertFails(write(withoutUpdatedAt));
+  });
+
+  it('accepts an http or https feed URL of up to 2,048 characters', async () => {
+    await assertSucceeds(write(follow(true, OLDER, 'http://feeds.example.com/daily')));
+    const longest = 'https://example.com/' + 'a'.repeat(2048 - 'https://example.com/'.length);
+    await assertSucceeds(write(follow(true, OLDER, longest), 'itunes-1'));
+  });
+
+  it('rejects a feed URL that is too long, not http(s), or not a string', async () => {
+    const tooLong = 'https://example.com/' + 'a'.repeat(2049 - 'https://example.com/'.length);
+    await assertFails(write(follow(true, OLDER, tooLong)));
+    await assertFails(write(follow(true, OLDER, 'ftp://feeds.example.com/daily')));
+    await assertFails(write(follow(true, OLDER, 'feeds.example.com/daily')));
+    await assertFails(write(follow(true, OLDER, 'https://')));
+    await assertFails(write({ ...follow(true, OLDER), feedUrl: 42 }));
+  });
+
+  it('rejects followed that is not a boolean', async () => {
+    await assertFails(write({ ...follow(true, OLDER), followed: 'true' }));
+    await assertFails(write({ ...follow(true, OLDER), followed: 1 }));
+  });
+
+  it('rejects an updatedAt that is not a timestamp', async () => {
+    await assertFails(write({ ...follow(true, OLDER), updatedAt: 1767225600000 }));
+  });
+
+  it('accepts an updatedAt a little ahead of the server clock', async () => {
+    await assertSucceeds(write(follow(true, hoursFromNow(1))));
+  });
+
+  it('rejects an updatedAt more than a day ahead of the server clock', async () => {
+    await assertFails(write(follow(true, hoursFromNow(25))));
+  });
+});
+
+describe('users/{uid}/podcastFollows last-write-wins', () => {
+  beforeEach(async () => {
+    await seedFollow(ALICE, follow(true, NEWER));
+  });
+
+  const update = (data) => setDoc(followDoc(firestoreAs(ALICE), ALICE), data);
+
+  it('accepts a newer unfollow, and a newer follow after it', async () => {
+    const later = hoursFromNow(1);
+    await assertSucceeds(update(follow(false, later)));
+    await assertSucceeds(update(follow(true, hoursFromNow(2))));
+  });
+
+  it('accepts rewriting the follow with the same timestamp', async () => {
+    await assertSucceeds(update(follow(true, NEWER, 'https://feeds.example.com/moved')));
+  });
+
+  it('rejects moving the follow back in time', async () => {
+    await assertFails(update(follow(false, OLDER)));
+  });
+
+  it('rejects removing a field', async () => {
+    const { feedUrl, ...withoutFeed } = follow(false, hoursFromNow(1));
+    await assertFails(update(withoutFeed));
+    await assertFails(updateDoc(followDoc(firestoreAs(ALICE), ALICE), { feedUrl: deleteField() }));
   });
 });
 

@@ -16,9 +16,12 @@ dependencies {
     implementation(project(":device:library:api"))
     implementation(project(":common:storage:api"))
     implementation(project(":common:util"))
+    // The follows are synced, and resolved with LastWriteWins as they are applied (ADR-011, rule 3).
+    implementation(project(":common:sync:api"))
 
     testImplementation(project(":device:podcasts:testing"))
     testImplementation(project(":common:testing"))
+    testImplementation(project(":common:sync:testing"))
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     // The database runs on the JVM, in memory and from its exported schemas (ADR-031).

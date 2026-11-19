@@ -140,7 +140,7 @@ placeholder, the upload is skipped and the build says so.
 The Firebase config is public, so the rules in
 [`firebase/firestore.rules`](firebase/firestore.rules) are the real protection
 ([ADR-010](docs/adr/010-firestore-security-rules.md)): a signed-in user can only read and write
-`users/{their uid}`, writes are checked against a field allowlist with type and size limits, and
+`users/{their uid}` (their preferences and their podcast follows), writes are checked against a field allowlist with type and size limits, and
 everything else is denied.
 
 The rules are tested against the Firestore emulator, using a `demo-rolabox` project that needs no
@@ -198,6 +198,7 @@ and the rules that follow. Most rules are enforced by the build or by tests, not
 | [024](docs/adr/024-library-index.md) | The library index: MediaStore finds the files, and Rolabox's own database is what the device reads |
 | [025](docs/adr/025-process-start-tasks.md) | Parts run work at process start through a set in `:common:util`, which `:app` runs |
 | [031](docs/adr/031-podcasts.md) | Podcasts: Apple's directory, feeds read on the phone, downloads in playback's Media3 cache, and follows synced per show |
+| [033](docs/adr/033-shared-firestore-module.md) | Firestore is provided once, by `:common:firestore`, which also turns its errors into `RemoteError` |
 
 ### Modules
 
@@ -244,6 +245,7 @@ there is something to fake, a `:testing` module.
 | `:device:settings:impl` | The settings screens in the display: Settings, Main Menu and About |
 | `:common:util` | Coroutine dispatchers and scopes, helpers that turn exceptions into typed errors, and `ProcessStartTask` |
 | `:common:designsystem` | The visual language: theme, shared composables, the device's parts |
+| `:common:firestore` | The one provider of `FirebaseFirestore`, and the conversion of its exceptions to `RemoteError`, for `:network:impl` modules ([ADR-033](docs/adr/033-shared-firestore-module.md)) |
 | `:common:testing` | Test-only: Hilt test runner, `MainDispatcherRule` |
 | `:common:storage:api` | Local storage API: `PreferencesStore` (key-value settings), `StorageError` |
 | `:common:storage:impl` | `PreferencesStore` backed by DataStore |
@@ -267,13 +269,13 @@ The full set of rules, and the reasoning behind them, is in [ADR-020](docs/adr/0
 - No `:device` module depends on an `:auth` module.
 - The only `:auth` module that depends on a `:device` module is `:auth:settings:impl`, and it depends only on `:device:settings:api`.
 - Only `:app` depends on `:impl` modules.
-- An `:impl` depends only on `:api` modules, `:common:util` and `:common:designsystem`, and a `:device` `:impl` also on `:device:host`.
+- An `:impl` depends only on `:api` modules, `:common:util` and `:common:designsystem`, a `:device` `:impl` also on `:device:host`, and a `:network:impl` also on `:common:firestore`.
 - An `:api` is a JVM module with no Android dependencies and no Hilt, and depends only on other `:api` modules and `:common:util`.
 - Testing modules (`:common:testing` and every `:testing`) are only used from test configurations.
 - `:device:host` depends only on `:common:designsystem` and `:common:util`, and only `:device` `:impl` modules depend on it.
 - `:app`'s code uses only `:auth:data:api`, `:auth:ui:api`, `:device:ui:api` and `:common` modules, besides listing every `:impl`. Its tests may also name the `:api` of a part whose assembly they assert.
 - A part's `:local:api` and `:network:api` are used only by the part's `:impl` and `:testing`, and by the sub-part's own `:impl` ([ADR-022](docs/adr/022-data-source-sub-parts.md)).
-- Firestore is a dependency of `:network:impl` modules only.
+- Firestore is a dependency of `:network:impl` modules and `:common:firestore` only, and only `:network:impl` modules depend on `:common:firestore` ([ADR-033](docs/adr/033-shared-firestore-module.md)).
 - Media3 is a dependency of `:device:playback:impl` only ([ADR-023](docs/adr/023-playback-engine.md)).
 - Room and SQLite are dependencies of `:local:impl` modules only ([ADR-024](docs/adr/024-library-index.md)).
 - No `:common:sync` module depends on a `:common:userdata` module.
@@ -301,6 +303,7 @@ graph TD
     auth_ui_impl[":auth:ui:impl"]
     common_crashreporting_impl[":common:crashreporting:impl"]
     common_designsystem[":common:designsystem"]
+    common_firestore[":common:firestore"]
     common_storage_api[":common:storage:api"]
     common_storage_impl[":common:storage:impl"]
     common_storage_testing[":common:storage:testing"]
@@ -394,6 +397,8 @@ graph TD
     auth_ui_impl --> common_storage_api
     auth_ui_impl --> common_userdata_api
     common_crashreporting_impl --> common_util
+    common_firestore --> common_sync_api
+    common_firestore --> common_util
     common_storage_impl --> common_storage_api
     common_storage_impl --> common_util
     common_storage_testing --> common_storage_api
@@ -419,6 +424,7 @@ graph TD
     common_userdata_local_impl --> common_userdata_local_api
     common_userdata_network_api --> common_sync_api
     common_userdata_network_api --> common_userdata_api
+    common_userdata_network_impl --> common_firestore
     common_userdata_network_impl --> common_sync_api
     common_userdata_network_impl --> common_userdata_api
     common_userdata_network_impl --> common_userdata_network_api
@@ -452,6 +458,7 @@ graph TD
     device_music_ui_impl --> device_library_api
     device_music_ui_impl --> device_music_ui_api
     device_playback_api --> device_library_api
+    device_playback_api --> device_podcasts_api
     device_playback_impl --> common_designsystem
     device_playback_impl --> common_storage_api
     device_playback_impl --> common_userdata_api
@@ -459,12 +466,14 @@ graph TD
     device_playback_impl --> device_library_api
     device_playback_impl --> device_playback_api
     device_playback_impl --> device_playback_local_api
+    device_playback_impl --> device_podcasts_api
     device_playback_local_api --> common_storage_api
     device_playback_local_api --> device_playback_api
     device_playback_local_impl --> common_storage_api
     device_playback_local_impl --> device_library_api
     device_playback_local_impl --> device_playback_api
     device_playback_local_impl --> device_playback_local_api
+    device_playback_local_impl --> device_podcasts_api
     device_playback_testing --> common_storage_api
     device_playback_testing --> device_library_api
     device_playback_testing --> device_playback_api
@@ -474,25 +483,43 @@ graph TD
     device_playback_ui_impl --> device_library_api
     device_playback_ui_impl --> device_playback_api
     device_playback_ui_impl --> device_playback_ui_api
+    device_playback_ui_impl --> device_podcasts_api
     device_podcasts_api --> common_storage_api
+    device_podcasts_api --> common_sync_api
+    device_podcasts_api --> device_library_api
+    device_podcasts_impl --> common_storage_api
+    device_podcasts_impl --> common_sync_api
+    device_podcasts_impl --> common_util
+    device_podcasts_impl --> device_library_api
+    device_podcasts_impl --> device_playback_api
     device_podcasts_impl --> device_podcasts_api
     device_podcasts_impl --> device_podcasts_local_api
     device_podcasts_impl --> device_podcasts_network_api
+    device_podcasts_local_api --> common_sync_api
+    device_podcasts_local_api --> device_library_api
     device_podcasts_local_api --> device_podcasts_api
     device_podcasts_local_impl --> common_storage_api
+    device_podcasts_local_impl --> common_sync_api
     device_podcasts_local_impl --> common_util
+    device_podcasts_local_impl --> device_library_api
     device_podcasts_local_impl --> device_podcasts_api
     device_podcasts_local_impl --> device_podcasts_local_api
+    device_podcasts_network_api --> common_sync_api
     device_podcasts_network_api --> device_podcasts_api
+    device_podcasts_network_impl --> common_firestore
+    device_podcasts_network_impl --> common_sync_api
     device_podcasts_network_impl --> common_util
     device_podcasts_network_impl --> device_podcasts_api
     device_podcasts_network_impl --> device_podcasts_network_api
     device_podcasts_testing --> common_storage_api
+    device_podcasts_testing --> common_sync_api
+    device_podcasts_testing --> device_library_api
     device_podcasts_testing --> device_podcasts_api
     device_podcasts_testing --> device_podcasts_local_api
     device_podcasts_testing --> device_podcasts_network_api
     device_podcasts_ui_impl --> common_designsystem
     device_podcasts_ui_impl --> device_host
+    device_podcasts_ui_impl --> device_playback_api
     device_podcasts_ui_impl --> device_podcasts_api
     device_podcasts_ui_impl --> device_podcasts_ui_api
     device_settings_impl --> common_designsystem

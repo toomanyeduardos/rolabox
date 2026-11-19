@@ -40,9 +40,11 @@ private const val NETWORK_IMPL_SUFFIX = ":network:impl"
 private const val SYNC_PREFIX = ":common:sync:"
 private const val USERDATA_PREFIX = ":common:userdata:"
 
-// Firestore is a dependency of :network:impl modules only (ADR-022 rule 3).
+// Firestore is a dependency of :network:impl modules and :common:firestore only (ADR-033 rule 3), and only
+// :network:impl modules depend on :common:firestore (ADR-033 rule 2).
 private const val FIREBASE_GROUP = "com.google.firebase"
 private const val FIRESTORE_NAME_PREFIX = "firebase-firestore"
+private const val FIRESTORE_PATH = ":common:firestore"
 
 // Crashlytics is a dependency of :common:crashreporting:impl only (ADR-030 rule 2).
 private const val CRASHLYTICS_NAME_PREFIX = "firebase-crashlytics"
@@ -75,7 +77,7 @@ private const val DAGGER_GROUP = "com.google.dagger"
 private const val PAPARAZZI_GROUP = "app.cash.paparazzi"
 private const val PAPARAZZI_PLUGIN = "app.cash.paparazzi"
 
-/** Checks the `[enforced]` dependency rules of ADR-020, ADR-022, ADR-023, ADR-024, ADR-026, ADR-027, ADR-030, ADR-005 and ADR-016 while the build is configured. */
+/** Checks the `[enforced]` dependency rules of ADR-020, ADR-022, ADR-023, ADR-024, ADR-026, ADR-027, ADR-030, ADR-033, ADR-005 and ADR-016 while the build is configured. */
 internal fun Project.enforceModuleRules() {
     val modulePath = path
 
@@ -136,9 +138,10 @@ internal fun externalDependencyViolation(
         modulePath.isApi() && group == DAGGER_GROUP ->
             "ADR-005 rule 3: :api modules use only javax.inject and contain no Hilt modules"
 
-        group == FIREBASE_GROUP && name.startsWith(FIRESTORE_NAME_PREFIX) && !modulePath.endsWith(NETWORK_IMPL_SUFFIX) ->
-            "ADR-022 rule 3: Firestore is a dependency of :network:impl modules only. Map the data in the " +
-                "part's :network:impl, and reach it through its :network:api"
+        group == FIREBASE_GROUP && name.startsWith(FIRESTORE_NAME_PREFIX) &&
+            !modulePath.endsWith(NETWORK_IMPL_SUFFIX) && modulePath != FIRESTORE_PATH ->
+            "ADR-033 rule 3: Firestore is a dependency of :network:impl modules and $FIRESTORE_PATH only. Map " +
+                "the data in the part's :network:impl, and reach it through its :network:api"
 
         group == FIREBASE_GROUP && name.startsWith(CRASHLYTICS_NAME_PREFIX) && modulePath != CRASHREPORTING_IMPL_PATH ->
             "ADR-030 rule 2: Crashlytics is a dependency of $CRASHREPORTING_IMPL_PATH only. Report a non-fatal " +
@@ -180,7 +183,7 @@ internal fun CommonExtension.enforceNoProductFlavors(modulePath: String) {
     }
 }
 
-/** ADR-020 rules 1 to 8 and 13, ADR-022 rules 1 and 4, and ADR-018 rule 15, in the order a violation is most useful to read. Null when the dependency is allowed. */
+/** ADR-020 rules 1 to 8 and 13, ADR-022 rules 1 and 4, ADR-033 rule 2, and ADR-018 rule 15, in the order a violation is most useful to read. Null when the dependency is allowed. */
 @Suppress("CyclomaticComplexMethod") // One branch per rule, which is what makes it readable.
 internal fun projectDependencyViolation(modulePath: String, dependencyPath: String, configurationName: String): String? {
     val subPartApiViolation = subPartApiViolation(modulePath, dependencyPath)
@@ -200,6 +203,11 @@ internal fun projectDependencyViolation(modulePath: String, dependencyPath: Stri
         modulePath.startsWith(SYNC_PREFIX) && dependencyPath.startsWith(USERDATA_PREFIX) ->
             "ADR-022 rule 4: no :common:sync module depends on a :common:userdata module. The part that owns " +
                 "synced data implements the Syncer of :common:sync:api and adds it to the set"
+
+        // More specific than ADR-020 rule 5, so a module that isn't a :network:impl gets the reason in these terms.
+        dependencyPath == FIRESTORE_PATH && !modulePath.endsWith(NETWORK_IMPL_SUFFIX) ->
+            "ADR-033 rule 2: only :network:impl modules depend on $FIRESTORE_PATH. Reach Firestore through the " +
+                "part's :network:api"
 
         dependencyPath.isTesting() && !configurationName.isTestConfiguration() ->
             "ADR-020 rule 7: testing modules (:common:testing and every :testing) may only be used from test " +
@@ -239,9 +247,10 @@ internal fun projectDependencyViolation(modulePath: String, dependencyPath: Stri
 
         modulePath.isImpl() && !dependencyPath.isTesting() && !dependencyPath.isApi() &&
             dependencyPath !in IMPL_ALLOWED_PATHS &&
-            !(modulePath.startsWith(DEVICE_PREFIX) && dependencyPath == DEVICE_HOST_PATH) ->
+            !(modulePath.startsWith(DEVICE_PREFIX) && dependencyPath == DEVICE_HOST_PATH) &&
+            !(modulePath.endsWith(NETWORK_IMPL_SUFFIX) && dependencyPath == FIRESTORE_PATH) ->
             "ADR-020 rule 5: :impl modules may only depend on :api modules, $UTIL_PATH and $DESIGNSYSTEM_PATH, " +
-                "and a :device :impl also on $DEVICE_HOST_PATH"
+                "a :device :impl also on $DEVICE_HOST_PATH, and a :network:impl also on $FIRESTORE_PATH (ADR-033)"
 
         else -> null
     }

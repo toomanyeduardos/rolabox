@@ -1,5 +1,6 @@
 package com.eduardoflores.rolabox.device.podcasts.impl.di
 
+import com.eduardoflores.rolabox.common.sync.api.Syncer
 import com.eduardoflores.rolabox.common.util.ProcessStartTask
 import com.eduardoflores.rolabox.device.podcasts.api.EpisodeProgressRepository
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastArtworkRepository
@@ -16,6 +17,7 @@ import com.eduardoflores.rolabox.device.podcasts.impl.artwork.WorkManagerPodcast
 import com.eduardoflores.rolabox.device.podcasts.impl.follow.FollowCheckLog
 import com.eduardoflores.rolabox.device.podcasts.impl.follow.FollowCheckOnProcessStart
 import com.eduardoflores.rolabox.device.podcasts.impl.follow.FollowCheckScheduler
+import com.eduardoflores.rolabox.device.podcasts.impl.follow.FollowsSyncer
 import com.eduardoflores.rolabox.device.podcasts.impl.follow.LogcatFollowCheckLog
 import com.eduardoflores.rolabox.device.podcasts.impl.follow.WorkManagerFollowCheckScheduler
 import dagger.Binds
@@ -51,9 +53,6 @@ abstract class PodcastsModule {
     @Binds
     internal abstract fun bindsEpisodeDownloads(downloads: PlaybackEpisodeDownloads): EpisodeDownloads
 
-    @Binds
-    internal abstract fun bindsFollowCheckScheduler(scheduler: WorkManagerFollowCheckScheduler): FollowCheckScheduler
-
     /** Each start of the process requests the follow check (ADR-031, Follow checks; ADR-025). */
     @Binds
     @IntoSet
@@ -63,11 +62,27 @@ abstract class PodcastsModule {
 /**
  * The follow check's log, apart from [PodcastsModule]: the check's worker reaches it through an entry point that is
  * in every graph, so a test that replaces [PodcastsModule] still has to provide it. That test drops the process-start
- * task and the scheduler with [PodcastsModule], so the check never runs there (ADR-025).
+ * task with [PodcastsModule], so the check never runs at start there (ADR-025).
  */
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class FollowCheckModule {
     @Binds
     internal abstract fun bindsFollowCheckLog(log: LogcatFollowCheckLog): FollowCheckLog
+}
+
+/**
+ * Adds the follows to what sync runs (ADR-022, rule 5), with the scheduler the `Syncer` requests feed reads from. It's
+ * apart from [PodcastsModule] so that a test that replaces the repositories keeps the `Syncer` in the graph, as the
+ * preferences' is kept (ADR-022, rule 8).
+ */
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class FollowsSyncerModule {
+    @Binds
+    @IntoSet
+    internal abstract fun bindsFollowsSyncer(syncer: FollowsSyncer): Syncer
+
+    @Binds
+    internal abstract fun bindsFollowCheckScheduler(scheduler: WorkManagerFollowCheckScheduler): FollowCheckScheduler
 }

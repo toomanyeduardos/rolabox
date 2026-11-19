@@ -1,10 +1,14 @@
 package com.eduardoflores.rolabox.device.podcasts.local.impl
 
+import com.eduardoflores.rolabox.common.sync.api.SyncTimestamp
+import com.eduardoflores.rolabox.common.sync.api.SyncedValue
 import com.eduardoflores.rolabox.device.podcasts.api.DirectoryId
 import com.eduardoflores.rolabox.device.podcasts.api.EpisodeId
+import com.eduardoflores.rolabox.device.podcasts.api.Follow
 import com.eduardoflores.rolabox.device.podcasts.api.OwnerId
 import com.eduardoflores.rolabox.device.podcasts.api.Show
 import com.eduardoflores.rolabox.device.podcasts.api.ShowId
+import com.eduardoflores.rolabox.device.podcasts.api.SyncedFollows
 import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeRecord
 import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeWrite
 import com.eduardoflores.rolabox.device.podcasts.local.api.ProgressRecord
@@ -78,3 +82,14 @@ internal fun EpisodeWrite.toEntity(listedAt: Instant): EpisodeEntity = EpisodeEn
     imageUrl = imageUrl,
     listedAt = listedAt.toEpochMilli(),
 )
+
+internal fun FollowEntity.toSynced(): SyncedValue<Follow> =
+    SyncedValue(Follow(feedUrl = feedUrl, followed = followed), SyncTimestamp(updatedAt))
+
+internal fun SyncedValue<Follow>.toEntity(directoryId: String): FollowEntity =
+    FollowEntity(directoryId, value.feedUrl, value.followed, updatedAt.epochMillis)
+
+internal fun List<FollowEntity>.toSyncedFollows(): SyncedFollows = associate {
+    DirectoryId(it.directoryId) to
+        it.toSynced()
+}

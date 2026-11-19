@@ -8,6 +8,7 @@ import arrow.core.flatMap
 import arrow.core.left
 import arrow.core.right
 import com.eduardoflores.rolabox.common.storage.api.StorageError
+import com.eduardoflores.rolabox.common.sync.api.LastWriteWins
 import com.eduardoflores.rolabox.common.util.Dispatcher
 import com.eduardoflores.rolabox.common.util.NonFatalReport
 import com.eduardoflores.rolabox.common.util.RolaboxDispatchers.IO
@@ -19,6 +20,7 @@ import com.eduardoflores.rolabox.device.podcasts.api.OwnerId
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastError
 import com.eduardoflores.rolabox.device.podcasts.api.Show
 import com.eduardoflores.rolabox.device.podcasts.api.ShowId
+import com.eduardoflores.rolabox.device.podcasts.api.SyncedFollows
 import com.eduardoflores.rolabox.device.podcasts.local.api.ArtworkSource
 import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeRecord
 import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeWrite
@@ -39,6 +41,7 @@ internal class RoomPodcastsLocalDataSource @Inject constructor(
     private val dao: PodcastsDao,
     @param:Dispatcher(IO) private val ioDispatcher: CoroutineDispatcher,
     private val report: NonFatalReport,
+    private val lastWriteWins: LastWriteWins,
 ) : PodcastsLocalDataSource {
     override fun observeOwners(): Flow<Either<PodcastError, List<Owner>>> =
         dao.observeOwners().map { rows -> rows.map { Owner(OwnerId(it.ownerKey), it.name) } }.asRead()
@@ -139,6 +142,21 @@ internal class RoomPodcastsLocalDataSource @Inject constructor(
     ): Either<PodcastError, Unit> = catchNamed(::toError) {
         dao.applyFeedNotModified(directoryId.value, feedUrl, readAt.toEpochMilli())
     }
+
+    override fun observeSyncedFollows(): Flow<Either<PodcastError, SyncedFollows>> =
+        dao.observeFollows().map { it.toSyncedFollows() }.asRead()
+
+    override suspend fun getSyncedFollows(): Either<PodcastError, SyncedFollows> =
+        catchNamed(::toError) { dao.getFollows().toSyncedFollows() }
+
+    // Resolved inside the transaction, against what is stored at that moment (ADR-011, rule 3).
+    override suspend fun applySyncedFollows(follows: SyncedFollows): Either<PodcastError, Set<DirectoryId>> =
+        catchNamed(::toError) {
+            val entities = follows.map { (directoryId, follow) -> follow.toEntity(directoryId.value) }
+            dao.applySyncedFollows(entities) { stored, merged ->
+                checkNotNull(lastWriteWins.resolve(stored?.toSynced(), merged.toSynced())).toEntity(merged.directoryId)
+            }.mapTo(mutableSetOf(), ::DirectoryId)
+        }
 
     private fun <T> Flow<T>.asRead(): Flow<Either<PodcastError, T>> = flowOn(ioDispatcher).catchNamed(::toError)
 

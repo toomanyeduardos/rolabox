@@ -89,6 +89,13 @@ okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhtt
 okhttp-mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver3", version.ref = "okhttp" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
+# The Android framework jars Robolectric runs the tests on, one per SDK the tests use: 31 is a test's @Config, 36 is
+# robolectric.properties, and 37 is the target SDK, the default. Gradle resolves them instead of Robolectric's own
+# downloader, which has no retry (rolabox.android.robolectric). The versions are the ones Robolectric's
+# DefaultSdkProvider names, so they change with the robolectric version above.
+robolectric-android-all-sdk31 = { group = "org.robolectric", name = "android-all-instrumented", version = "12-robolectric-7732740-i7" }
+robolectric-android-all-sdk36 = { group = "org.robolectric", name = "android-all-instrumented", version = "16-robolectric-13921718-i7" }
+robolectric-android-all-sdk37 = { group = "org.robolectric", name = "android-all-instrumented", version = "17-robolectric-15733970-i7" }
 arrow-core = { group = "io.arrow-kt", name = "arrow-core", version.ref = "arrow" }
 javax-inject = { group = "javax.inject", name = "javax.inject", version.ref = "javaxInject" }
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }

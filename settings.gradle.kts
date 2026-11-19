@@ -39,6 +39,7 @@ include(":auth:ui:impl")
 
 include(":common:crashreporting:impl")
 include(":common:designsystem")
+include(":common:firestore")
 include(":common:testing")
 include(":common:util")
 

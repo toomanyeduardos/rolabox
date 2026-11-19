@@ -88,5 +88,30 @@ service cloud.firestore {
         && isNotOlder('mainMenuAudiobooks')
         && isNotOlder('mainMenuShuffleSongs');
     }
+
+    // Podcast follows (ADR-031, Syncing follows): one document per show, named by its directory id, with the feed a
+    // phone without the show reads it from. Devices resolve conflicts with last-write-wins on updatedAt, checked as
+    // ADR-011 rule 6 says: at most a day ahead of the server, never moved back in time, and never removed. An
+    // unfollow is kept as followed: false, the record that wins over an older follow, so a follow is never deleted.
+    function isValidFollow(data) {
+      return data.keys().hasOnly(['feedUrl', 'followed', 'updatedAt'])
+        && data.keys().hasAll(['feedUrl', 'followed', 'updatedAt'])
+        && data.feedUrl is string
+        && data.feedUrl.size() <= 2048
+        && data.feedUrl.matches('https?://.+')
+        && data.followed is bool
+        && data.updatedAt is timestamp
+        && data.updatedAt <= request.time + duration.value(1, 'd');
+    }
+
+    match /users/{uid}/podcastFollows/{showKey} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid)
+        && showKey.matches('itunes-[0-9]+')
+        && isValidFollow(request.resource.data);
+      allow update: if isOwner(uid)
+        && isValidFollow(request.resource.data)
+        && request.resource.data.updatedAt >= resource.data.updatedAt;
+    }
   }
 }

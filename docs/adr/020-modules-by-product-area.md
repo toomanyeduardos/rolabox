@@ -1,6 +1,7 @@
 # ADR-020: Modules grouped by product area, with the device assembling its own screens
 
-- **Status:** Accepted
+- **Status:** Accepted. Rules 5 and 9 superseded by [ADR-033](033-shared-firestore-module.md) for
+  `:common:firestore`, a single module that `:network:impl` modules may depend on
 - **Date:** 2026-10-03
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review

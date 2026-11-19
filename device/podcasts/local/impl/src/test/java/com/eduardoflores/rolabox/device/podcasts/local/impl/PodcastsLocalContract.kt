@@ -2,8 +2,11 @@ package com.eduardoflores.rolabox.device.podcasts.local.impl
 
 import arrow.core.left
 import arrow.core.right
+import com.eduardoflores.rolabox.common.sync.api.SyncTimestamp
+import com.eduardoflores.rolabox.common.sync.api.SyncedValue
 import com.eduardoflores.rolabox.device.podcasts.api.DirectoryId
 import com.eduardoflores.rolabox.device.podcasts.api.EpisodeId
+import com.eduardoflores.rolabox.device.podcasts.api.Follow
 import com.eduardoflores.rolabox.device.podcasts.api.Owner
 import com.eduardoflores.rolabox.device.podcasts.api.OwnerId
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastError
@@ -458,6 +461,96 @@ abstract class PodcastsLocalContract {
         assertEquals(before, episodesOf(showId))
         assertEquals("https://example.com/moved", local.getFollowedFeeds().getOrNull()!!.single().feedUrl)
         assertFollowFeedUrl(DirectoryId.itunes(1), "https://example.com/moved")
+    }
+
+    private fun synced(feedUrl: String, followed: Boolean, at: Instant) =
+        SyncedValue(Follow(feedUrl, followed), SyncTimestamp(at.toEpochMilli()))
+
+    @Test
+    fun syncedFollows_areEveryFollow_OnAndOff_withWhenEachWasSet() = runTest {
+        val daily = addShow(1)
+        local.setFollow(daily, followed = true, NOW)
+        local.setFollow(daily, followed = false, LATER)
+        storeFollow(DirectoryId.itunes(3), "https://example.com/3/feed", followed = true)
+
+        val expected = mapOf(
+            DirectoryId.itunes(1) to synced("https://example.com/1/feed", followed = false, LATER),
+            DirectoryId.itunes(3) to synced("https://example.com/3/feed", followed = true, NOW),
+        )
+        assertEquals(expected, local.getSyncedFollows().getOrNull())
+        assertEquals(expected, local.observeSyncedFollows().first().getOrNull())
+    }
+
+    @Test
+    fun applyingFollows_addsANewOne_andReturnsIt_asTurnedOn() = runTest {
+        val follows = mapOf(DirectoryId.itunes(3) to synced("https://example.com/3/feed", followed = true, NOW))
+
+        assertEquals(setOf(DirectoryId.itunes(3)).right(), local.applySyncedFollows(follows))
+        assertEquals(follows, local.getSyncedFollows().getOrNull())
+        assertEquals(DirectoryId.itunes(3), local.getFollowedFeeds().getOrNull()!!.single().directoryId)
+    }
+
+    @Test
+    fun applyingFollows_keepsTheNewerOfWhatIsStoredAndWhatIsApplied() = runTest {
+        val daily = addShow(1)
+        val serial = addShow(2, title = "Serial")
+        local.setFollow(daily, followed = true, LATER)
+        local.setFollow(serial, followed = true, NOW)
+
+        val turnedOn = local.applySyncedFollows(
+            mapOf(
+                // Older than this phone's Follow, made while the sync ran.
+                DirectoryId.itunes(1) to synced("https://example.com/1/feed", followed = false, NOW),
+                // Newer: an unfollow on another phone.
+                DirectoryId.itunes(2) to synced("https://example.com/2/feed", followed = false, LATER),
+            ),
+        )
+
+        assertEquals(emptySet<DirectoryId>().right(), turnedOn)
+        assertEquals(true, local.getShow(daily).getOrNull()?.isFollowed)
+        assertEquals(false, local.getShow(serial).getOrNull()?.isFollowed)
+    }
+
+    // A tie goes to the merged follow, the remote one, as LastWriteWins resolves it on every phone.
+    @Test
+    fun applyingFollows_onATie_takesTheAppliedOne() = runTest {
+        val daily = addShow(1)
+        local.setFollow(daily, followed = false, NOW)
+
+        val turnedOn = local.applySyncedFollows(
+            mapOf(DirectoryId.itunes(1) to synced("https://example.com/1/feed", followed = true, NOW)),
+        )
+
+        assertEquals(setOf(DirectoryId.itunes(1)).right(), turnedOn)
+        assertEquals(true, local.getShow(daily).getOrNull()?.isFollowed)
+    }
+
+    // A feed's move isn't synced as the user's choice, and this phone read where the feed is now.
+    @Test
+    fun applyingFollows_ofAShowInTheLibrary_keepsTheShowsFeedUrl() = runTest {
+        val daily = addShow(1)
+        local.setFollow(daily, followed = false, NOW)
+
+        local.applySyncedFollows(
+            mapOf(DirectoryId.itunes(1) to synced("https://example.com/old", followed = true, LATER)),
+        )
+
+        assertEquals(
+            synced("https://example.com/1/feed", followed = true, LATER),
+            local.getSyncedFollows().getOrNull()!![DirectoryId.itunes(1)],
+        )
+    }
+
+    @Test
+    fun applyingAFollowThatWasAlreadyOn_doesNotReturnIt() = runTest {
+        val daily = addShow(1)
+        local.setFollow(daily, followed = true, NOW)
+
+        val turnedOn = local.applySyncedFollows(
+            mapOf(DirectoryId.itunes(1) to synced("https://example.com/1/feed", followed = true, LATER)),
+        )
+
+        assertEquals(emptySet<DirectoryId>().right(), turnedOn)
     }
 
     /** That the follow keeps [feedUrl] for sync, with its `updatedAt` as it was set. */

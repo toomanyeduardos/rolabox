@@ -4,6 +4,7 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import com.eduardoflores.rolabox.common.sync.testing.FakeLastWriteWins
 import com.eduardoflores.rolabox.common.testing.FakeNonFatalReport
 import com.eduardoflores.rolabox.device.podcasts.api.EpisodeId
 import com.eduardoflores.rolabox.device.podcasts.api.ShowId
@@ -66,7 +67,12 @@ class PodcastsMigrationTest {
 
         val database = open(file.path)
         val local =
-            RoomPodcastsLocalDataSource(database.podcastsDao(), UnconfinedTestDispatcher(), FakeNonFatalReport())
+            RoomPodcastsLocalDataSource(
+                database.podcastsDao(),
+                UnconfinedTestDispatcher(),
+                FakeNonFatalReport(),
+                FakeLastWriteWins(),
+            )
 
         assertEquals(true, local.getShow(ShowId(1)).getOrNull()?.isFollowed)
         assertEquals(12.minutes, local.getEpisode(EpisodeId(1)).getOrNull()?.progress?.position)

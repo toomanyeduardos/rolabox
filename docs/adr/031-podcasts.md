@@ -41,6 +41,13 @@
   since `KEEP` on the check's name would drop it while a check runs. A feed answered with no
   episodes is skipped as unreadable, so a broken feed doesn't hide a whole show, and a show added
   from a synced follow needs the feed's title.
+- **Revised 2026-11-19:** Syncing follows, for podcasts/10 ("Syncing follows", rule 14). Every follow a pull turns
+  On has its feed read, through its own unique work (`checkShow`), not only one whose show the library doesn't
+  have: a check already running drops a second `checkAll` under `KEEP`, and a show turned back On on another phone
+  lists its new episodes as if followed here. A follow whose show is in the library keeps the show's feed URL when
+  a remote follow is applied: a feed's move keeps its `updatedAt`, so on the tie the cloud's older URL would win and
+  the next check would move it back again. Firestore comes from `:common:firestore`
+  ([ADR-033](033-shared-firestore-module.md)). Rule 14 is `[enforced]`, by the rules' emulator tests.
 
 ## Context
 
@@ -471,8 +478,16 @@ podcasts/09 builds it.
   deleted. A user follows tens of shows, not thousands.
 - **The `Syncer` of follows is in `:device:podcasts:impl`,** added to the set of
   `:common:sync:impl` ([ADR-022](022-data-source-sub-parts.md), rule 5). It runs only for a signed-in
-  user who hasn't chosen no-account mode ([ADR-011](011-preferences-sync.md), rule 8). After a pull
-  that brings a follow of a show the library doesn't have, it requests the follow check.
+  user who hasn't chosen no-account mode ([ADR-011](011-preferences-sync.md), rule 8). After a pull,
+  each follow it turned On has that show's feed read, as unique work of its own (Follow checks), so a
+  show the library doesn't have is added, and one turned back On lists its new episodes.
+- **The cloud's feed URL is for a phone without the show.** Applying a remote follow to a show in the
+  library keeps the show's own feed URL, which this phone's checks keep where the feed is now. A move
+  keeps the follow's `updatedAt` (Follow checks), so it isn't pushed as the user's choice.
+- **The model both sides speak** is `Follow` and `SyncedFollows`, in `:device:podcasts:api`, as
+  `SyncedPreferences` is in `:common:userdata:api` ([ADR-022](022-data-source-sub-parts.md), rule 7).
+  The Firestore mapping and transaction are in `:device:podcasts:network:impl`, with Firestore from
+  `:common:firestore` ([ADR-033](033-shared-firestore-module.md)).
 - **Follows made without an account are kept, and merged on sign-in.** Each was stored with its
   `updatedAt`, so the first sync after signing in resolves it against the account's, show by show,
   like any other change. Nothing is overwritten wholesale in either direction.
@@ -682,9 +697,8 @@ Every call that can fail returns an `Either` ([ADR-007](007-error-handling.md)).
     crosses an `:api` as pixels only from `PodcastArtworkRepository`.
 13. `[enforced]` Only `:device:podcasts:network:impl` uses the XML pull parser (`org.xmlpull.v1`
     and `android.util.Xml`).
-14. `[planned]` The security rules of `users/{uid}/podcastFollows/{showKey}` allow its owner only,
-    with `hasOnly` on `feedUrl`, `followed` and `updatedAt`, and have emulator tests for each case
-    ([podcasts/10](https://trello.com/c/YOaut7LJ)).
+14. `[enforced]` The security rules of `users/{uid}/podcastFollows/{showKey}` allow its owner only,
+    with `hasOnly` on `feedUrl`, `followed` and `updatedAt`, and have emulator tests for each case.
 15. `[convention]` An episode that runs out of bytes waits, still playing, with `NoConnection` or
     `MobileDataOff` as state, and goes on by itself when the network allows it. ⏯ pauses it, and a
     paused episode never goes on by itself.
@@ -697,10 +711,11 @@ relies on is already enforced elsewhere: Media3 only in `:device:playback:impl`
 ([ADR-023](023-playback-engine.md), rule 9), so rule 8's "only playback" holds by the build; Room
 only in `:local:impl` modules ([ADR-024](024-library-index.md), rule 4); OkHttp and
 kotlinx-serialization only in `:network:impl` modules ([ADR-027](027-artwork-from-the-internet.md),
-rule 7); Firestore only in `:network:impl` modules ([ADR-022](022-data-source-sub-parts.md),
-rule 3); the layout of rule 3 by ADR-020's and ADR-022's checks on module paths; and a cycle between
+rule 7); Firestore only in `:network:impl` modules and `:common:firestore`
+([ADR-033](033-shared-firestore-module.md), rule 3); the layout of rule 3 by ADR-020's and ADR-022's checks on module paths; and a cycle between
 the two `:api` modules by Gradle. The rest are reviewed, and covered by tests as they are built:
 rule 6 by the tests of `EpisodeProgressRepository` in `:device:podcasts:impl`; rules 2 and 4 by the
 tests of `:device:podcasts:network:impl` against recorded answers and feeds, with no network;
-rules 7, 8, 9, 11 and 15 by the real player's tests in `:device:playback:impl`; rule 10 by the tests of
-the `Syncer` and, once podcasts/10 lands, rule 14 by `firebase/test/firestore.rules.test.mjs`.
+rules 7, 8, 9, 11 and 15 by the real player's tests in `:device:playback:impl`; rule 10 by `FollowsSyncerTest` in
+`:device:podcasts:impl` and the contract tests of the follows in `:device:podcasts:local:impl`. Rule 14 is
+`firebase/test/firestore.rules.test.mjs`, which the `firestore-rules` job in CI runs against the emulator.

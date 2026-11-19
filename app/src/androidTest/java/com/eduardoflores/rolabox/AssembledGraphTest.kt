@@ -64,8 +64,9 @@ class AssembledGraphTest {
     // Each part with synced data adds its own Syncer (ADR-022, rule 8). The classes are internal to the
     // parts, so they are told apart by name.
     @Test
-    fun sync_runsThePreferencesSyncerAndNoOther() {
-        assertEquals(listOf("PreferencesSyncer"), syncers.map { it::class.simpleName })
+    fun sync_runsThePreferencesAndFollowsSyncersAndNoOther() {
+        assertEquals(setOf("PreferencesSyncer", "FollowsSyncer"), syncers.map { it::class.simpleName }.toSet())
+        assertEquals(2, syncers.size)
     }
 
     private fun accountRow() = runBlocking {

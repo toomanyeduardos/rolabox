@@ -3,10 +3,12 @@ package com.eduardoflores.rolabox.device.podcasts.network.impl.di
 import com.eduardoflores.rolabox.device.podcasts.network.api.ConnectionNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.api.DirectoryNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.api.FeedNetworkDataSource
+import com.eduardoflores.rolabox.device.podcasts.network.api.FollowsNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.api.ImageNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.impl.ConnectivityConnectionNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.impl.DeviceCountry
 import com.eduardoflores.rolabox.device.podcasts.network.impl.DirectorySearchUrl
+import com.eduardoflores.rolabox.device.podcasts.network.impl.FirestoreFollowsNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.impl.ITunesDirectoryNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.impl.OkHttpImageNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.impl.PodcastsClient
@@ -38,6 +40,12 @@ abstract class PodcastsNetworkModule {
     internal abstract fun bindsConnectionNetworkDataSource(
         dataSource: ConnectivityConnectionNetworkDataSource,
     ): ConnectionNetworkDataSource
+
+    // Firestore comes from :common:firestore, and is created only when a sync calls this (ADR-033; ADR-008, rule 8).
+    @Binds
+    internal abstract fun bindsFollowsNetworkDataSource(
+        dataSource: FirestoreFollowsNetworkDataSource,
+    ): FollowsNetworkDataSource
 
     @Binds
     internal abstract fun bindsImageNetworkDataSource(dataSource: OkHttpImageNetworkDataSource): ImageNetworkDataSource
