@@ -125,13 +125,26 @@ class ModuleRulesTest {
     }
 
     @Test
-    fun `ADR-022 rule 3 - Firestore only in a network impl`() {
-        assertTrue(firestoreViolation(":common:sync:impl")!!.contains("ADR-022 rule 3"))
-        assertTrue(firestoreViolation(":common:userdata:impl")!!.contains("ADR-022 rule 3"))
-        assertTrue(firestoreViolation(":app")!!.contains("ADR-022 rule 3"))
+    fun `ADR-033 rule 3 - Firestore only in a network impl and the shared Firestore module`() {
+        assertTrue(firestoreViolation(":common:sync:impl")!!.contains("ADR-033 rule 3"))
+        assertTrue(firestoreViolation(":common:userdata:impl")!!.contains("ADR-033 rule 3"))
+        assertTrue(firestoreViolation(":app")!!.contains("ADR-033 rule 3"))
         assertNull(firestoreViolation(":common:userdata:network:impl"))
+        assertNull(firestoreViolation(":device:podcasts:network:impl"))
+        assertNull(firestoreViolation(":common:firestore"))
         assertNull(externalDependencyViolation(":auth:data:impl", "com.google.firebase", "firebase-auth", false))
         assertNull(externalDependencyViolation(":common:sync:impl", "com.google.firebase", "firebase-bom", false))
+    }
+
+    @Test
+    fun `ADR-033 rule 2 - only a network impl depends on the shared Firestore module`() {
+        assertViolatesRule("ADR-033 rule 2", ":common:userdata:impl", ":common:firestore")
+        assertViolatesRule("ADR-033 rule 2", ":device:podcasts:local:impl", ":common:firestore")
+        assertViolatesRule("ADR-033 rule 2", ":common:sync:impl", ":common:firestore")
+        assertViolatesRule("ADR-033 rule 2", ":app", ":common:firestore")
+        assertViolatesRule("ADR-033 rule 2", ":device:podcasts:api", ":common:firestore")
+        assertAllowed(":common:userdata:network:impl", ":common:firestore")
+        assertAllowed(":device:podcasts:network:impl", ":common:firestore")
     }
 
     @Test

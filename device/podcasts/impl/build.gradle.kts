@@ -21,11 +21,14 @@ dependencies {
     // The follow check is requested at process start, and again when the app comes back to the front (ADR-025).
     implementation(project(":common:util"))
     implementation(libs.androidx.lifecycle.process)
+    // The Syncer of the follows, and the storage error a sync of them can end in (ADR-031, Syncing follows).
+    implementation(project(":common:sync:api"))
+    implementation(project(":common:storage:api"))
 
     testImplementation(project(":device:podcasts:testing"))
     testImplementation(project(":device:playback:testing"))
     testImplementation(project(":device:library:testing"))
-    testImplementation(project(":common:storage:api"))
+    testImplementation(project(":common:sync:testing"))
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     // That the follow check is enqueued as WorkManager work, with its constraint (podcasts/09).

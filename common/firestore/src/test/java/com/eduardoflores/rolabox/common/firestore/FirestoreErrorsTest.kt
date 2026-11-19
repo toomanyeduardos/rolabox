@@ -1,4 +1,4 @@
-package com.eduardoflores.rolabox.common.userdata.network.impl
+package com.eduardoflores.rolabox.common.firestore
 
 import com.eduardoflores.rolabox.common.sync.api.RemoteError
 import com.eduardoflores.rolabox.common.testing.FakeNonFatalReport

@@ -1,6 +1,7 @@
 package com.eduardoflores.rolabox.common.userdata.network.impl
 
 import arrow.core.Either
+import com.eduardoflores.rolabox.common.firestore.asLoggedRemoteError
 import com.eduardoflores.rolabox.common.sync.api.RemoteError
 import com.eduardoflores.rolabox.common.sync.api.SyncTimestamp
 import com.eduardoflores.rolabox.common.sync.api.SyncedValue

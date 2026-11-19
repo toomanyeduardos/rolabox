@@ -70,6 +70,32 @@ internal interface PodcastsDao {
     @Query("SELECT * FROM follows WHERE directoryId = :directoryId")
     suspend fun getFollow(directoryId: String): FollowEntity?
 
+    @Query("SELECT * FROM follows ORDER BY directoryId")
+    fun observeFollows(): Flow<List<FollowEntity>>
+
+    @Query("SELECT * FROM follows ORDER BY directoryId")
+    suspend fun getFollows(): List<FollowEntity>
+
+    @Query("SELECT feedUrl FROM shows WHERE directoryId = :directoryId")
+    suspend fun showFeedUrlOf(directoryId: String): String?
+
+    /**
+     * Applies follows a sync merged: each is [resolve]d against the follow stored now, and a show in the library keeps
+     * its own feed URL. Only what changed is written. Returns the directory ids of the follows that weren't On and now
+     * are.
+     */
+    @Transaction
+    suspend fun applySyncedFollows(
+        follows: List<FollowEntity>,
+        resolve: (stored: FollowEntity?, merged: FollowEntity) -> FollowEntity,
+    ): List<String> = follows.mapNotNull { merged ->
+        val stored = getFollow(merged.directoryId)
+        val winner = resolve(stored, merged)
+        val applied = showFeedUrlOf(winner.directoryId)?.let { winner.copy(feedUrl = it) } ?: winner
+        if (applied != stored) upsertFollow(applied)
+        applied.directoryId.takeIf { applied.followed && stored?.followed != true }
+    }
+
     /** Stores the show's Follow switch, and returns whether the show is there. */
     @Transaction
     suspend fun setFollow(showId: Long, followed: Boolean, updatedAt: Long): Boolean {

@@ -1,4 +1,4 @@
-package com.eduardoflores.rolabox.common.userdata.network.impl
+package com.eduardoflores.rolabox.common.firestore
 
 import android.util.Log
 import com.eduardoflores.rolabox.common.sync.api.RemoteError
@@ -8,9 +8,10 @@ import com.google.firebase.firestore.FirebaseFirestoreException.Code
 
 /**
  * Names the Firestore exceptions that become errors (ADR-007). Returns null for anything else,
- * which the caller rethrows.
+ * which the caller rethrows. Every `:network:impl` that uses Firestore converts with it, so they
+ * agree on what can pass (ADR-033).
  */
-internal fun Throwable.asRemoteError(): RemoteError? = (this as? FirebaseFirestoreException)?.let {
+fun Throwable.asRemoteError(): RemoteError? = (this as? FirebaseFirestoreException)?.let {
     when (it.code) {
         // An expired token is refreshed by the next attempt.
         Code.UNAVAILABLE, Code.DEADLINE_EXCEEDED, Code.ABORTED, Code.RESOURCE_EXHAUSTED, Code.UNAUTHENTICATED ->
@@ -30,7 +31,7 @@ internal fun Throwable.asRemoteError(): RemoteError? = (this as? FirebaseFiresto
  * [RemoteError] only says whether to try again (ADR-029, rule 2). A request the backend turned down is
  * also reported, with Firestore's code: it's a bug or a setup mistake. Being offline isn't (ADR-030).
  */
-internal fun Throwable.asLoggedRemoteError(report: NonFatalReport): RemoteError? = asRemoteError()?.also { error ->
+fun Throwable.asLoggedRemoteError(report: NonFatalReport): RemoteError? = asRemoteError()?.also { error ->
     val code = (this as FirebaseFirestoreException).code
     Log.w(TAG, "Firestore failed with $code, so sync gets $error", this)
     if (error == RemoteError.Rejected) report.report("RemoteError.Rejected ${code.name}", this)

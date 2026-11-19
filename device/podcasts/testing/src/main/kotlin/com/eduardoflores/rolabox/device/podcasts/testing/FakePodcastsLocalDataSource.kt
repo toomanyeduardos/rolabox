@@ -5,13 +5,17 @@ import arrow.core.flatMap
 import arrow.core.left
 import arrow.core.right
 import com.eduardoflores.rolabox.common.storage.api.StorageError
+import com.eduardoflores.rolabox.common.sync.api.SyncTimestamp
+import com.eduardoflores.rolabox.common.sync.api.SyncedValue
 import com.eduardoflores.rolabox.device.podcasts.api.DirectoryId
 import com.eduardoflores.rolabox.device.podcasts.api.EpisodeId
+import com.eduardoflores.rolabox.device.podcasts.api.Follow
 import com.eduardoflores.rolabox.device.podcasts.api.Owner
 import com.eduardoflores.rolabox.device.podcasts.api.OwnerId
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastError
 import com.eduardoflores.rolabox.device.podcasts.api.Show
 import com.eduardoflores.rolabox.device.podcasts.api.ShowId
+import com.eduardoflores.rolabox.device.podcasts.api.SyncedFollows
 import com.eduardoflores.rolabox.device.podcasts.local.api.ArtworkSource
 import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeProgressLocalDataSource
 import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeRecord
@@ -27,6 +31,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
 
 /**
@@ -310,6 +315,36 @@ class FakePodcastsLocalDataSource @Inject constructor() :
         return Unit.right()
     }
 
+    override fun observeSyncedFollows(): Flow<Either<PodcastError, SyncedFollows>> =
+        read { stored -> stored.syncedFollows() }.distinctUntilChanged()
+
+    override suspend fun getSyncedFollows(): Either<PodcastError, SyncedFollows> = now { it.syncedFollows() }
+
+    // Resolved as LastWriteWins does, the later change winning and the merged one on a tie, against what is stored
+    // when it is applied. A show in the library keeps its own feed URL, as in the database.
+    override suspend fun applySyncedFollows(follows: SyncedFollows): Either<PodcastError, Set<DirectoryId>> {
+        readError?.let { return PodcastError.Storage(it).left() }
+        val turnedOn = mutableSetOf<DirectoryId>()
+        state.update { stored ->
+            turnedOn.clear()
+            var applied = stored.follows
+            var feedUrls = stored.followFeedUrls
+            follows.forEach { (directoryId, merged) ->
+                val was = stored.follows[directoryId]
+                val keepStored = was != null && was.second.toEpochMilli() > merged.updatedAt.epochMillis
+                if (keepStored) return@forEach
+                val showFeedUrl = stored.shows.firstOrNull { it.write.directoryId == directoryId }?.write?.feedUrl
+                applied =
+                    applied +
+                    (directoryId to (merged.value.followed to Instant.ofEpochMilli(merged.updatedAt.epochMillis)))
+                feedUrls = feedUrls + (directoryId to (showFeedUrl ?: merged.value.feedUrl))
+                if (merged.value.followed && was?.first != true) turnedOn += directoryId
+            }
+            stored.copy(follows = applied, followFeedUrls = feedUrls)
+        }
+        return turnedOn.toSet().right()
+    }
+
     /** The episode as a feed read at [readAt] leaves it: updated from [read], or marked as left when it is `null`. */
     private fun StoredEpisode.readFrom(read: EpisodeWrite?, readAt: Instant): StoredEpisode = when {
         read != null -> copy(write = read, imageUrl = read.imageUrl ?: imageUrl, leftFeedAt = null)
@@ -351,6 +386,13 @@ class FakePodcastsLocalDataSource @Inject constructor() :
         val follows: Map<DirectoryId, Pair<Boolean, Instant>> = emptyMap(),
         val followFeedUrls: Map<DirectoryId, String> = emptyMap(),
     ) {
+        fun syncedFollows(): SyncedFollows = follows.mapValues { (directoryId, follow) ->
+            SyncedValue(
+                Follow(feedUrl = followFeedUrls.getValue(directoryId), followed = follow.first),
+                SyncTimestamp(follow.second.toEpochMilli()),
+            )
+        }
+
         fun showOf(show: StoredShow) = Show(
             id = show.id,
             directoryId = show.write.directoryId,

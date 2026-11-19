@@ -3,6 +3,7 @@ package com.eduardoflores.rolabox.device.podcasts.local.impl
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import com.eduardoflores.rolabox.common.sync.testing.FakeLastWriteWins
 import com.eduardoflores.rolabox.common.testing.FakeNonFatalReport
 import com.eduardoflores.rolabox.device.podcasts.api.DirectoryId
 import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeProgressLocalDataSource
@@ -27,7 +28,7 @@ class RoomPodcastsLocalContractTest : PodcastsLocalContract() {
     private val report = FakeNonFatalReport()
 
     override val local: PodcastsLocalDataSource =
-        RoomPodcastsLocalDataSource(database.podcastsDao(), UnconfinedTestDispatcher(), report)
+        RoomPodcastsLocalDataSource(database.podcastsDao(), UnconfinedTestDispatcher(), report, FakeLastWriteWins())
     override val progress: EpisodeProgressLocalDataSource =
         RoomEpisodeProgressLocalDataSource(database.progressDao(), report)
 

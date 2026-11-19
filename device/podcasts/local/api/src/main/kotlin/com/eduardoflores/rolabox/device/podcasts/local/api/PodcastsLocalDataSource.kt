@@ -8,6 +8,7 @@ import com.eduardoflores.rolabox.device.podcasts.api.OwnerId
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastError
 import com.eduardoflores.rolabox.device.podcasts.api.Show
 import com.eduardoflores.rolabox.device.podcasts.api.ShowId
+import com.eduardoflores.rolabox.device.podcasts.api.SyncedFollows
 import java.time.Instant
 import kotlinx.coroutines.flow.Flow
 
@@ -96,4 +97,18 @@ interface PodcastsLocalDataSource {
         feedUrl: String,
         readAt: Instant,
     ): Either<PodcastError, Unit>
+
+    /** Every follow, On and Off, with when each was last set, as sync reads them (ADR-031, Syncing follows). */
+    fun observeSyncedFollows(): Flow<Either<PodcastError, SyncedFollows>>
+
+    suspend fun getSyncedFollows(): Either<PodcastError, SyncedFollows>
+
+    /**
+     * Applies the follows a sync merged, in one transaction, resolving each with last-write-wins against the follow
+     * stored at that moment, so a Follow the user changes while a sync runs is never overwritten by an older one
+     * (ADR-011, rule 3). A follow whose show is in the library keeps the show's feed URL: a feed's move isn't synced
+     * as the user's choice, and this phone read where the feed is now. Nothing is deleted. Returns the directory ids
+     * of the follows that weren't On and now are, whose feeds are to be read.
+     */
+    suspend fun applySyncedFollows(follows: SyncedFollows): Either<PodcastError, Set<DirectoryId>>
 }
