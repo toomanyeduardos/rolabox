@@ -32,6 +32,15 @@
   the part's own answers. Rule 4 says what "never written" meant: the answers aren't kept as a
   cache, and only what the user plays or follows joins the library, as this ADR already said. The
   Android back of frame 29 only hides the keyboard, as ADR-032 (rule 4) says.
+- **Revised 2026-11-19:** Episodes that leave their feed, and the follow check's details, for
+  podcasts/09 ("The database", "Follow checks"). An episode no longer in its feed was to stay
+  listed, but publishers drop older episodes from the public feed to put them behind a paywall, as
+  The Daily does after about three weekdays, so the list would fill with episodes that can't be
+  played. Such an episode keeps its row, with when it left the feed, and is listed only while it has
+  a download. The read of one show's feed when its Follow is turned On is unique work of its own,
+  since `KEEP` on the check's name would drop it while a check runs. A feed answered with no
+  episodes is skipped as unreadable, so a broken feed doesn't hide a whole show, and a show added
+  from a synced follow needs the feed's title.
 
 ## Context
 
@@ -264,7 +273,7 @@ the top of its list. podcasts/08 builds it.
 | Table | Holds | Kind |
 | --- | --- | --- |
 | Shows | The database's own id; the directory id; the feed URL; the title; the owner and its grouping key; the image URL; `ETag`, `Last-Modified` and when the feed was last read; when the show joined | The user's data |
-| Episodes | The database's own id; the show; the GUID; the title; the date; the length; the description; the enclosure's URL, size and type; the image URL; when it was listed | The user's data |
+| Episodes | The database's own id; the show; the GUID; the title; the date; the length; the description; the enclosure's URL, size and type; the image URL; when it was listed; when it left the feed | The user's data |
 | Progress | The episode; its position; whether it is played; when it was last played | The user's data |
 | Follows | The directory id; the feed URL; whether it is followed; `updatedAt` | The user's data, synced |
 
@@ -279,10 +288,15 @@ the top of its list. podcasts/08 builds it.
 - **Download state and the audio are not in this database.** They are playback's (Downloads), so
   there is one record of what is downloaded, and the episode rows read it.
 - **Nothing is deleted.** Deleting episodes and shows is a non-goal. An episode that leaves its
-  feed stays listed.
+  feed keeps its row, with when it left, `leftFeedAt`, set when a check reads the feed (a 200, not
+  a 304) and the episode isn't in it. One that comes back has `leftFeedAt` cleared. Publishers drop
+  older episodes from the public feed to put them behind a paywall, so an episode that left can
+  only be played from its download.
 - **What a show lists:** with Follow On, every episode its feed has listed since it was followed or
-  added, newest first. With Follow Off, only the episodes with a download, done or in progress. The
-  rows of the episodes in between stay, and show again when Follow is turned back On.
+  added, newest first, but those that left the feed. With Follow Off, only the episodes with a
+  download, done or in progress. An episode that left the feed is listed only with a download, done
+  or in progress, whatever Follow says. The rows of the episodes not listed stay, and show again
+  when Follow is turned back On or the episode comes back to the feed.
 
 `EpisodeId` and `ShowId` are the database's own ids, as `SongId` is the index's
 ([ADR-024](024-library-index.md), rule 8). podcasts/02 builds the database.
@@ -423,14 +437,26 @@ podcasts/07 builds it, with Now Playing's bar.
   WorkManager work, `podcast-follow-check`, with a network constraint and `KEEP`, so it runs once a
   connection exists. The app coming back to the foreground requests it again when the last check is
   more than an hour old. There is no periodic work.
-- **Turning Follow On reads that show's feed at once,** in the same work.
+- **Turning Follow On reads that show's feed at once,** with the same worker, as unique work of its
+  own, `podcast-follow-check-<directoryId>`, with a network constraint and `KEEP`. Under the
+  check's name, `KEEP` would drop it while a check runs. Following from search doesn't: the feed was
+  just read (Search).
 - **The work reads the feed of each followed show,** with `ETag` and `Last-Modified`, adds the
   episodes whose GUID is new, and updates what changed of the others. It never touches progress, and
-  never downloads an episode.
+  never downloads an episode. A feed read whole (a 200) also sets `leftFeedAt` on the episodes it no
+  longer has, and clears it on those it has again (The database). A 304 changes no episode.
+- **What the work writes of a show is one transaction,** and only while its follow is still On, so
+  a show unfollowed while the work ran isn't changed, and isn't added. A feed that moved (a 301 or
+  308, or `itunes:new-feed-url`) replaces the feed URL of the show and of its follow together, and
+  leaves the follow's `updatedAt` as it is: the move isn't the user's choice, and mustn't win over
+  their newer Follow on another phone.
 - **A followed show that isn't in the library yet,** because its follow arrived by sync, is added
-  from its feed.
+  from its feed, with the feed's title and owner. A feed with no title doesn't add it: it is skipped
+  as unreadable, since the follow carries no title of its own.
 - **A feed that can't be read is skipped** until the next check. It is the publisher's failure, so
-  it is logged and not reported to Crashlytics ([ADR-030](030-crash-reporting.md), rule 6).
+  it is logged and not reported to Crashlytics ([ADR-030](030-crash-reporting.md), rule 6). A feed
+  read whole with no episode is one that can't be read: it would hide every episode of the show
+  without a download, and a publisher's broken feed is likelier than a show that emptied itself.
 
 podcasts/09 builds it.
 

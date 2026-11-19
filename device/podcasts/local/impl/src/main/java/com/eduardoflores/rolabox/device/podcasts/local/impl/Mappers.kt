@@ -41,6 +41,7 @@ internal fun EpisodeRow.toRecord(): EpisodeRecord = EpisodeRecord(
     } else {
         null
     },
+    leftFeedAt = leftFeedAt?.let(Instant::ofEpochMilli),
 )
 
 internal fun ProgressRecord.toEntity(episodeId: EpisodeId): ProgressEntity = ProgressEntity(
@@ -74,5 +75,6 @@ internal fun EpisodeWrite.toEntity(listedAt: Instant): EpisodeEntity = EpisodeEn
     audioUrl = audioUrl,
     audioSize = audioSizeBytes,
     audioType = audioType,
+    imageUrl = imageUrl,
     listedAt = listedAt.toEpochMilli(),
 )

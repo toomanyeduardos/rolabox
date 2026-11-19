@@ -70,6 +70,9 @@ class PodcastsMigrationTest {
 
         assertEquals(true, local.getShow(ShowId(1)).getOrNull()?.isFollowed)
         assertEquals(12.minutes, local.getEpisode(EpisodeId(1)).getOrNull()?.progress?.position)
+        // No episode had left its feed before version 2 recorded it.
+        assertEquals(null, local.getEpisode(EpisodeId(1)).getOrNull()?.leftFeedAt)
+        assertEquals("Who Owns the Moon?", local.getEpisode(EpisodeId(1)).getOrNull()?.title)
         database.close()
     }
 

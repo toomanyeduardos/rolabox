@@ -12,6 +12,10 @@ import com.eduardoflores.rolabox.device.podcasts.api.OwnerId
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastError
 import com.eduardoflores.rolabox.device.podcasts.api.ShowFeed
 import com.eduardoflores.rolabox.device.podcasts.api.ShowId
+import com.eduardoflores.rolabox.device.podcasts.impl.follow.FakeFollowCheckScheduler
+import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeWrite
+import com.eduardoflores.rolabox.device.podcasts.local.api.FeedWrite
+import com.eduardoflores.rolabox.device.podcasts.local.api.ShowWrite
 import com.eduardoflores.rolabox.device.podcasts.testing.FakePodcastsLocalDataSource
 import java.time.Clock
 import java.time.Instant
@@ -28,7 +32,8 @@ class DefaultPodcastsRepositoryTest {
     private val local = FakePodcastsLocalDataSource()
     private val downloads = FakeEpisodeDownloads()
     private val clock = Clock.fixed(Instant.ofEpochMilli(NOW), ZoneOffset.UTC)
-    private val repository = DefaultPodcastsRepository(local, downloads, clock)
+    private val followCheck = FakeFollowCheckScheduler()
+    private val repository = DefaultPodcastsRepository(local, downloads, clock, followCheck)
 
     private val daily = DirectoryShow(DirectoryId.itunes(1), "The Daily", "NY Times", "https://example.com/feed")
 
@@ -198,6 +203,74 @@ class DefaultPodcastsRepositoryTest {
             repository.observeOwners().first(),
         )
     }
+
+    @Test
+    fun turningFollowOn_readsTheShowsFeed_andOffDoesnt() = runTest {
+        val showId = showOf(add(episode("g1")))
+
+        repository.setFollowed(showId, followed = true)
+        repository.setFollowed(showId, followed = false)
+
+        assertEquals(listOf<DirectoryId?>(DirectoryId.itunes(1)), followCheck.requested)
+    }
+
+    @Test
+    fun anEpisodeThatLeftTheFeed_isListedOnlyWithADownload_andAgainOnceItComesBack() = runTest {
+        val left = add(episode("g1", day = 1))
+        val leftDownloaded = add(episode("g2", day = 2))
+        val stays = add(episode("g3", day = 3))
+        val showId = showOf(left)
+        repository.setFollowed(showId, followed = true)
+        downloads.states.value = mapOf(leftDownloaded to DownloadState.Downloaded)
+
+        local.applyFeed(feedOf("g3"), Instant.ofEpochMilli(NOW))
+        val whileLeft = repository.observeEpisodesByShow(showId).first().getOrNull()?.map { it.id }
+        local.applyFeed(feedOf("g1", "g3"), Instant.ofEpochMilli(NOW))
+        val back = repository.observeEpisodesByShow(showId).first().getOrNull()?.map { it.id }
+
+        assertEquals(listOf(stays, leftDownloaded), whileLeft)
+        assertEquals(listOf(stays, leftDownloaded, left), back)
+    }
+
+    @Test
+    fun anEpisodeThatLeftTheFeed_withFollowOff_isListedWithItsDownload() = runTest {
+        val left = add(episode("g1", day = 1))
+        val showId = showOf(left)
+        repository.setFollowed(showId, followed = true)
+        local.applyFeed(feedOf("g2"), Instant.ofEpochMilli(NOW))
+        repository.setFollowed(showId, followed = false)
+        downloads.states.value = mapOf(left to DownloadState.Downloading(0.5f))
+
+        assertEquals(listOf(left), repository.observeEpisodesByShow(showId).first().getOrNull()?.map { it.id })
+    }
+
+    /** The Daily's feed, with the episodes of [guids], as the follow check applies it. */
+    private fun feedOf(vararg guids: String) = FeedWrite(
+        show = ShowWrite(
+            directoryId = daily.directoryId,
+            feedUrl = daily.feedUrl,
+            title = daily.title,
+            ownerName = daily.creator,
+            ownerKey = OwnerId("ny times"),
+            titleSortKey = "daily",
+            ownerSortKey = "ny times",
+        ),
+        imageUrl = null,
+        etag = null,
+        lastModified = null,
+        episodes = guids.map { guid ->
+            val day = guid.removePrefix("g").toLong()
+            EpisodeWrite(
+                guid,
+                guid,
+                "Episode $guid",
+                Instant.ofEpochSecond(day * DAY),
+                30.minutes,
+                null,
+                "https://example.com/$guid.mp3",
+            )
+        },
+    )
 
     private companion object {
         const val NOW = 5_000L

@@ -22,8 +22,9 @@ interface PodcastsRepository {
 
     /**
      * The episodes the show lists, newest first: with Follow On, every episode its feed has listed since it was
-     * followed or added. With Follow Off, only the episodes with a download, done or in progress (ADR-031, The
-     * database). Emits [PodcastError.ShowNotFound] and ends when there is no such show.
+     * followed or added, but those that left it. With Follow Off, only the episodes with a download, done or in
+     * progress, and an episode that left the feed only with one too (ADR-031, The database). Emits
+     * [PodcastError.ShowNotFound] and ends when there is no such show.
      */
     fun observeEpisodesByShow(showId: ShowId): Flow<Either<PodcastError, List<Episode>>>
 
@@ -34,6 +35,8 @@ interface PodcastsRepository {
 
     /**
      * Turns the show's Follow On or Off. The switch is kept even when Off, as the record that wins over an older On.
+     * Turning it On reads the show's feed once there is a connection, so its new episodes are listed (ADR-031, Follow
+     * checks).
      */
     suspend fun setFollowed(showId: ShowId, followed: Boolean): Either<PodcastError, Unit>
 

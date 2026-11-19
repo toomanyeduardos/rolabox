@@ -16,6 +16,14 @@ class FakePodcastsLocalContractTest : PodcastsLocalContract() {
     override val local = fake
     override val progress = fake
 
+    override suspend fun storeFollow(directoryId: DirectoryId, feedUrl: String, followed: Boolean) =
+        fake.storeFollow(directoryId, feedUrl, followed, NOW)
+
+    override suspend fun assertFollowFeedUrl(directoryId: DirectoryId, feedUrl: String) {
+        assertEquals(feedUrl, fake.followFeedUrls[directoryId])
+        assertEquals(NOW, fake.follows[directoryId]?.second)
+    }
+
     @Test
     fun anUnfollow_isKept() = runTest {
         val showId = addShow(1)

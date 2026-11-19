@@ -8,6 +8,7 @@ import com.eduardoflores.rolabox.device.podcasts.api.DirectoryShow
 import com.eduardoflores.rolabox.device.podcasts.api.EpisodeId
 import com.eduardoflores.rolabox.device.podcasts.api.PlayedState
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastError
+import com.eduardoflores.rolabox.device.podcasts.impl.follow.FakeFollowCheckScheduler
 import com.eduardoflores.rolabox.device.podcasts.testing.FakePodcastsLocalDataSource
 import java.time.Clock
 import java.time.Instant
@@ -22,7 +23,7 @@ import org.junit.Test
 class DefaultEpisodeProgressRepositoryTest {
     private val local = FakePodcastsLocalDataSource()
     private val clock = Clock.fixed(Instant.ofEpochMilli(NOW), ZoneOffset.UTC)
-    private val podcasts = DefaultPodcastsRepository(local, FakeEpisodeDownloads(), clock)
+    private val podcasts = DefaultPodcastsRepository(local, FakeEpisodeDownloads(), clock, FakeFollowCheckScheduler())
     private val progress = DefaultEpisodeProgressRepository(local, local, clock)
 
     private suspend fun episodeOf(feedLength: Duration?): EpisodeId = podcasts.addEpisode(

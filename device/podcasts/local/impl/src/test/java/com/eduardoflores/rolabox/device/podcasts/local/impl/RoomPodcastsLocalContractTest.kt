@@ -31,6 +31,16 @@ class RoomPodcastsLocalContractTest : PodcastsLocalContract() {
     override val progress: EpisodeProgressLocalDataSource =
         RoomEpisodeProgressLocalDataSource(database.progressDao(), report)
 
+    override suspend fun storeFollow(directoryId: DirectoryId, feedUrl: String, followed: Boolean) =
+        database.podcastsDao().upsertFollow(FollowEntity(directoryId.value, feedUrl, followed, NOW.toEpochMilli()))
+
+    override suspend fun assertFollowFeedUrl(directoryId: DirectoryId, feedUrl: String) {
+        val follow = database.podcastsDao().getFollow(directoryId.value)
+        assertEquals(feedUrl, follow?.feedUrl)
+        // The move isn't the user's choice, so it mustn't win over a newer Follow on another phone.
+        assertEquals(NOW.toEpochMilli(), follow?.updatedAt)
+    }
+
     @After
     fun closeDatabase() = database.close()
 
