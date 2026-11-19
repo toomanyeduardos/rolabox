@@ -67,11 +67,12 @@ class WheelGestureRecognizerTest {
         recognizer.down(x(-90), y(-90), 0)
         var steps = 0
         var time = 0L
-        for (angle in -89..0) {
+        for (angle in -89..5) {
             time += SLOW_MILLIS_PER_DEGREE
             steps += recognizer.move(x(angle), y(angle), time)?.steps ?: 0
         }
-        assertEquals(6, steps)
+        // 95° is four whole 22.5° steps, with a little to spare.
+        assertEquals(4, steps)
         assertNull(recognizer.up())
     }
 

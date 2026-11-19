@@ -34,7 +34,8 @@ internal fun SemanticsNodeInteraction.pressPlayPause() {
 
 /**
  * Turns the ring by [steps] steps, clockwise when positive: a finger that goes round it slowly enough
- * that the wheel applies no acceleration, so a step moves a row.
+ * that the wheel applies no acceleration, so a step moves a row. Three moves of 7.5° make one of the
+ * wheel's 22.5° steps, at well under a turn per second.
  */
 internal fun SemanticsNodeInteraction.turn(steps: Int) {
     performTouchInput {
@@ -55,7 +56,7 @@ private const val NEXT_ANGLE_DEGREES = 0f
 private const val PREVIOUS_ANGLE_DEGREES = 180f
 private const val PLAY_PAUSE_ANGLE_DEGREES = 90f
 private const val START_ANGLE_DEGREES = 45f
-private const val DEGREES_PER_MOVE = 5f
+private const val DEGREES_PER_MOVE = 7.5f
 private const val MOVES_PER_STEP = 3
 private const val MOVE_INTERVAL_MILLIS = 100L
 private const val RING_POSITION = 0.75f
