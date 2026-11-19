@@ -279,4 +279,87 @@ class WheelEventRouterTest {
 
         assertEquals(emptyList<WheelEvent>(), playbackReceived)
     }
+
+    private val everyEvent = listOf(WheelEvent.Turn(1), WheelEvent.Center, WheelEvent.Menu, WheelEvent.HoldMenu) +
+        playbackEvents
+
+    @Test
+    fun whileTyping_theWheelSendsNothing() {
+        stack.push(Second)
+        var menus = 0
+        var playPauses = 0
+        var told = 0
+        inputs.registerMenu(Second) { menus++ }
+        inputs.registerPlayPause(Second) { playPauses++ }
+        inputs.registerPlaybackButtons(Second) { told++ }
+        inputs.registerTyping(Second) {}
+
+        everyEvent.forEach(router::route)
+
+        assertEquals(emptyList<WheelEvent>(), firstReceived + secondReceived)
+        assertEquals(emptyList<WheelEvent>(), playbackReceived)
+        assertEquals(listOf(0, 0, 0), listOf(menus, playPauses, told))
+        assertEquals(listOf<NavKey>(First, Second), stack.keys)
+    }
+
+    @Test
+    fun onceTypingEnds_theWheelSendsAgain() {
+        inputs.registerTyping(First) {}
+        inputs.unregisterTyping(First)
+
+        router.route(WheelEvent.Turn(1))
+        router.route(WheelEvent.Next)
+
+        assertEquals(listOf<WheelEvent>(WheelEvent.Turn(1)), firstReceived)
+        assertEquals(listOf<WheelEvent>(WheelEvent.Next), playbackReceived)
+    }
+
+    @Test
+    fun typingOnAScreenBelowTheTop_doesntStopTheWheel() {
+        inputs.registerTyping(First) {}
+        stack.push(Second)
+
+        router.route(WheelEvent.Center)
+
+        assertEquals(listOf<WheelEvent>(WheelEvent.Center), secondReceived)
+    }
+
+    @Test
+    fun endTyping_endsTheTypingOfThatScreenOnly() {
+        val ended = mutableListOf<NavKey>()
+        inputs.registerTyping(First) { ended += First }
+        inputs.registerTyping(Second) { ended += Second }
+
+        inputs.endTyping(Second)
+
+        assertEquals(listOf<NavKey>(Second), ended)
+    }
+
+    @Test
+    fun menuOnARow_highlightsTheField_andMenuOnTheField_goesBack() {
+        stack.push(Second)
+        val highlight = ListHighlight(2)
+
+        // What HandleMenuWithField registers, while the screen takes MENU.
+        fun register() {
+            if (screenTakesMenu(highlight)) {
+                inputs.registerMenu(Second) {
+                    highlight.highlightField()
+                }
+            } else {
+                inputs.unregisterMenu(Second)
+            }
+        }
+
+        register()
+        router.route(WheelEvent.Menu)
+
+        assertEquals(true, highlight.isOnField)
+        assertEquals(listOf<NavKey>(First, Second), stack.keys)
+
+        register()
+        router.route(WheelEvent.Menu)
+
+        assertEquals(listOf<NavKey>(First), stack.keys)
+    }
 }

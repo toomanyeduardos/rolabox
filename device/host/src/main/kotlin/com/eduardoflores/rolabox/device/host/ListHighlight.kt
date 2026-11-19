@@ -15,7 +15,7 @@ import androidx.compose.runtime.setValue
 @Stable
 class ListHighlight internal constructor(index: Int) {
     var index by mutableIntStateOf(index)
-        private set
+        internal set
 
     /**
      * Moves the highlight by the [steps] of a turn, and stops at the first and last of [rowCount] rows.

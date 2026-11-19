@@ -91,6 +91,12 @@ class RolaboxTextStyles internal constructor(
     /** The letter over a list that turns fast, on [MetalColors.displayOverlay]. */
     internal val displayOverlayLetter = typography.displayOverlayLetter.copy(color = colors.onDisplayOverlay)
 
+    /** The text typed in the display's field. The highlighted field's is [MetalColors.onSelection]. */
+    internal val displayField = typography.displayField.copy(color = colors.displayInk)
+
+    /** The hint of the display's field while it is empty, in the display's secondary ink. */
+    internal val displayFieldHint = typography.displayField.copy(color = colors.displayMuted)
+
     /** Every role with its name, for the type specimen. */
     internal val all: List<Pair<String, TextStyle>>
         get() = listOf(
@@ -128,6 +134,8 @@ class RolaboxTextStyles internal constructor(
             "displayCaption" to displayCaption,
             "displayText" to displayText,
             "displayOverlayLetter" to displayOverlayLetter,
+            "displayField" to displayField,
+            "displayFieldHint" to displayFieldHint,
         )
 }
 

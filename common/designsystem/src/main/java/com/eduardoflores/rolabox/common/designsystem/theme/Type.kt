@@ -58,6 +58,7 @@ class RolaboxTypography internal constructor(
     internal val displayCaption: TextStyle,
     internal val displayText: TextStyle,
     internal val displayOverlayLetter: TextStyle,
+    internal val displayField: TextStyle,
 )
 
 /**
@@ -176,6 +177,8 @@ internal fun rolaboxTypography(
             letterSpacing = (-0.02).em,
             lineHeight = 1.em,
         ),
+        // The text in the display's field, such as a search query, and its hint: a little smaller than a row.
+        displayField = body.copy(fontSize = 15.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.01).em),
     )
 }
 

@@ -30,6 +30,10 @@ internal class ScreenInput(
 
     fun unregisterPlaybackButtons() = inputs.unregisterPlaybackButtons(key)
 
+    fun registerTyping(end: () -> Unit) = inputs.registerTyping(key, end)
+
+    fun unregisterTyping() = inputs.unregisterTyping(key)
+
     fun setTitle(title: String?) = titles.set(key, title)
 }
 
