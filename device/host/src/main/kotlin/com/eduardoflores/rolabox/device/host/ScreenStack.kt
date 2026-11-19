@@ -54,15 +54,19 @@ fun rememberScreenStack(startKey: NavKey): ScreenStack {
  * while it is composed, so a screen that is still animating out never gets an event meant for the
  * one on top. A screen registers for MENU apart, and only while it is in a mode of its own, and for ⏯
  * apart, and only while its highlighted row can be played. A screen in a mode of its own also registers to
- * be told of the playback buttons, which it never takes.
+ * be told of the playback buttons, which it never takes. A screen's field registers while the device is typing
+ * into it (ADR-032), with how to end typing.
  */
-// A register, an unregister and a dispatch for each of the four ways a screen receives input.
+// A register, an unregister and a dispatch for each of the five ways a screen receives input.
 @Suppress("TooManyFunctions")
 internal class ScreenInputs {
     private val handlers = mutableMapOf<NavKey, (WheelEvent) -> Unit>()
     private val menuHandlers = mutableMapOf<NavKey, () -> Unit>()
     private val playPauseHandlers = mutableMapOf<NavKey, () -> Unit>()
     private val playbackButtonObservers = mutableMapOf<NavKey, () -> Unit>()
+
+    // State, so the device draws what stops touches while typing, and moves, as typing starts and ends.
+    private val typingEnds = mutableStateMapOf<NavKey, () -> Unit>()
 
     fun register(key: NavKey, handler: (WheelEvent) -> Unit) {
         handlers[key] = handler
@@ -118,6 +122,23 @@ internal class ScreenInputs {
     fun notifyPlaybackButton(key: NavKey) {
         playbackButtonObservers[key]?.invoke()
     }
+
+    /** The device is typing into the field of the screen of [key], and [end] ends typing. */
+    fun registerTyping(key: NavKey, end: () -> Unit) {
+        typingEnds[key] = end
+    }
+
+    fun unregisterTyping(key: NavKey) {
+        typingEnds -= key
+    }
+
+    /** Whether the device is typing into the field of the screen of [key]. */
+    fun isTyping(key: NavKey): Boolean = key in typingEnds
+
+    /** Ends typing into the field of the screen of [key], for a touch outside the keyboard. */
+    fun endTyping(key: NavKey) {
+        typingEnds[key]?.invoke()
+    }
 }
 
 /**
@@ -148,6 +169,7 @@ internal class ScreenTitles {
  * their own, and ⏯ only while their highlighted row can be played (ADR-019, rule 6). The playback buttons
  * go to [onPlaybackEvent], so the host doesn't depend on the playback area (ADR-019). A top screen in a mode
  * of its own is told of them first, so the mode ends before the button does what it does (ADR-018, rule 16).
+ * While the device is typing into the top screen's field, the wheel sends nothing (ADR-032, rule 3).
  */
 internal class WheelEventRouter(
     private val stack: ScreenStack,
@@ -155,6 +177,7 @@ internal class WheelEventRouter(
     private val onPlaybackEvent: (WheelEvent) -> Unit,
 ) {
     fun route(event: WheelEvent) {
+        if (inputs.isTyping(stack.top)) return
         when (event) {
             is WheelEvent.Turn, WheelEvent.Center -> inputs.dispatch(stack.top, event)
 

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
@@ -27,11 +28,14 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.eduardoflores.rolabox.common.designsystem.R
 import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxMetal
@@ -63,11 +67,16 @@ private val BatteryTipGap = 1.dp
  * centered. The wheel keeps its size, and what it leaves is the display's. Put a [DeviceDisplay] in
  * [content] and give it `Modifier.weight(1f)`, so the display's height comes from this layout and not
  * from a number around its text (ADR-017 rule 3). The body is edge to edge and pads for the system bars.
+ *
+ * [lift] moves the display and the wheel up together, by as much as it says, without changing their size or
+ * their layout, while the metal stays where it is: the device moves up over the keyboard (ADR-032). The top of
+ * the display may then leave the window.
  */
 @Composable
 fun DeviceBody(
     wheel: @Composable () -> Unit,
     modifier: Modifier = Modifier,
+    lift: Dp = 0.dp,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
@@ -75,7 +84,8 @@ fun DeviceBody(
             .fillMaxSize()
             .brushedMetal()
             .statusBarsPadding()
-            .navigationBarsPadding(),
+            .navigationBarsPadding()
+            .offset { IntOffset(0, -lift.roundToPx()) },
     ) {
         Column(
             Modifier
@@ -93,6 +103,9 @@ fun DeviceBody(
  * over it, and whoever slides the display's content uses it too, so the two move in step.
  */
 const val DEVICE_TRANSITION_MILLIS = 300
+
+/** The display's test tag, for an instrumented test that checks where it is, as over the keyboard (ADR-032). */
+const val DEVICE_DISPLAY_TEST_TAG = "deviceDisplay"
 
 /** The record in the display's header (ADR-018, rule 19). */
 enum class DeviceRecord {
@@ -127,6 +140,7 @@ fun DeviceDisplay(
     val colors = RolaboxMetal.colors
     Box(
         modifier
+            .testTag(DEVICE_DISPLAY_TEST_TAG)
             .fillMaxWidth()
             .clip(BezelShape)
             .background(colors.displayBezel)
@@ -243,6 +257,34 @@ private fun DeviceBodyPreview() {
             DeviceBody(wheel = { Wheel(onEvent = {}, clicks = false) }) {
                 DeviceDisplay(title = "rolabox", batteryLevel = 0.7f, modifier = Modifier.weight(1f)) { PreviewRows() }
             }
+        }
+    }
+}
+
+// A keyboard 60dp taller than the space under the display: the device moves up those 60dp, and no more.
+private val PreviewKeyboardHeight = 378.dp
+private val PreviewLift = 60.dp
+
+/**
+ * The device moved up over the keyboard (ADR-032): the gray band is where the phone's keyboard is, which a
+ * screenshot can't draw. The display's bottom edge is at the keyboard's top, the wheel is under it, and the top
+ * of the display has left the window.
+ */
+@PreviewLightDark
+@Composable
+private fun DeviceBodyLiftedPreview() {
+    RolaboxTheme {
+        Box(Modifier.heightIn(min = 760.dp)) {
+            DeviceBody(wheel = { Wheel(onEvent = {}, clicks = false) }, lift = PreviewLift) {
+                DeviceDisplay(title = "Search", batteryLevel = 0.7f, modifier = Modifier.weight(1f)) { PreviewRows() }
+            }
+            Box(
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .heightIn(min = PreviewKeyboardHeight)
+                    .background(RolaboxMetal.colors.displayFill),
+            )
         }
     }
 }

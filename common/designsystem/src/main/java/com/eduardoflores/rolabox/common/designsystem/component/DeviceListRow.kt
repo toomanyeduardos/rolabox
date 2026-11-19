@@ -113,18 +113,7 @@ fun List<DeviceListEntry>.isSelectable(index: Int): Boolean = getOrNull(index) i
 internal fun DeviceListItem(row: DeviceListRow, selected: Boolean, animationsOff: Boolean) {
     val colors = RolaboxMetal.colors
     val styles = RolaboxType.styles
-    val background = if (selected) {
-        Modifier.background(
-            Brush.verticalGradient(
-                0f to colors.selection[0],
-                SELECTION_UPPER_STOP to colors.selection[1],
-                SELECTION_LOWER_STOP to colors.selection[2],
-                1f to colors.selection[3],
-            ),
-        )
-    } else {
-        Modifier
-    }
+    val background = if (selected) Modifier.background(selectionBrush(colors.selection)) else Modifier
     val ink = if (selected) colors.onSelection else styles.displayRow.color
     Row(
         Modifier
@@ -154,6 +143,14 @@ internal fun DeviceListItem(row: DeviceListRow, selected: Boolean, animationsOff
         RowEnd(row, ink = ink, quietInk = if (selected) colors.onSelection else colors.displayMuted)
     }
 }
+
+/** The selection's gradient, behind a highlighted row and a highlighted [DeviceTextField]. */
+internal fun selectionBrush(selection: List<Color>): Brush = Brush.verticalGradient(
+    0f to selection[0],
+    SELECTION_UPPER_STOP to selection[1],
+    SELECTION_LOWER_STOP to selection[2],
+    1f to selection.last(),
+)
 
 /** The one thing at the end of a row: its download, its value, its secondary value or its `›`. */
 @Composable

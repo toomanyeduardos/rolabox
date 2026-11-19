@@ -1,6 +1,7 @@
 package com.eduardoflores.rolabox.common.designsystem.component
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -47,6 +48,10 @@ private val MessageVerticalPadding = 12.dp
  *
  * A [message] sits under the rows, centered in the space they leave. When the rows don't fit with it,
  * they scroll above it.
+ *
+ * A [field], a [DeviceTextField], is the first row of a list that takes text (ADR-032). It stays at the top
+ * while the rows under it scroll, and the scrollbar starts under it. It draws its own highlight, and
+ * [highlightedIndex] counts the [rows] only.
  */
 @Composable
 fun DeviceList(
@@ -54,9 +59,28 @@ fun DeviceList(
     highlightedIndex: Int,
     modifier: Modifier = Modifier,
     message: DeviceListMessage? = null,
+    field: (@Composable () -> Unit)? = null,
+) {
+    if (field == null) {
+        ListBody(rows, highlightedIndex, message, modifier.fillMaxSize())
+        return
+    }
+    Column(modifier.fillMaxSize()) {
+        field()
+        ListBody(rows, highlightedIndex, message, Modifier.weight(1f).fillMaxWidth())
+    }
+}
+
+/** The rows and the [message] under them, in the space the list gives them. */
+@Composable
+private fun ListBody(
+    rows: List<DeviceListEntry>,
+    highlightedIndex: Int,
+    message: DeviceListMessage?,
+    modifier: Modifier = Modifier,
 ) {
     if (message == null) {
-        ListRows(rows, highlightedIndex, fill = true, modifier = modifier.fillMaxSize())
+        ListRows(rows, highlightedIndex, fill = true, modifier = modifier)
         return
     }
     Layout(
@@ -68,7 +92,7 @@ fun DeviceList(
                 Modifier.padding(horizontal = MessageHorizontalPadding, vertical = MessageVerticalPadding),
             )
         },
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier,
     ) { (list, text), constraints ->
         val width = constraints.maxWidth
         val height = constraints.maxHeight
