@@ -2,8 +2,10 @@ import com.eduardoflores.rolabox.buildlogic.configureScreenshotTests
 import com.eduardoflores.rolabox.buildlogic.libs
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.dependencies
 import org.gradle.kotlin.dsl.project
+import org.gradle.kotlin.dsl.withType
 
 private const val DESIGNSYSTEM_PATH = ":common:designsystem"
 
@@ -26,6 +28,17 @@ class RolaboxAndroidPaparazziConventionPlugin : Plugin<Project> {
                 if (path != DESIGNSYSTEM_PATH) {
                     add("testImplementation", testFixtures(project(DESIGNSYSTEM_PATH)))
                 }
+            }
+
+            tasks.withType<Test>().configureEach {
+                jvmArgs(
+                    // layoutlib loads its native rendering code with System.load, which the JDK warns about and a
+                    // future JDK blocks unless native access is enabled.
+                    "--enable-native-access=ALL-UNNAMED",
+                    // Paparazzi's byte-buddy (1.18.14, and still 1.18.17) calls sun.misc.Unsafe::objectFieldOffset.
+                    // Remove this once Paparazzi ships a byte-buddy that doesn't use Unsafe.
+                    "--sun-misc-unsafe-memory-access=allow",
+                )
             }
 
             configureScreenshotTests()

@@ -4,6 +4,7 @@ import com.eduardoflores.rolabox.buildlogic.DEFAULT_ANDROID_UNIT_TEST_TASK
 import com.eduardoflores.rolabox.buildlogic.ProjectConfig
 import com.eduardoflores.rolabox.buildlogic.alignCoroutines
 import com.eduardoflores.rolabox.buildlogic.applyStaticAnalysis
+import com.eduardoflores.rolabox.buildlogic.buildsInstrumentedTests
 import com.eduardoflores.rolabox.buildlogic.enforceModuleRules
 import com.eduardoflores.rolabox.buildlogic.enforceNoProductFlavors
 import com.eduardoflores.rolabox.buildlogic.registerDesignSystemResourceCheck
@@ -41,7 +42,7 @@ class RolaboxAndroidLibraryConventionPlugin : Plugin<Project> {
                 finalizeDsl { it.enforceNoProductFlavors(path) }
                 // A module without instrumented tests builds no androidTest APK. One with test fixtures would
                 // package them in it, and Paparazzi's are for the JVM only (ADR-016).
-                val hasAndroidTests = file("src/androidTest").exists()
+                val hasAndroidTests = buildsInstrumentedTests()
                 beforeVariants { it.androidTest.enable = hasAndroidTests }
             }
         }

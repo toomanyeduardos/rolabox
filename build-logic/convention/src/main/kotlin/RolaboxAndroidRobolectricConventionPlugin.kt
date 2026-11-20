@@ -38,6 +38,9 @@ class RolaboxAndroidRobolectricConventionPlugin : Plugin<Project> {
                         unitTests.isIncludeAndroidResources = true
                         // Robolectric reads the internals of a FileDescriptor, which the JDK no longer exports.
                         unitTests.all { it.jvmArgs("--add-exports", "java.base/jdk.internal.access=ALL-UNNAMED") }
+                        // Robolectric's native graphics are loaded with System.load, which the JDK warns about and a
+                        // future JDK blocks unless native access is enabled.
+                        unitTests.all { it.jvmArgs("--enable-native-access=ALL-UNNAMED") }
                     }
                 }
             }
