@@ -42,3 +42,4 @@ New ADR: copy [`template.md`](template.md), take the next number, and add it to 
 | [031](031-podcasts.md) | Podcasts: Apple's directory, feeds read on the phone, downloads in playback's Media3 cache, and follows synced per show | Accepted |
 | [032](032-typing-on-the-device.md) | Typing on the device: the phone's keyboard over the wheel, into a field that is a row of the display | Accepted |
 | [033](033-shared-firestore-module.md) | Firestore is provided once, by `:common:firestore`, which also turns its errors into `RemoteError` | Accepted |
+| [034](034-plain-http-for-podcasts.md) | Plain HTTP is allowed for podcast feeds, images and audio, tried as HTTPS first, and HTTPS is forced for every service Rolabox talks to | Accepted |

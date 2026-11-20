@@ -42,9 +42,12 @@ internal class EpisodeCache(
     constructor(@ApplicationContext context: Context) : this(
         File(context.filesDir, EPISODES_FOLDER),
         { StandaloneDatabaseProvider(context) },
-        DefaultHttpDataSource.Factory()
-            // Enclosures go through tracking redirects, some of which go from http to https.
-            .setAllowCrossProtocolRedirects(true),
+        // An http:// enclosure is tried as HTTPS first (ADR-034, rule 4).
+        HttpsFirstDataSource.Factory(
+            DefaultHttpDataSource.Factory()
+                // Enclosures go through tracking redirects, some of which go from http to https.
+                .setAllowCrossProtocolRedirects(true),
+        ),
     )
 
     val databaseProvider: DatabaseProvider by lazy(databaseProvider)
