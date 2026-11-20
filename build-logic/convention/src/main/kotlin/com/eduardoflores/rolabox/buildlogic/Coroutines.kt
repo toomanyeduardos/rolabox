@@ -15,7 +15,8 @@ private val DECLARING_CONFIGURATIONS =
  */
 internal fun Project.alignCoroutines() {
     val bom = libs.findLibrary("kotlinx-coroutines-bom").get()
-    DECLARING_CONFIGURATIONS.forEach { name ->
+    val skipped = if (buildsInstrumentedTests()) emptySet() else setOf("androidTestImplementation")
+    (DECLARING_CONFIGURATIONS - skipped).forEach { name ->
         configurations.matching { it.name == name }.configureEach {
             dependencies { add(name, platform(bom)) }
         }

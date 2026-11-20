@@ -1,5 +1,6 @@
 import com.android.build.api.dsl.ApplicationExtension
 import com.android.build.api.dsl.LibraryExtension
+import com.eduardoflores.rolabox.buildlogic.buildsInstrumentedTests
 import com.eduardoflores.rolabox.buildlogic.libs
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -22,11 +23,13 @@ class RolaboxAndroidComposeConventionPlugin : Plugin<Project> {
             dependencies {
                 val bom = libs.findLibrary("androidx-compose-bom").get()
                 add("implementation", platform(bom))
-                add("androidTestImplementation", platform(bom))
                 add("implementation", libs.findLibrary("androidx-compose-ui").get())
                 add("implementation", libs.findLibrary("androidx-compose-ui-graphics").get())
                 add("implementation", libs.findLibrary("androidx-compose-ui-tooling-preview").get())
-                add("androidTestImplementation", libs.findLibrary("androidx-compose-ui-test-junit4").get())
+                if (buildsInstrumentedTests()) {
+                    add("androidTestImplementation", platform(bom))
+                    add("androidTestImplementation", libs.findLibrary("androidx-compose-ui-test-junit4").get())
+                }
                 add("debugImplementation", libs.findLibrary("androidx-compose-ui-tooling").get())
                 add("debugImplementation", libs.findLibrary("androidx-compose-ui-test-manifest").get())
             }

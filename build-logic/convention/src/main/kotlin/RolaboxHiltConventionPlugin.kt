@@ -1,3 +1,4 @@
+import com.eduardoflores.rolabox.buildlogic.buildsInstrumentedTests
 import com.eduardoflores.rolabox.buildlogic.libs
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -28,8 +29,10 @@ class RolaboxHiltConventionPlugin : Plugin<Project> {
                         add("implementation", libs.findLibrary("hilt-android").get())
                         add("testImplementation", hiltTesting)
                         add("kspTest", hiltCompiler)
-                        add("androidTestImplementation", hiltTesting)
-                        add("kspAndroidTest", hiltCompiler)
+                        if (buildsInstrumentedTests()) {
+                            add("androidTestImplementation", hiltTesting)
+                            add("kspAndroidTest", hiltCompiler)
+                        }
                     }
                 }
             }

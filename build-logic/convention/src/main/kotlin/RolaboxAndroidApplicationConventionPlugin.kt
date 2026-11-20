@@ -42,6 +42,11 @@ class RolaboxAndroidApplicationConventionPlugin : Plugin<Project> {
                     sourceCompatibility = ProjectConfig.JAVA_VERSION
                     targetCompatibility = ProjectConfig.JAVA_VERSION
                 }
+
+                // AndroidX ships these native libraries already built. Stripping them needs the NDK, which the
+                // project doesn't install, so AGP packages them as they are anyway; this only stops it warning.
+                packaging.jniLibs.keepDebugSymbols +=
+                    setOf("**/libandroidx.graphics.path.so", "**/libdatastore_shared_counter.so")
             }
 
             extensions.configure<ApplicationAndroidComponentsExtension> {
