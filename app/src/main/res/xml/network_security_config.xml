@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Plain HTTP is allowed by default, for podcast hosts, which are unknown and endless, and HTTPS is forced for every
+    service Rolabox talks to (ADR-034, rule 1). A new service adds its domain here, to ADR-034's table and to
+    NetworkSecurityConfigTest, in the change that makes its first request (rule 2).
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <domain-config cleartextTrafficPermitted="false">
+        <!-- Firebase Authentication, Firestore, Installations, Crashlytics' reports, Sign in with Google. -->
+        <domain includeSubdomains="true">googleapis.com</domain>
+        <!-- Sign in with Google. -->
+        <domain includeSubdomains="true">google.com</domain>
+        <!-- Crashlytics' settings. -->
+        <domain includeSubdomains="true">crashlytics.com</domain>
+        <!-- The podcast directory, Apple's iTunes Search API. -->
+        <domain includeSubdomains="true">apple.com</domain>
+        <!-- MusicBrainz, and the Cover Art Archive, whose images redirect to the Internet Archive. -->
+        <domain includeSubdomains="true">musicbrainz.org</domain>
+        <domain includeSubdomains="true">coverartarchive.org</domain>
+        <domain includeSubdomains="true">archive.org</domain>
+    </domain-config>
+</network-security-config>

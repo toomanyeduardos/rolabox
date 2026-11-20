@@ -170,6 +170,10 @@ rolabox:
     # ADR-031 rule 13: only the podcasts' network side parses feeds.
     active: true
     excludes: ['**/device/podcasts/network/impl/**']
+  CleartextUrlOutsidePodcasts:
+    # ADR-034 rule 3: only the podcasts area and tests write http:// URLs.
+    active: true
+    excludes: ['**/device/podcasts/**', '**/test/**', '**/testOffline/**', '**/testCloud/**', '**/androidTest/**']
   FixedHeightAroundText:
     # ADR-017 rule 3: a container of text grows with it.
     active: true

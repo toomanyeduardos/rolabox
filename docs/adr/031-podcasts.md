@@ -48,6 +48,10 @@
   a remote follow is applied: a feed's move keeps its `updatedAt`, so on the tie the cloud's older URL would win and
   the next check would move it back again. Firestore comes from `:common:firestore`
   ([ADR-033](033-shared-firestore-module.md)). Rule 14 is `[enforced]`, by the rules' emulator tests.
+- **Revised 2026-11-19:** Plain HTTP, for podcasts/11 ("Feeds", "Downloads", "Artwork"). Many hosts give `http://`
+  URLs for the feed, its images or its audio, which Android blocked, so those shows couldn't be read, had no artwork
+  or didn't play. This ADR didn't decide it. [ADR-034](034-plain-http-for-podcasts.md) does: plain HTTP is allowed
+  for podcast hosts, each `http://` URL is tried as HTTPS first, and HTTPS is forced for the services.
 
 ## Context
 
@@ -147,6 +151,8 @@ A show's episodes come from its RSS feed, not from the directory.
 
 - **OkHttp fetches the feed** in `:device:podcasts:network:impl`, following redirects. A permanent
   redirect (301 or 308), or `itunes:new-feed-url` in the feed, replaces the stored feed URL.
+- **An `http://` feed is read,** as HTTPS first ([ADR-034](034-plain-http-for-podcasts.md)), and so
+  are its images and its episodes' audio.
 - **It asks only for what changed.** The `ETag` and `Last-Modified` of the last answer are stored
   with the show and sent back, and a 304 is "nothing new".
 - **The parser is `XmlPullParser`,** from `android.util.Xml`, namespace-aware. It is the platform's,
@@ -355,6 +361,8 @@ playback/09 builds it.
   ([ADR-024](024-library-index.md), rule 5 is about Rolabox's relational data).
 - **HTTP is Media3's own** (`DefaultHttpDataSource`), for the download and for the stream, so
   OkHttp stays in `:network:impl` modules ([ADR-027](027-artwork-from-the-internet.md), rule 7).
+  An `http://` enclosure is asked for as HTTPS first, by a data source over it
+  ([ADR-034](034-plain-http-for-podcasts.md), rule 4).
 - **The service is a foreground service of type `dataSync`** while a download runs, declared with
   its permission in `:device:playback:impl`'s manifest. Its notification shows the progress where
   notifications are allowed. `POST_NOTIFICATIONS` is still never asked for

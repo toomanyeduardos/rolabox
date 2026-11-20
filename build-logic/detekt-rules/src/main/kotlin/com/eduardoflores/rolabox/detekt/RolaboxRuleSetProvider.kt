@@ -29,6 +29,7 @@ class RolaboxRuleSetProvider : RuleSetProvider {
             ::DeviceDisplayOutsideHost,
             ::MediaStoreOutsideLibrary,
             ::FeedParserOutsidePodcastsNetwork,
+            ::CleartextUrlOutsidePodcasts,
         ),
     )
 }

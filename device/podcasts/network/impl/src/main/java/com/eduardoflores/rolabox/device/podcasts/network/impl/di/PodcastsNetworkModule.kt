@@ -9,6 +9,7 @@ import com.eduardoflores.rolabox.device.podcasts.network.impl.ConnectivityConnec
 import com.eduardoflores.rolabox.device.podcasts.network.impl.DeviceCountry
 import com.eduardoflores.rolabox.device.podcasts.network.impl.DirectorySearchUrl
 import com.eduardoflores.rolabox.device.podcasts.network.impl.FirestoreFollowsNetworkDataSource
+import com.eduardoflores.rolabox.device.podcasts.network.impl.HttpsFirstInterceptor
 import com.eduardoflores.rolabox.device.podcasts.network.impl.ITunesDirectoryNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.impl.OkHttpImageNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.impl.PodcastsClient
@@ -64,8 +65,8 @@ abstract class PodcastsNetworkModule {
         fun providesDeviceCountry(): DeviceCountry = DeviceCountry.FromLocale
 
         /**
-         * The podcasts' client, for the directory, the feeds and their images. It sends nothing of its own (ADR-031,
-         * rule 1).
+         * The podcasts' client, for the directory, the feeds and their images. It sends nothing of its own, and keeps
+         * no cookies (ADR-031, rule 1; ADR-034, rule 5). An `http://` URL is tried as HTTPS first (ADR-034, rule 4).
          */
         @Provides
         @Singleton
@@ -73,6 +74,7 @@ abstract class PodcastsNetworkModule {
         fun providesPodcastsClient(): OkHttpClient = OkHttpClient.Builder()
             .connectTimeout(CONNECT_TIMEOUT.toJavaDuration())
             .readTimeout(READ_TIMEOUT.toJavaDuration())
+            .addInterceptor(HttpsFirstInterceptor())
             .build()
     }
 }
