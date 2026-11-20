@@ -21,3 +21,9 @@ google-services.json
 firebase/node_modules/
 firebase/.firebaserc
 firebase/*-debug.log
+
+# Signing keys (ADR-035): the upload keystore lives outside the repo, and none is ever committed, at any path.
+# CI fails if a tracked file has one of these extensions.
+*.jks
+*.keystore
+*.p12

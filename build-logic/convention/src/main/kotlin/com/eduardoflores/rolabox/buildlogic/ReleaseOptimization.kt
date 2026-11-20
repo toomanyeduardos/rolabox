@@ -23,6 +23,7 @@ private const val RELEASE = "release"
  *   archived.
  * - Instrumented tests stay on debug (ADR-008 allows only debug and release). A minified build is
  *   covered by a manual smoke test before each release, not by a test build type.
+ * - How a release is signed is [configureReleaseSigning]'s (ADR-035).
  *
  * [enforceReleaseOptimization] fails the build if anything turns this off again.
  */
@@ -32,10 +33,6 @@ internal fun Project.configureReleaseOptimization() {
             optimization {
                 enable = true
             }
-            // Until real release signing exists, a release is signed with the debug key so a minified
-            // build can be installed and smoke-tested locally. Play rejects debug-signed uploads, so
-            // this can't be shipped by mistake. Real signing replaces this line.
-            signingConfig = signingConfigs.getByName("debug")
         }
     }
 }

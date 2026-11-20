@@ -4,6 +4,8 @@
 - **Date:** 2026-11-19
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review
+- **Revised 2026-11-20:** Rules 1, 2 and 4 are built in launch/01, so they are `[enforced]`, no longer
+  `[planned]`, and Conformance describes the checks as they are. The decision is unchanged.
 
 ## Context
 
@@ -172,17 +174,15 @@ set, upload the bundle) and the upload key's backup locations and reset procedur
 
 ## Rules
 
-Nothing of this is built yet: the rules tagged `[planned]` are launch/01's.
-
-1. `[planned]` (launch/01) The release build type's signing config is set only by
+1. `[enforced]` The release build type's signing config is set only by
    `rolabox.android.application`. It uses the upload key when the four `rolaboxUpload*` properties
    are all set, the debug key when none are, and the build fails when only some are.
-2. `[planned]` (launch/01) No keystore is committed: `.gitignore` covers `*.jks`, `*.keystore` and
+2. `[enforced]` No keystore is committed: `.gitignore` covers `*.jks`, `*.keystore` and
    `*.p12` at any path, and CI fails if a tracked file has one of those extensions.
 3. `[convention]` The signing properties are set only in `~/.gradle/gradle.properties` or as
    environment variables: never in a file in the repo. No password, alias or keystore path is
    written in the repo.
-4. `[planned]` (launch/01) `versionName` comes from `rolabox.versionName` in `gradle.properties`, in
+4. `[enforced]` `versionName` comes from `rolabox.versionName` in `gradle.properties`, in
    the form `MAJOR.MINOR.PATCH`, and `versionCode` is `MAJOR * 10000 + MINOR * 100 + PATCH`. The
    convention plugin sets both, the build fails on a missing or malformed version, and no module
    sets either.
@@ -194,9 +194,9 @@ Nothing of this is built yet: the rules tagged `[planned]` are launch/01's.
 8. `[convention]` The SHA-1 and SHA-256 of the app signing key and of the upload key are in the
    Firebase project of the Play build.
 
-**Conformance.** Once launch/01 is built: rule 1 is checked by `ReleaseSigning.kt` when the build is
-configured, with a test of the all, none and some cases in `build-logic`'s unit tests, next to
-`ReleaseOptimizationTest`. Rule 2 is a "No keystore committed" step in
+**Conformance.** Rule 1 is checked by `ReleaseSigning.kt` when the build is configured, which also
+fails when the release's final signing config isn't the one it chose, with a test of the all, none
+and some cases in `build-logic`'s unit tests (`ReleaseSigningTest`). Rule 2 is a "No keystore committed" step in
 [CI](../../.github/workflows/ci.yml). Rule 4 is checked by the convention plugin, which reads the
 variant's final `versionCode` and `versionName`, so a module that sets either fails the build, with
 a test of the derivation and of malformed versions. Rules 3 and 5 to 8 are reviewed, and rules 5 to
