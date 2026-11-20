@@ -31,5 +31,7 @@
     <string name="now_playing_skip_unsupported">This format isn\'t supported</string>
     <string name="now_playing_skip_protected">This file is copy protected</string>
     <string name="now_playing_skip_unreadable">This file can\'t be read</string>
+    <!-- The server refused the episode's audio, as a publisher does a paid episode. -->
+    <string name="now_playing_skip_refused">This episode isn\'t available</string>
     <string name="now_playing_skip_unknown">It couldn\'t be played</string>
 </resources>

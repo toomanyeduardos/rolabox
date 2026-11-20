@@ -362,6 +362,7 @@ class NowPlayingViewModelTest {
             PlaybackError.Unplayable.Unsupported to SkipReason.Unsupported,
             PlaybackError.Unplayable.Protected to SkipReason.Protected,
             PlaybackError.Unplayable.Unreadable to SkipReason.Unreadable,
+            PlaybackError.Unplayable.Refused to SkipReason.Refused,
             PlaybackError.Unplayable.EngineFailed to SkipReason.Unknown,
         )
 

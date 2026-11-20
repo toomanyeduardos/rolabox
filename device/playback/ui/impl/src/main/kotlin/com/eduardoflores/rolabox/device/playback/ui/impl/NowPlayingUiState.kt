@@ -17,7 +17,7 @@ internal enum class NowPlayingMode {
 }
 
 /** Why a song was skipped, in the words the screen has for it (ADR-007, rule 8). */
-internal enum class SkipReason { Missing, Damaged, Unsupported, Protected, Unreadable, Unknown }
+internal enum class SkipReason { Missing, Damaged, Unsupported, Protected, Unreadable, Refused, Unknown }
 
 /** The songs skipped in a run: [title] is the last one's, [others] how many came before it, [reason] why it failed. */
 internal data class SkippedSongs(val title: String?, val others: Int, val reason: SkipReason)

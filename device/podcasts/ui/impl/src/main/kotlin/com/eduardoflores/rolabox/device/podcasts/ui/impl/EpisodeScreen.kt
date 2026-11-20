@@ -107,6 +107,7 @@ internal data class EpisodeWords(
     val resume: String,
     val playFromStart: String,
     val needsWifi: String,
+    val notAvailable: String,
     val dateThisYear: String,
     val dateOtherYear: String,
     val minutes: String,
@@ -120,6 +121,7 @@ internal data class EpisodeWords(
         EpisodeRow.Resume -> resume
         EpisodeRow.PlayFromStart -> playFromStart
         EpisodeRow.NeedsWifi -> needsWifi
+        EpisodeRow.NotAvailable -> notAvailable
     }
 }
 
@@ -129,6 +131,7 @@ internal fun episodeWords() = EpisodeWords(
     resume = stringResource(R.string.podcasts_resume),
     playFromStart = stringResource(R.string.podcasts_play_from_start),
     needsWifi = stringResource(R.string.podcasts_needs_wifi),
+    notAvailable = stringResource(R.string.podcasts_not_available),
     dateThisYear = stringResource(R.string.podcasts_date_this_year),
     dateOtherYear = stringResource(R.string.podcasts_date_other_year),
     minutes = stringResource(R.string.podcasts_minutes),

@@ -9,6 +9,8 @@ import com.eduardoflores.rolabox.device.podcasts.api.DirectoryShow
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastDirectory
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastError
 import com.eduardoflores.rolabox.device.podcasts.api.ShowFeed
+import com.eduardoflores.rolabox.device.podcasts.network.api.AudioNetworkDataSource
+import com.eduardoflores.rolabox.device.podcasts.network.api.AudioNetworkError
 import com.eduardoflores.rolabox.device.podcasts.network.api.ConnectionNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.api.DirectoryNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.api.DirectoryNetworkError
@@ -38,6 +40,7 @@ internal class DefaultPodcastDirectory @Inject constructor(
     private val directory: DirectoryNetworkDataSource,
     private val feeds: FeedNetworkDataSource,
     private val connection: ConnectionNetworkDataSource,
+    private val audio: AudioNetworkDataSource,
 ) : PodcastDirectory {
     private val remembered = RecentAnswers<String, DirectoryResults>(REMEMBERED_SEARCHES)
 
@@ -59,6 +62,9 @@ internal class DefaultPodcastDirectory @Inject constructor(
     }
 
     override fun observeConnected(): Flow<Boolean> = connection.observeConnected()
+
+    override suspend fun checkAudio(audioUrl: String): Either<PodcastError, Unit> =
+        audio.check(audioUrl).mapLeft(::errorOf)
 
     override suspend fun show(show: DirectoryShow): Either<PodcastError, ShowFeed> = either {
         when (val answer = feeds.fetch(show.feedUrl).mapLeft(::errorOf).bind()) {
@@ -84,6 +90,11 @@ private fun errorOf(error: DirectoryNetworkError): PodcastError = when (error) {
 private fun errorOf(error: FeedNetworkError): PodcastError = when (error) {
     FeedNetworkError.Unreachable -> PodcastError.NoConnection
     FeedNetworkError.Unreadable -> PodcastError.FeedUnreadable
+}
+
+private fun errorOf(error: AudioNetworkError): PodcastError = when (error) {
+    AudioNetworkError.Unreachable -> PodcastError.NoConnection
+    AudioNetworkError.Refused -> PodcastError.AudioRefused
 }
 
 private fun FeedEpisode.toDirectoryEpisode() = DirectoryEpisode(

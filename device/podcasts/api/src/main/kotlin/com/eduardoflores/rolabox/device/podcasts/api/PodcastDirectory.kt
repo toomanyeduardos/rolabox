@@ -30,6 +30,14 @@ interface PodcastDirectory {
     suspend fun show(show: DirectoryShow): Either<PodcastError, ShowFeed>
 
     /**
+     * Whether the publisher gives the audio at [audioUrl], an episode's enclosure, from a request for its first
+     * kilobyte, before an episode from search is offered for play (ADR-031, Search). A refusal is
+     * [PodcastError.AudioRefused], and no connection [PodcastError.NoConnection]. Any other answer is `Unit`: the
+     * player says what it finds.
+     */
+    suspend fun checkAudio(audioUrl: String): Either<PodcastError, Unit>
+
+    /**
      * Whether the phone has a network that reaches the internet: the state now, and each change after it. Search asks
      * again when it turns `true` after [PodcastError.NoConnection] (ADR-031, Search).
      */

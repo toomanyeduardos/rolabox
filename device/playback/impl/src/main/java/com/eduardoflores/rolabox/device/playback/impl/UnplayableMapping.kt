@@ -1,12 +1,17 @@
 package com.eduardoflores.rolabox.device.playback.impl
 
+import androidx.annotation.OptIn
 import androidx.media3.common.PlaybackException
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.HttpDataSource
 import com.eduardoflores.rolabox.common.util.NonFatalReport
 import com.eduardoflores.rolabox.device.playback.api.PlaybackError
 
 /** Media3's error codes as the kinds the user can tell apart. `PlaybackException` stops here (ADR-023, rule 10). */
 internal fun PlaybackException.toUnplayable(): PlaybackError.Unplayable = when (errorCode) {
     PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND -> PlaybackError.Unplayable.Missing
+
+    PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS if httpStatus() in REFUSALS -> PlaybackError.Unplayable.Refused
 
     PlaybackException.ERROR_CODE_PARSING_CONTAINER_MALFORMED,
     PlaybackException.ERROR_CODE_PARSING_MANIFEST_MALFORMED,
@@ -29,6 +34,19 @@ internal fun PlaybackException.toUnplayable(): PlaybackError.Unplayable = when (
     else -> PlaybackError.Unplayable.EngineFailed
 }
 
+/** The answers that mean the server refuses the audio, as a publisher does a paid episode (ADR-031, Errors). */
+private val REFUSALS = setOf(401, 403, 410)
+
+/**
+ * The HTTP status the server answered, from Media3's exception for it, wherever it is in the causes: the cache that
+ * reads a download wraps it. `null` when there is none.
+ */
+@OptIn(UnstableApi::class)
+private fun PlaybackException.httpStatus(): Int? = generateSequence<Throwable>(cause) { it.cause }
+    .filterIsInstance<HttpDataSource.InvalidResponseCodeException>()
+    .firstOrNull()
+    ?.responseCode
+
 // Media3 keeps each family of codes in its own range of a thousand.
 private val IO_CODES = 2000..2999
 private val DRM_CODES = 6000..6999
@@ -45,14 +63,18 @@ private val NETWORK_CODES = setOf(
 
 /**
  * Reports an item that couldn't be played to [report], unless it is the phone's state and not a bug: a deleted or
- * protected file, a stream that lost its network or a server that answered with an error (ADR-030). An Unplayable is a
- * data object, whose toString() is its name.
+ * protected file, a stream that lost its network, a server that answered with an error, or one that refused the audio,
+ * which is the publisher's choice (ADR-030). An Unplayable is a data object, whose toString() is its name.
  */
 internal fun reportUnplayable(report: NonFatalReport, unplayable: PlaybackError.Unplayable, error: PlaybackException) {
-    if (unplayable != PlaybackError.Unplayable.Missing &&
-        unplayable != PlaybackError.Unplayable.Protected &&
-        !error.isNetworkState()
-    ) {
+    if (unplayable !in NotBugs && !error.isNetworkState()) {
         report.report("Unplayable.$unplayable ${error.errorCodeName}", error)
     }
 }
+
+/** The kinds that are the phone's or the publisher's state, never a bug. */
+private val NotBugs = setOf(
+    PlaybackError.Unplayable.Missing,
+    PlaybackError.Unplayable.Protected,
+    PlaybackError.Unplayable.Refused,
+)

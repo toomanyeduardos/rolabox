@@ -9,12 +9,14 @@ import com.eduardoflores.rolabox.device.podcasts.api.DirectoryShow
 import com.eduardoflores.rolabox.device.podcasts.api.FoundEpisode
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastError
 import com.eduardoflores.rolabox.device.podcasts.api.ShowFeed
+import com.eduardoflores.rolabox.device.podcasts.network.api.AudioNetworkError
 import com.eduardoflores.rolabox.device.podcasts.network.api.DirectoryNetworkError
 import com.eduardoflores.rolabox.device.podcasts.network.api.Feed
 import com.eduardoflores.rolabox.device.podcasts.network.api.FeedAnswer
 import com.eduardoflores.rolabox.device.podcasts.network.api.FeedEpisode
 import com.eduardoflores.rolabox.device.podcasts.network.api.FeedNetworkError
 import com.eduardoflores.rolabox.device.podcasts.network.api.FeedValidators
+import com.eduardoflores.rolabox.device.podcasts.testing.FakeAudioNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.testing.FakeConnectionNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.testing.FakeDirectoryNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.testing.FakeDirectoryNetworkDataSource.Kind
@@ -29,7 +31,25 @@ class DefaultPodcastDirectoryTest {
     private val network = FakeDirectoryNetworkDataSource()
     private val feeds = FakeFeedNetworkDataSource()
     private val connection = FakeConnectionNetworkDataSource()
-    private val directory = DefaultPodcastDirectory(network, feeds, connection)
+    private val audio = FakeAudioNetworkDataSource()
+    private val directory = DefaultPodcastDirectory(network, feeds, connection, audio)
+
+    @Test
+    fun audioThatIsThere_isUnit() = runTest {
+        assertEquals(Unit.right(), directory.checkAudio("https://e.com/1.mp3"))
+        assertEquals(listOf("https://e.com/1.mp3"), audio.checked)
+    }
+
+    @Test
+    fun refusedAudio_isAudioRefused_andNoConnection_isNoConnection() = runTest {
+        audio.answers = mapOf(
+            "https://e.com/paid.mp3" to AudioNetworkError.Refused.left(),
+            "https://e.com/far.mp3" to AudioNetworkError.Unreachable.left(),
+        )
+
+        assertEquals(PodcastError.AudioRefused.left(), directory.checkAudio("https://e.com/paid.mp3"))
+        assertEquals(PodcastError.NoConnection.left(), directory.checkAudio("https://e.com/far.mp3"))
+    }
 
     private val rome = DirectoryShow(DirectoryId.itunes(1), "Emperors of Rome", "Nightlight", "https://e.com/rome.xml")
     private val gracchi = FoundEpisode(

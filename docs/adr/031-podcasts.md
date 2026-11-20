@@ -52,6 +52,14 @@
   URLs for the feed, its images or its audio, which Android blocked, so those shows couldn't be read, had no artwork
   or didn't play. This ADR didn't decide it. [ADR-034](034-plain-http-for-podcasts.md) does: plain HTTP is allowed
   for podcast hosts, each `http://` URL is tried as HTTPS first, and HTTPS is forced for the services.
+- **Revised 2026-11-19:** Refused audio, for podcasts/12 ("Search", "Errors"). Some publishers keep paid episodes
+  in their public feed, and their server refuses the audio, so Play from search added the show and the episode,
+  the download failed, and an empty show was left in Podcasts. An episode opened from search now has its audio
+  checked with `PodcastDirectory.checkAudio` (a request for its first kilobyte) when its Episode screen opens, and
+  a 401, 403 or 410 is the new `PodcastError.AudioRefused`: the screen shows "Not available" in place of Play, and
+  nothing is added. Only episodes from search are checked: checking every episode of the library would slow its
+  screens. While episodes need Wi-Fi the check isn't made, so rule 9 holds. The player's 401, 403 or 410 is the
+  new `PlaybackError.Unplayable.Refused`, which says "This episode isn't available" and isn't reported.
 
 ## Context
 
@@ -277,6 +285,21 @@ the top of its list. podcasts/08 builds it.
   follow On. The feed was just read, so there is nothing for the follow check to read at once. Off
   is `setFollowed`, as on a show of the library.
 - **Playing from search** is `addEpisode` then `play`, as before.
+- **Audio the publisher refuses.** Some publishers keep paid episodes in their public feed and refuse
+  their audio. When an episode found by search has been found in its feed, its Episode screen calls
+  `PodcastDirectory.checkAudio` with the feed's enclosure URL, before it offers Play. It is a `GET`
+  with `Range: bytes=0-1023` to the publisher's server, through `AudioNetworkDataSource` in
+  `:device:podcasts:network:api`, with the podcasts' client and redirects followed. It isn't
+  Apple's, so it doesn't count against the directory's limit, and it isn't a download: nothing of
+  the body is read or kept (rule 8). A 401, 403 or 410 is `PodcastError.AudioRefused`, and the
+  screen's one row is "Not available", on which center does nothing, so nothing is added. Any other
+  answer (a 206, a 200 from a server that ignores the range, a 404, a 5xx), no connection, or no
+  answer within 10 seconds offers Play as before: the player says what it finds. The screen shows
+  nothing until the check answers, so a press can't add the episode first. While episodes need
+  Wi-Fi the screen shows Needs Wi-Fi and the check waits for the network to allow it (rule 9).
+  There is no paywall tag in RSS to read instead: the server's answer is the signal. Episodes of
+  the library aren't checked, since a screen of many would make as many requests: playback's
+  `Unplayable.Refused` says it for them.
 
 ### The database
 
@@ -565,14 +588,19 @@ Every call that can fail returns an `Either` ([ADR-007](007-error-handling.md)).
 
 - **`PodcastError`, in `:device:podcasts:api`:** `NoConnection`; `DirectoryBusy`, for the rate;
   `DirectoryFailed`, for any other answer the directory can't give; `FeedUnreadable`, for a feed that
-  can't be fetched or read; and `Storage`, wrapping the database's error.
+  can't be fetched or read; `AudioRefused`, for an episode whose server refuses its audio with a
+  401, 403 or 410 (Search); and `Storage`, wrapping the database's error.
 - **No results is not an error.** It is an empty answer.
 - **`PlaybackError` gains what playing an episode can end in:** `StorageFull` and `MobileDataOff`,
   returned by `play`, and `NoConnection` and `MobileDataOff`, reported as state while it waits. A
   download that fails is a state of `ItemDownloads`, not an error of a call.
+- **`PlaybackError.Unplayable.Refused`:** the server answered 401, 403 or 410 while the player
+  streamed an item or read it through the download's cache. Now Playing says "This episode isn't
+  available". A download that fails for it stays `ItemDownload.Failed`, with no reason: the player,
+  which reads the same bytes, is what tells the user.
 - **What is reported to Crashlytics** ([ADR-030](030-crash-reporting.md), rule 6): a database
-  failure. Not a feed that can't be read, a directory that refuses, no connection or a full disk,
-  which are expected outcomes.
+  failure. Not a feed that can't be read, a directory that refuses, audio the publisher refuses, no
+  connection or a full disk, which are expected outcomes.
 
 ### What was not decided
 
@@ -682,8 +710,8 @@ Every call that can fail returns an `Either` ([ADR-007](007-error-handling.md)).
 3. `[convention]` The podcasts area is `:device:podcasts:{api,impl,testing}`, its sub-parts
    `:device:podcasts:local:{api,impl}` and `:device:podcasts:network:{api,impl}`, and its screens
    `:device:podcasts:ui:{api,impl}`. Search is part of it.
-4. `[convention]` Only `PodcastDirectory` reads the network to answer a screen: search, and a show
-   opened from search. Its answers are never kept in the database as a cache: a show and its
+4. `[convention]` Only `PodcastDirectory` reads the network to answer a screen: search, a show
+   opened from search, and the check of an episode's audio opened from search. Its answers are never kept in the database as a cache: a show and its
    episodes join the library only when the user plays one of them or follows the show. Everything
    else a screen shows of podcasts is read from the database.
 5. `[convention]` The podcasts' relational data is in their own Room database, every table of it is
