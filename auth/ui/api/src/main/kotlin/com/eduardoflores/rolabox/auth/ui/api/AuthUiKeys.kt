@@ -20,3 +20,10 @@ data class ResetPasswordKey(val email: String = "") : NavKey
  */
 @Serializable
 data object SignOutKey : NavKey
+
+/**
+ * Asks the signed-in user to re-authenticate and confirm deleting their account (ADR-037). It's opened from Sign out,
+ * over the device.
+ */
+@Serializable
+data object DeleteAccountKey : NavKey

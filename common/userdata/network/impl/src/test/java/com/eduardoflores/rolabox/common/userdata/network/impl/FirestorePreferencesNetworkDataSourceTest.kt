@@ -33,6 +33,14 @@ class FirestorePreferencesNetworkDataSourceTest {
         assertTrue(created)
     }
 
+    @Test
+    fun deleting_createsFirestore() {
+        val dataSource = FirestorePreferencesNetworkDataSource(firestore, FakeNonFatalReport())
+
+        assertThrows(FirestoreCreated::class.java) { runBlocking { dataSource.delete(USER) } }
+        assertTrue(created)
+    }
+
     private class FirestoreCreated : RuntimeException()
 
     private companion object {

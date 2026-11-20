@@ -6,6 +6,7 @@ import com.google.firebase.FirebaseTooManyRequestsException
 import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 
@@ -27,6 +28,8 @@ internal fun Throwable.asAuthError(): AuthError? = when (this) {
         if (errorCode == INVALID_EMAIL) AuthError.InvalidEmail else AuthError.InvalidCredential
 
     is FirebaseAuthUserCollisionException -> AuthError.EmailAlreadyInUse
+
+    is FirebaseAuthRecentLoginRequiredException -> AuthError.RequiresRecentLogin
 
     is FirebaseNetworkException -> AuthError.Network
 

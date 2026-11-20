@@ -8,4 +8,6 @@ dependencies {
     api(libs.arrow.core)
     // SignInError wraps StorageError. Consumers that name it declare its module themselves (ADR-003, rule 15).
     implementation(project(":common:storage:api"))
+    // DeleteAccountError wraps RemoteError, the same way.
+    implementation(project(":common:sync:api"))
 }

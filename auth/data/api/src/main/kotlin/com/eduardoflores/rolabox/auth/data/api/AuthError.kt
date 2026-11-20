@@ -1,7 +1,7 @@
 package com.eduardoflores.rolabox.auth.data.api
 
 /**
- * Signing in or signing up failed (ADR-007). After the UI step (ADR-009), errors of the UI step
+ * Signing in, signing up or deleting the account failed (ADR-007). After the UI step (ADR-009), errors of the UI step
  * itself, such as the user closing the account picker, are handled by the screen.
  */
 sealed interface AuthError {
@@ -22,6 +22,12 @@ sealed interface AuthError {
 
     /** Sign-up: the backend's password policy rejected the password. */
     data object WeakPassword : AuthError
+
+    /**
+     * The backend refused to delete the account because the user didn't sign in recently enough. Re-authenticating,
+     * then retrying, works (ADR-037).
+     */
+    data object RequiresRecentLogin : AuthError
 
     /** The backend is rate limiting this device or account. Retrying now won't help, later may. */
     data object TooManyRequests : AuthError

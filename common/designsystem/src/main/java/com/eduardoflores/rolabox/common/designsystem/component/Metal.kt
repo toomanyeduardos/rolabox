@@ -80,6 +80,37 @@ fun PrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifi
 }
 
 /**
+ * The action that destroys the user's data, such as deleting the account: red, so it never reads as the screen's
+ * primary action, and only on the screen that confirms it. Ignores taps while [loading]. A label that doesn't fit on
+ * one line wraps, and the key grows with it (ADR-017).
+ */
+@Composable
+fun DestructiveButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, loading: Boolean = false) {
+    val colors = RolaboxMetal.colors
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = KeyMinHeight)
+            .shadow(6.dp, PillShape, ambientColor = colors.destructive, spotColor = colors.destructive)
+            .clip(PillShape)
+            .background(colors.destructive)
+            .clickable(enabled = !loading, role = Role.Button, onClick = onClick)
+            .padding(KeyPadding),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (loading) {
+            CircularProgressIndicator(Modifier.size(22.dp), color = colors.onDestructive, strokeWidth = 2.5.dp)
+        } else {
+            Text(
+                text = text,
+                style = RolaboxType.styles.buttonLabel.copy(color = colors.onDestructive),
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
+/**
  * A metal key for an action that sits beside the primary one. Disabled, it goes flat, and [text] can
  * carry a status such as a countdown, which a screen reader reads as the button's label.
  */
@@ -279,6 +310,15 @@ private fun PrimaryButtonPreview() {
     PreviewSurface {
         PrimaryButton(text = "Sign in", onClick = {})
         PrimaryButton(text = "Sign in", onClick = {}, loading = true)
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun DestructiveButtonPreview() {
+    PreviewSurface {
+        DestructiveButton(text = "Delete account", onClick = {})
+        DestructiveButton(text = "Delete account", onClick = {}, loading = true)
     }
 }
 

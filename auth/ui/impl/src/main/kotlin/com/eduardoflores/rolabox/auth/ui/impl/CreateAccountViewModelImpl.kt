@@ -124,6 +124,7 @@ private fun CreateAccountUiState.withAuthError(error: AuthError): CreateAccountU
     AuthError.InvalidCredential,
     AuthError.AccountDisabled,
     AuthError.TooManyRequests,
+    AuthError.RequiresRecentLogin,
     AuthError.Unknown,
     -> copy(isLoading = false, formError = FormError.Generic)
 }
@@ -141,6 +142,7 @@ private fun CreateAccountUiState.withProviderError(error: SignInError): CreateAc
             AuthError.EmailAlreadyInUse,
             AuthError.InvalidEmail,
             AuthError.WeakPassword,
+            AuthError.RequiresRecentLogin,
             AuthError.Unknown,
             -> FormError.SignInFailed
         }

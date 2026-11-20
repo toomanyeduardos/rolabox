@@ -263,6 +263,34 @@ class PreferencesSyncerTest {
     }
 
     // Each device has its own local storage, and they all share the one remote.
+    // ADR-037: deleting the account deletes the user's preferences in the cloud, and nobody else's.
+    @Test
+    fun deleteRemote_deletesTheUsersPreferencesOnly() = runTest {
+        network.byUser[USER] = SyncedPreferences(darkThemeConfig = synced(DarkThemeConfig.DARK, 1))
+        network.byUser[OTHER_USER] = SyncedPreferences(darkThemeConfig = synced(DarkThemeConfig.LIGHT, 1))
+
+        assertEquals(Unit.right(), device().syncer.deleteRemote(USER))
+
+        assertEquals(setOf(OTHER_USER), network.byUser.keys)
+    }
+
+    @Test
+    fun deleteRemote_failing_isTheRemoteError() = runTest {
+        network.deleteError = RemoteError.Unavailable
+
+        assertEquals(RemoteError.Unavailable.left(), device().syncer.deleteRemote(USER))
+    }
+
+    // ADR-037, rule 3: sync never deletes the preferences.
+    @Test
+    fun sync_neverDeletes() = runTest {
+        network.byUser[USER] = SyncedPreferences(darkThemeConfig = synced(DarkThemeConfig.DARK, 1))
+
+        device().syncer.sync(USER)
+
+        assertEquals(SyncedPreferences(darkThemeConfig = synced(DarkThemeConfig.DARK, 1)), network.byUser[USER])
+    }
+
     private fun device(): Device {
         val local = FakePreferencesLocalDataSource()
         return Device(local, PreferencesSyncer(local, network, FakeLastWriteWins()))

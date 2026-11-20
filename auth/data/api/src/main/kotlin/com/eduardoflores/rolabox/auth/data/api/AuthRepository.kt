@@ -35,4 +35,21 @@ interface AuthRepository {
 
     /** Ends the session. Signing out while signed out succeeds. */
     suspend fun signOut(): Either<AuthError, Unit>
+
+    /**
+     * Re-authenticates the signed-in user with a credential from the UI's sign-in step (ADR-009), so the backend
+     * accepts deleting the account (ADR-037). A credential of another account fails with
+     * [AuthError.InvalidCredential].
+     */
+    suspend fun reauthenticate(credential: SignInCredential): Either<AuthError, Unit>
+
+    /** Re-authenticates the signed-in user with their password, as [reauthenticate] does. */
+    suspend fun reauthenticateWithPassword(password: String): Either<AuthError, Unit>
+
+    /**
+     * Deletes the signed-in user's account, which signs them out. Fails with [AuthError.RequiresRecentLogin] when they
+     * haven't signed in recently enough. Deleting while signed out succeeds: there is no account to delete. Only
+     * `DeleteAccountUseCase` calls it, after the account's synced data is deleted (ADR-037, rule 2).
+     */
+    suspend fun deleteUser(): Either<AuthError, Unit>
 }

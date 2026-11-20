@@ -25,6 +25,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.play.services)
     testImplementation(project(":auth:data:testing"))
     testImplementation(project(":common:userdata:testing"))
+    testImplementation(project(":common:sync:testing"))
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
 }

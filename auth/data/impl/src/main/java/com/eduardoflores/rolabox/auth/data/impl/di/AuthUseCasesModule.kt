@@ -1,10 +1,14 @@
 package com.eduardoflores.rolabox.auth.data.impl.di
 
+import com.eduardoflores.rolabox.auth.data.api.DeleteAccountUseCase
 import com.eduardoflores.rolabox.auth.data.api.PasswordPolicy
 import com.eduardoflores.rolabox.auth.data.api.ResolveStartDestinationUseCase
 import com.eduardoflores.rolabox.auth.data.api.SignInUseCase
 import com.eduardoflores.rolabox.auth.data.api.SignUpUseCase
+import com.eduardoflores.rolabox.auth.data.impl.AndroidAppDataEraser
+import com.eduardoflores.rolabox.auth.data.impl.AppDataEraser
 import com.eduardoflores.rolabox.auth.data.impl.AuthSyncUserProvider
+import com.eduardoflores.rolabox.auth.data.impl.DefaultDeleteAccountUseCase
 import com.eduardoflores.rolabox.auth.data.impl.DefaultPasswordPolicy
 import com.eduardoflores.rolabox.auth.data.impl.DefaultResolveStartDestinationUseCase
 import com.eduardoflores.rolabox.auth.data.impl.DefaultSignInUseCase
@@ -33,6 +37,12 @@ abstract class AuthUseCasesModule {
     internal abstract fun bindsResolveStartDestinationUseCase(
         useCase: DefaultResolveStartDestinationUseCase,
     ): ResolveStartDestinationUseCase
+
+    @Binds
+    internal abstract fun bindsAppDataEraser(eraser: AndroidAppDataEraser): AppDataEraser
+
+    @Binds
+    internal abstract fun bindsDeleteAccountUseCase(useCase: DefaultDeleteAccountUseCase): DeleteAccountUseCase
 
     @Binds
     internal abstract fun bindsPasswordPolicy(policy: DefaultPasswordPolicy): PasswordPolicy

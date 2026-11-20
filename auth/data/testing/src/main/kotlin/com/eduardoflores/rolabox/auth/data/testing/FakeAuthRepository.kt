@@ -88,6 +88,39 @@ class FakeAuthRepository @Inject constructor() : AuthRepository {
     override suspend fun signOut(): Either<AuthError, Unit> =
         signOutError?.left() ?: state.update { AuthState.SignedOut }.right()
 
+    /** When set, re-authenticating fails with this error. */
+    var reauthenticateError: AuthError? = null
+
+    /** When set, [deleteUser] fails with this error and the state doesn't change. */
+    var deleteUserError: AuthError? = null
+
+    /** Every call of re-authenticating and deleting, in order, for tests of the order of a deletion. */
+    val accountCalls = mutableListOf<String>()
+
+    /** Whether [deleteUser] deleted the account. */
+    var deleted = false
+        private set
+
+    override suspend fun reauthenticate(credential: SignInCredential): Either<AuthError, Unit> {
+        accountCalls += "reauthenticate($credential)"
+        return reauthenticateError?.left() ?: Unit.right()
+    }
+
+    override suspend fun reauthenticateWithPassword(password: String): Either<AuthError, Unit> {
+        accountCalls += "reauthenticateWithPassword($password)"
+        return reauthenticateError?.left() ?: Unit.right()
+    }
+
+    // Like Firebase, deleting the account signs out.
+    override suspend fun deleteUser(): Either<AuthError, Unit> {
+        accountCalls += "deleteUser"
+        return deleteUserError?.left() ?: run {
+            deleted = true
+            state.value = AuthState.SignedOut
+            Unit.right()
+        }
+    }
+
     fun setAuthState(authState: AuthState) {
         state.value = authState
     }

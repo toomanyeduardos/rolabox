@@ -8,8 +8,10 @@ import com.eduardoflores.rolabox.common.sync.api.RemoteError
 import com.eduardoflores.rolabox.common.sync.api.SyncError
 import com.eduardoflores.rolabox.common.sync.api.Syncer
 import com.eduardoflores.rolabox.common.sync.testing.FakeSyncUserProvider
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -17,6 +19,7 @@ import org.junit.Test
 class SyncRunnerTest {
     private val syncUserProvider = FakeSyncUserProvider()
     private val failureLog = RecordingSyncFailureLog()
+    private val pause = SyncPause()
 
     // Who there is to sync for, and so whether offline mode is on, is the provider's answer
     // (ADR-020, rule 18). What sync owns of ADR-008 rule 6 is obeying it, which these tests cover.
@@ -106,7 +109,44 @@ class SyncRunnerTest {
         assertEquals(emptyList<Pair<SyncError, SyncOutcome>>(), failureLog.logged)
     }
 
-    private fun runner(vararg syncers: Syncer) = SyncRunner(syncUserProvider, syncers.toSet(), failureLog)
+    // ADR-037: the user's data is being deleted, so sync mustn't write it back.
+    @Test
+    fun pausedForTheUser_syncsNothing() = runTest {
+        signIn()
+        pause.pausedFor.value = USER
+        val syncer = RecordingSyncer()
+
+        assertEquals(SyncOutcome.Done, runner(syncer).sync())
+        assertEquals(emptyList<String>(), syncer.userIds)
+    }
+
+    @Test
+    fun pausedForAnotherUser_stillSyncs() = runTest {
+        signIn()
+        pause.pausedFor.value = "bob"
+        val syncer = RecordingSyncer()
+
+        runner(syncer).sync()
+
+        assertEquals(listOf(USER), syncer.userIds)
+    }
+
+    @Test
+    fun whileTheDeleteHoldsTheLock_waitsForIt() = runTest {
+        signIn()
+        val syncer = RecordingSyncer()
+        pause.running.lock()
+
+        val run = async { runner(syncer).sync() }
+        runCurrent()
+        assertEquals(emptyList<String>(), syncer.userIds)
+
+        pause.running.unlock()
+        run.await()
+        assertEquals(listOf(USER), syncer.userIds)
+    }
+
+    private fun runner(vararg syncers: Syncer) = SyncRunner(syncUserProvider, syncers.toSet(), failureLog, pause)
 
     private suspend fun runWith(error: SyncError) = runner(RecordingSyncer(error.left())).sync()
 
@@ -123,6 +163,8 @@ class SyncRunnerTest {
             userIds += userId
             return result
         }
+
+        override suspend fun deleteRemote(userId: String): Either<RemoteError, Unit> = Unit.right()
     }
 
     private class RecordingSyncFailureLog : SyncFailureLog {

@@ -47,6 +47,12 @@ data class MetalColors(
     val onAccent: Color = Color.White,
     /** Text on the [error] fill, such as the "!" badge. */
     val onError: Color = Color.White,
+    /**
+     * The fill of an action that destroys the user's data, and its label. The same on both finishes: [error] is light
+     * on the dark one, where a white label wouldn't read on it (ADR-017).
+     */
+    val destructive: Color = Color(0xFFB3261E),
+    val onDestructive: Color = Color.White,
     /** The glossy selected row of a device display, top to bottom. */
     val selection: List<Color> = listOf(Color(0xFF5AA6EE), Color(0xFF2F86DB), Color(0xFF1F6FC4), Color(0xFF1A62B0)),
     /** Text on the selected row. */

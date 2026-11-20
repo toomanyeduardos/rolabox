@@ -5,6 +5,7 @@ import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
@@ -31,3 +32,11 @@ internal fun syncRequests(
 ): Flow<Unit> = syncUser.distinctUntilChanged().flatMapLatest { userId ->
     if (userId == null) emptyFlow() else merge(flowOf(Unit), localChanges.debounce(debounce), foreground)
 }
+
+/**
+ * The user to sync for: [syncUser], except while that user's data is being deleted ([pausedFor],
+ * ADR-037), when it's null, as for nobody. The pause names its user, so it never stops another
+ * account's sync.
+ */
+internal fun allowedSyncUser(syncUser: Flow<String?>, pausedFor: Flow<String?>): Flow<String?> =
+    combine(syncUser, pausedFor) { user, paused -> user?.takeUnless { it == paused } }

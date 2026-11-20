@@ -6,7 +6,8 @@ import com.eduardoflores.rolabox.device.podcasts.api.SyncedFollows
 
 /**
  * The user's follows in the cloud, one document per show (ADR-031, Syncing follows). Only the `Syncer` of the follows
- * calls it, so sync stays the only path to Firebase, and no-account mode makes no request (ADR-022, rule 6).
+ * calls it, so sync, and deleting an account (ADR-037), stay the only paths to Firebase, and no-account mode makes no
+ * request (ADR-022, rule 6).
  */
 interface FollowsNetworkDataSource {
     /**
@@ -18,4 +19,12 @@ interface FollowsNetworkDataSource {
         userId: String,
         merge: (remote: SyncedFollows) -> SyncedFollows,
     ): Either<RemoteError, SyncedFollows>
+
+    /**
+     * Deletes every follow of the user [userId], On and Off, because their account is being deleted (ADR-037). Sync
+     * never deletes a follow. The follows are listed from the server, never from the cache, and each write waits for
+     * the server: offline, or when the server doesn't answer in time, it fails with [RemoteError.Unavailable] rather
+     * than leaving the delete queued as done. Deleting follows that aren't there succeeds.
+     */
+    suspend fun delete(userId: String): Either<RemoteError, Unit>
 }

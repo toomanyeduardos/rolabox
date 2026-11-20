@@ -6,6 +6,7 @@ import com.google.firebase.FirebaseTooManyRequestsException
 import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 import org.junit.Assert.assertEquals
@@ -40,6 +41,14 @@ class FirebaseAuthErrorsTest {
         val error = FirebaseAuthInvalidCredentialsException("ERROR_INVALID_CREDENTIAL", "expired")
 
         assertEquals(AuthError.InvalidCredential, error.asAuthError())
+    }
+
+    // A kind of FirebaseAuthException, so it must come before the catch-all Unknown (ADR-037).
+    @Test
+    fun recentLoginRequired_isRequiresRecentLogin() {
+        val error = FirebaseAuthRecentLoginRequiredException("ERROR_REQUIRES_RECENT_LOGIN", "sign in again")
+
+        assertEquals(AuthError.RequiresRecentLogin, error.asAuthError())
     }
 
     @Test

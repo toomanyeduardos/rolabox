@@ -4,6 +4,7 @@ import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import com.eduardoflores.rolabox.auth.ui.api.AuthUiEntries
 import com.eduardoflores.rolabox.auth.ui.api.CreateAccountKey
+import com.eduardoflores.rolabox.auth.ui.api.DeleteAccountKey
 import com.eduardoflores.rolabox.auth.ui.api.ResetPasswordKey
 
 /** Adds the auth screens, and maps each of their exits to a change of the app stack (ADR-012). */
@@ -20,5 +21,8 @@ internal fun EntryProviderScope<NavKey>.authEntries(entries: AuthUiEntries, navi
         onSignedUp = navigator::accessGranted,
         onSignedIn = navigator::accessGranted,
         onSignedOut = navigator::signedOut,
+        onDeleteAccountClick = { navigator.push(DeleteAccountKey) },
+        // Deleting the account signs out, so it leaves the device as signing out does (ADR-037).
+        onDeletedAccount = navigator::signedOut,
     )
 }

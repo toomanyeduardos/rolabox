@@ -134,10 +134,11 @@ private fun SignInUiState.withAuthError(error: AuthError): SignInUiState = when 
 
     AuthError.AccountDisabled -> copy(isLoading = false, formError = SignInFormError.AccountDisabled)
 
-    // Sign-up errors can't come from signing in, so if one does, it's one we can't tell the user about.
+    // Sign-up and deletion errors can't come from signing in, so if one does, it's one we can't tell the user about.
     AuthError.Unknown,
     AuthError.EmailAlreadyInUse,
     AuthError.WeakPassword,
+    AuthError.RequiresRecentLogin,
     -> copy(isLoading = false, formError = SignInFormError.Unknown)
 }
 
@@ -157,6 +158,7 @@ private fun SignInUiState.withProviderError(error: SignInError): SignInUiState =
             AuthError.EmailAlreadyInUse,
             AuthError.InvalidEmail,
             AuthError.WeakPassword,
+            AuthError.RequiresRecentLogin,
             AuthError.Unknown,
             -> SignInFormError.Unknown
         }

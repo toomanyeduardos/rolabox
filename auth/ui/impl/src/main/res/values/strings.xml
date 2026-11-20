@@ -78,4 +78,24 @@
     <string name="account_sign_out_cta">Sign out</string>
     <string name="account_sign_out_cancel">Cancel</string>
     <string name="account_sign_out_error">Couldn\'t sign out. Please try again.</string>
+    <string name="account_sign_out_delete_account">Delete account</string>
+
+    <!-- Delete account (ADR-037) -->
+    <string name="account_lcd_delete_account">Delete account</string>
+    <string name="account_lcd_err_wrong_password">ERR BAD PASSWORD</string>
+    <string name="account_lcd_err_sign_in_again">ERR SIGN IN AGAIN</string>
+    <string name="account_delete_title">Delete your account?</string>
+    <string name="account_delete_subtitle">This deletes your account and everything synced to it. It can\'t be undone.</string>
+    <string name="account_delete_stays">Rolabox also erases everything it keeps on this phone: podcasts, downloads, listening progress and settings. It then closes, and opens next time as a fresh install. Your music files aren\'t touched.</string>
+    <string name="account_delete_confirm_password">To confirm it\'s you, enter your password again.</string>
+    <string name="account_delete_confirm_google">To confirm it\'s you, choose your Google account again.</string>
+    <string name="account_delete_confirm_either">To confirm it\'s you, enter your password again or choose your Google account.</string>
+    <string name="account_delete_cta">Delete account</string>
+    <string name="account_delete_cancel">Cancel</string>
+    <string name="account_delete_error_password_required">Enter your password to confirm.</string>
+    <string name="account_delete_error_wrong_password">That password isn\'t right. Check it and try again.</string>
+    <string name="account_delete_error_network">Can\'t reach Rolabox, so nothing was deleted. Check your connection and try again.</string>
+    <string name="account_delete_error_sign_in_again">For your security, sign in again, then try once more.</string>
+    <string name="account_delete_error_other_account">That\'s a different account. Sign in with the account you\'re deleting.</string>
+    <string name="account_delete_error_unknown">Your account wasn\'t deleted. Please try again at a later time.</string>
 </resources>

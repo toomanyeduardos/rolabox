@@ -1,6 +1,7 @@
 package com.eduardoflores.rolabox.common.userdata.network.impl
 
 import arrow.core.Either
+import arrow.core.flatMap
 import com.eduardoflores.rolabox.common.firestore.asLoggedRemoteError
 import com.eduardoflores.rolabox.common.sync.api.RemoteError
 import com.eduardoflores.rolabox.common.sync.api.SyncTimestamp
@@ -54,6 +55,13 @@ internal class FirestorePreferencesNetworkDataSource @Inject constructor(
             merged
         }.await()
     }
+
+    // The delete waits for the server: offline, Firestore queues a write and never fails it, which would read as done.
+    override suspend fun delete(userId: String): Either<RemoteError, Unit> =
+        catchNamed({ it.asLoggedRemoteError(report) }) {
+            val document = firestore.get().collection(USERS).document(userId).collection(SETTINGS).document(PREFERENCES)
+            withinServerTimeout { document.delete().await() }
+        }.flatMap { it }
 
     private companion object {
         const val USERS = "users"

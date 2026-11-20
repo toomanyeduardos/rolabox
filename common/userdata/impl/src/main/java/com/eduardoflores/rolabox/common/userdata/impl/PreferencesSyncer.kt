@@ -3,6 +3,7 @@ package com.eduardoflores.rolabox.common.userdata.impl
 import arrow.core.Either
 import arrow.core.raise.either
 import com.eduardoflores.rolabox.common.sync.api.LastWriteWins
+import com.eduardoflores.rolabox.common.sync.api.RemoteError
 import com.eduardoflores.rolabox.common.sync.api.SyncError
 import com.eduardoflores.rolabox.common.sync.api.Syncer
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRow
@@ -45,6 +46,8 @@ internal class PreferencesSyncer @Inject constructor(
             local.applySyncedPreferences(merged).mapLeft(SyncError::Local).bind()
         }
     }
+
+    override suspend fun deleteRemote(userId: String): Either<RemoteError, Unit> = network.delete(userId)
 
     // Each field is resolved on its own, so a change to one never overwrites a newer change to another.
     // Each main menu row is a field (ADR-011, rule 9), so hiding two rows on two devices keeps both.

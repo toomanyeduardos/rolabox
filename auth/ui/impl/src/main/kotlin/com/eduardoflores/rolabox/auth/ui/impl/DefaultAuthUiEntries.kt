@@ -5,6 +5,7 @@ import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import com.eduardoflores.rolabox.auth.ui.api.AuthUiEntries
 import com.eduardoflores.rolabox.auth.ui.api.CreateAccountKey
+import com.eduardoflores.rolabox.auth.ui.api.DeleteAccountKey
 import com.eduardoflores.rolabox.auth.ui.api.ResetPasswordKey
 import com.eduardoflores.rolabox.auth.ui.api.SignInKey
 import com.eduardoflores.rolabox.auth.ui.api.SignOutKey
@@ -25,6 +26,8 @@ internal class DefaultAuthUiEntries @Inject constructor() : AuthUiEntries {
         onSignedUp: () -> Unit,
         onSignedIn: () -> Unit,
         onSignedOut: () -> Unit,
+        onDeleteAccountClick: () -> Unit,
+        onDeletedAccount: () -> Unit,
     ) = with(scope) {
         entry<SignInKey> {
             SignInRoute(
@@ -54,7 +57,15 @@ internal class DefaultAuthUiEntries @Inject constructor() : AuthUiEntries {
             SignOutRoute(
                 viewModel = hiltViewModel<SignOutViewModelImpl>(),
                 onCancelClick = onBack,
+                onDeleteAccountClick = onDeleteAccountClick,
                 onSignedOut = onSignedOut,
+            )
+        }
+        entry<DeleteAccountKey> {
+            DeleteAccountRoute(
+                viewModel = hiltViewModel<DeleteAccountViewModelImpl>(),
+                onCancelClick = onBack,
+                onDeletedAccount = onDeletedAccount,
             )
         }
     }

@@ -4,4 +4,5 @@ package com.eduardoflores.rolabox.auth.ui.impl
 internal object SignOutTags {
     const val SIGN_OUT = "sign_out_confirm"
     const val CANCEL = "sign_out_cancel"
+    const val DELETE_ACCOUNT = "sign_out_delete_account"
 }

@@ -9,8 +9,8 @@ import androidx.navigation3.runtime.NavKey
  */
 interface AuthUiEntries {
     /**
-     * Adds the entries of [SignInKey], [CreateAccountKey], [ResetPasswordKey] and [SignOutKey], full
-     * screens on the app stack.
+     * Adds the entries of [SignInKey], [CreateAccountKey], [ResetPasswordKey], [SignOutKey] and
+     * [DeleteAccountKey], full screens on the app stack.
      */
     @Suppress("LongParameterList") // One lambda per exit, so the contract lists how its screens are left.
     fun appStackEntries(
@@ -23,5 +23,7 @@ interface AuthUiEntries {
         onSignedUp: () -> Unit,
         onSignedIn: () -> Unit,
         onSignedOut: () -> Unit,
+        onDeleteAccountClick: () -> Unit,
+        onDeletedAccount: () -> Unit,
     )
 }

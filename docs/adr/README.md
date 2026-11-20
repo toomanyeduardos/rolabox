@@ -30,7 +30,7 @@ New ADR: copy [`template.md`](template.md), take the next number, and add it to 
 | [019](019-device-host-module.md) | The device is a host module, `:core:device`, that receives its screens from `:app` | Accepted, partly superseded by ADR-020 and ADR-032 |
 | [020](020-modules-by-product-area.md) | Modules grouped by product area, with the device assembling its own screens | Accepted, partly superseded by ADR-033 |
 | [021](021-data-flow-through-layers.md) | Every layer is reached through an abstraction, from the screen to the data source | Accepted |
-| [022](022-data-source-sub-parts.md) | A data part's local and network sides are sub-parts, and the part that owns synced data syncs it | Accepted, partly superseded by ADR-031 and ADR-033 |
+| [022](022-data-source-sub-parts.md) | A data part's local and network sides are sub-parts, and the part that owns synced data syncs it | Accepted, partly superseded by ADR-031, ADR-033 and ADR-037 |
 | [023](023-playback-engine.md) | Playback with Media3, in a session service that the playback area owns | Accepted |
 | [024](024-library-index.md) | The library index: MediaStore finds the files, and Rolabox's own database is what the device reads | Accepted |
 | [025](025-process-start-tasks.md) | Parts run work at process start through a set in `:common:util`, which `:app` runs | Accepted |
@@ -39,9 +39,10 @@ New ADR: copy [`template.md`](template.md), take the next number, and add it to 
 | [028](028-shuffle-and-repeat.md) | Shuffle and repeat are two settings that the queue follows, in Media3's own modes | Accepted |
 | [029](029-sync-failures-are-logged.md) | Sync failures are logged, with the backend's reason where the exception is converted | Accepted |
 | [030](030-crash-reporting.md) | Crashlytics reports crashes, ANRs and named non-fatal errors from every user, with nothing that identifies them | Accepted |
-| [031](031-podcasts.md) | Podcasts: Apple's directory, feeds read on the phone, downloads in playback's Media3 cache, and follows synced per show | Accepted |
+| [031](031-podcasts.md) | Podcasts: Apple's directory, feeds read on the phone, downloads in playback's Media3 cache, and follows synced per show | Accepted, partly superseded by ADR-037 |
 | [032](032-typing-on-the-device.md) | Typing on the device: the phone's keyboard over the wheel, into a field that is a row of the display | Accepted |
 | [033](033-shared-firestore-module.md) | Firestore is provided once, by `:common:firestore`, which also turns its errors into `RemoteError` | Accepted |
 | [034](034-plain-http-for-podcasts.md) | Plain HTTP is allowed for podcast feeds, images and audio, tried as HTTPS first, and HTTPS is forced for every service Rolabox talks to | Accepted |
 | [035](035-release-signing-and-versioning.md) | Releases are signed with an upload key kept outside the repo, Google holds the app signing key, and the version comes from one semver property | Accepted |
 | [036](036-android-backup.md) | Android backs up only the preferences and the podcasts' database, by an include-list, the same for cloud backup and device transfer | Accepted |
+| [037](037-deleting-an-account.md) | Deleting an account: the signed-in user re-authenticates, each `Syncer` deletes its data in the cloud, then the account, then Android erases the app's data | Proposed |

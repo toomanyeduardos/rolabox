@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -132,6 +133,38 @@ class SyncTriggersTest {
         runCurrent()
 
         assertEquals(1, requests.size)
+    }
+
+    // ADR-037: while a user's data is deleted, sync has nobody to request work for, and nothing is
+    // observed. It comes back when the pause is lifted.
+    @Test
+    fun pausedForTheUser_requestsNothing_untilResumed() = runTest {
+        val pausedFor = MutableStateFlow<String?>(ALICE)
+        val requests = mutableListOf<Unit>()
+        backgroundScope.launch(StandardTestDispatcher(testScheduler)) {
+            syncRequests(allowedSyncUser(syncUser, pausedFor), localChanges, foreground, DEBOUNCE).toList(requests)
+        }
+        syncUser.value = ALICE
+        runCurrent()
+
+        localChanges.emit(Unit)
+        foreground.emit(Unit)
+        advanceTimeBy(DEBOUNCE * 2)
+        assertEquals(0, requests.size)
+
+        pausedFor.value = null
+        runCurrent()
+        assertEquals(1, requests.size)
+    }
+
+    @Test
+    fun allowedSyncUser_pausedForAnotherUser_isTheUser() = runTest {
+        assertEquals(ALICE, allowedSyncUser(MutableStateFlow(ALICE), MutableStateFlow(BOB)).first())
+    }
+
+    @Test
+    fun allowedSyncUser_pausedForTheUser_isNobody() = runTest {
+        assertEquals(null, allowedSyncUser(MutableStateFlow(ALICE), MutableStateFlow(ALICE)).first())
     }
 
     private fun TestScope.collectRequests(localChanges: Flow<Unit> = this@SyncTriggersTest.localChanges): List<Unit> {
