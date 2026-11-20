@@ -1,5 +1,7 @@
 package com.eduardoflores.rolabox.device.podcasts.ui.impl
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.Composable
@@ -7,6 +9,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceList
@@ -14,7 +17,10 @@ import com.eduardoflores.rolabox.common.designsystem.component.DeviceListEntry
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceListMessage
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceListRow
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceListSection
+import com.eduardoflores.rolabox.common.designsystem.component.PreviewLightDark
+import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxTheme
 import com.eduardoflores.rolabox.common.designsystem.wheel.WheelEvent
+import com.eduardoflores.rolabox.device.host.DeviceScreen
 import com.eduardoflores.rolabox.device.host.DeviceTyping
 import com.eduardoflores.rolabox.device.host.HandleMenuWithField
 import com.eduardoflores.rolabox.device.host.HandleWheelEvents
@@ -27,8 +33,13 @@ import com.eduardoflores.rolabox.device.host.moveWithField
 import com.eduardoflores.rolabox.device.host.rememberDeviceTyping
 import com.eduardoflores.rolabox.device.host.rememberListHighlight
 import com.eduardoflores.rolabox.device.host.rowIndex
+import com.eduardoflores.rolabox.device.podcasts.api.DirectoryEpisode
+import com.eduardoflores.rolabox.device.podcasts.api.DirectoryId
+import com.eduardoflores.rolabox.device.podcasts.api.DirectoryResults
 import com.eduardoflores.rolabox.device.podcasts.api.DirectoryShow
+import com.eduardoflores.rolabox.device.podcasts.api.Episode
 import com.eduardoflores.rolabox.device.podcasts.api.FoundEpisode
+import com.eduardoflores.rolabox.device.podcasts.api.Show
 import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastSearchEpisodeKey
 import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastSearchShowKey
 
@@ -178,3 +189,86 @@ internal fun searchMessage(state: SearchUiState): DeviceListMessage? {
     }
     return DeviceListMessage(stringResource(title), stringResource(body))
 }
+
+private fun found(id: Long, title: String, creator: String) =
+    DirectoryShow(DirectoryId.itunes(id), title, creator, "https://example.com/$id.xml")
+
+private const val COMMUTERS_ID = 9L
+private const val DAILY_DOSE_ID = 4L
+private const val DAILY_BRIEF_ID = 5L
+
+private val FoundTheDaily = found(1, "The Daily", "NY Times")
+
+private fun foundEpisode(title: String) = FoundEpisode(
+    show = found(COMMUTERS_ID, "Commuters", "Field Notes Media"),
+    episode = DirectoryEpisode(
+        guid = title,
+        title = title,
+        publishedAt = null,
+        length = null,
+        description = null,
+        audioUrl = "https://example.com/${title.length}.mp3",
+    ),
+)
+
+private val TypingResults = DirectoryResults(
+    shows = listOf(FoundTheDaily, found(DAILY_DOSE_ID, "Daily Dose of Design", "Field Notes Media")),
+    episodes = listOf(foundEpisode("Why the Daily Commute Changed"), foundEpisode("A Daily Habit, Ten Years Later")),
+)
+
+private val Results = TypingResults.copy(
+    shows = listOf(FoundTheDaily, found(DAILY_BRIEF_ID, "The Daily Brief", "Harbor Audio"), TypingResults.shows[1]),
+)
+
+@Composable
+private fun SearchPreview(text: String, state: SearchUiState, typing: Boolean) {
+    RolaboxTheme {
+        DeviceScreen(title = "Search", batteryLevel = 0.7f, onWheelEvent = {}) {
+            Box(Modifier.fillMaxSize()) {
+                val deviceTyping = rememberDeviceTyping(typeWhenShown = typing)
+                val highlight = rememberListHighlight()
+                val entries = searchRows(state, searchWords(), typing).map { it.entry }
+                if (!typing) highlight.highlightAfterTyping(entries)
+                SearchScreen(
+                    text = rememberTextFieldState(text),
+                    typing = deviceTyping,
+                    highlight = highlight,
+                    entries = entries,
+                    message = searchMessage(state),
+                    onTypingEnd = {},
+                    onSearchAction = {},
+                )
+            }
+        }
+    }
+}
+
+/** Frame 29: Search opens typing, with the hint in the empty field. */
+@PreviewLightDark
+@Composable
+private fun SearchEmptyPreview() = SearchPreview("", SearchUiState.Empty, typing = true)
+
+/** Frame 30: results update as the user types, Shows then Episodes, and nothing is highlighted. */
+@PreviewLightDark
+@Composable
+private fun SearchTypingPreview() = SearchPreview("the dai", SearchUiState.Found(TypingResults), typing = true)
+
+/** Frame 31: typing ended, so the wheel is on the first result, past the label. */
+@PreviewLightDark
+@Composable
+private fun SearchResultsPreview() = SearchPreview("the daily", SearchUiState.Found(Results), typing = false)
+
+/** Frame 33: no connection. The text stays. */
+@PreviewLightDark
+@Composable
+private fun SearchOfflinePreview() = SearchPreview("the daily", SearchUiState.NoConnection, typing = true)
+
+/** Frame 34: the directory found nothing. */
+@PreviewLightDark
+@Composable
+private fun SearchNoResultsPreview() = SearchPreview("zzqx radio", SearchUiState.NoResults, typing = true)
+
+/** The directory refused for the rate of searches: its own message, and the text stays. */
+@PreviewLightDark
+@Composable
+private fun SearchBusyPreview() = SearchPreview("the daily", SearchUiState.Busy, typing = false)

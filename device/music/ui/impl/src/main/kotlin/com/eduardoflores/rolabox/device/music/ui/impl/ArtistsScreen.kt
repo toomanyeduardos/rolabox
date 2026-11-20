@@ -1,11 +1,17 @@
 package com.eduardoflores.rolabox.device.music.ui.impl
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceListRow
+import com.eduardoflores.rolabox.common.designsystem.component.PreviewLightDark
+import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxTheme
+import com.eduardoflores.rolabox.device.host.DeviceScreen
 import com.eduardoflores.rolabox.device.host.ScreenTitle
 
 /**
@@ -31,4 +37,94 @@ internal fun ArtistsRoute(viewModel: ArtistsViewModel, onArtistClick: (artistId:
         onCenter = { index -> (state as? ListUiState.Loaded)?.items?.get(index)?.let { onArtistClick(it.id.value) } },
         sortedByName = true,
     )
+}
+
+private val Artists = listOf(
+    "Adeline Park", "Blue Harbor", "Cass Monroe", "Dune Collective", "Ellis Grey", "Fern & Iron", "Hollow Pines",
+    "Juno Vale", "Kite Theory", "Maren Holt", "Northbound", "Otis Ray", "Pale Lanterns", "Quiet Fleet",
+).map { DeviceListRow(it, opensSubmenu = true) }
+
+@PreviewLightDark
+@Composable
+private fun ArtistsPreview() {
+    RolaboxTheme {
+        DeviceScreen(title = "Artists", batteryLevel = 0.7f, onWheelEvent = {}) {
+            Box(Modifier.fillMaxSize()) {
+                MusicList(
+                    ListUiState.Loaded(Artists),
+                    highlightedIndex = 9,
+                    emptyText = stringResource(R.string.music_no_artists),
+                )
+            }
+        }
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun ArtistsFastTurningPreview() {
+    RolaboxTheme {
+        DeviceScreen(title = "Artists", batteryLevel = 0.7f, onWheelEvent = {}) {
+            Box(Modifier.fillMaxSize()) {
+                MusicList(
+                    ListUiState.Loaded(Artists),
+                    highlightedIndex = 9,
+                    emptyText = stringResource(R.string.music_no_artists),
+                    letter = "M",
+                )
+            }
+        }
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun EmptyPreview() {
+    RolaboxTheme {
+        DeviceScreen(title = "Artists", batteryLevel = 0.7f, onWheelEvent = {}) {
+            Box(Modifier.fillMaxSize()) {
+                MusicList(
+                    ListUiState.Loaded(emptyList()),
+                    highlightedIndex = 0,
+                    emptyText = stringResource(R.string.music_no_artists),
+                )
+            }
+        }
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun FailedPreview() {
+    RolaboxTheme {
+        DeviceScreen(title = "Artists", batteryLevel = 0.7f, onWheelEvent = {}) {
+            Box(Modifier.fillMaxSize()) {
+                MusicList(
+                    ListUiState.Failed,
+                    highlightedIndex = 0,
+                    emptyText = stringResource(R.string.music_no_artists),
+                )
+            }
+        }
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun GenreArtistsPreview() {
+    RolaboxTheme {
+        DeviceScreen(title = "Rock", batteryLevel = 0.7f, onWheelEvent = {}) {
+            Box(Modifier.fillMaxSize()) {
+                MusicList(
+                    ListUiState.Loaded(
+                        listOf("Blue Harbor", "Fern & Iron", "Hollow Pines", "Maren Holt").map {
+                            DeviceListRow(it, true)
+                        },
+                    ),
+                    highlightedIndex = 1,
+                    emptyText = stringResource(R.string.music_no_artists),
+                )
+            }
+        }
+    }
 }

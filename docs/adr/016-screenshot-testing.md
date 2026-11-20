@@ -13,6 +13,15 @@
   new file name. Context's "nothing talks to Firebase" is about CI having no Firebase project, not
   about the account choice that ADR-008 renamed and redefined the same day, so it still holds. The
   decision is unchanged.
+- **Revised 2026-11-20:** Previews live in the file that creates what they show (rule 10). Five
+  modules had gathered their previews into separate `*Previews.kt` files, while the rest of the app
+  kept them next to their composables. No decision chose the separate files: the first one came with
+  the music screens, whose files held only a route, and later modules copied it. One way is now the
+  rule, checked by the `PreviewOutsideItsFile` detekt rule. Each preview writes out its own frame, so
+  the device modules' `DevicePreview` and the design system's `DeviceListPreview` are gone. The
+  previews moved with no change to what they show, so their goldens were recorded again under new
+  names with the same pixels. "Where they live" now says that a golden is named after the file of its
+  preview, which is what Paparazzi has always done.
 
 ## Context
 
@@ -79,9 +88,19 @@ lines that names the packages to scan and extends `PreviewSnapshot`. The harness
 (scanning, the device, theme and font scale, the background `showBackground` asks for) lives once, in
 the **test fixtures of `:common:designsystem`**, because preview tooling is the design system's
 ([ADR-015](015-design-system-owns-visual-language.md)). The plugin adds those fixtures to every module
-that applies it. Goldens are in `src/test/snapshots/` next to the test, named after the composable and
-the render (`SignInScreen_SignInScreenPreview_Dark.png`), so adding a preview doesn't rename the
-others.
+that applies it. Goldens are in `src/test/snapshots/` next to the test, named after the file of the
+preview, the preview and the render (`SignInScreen_SignInScreenPreview_Dark.png`), so adding a
+preview doesn't rename the others.
+
+**Where previews live.** A preview is in the file that creates what it shows: a screen's previews
+in the screen's file, next to its route and the composables only it uses, and a component's in the
+component's file. There are no files of previews alone. The code and how it looks are then read and
+changed together, and a golden's name points at the file to open. Each preview writes out its own
+frame, with no preview wrapper: a device screen's the `RolaboxTheme` and the `DeviceScreen` it sits
+in, and a design-system component's the `RolaboxTheme` and whatever holds it, such as a
+`DeviceDisplay`. The sample data a preview needs is `private` in the same file. When two files need
+the same sample, each keeps its own copy, since previews of different screens shouldn't change
+together.
 
 **Goldens are in Git LFS.** `.gitattributes` tracks `**/src/test/snapshots/**/*.png`. Every preview
 produces three images, and they grow with the app; LFS keeps them out of the clone history and its
@@ -126,6 +145,15 @@ Kotlin 2.4.20, which are newer than the ones it was built against. We will **mov
 - **Put the harness in `:common:testing`.** Keeps test code together. But it would be a dependency of
   every module that uses `:common:testing`, including the ones with no UI, and it would make Paparazzi
   something modules get without applying the plugin, which is what the first check rejects.
+- **Keep a module's previews in a `*Previews.kt` file of their own.** The screen files stay short,
+  and samples shared by several screens are written once. But a screen's look is then in another
+  file than its code, the goldens are named after a file that isn't the screen's, and the app had
+  both layouts with no rule to choose. A long screen file is the cost we accept.
+- **A shared preview wrapper (a `DevicePreview { … }` per module, one in `:device:host`, or the
+  design system's `DeviceListPreview`).** Saves repeating the theme and the frame in each preview.
+  But it is one more indirection to read past, and one in `:device:host` would put preview code in
+  its API. `MainMenu.kt` already wrote the frame out, and that is the way kept: the design system's
+  `DeviceListPreview`, which three files shared, was written out in its previews too.
 - **Bundle the plugin into `rolabox.android.screens`.** A new module
   couldn't forget it. But every such module would carry Paparazzi, including one with no previews,
   and it contradicts applying it only where it is needed. The `@Preview` check closes the same gap
@@ -186,8 +214,18 @@ Kotlin 2.4.20, which are newer than the ones it was built against. We will **mov
    artifact when it fails.
 9. `[convention]` Paparazzi stays on its latest 2.0 release. When 2.0 is released as stable, the
    pre-release is replaced by it, and the goldens are recorded again if they change.
+10. `[enforced]` A preview is in the file that creates what it shows: a screen's previews in the
+    screen's file, a component's in the component's file. No file holds only previews, and no file is
+    named `*Previews.kt`. Each preview writes out its own frame (`RolaboxTheme`, and the
+    `DeviceScreen` or `DeviceDisplay` it sits in) with no preview wrapper, and its sample data is
+    `private` to its file.
 
 **Conformance.** Rule 1 is checked by `ModuleRules.kt` and rule 2 by the `checkScreenshotTests`
-task, both part of `./gradlew check`, and the second also runs before every build. Rules 6 and 8 are
-the CI `screenshots` job: Paparazzi's tests fail on a missing or different golden, and the workflow
-uploads the diffs. Rule 7 is partly held by `.gitattributes`.
+task, both part of `./gradlew check`, and the second also runs before every build. Rule 10 is
+checked by the `PreviewOutsideItsFile` detekt rule (`build-logic/detekt-rules`), which fails on a
+file named `*Previews.kt`, and on a preview in a file that creates no screen or component: no
+composable other than the previews, helpers named `…Preview`, and `private` camelCase helpers that
+return a value. That a preview is in the file of the right screen, the frame and the `private`
+samples are left to review. Rules 6 and 8 are the CI `screenshots` job: Paparazzi's tests fail on a
+missing or different golden, and the workflow uploads the diffs. Rule 7 is partly held by
+`.gitattributes`.

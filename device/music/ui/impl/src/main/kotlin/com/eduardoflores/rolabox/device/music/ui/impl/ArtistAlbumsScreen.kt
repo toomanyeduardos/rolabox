@@ -1,10 +1,16 @@
 package com.eduardoflores.rolabox.device.music.ui.impl
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceListRow
+import com.eduardoflores.rolabox.common.designsystem.component.PreviewLightDark
+import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxTheme
+import com.eduardoflores.rolabox.device.host.DeviceScreen
 import com.eduardoflores.rolabox.device.host.ScreenTitle
 import com.eduardoflores.rolabox.device.library.api.Album
 
@@ -55,4 +61,22 @@ internal fun ListUiState<Album>.withAllSongs(
     ListUiState.Failed -> ListUiState.Failed
 
     ListUiState.Gone -> ListUiState.Gone
+}
+
+@PreviewLightDark
+@Composable
+private fun ArtistAlbumsPreview() {
+    RolaboxTheme {
+        DeviceScreen(title = "Maren Holt", batteryLevel = 0.7f, onWheelEvent = {}) {
+            Box(Modifier.fillMaxSize()) {
+                val rows = listOf("Low Tide Radio", "Paper Satellites", "North of Here").map { DeviceListRow(it, true) }
+                val allSongs = DeviceListRow(stringResource(R.string.music_all_songs), opensSubmenu = true)
+                MusicList(
+                    ListUiState.Loaded(listOf(allSongs) + rows),
+                    highlightedIndex = 2,
+                    emptyText = stringResource(R.string.music_no_albums),
+                )
+            }
+        }
+    }
 }
