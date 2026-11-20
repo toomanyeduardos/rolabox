@@ -92,7 +92,7 @@ class DeviceViewModelTest {
         userData.setMainMenuRowVisibility(MainMenuRow.PODCASTS, MainMenuRowVisibility.HIDDEN)
         assertEquals(AllShown + (MainMenuRow.PODCASTS to MainMenuRowVisibility.HIDDEN), viewModel.mainMenuRows.value)
         assertEquals(
-            listOf(MenuRow.Music, MenuRow.Audiobooks, MenuRow.ShuffleSongs, MenuRow.Settings),
+            listOf(MenuRow.Music, MenuRow.ShuffleSongs, MenuRow.Settings),
             shownMenuRows(nowPlayingShown = false, visibility = viewModel.mainMenuRows.value),
         )
 

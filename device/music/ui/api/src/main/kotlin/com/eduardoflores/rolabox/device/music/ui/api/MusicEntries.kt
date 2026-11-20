@@ -23,7 +23,7 @@ interface MusicEntries {
      * in Albums, [onAlbumClick]; on a song, [onSongClick]. Under a genre, the same screens show only
      * what is in it: center on a genre is [onGenreClick], and then on an artist, "All Songs" and an
      * album, [onGenreArtistClick], [onGenreAllSongsClick] and [onGenreAlbumClick], with the genre.
-     * Playlists does nothing yet.
+     * Playlists isn't shown until its screen exists.
      */
     @Suppress("LongParameterList") // One lambda per exit, so the contract lists how its screens are left.
     fun screenStackEntries(

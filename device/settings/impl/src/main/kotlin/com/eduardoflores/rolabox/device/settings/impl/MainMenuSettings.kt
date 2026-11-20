@@ -22,7 +22,8 @@ import com.eduardoflores.rolabox.device.host.rememberListHighlight
 /**
  * Main Menu, a device screen: every row of the main menu that can be hidden, with On or Off. Turning
  * moves the highlight, which stops at the first and last rows, and center changes the highlighted
- * row in place. Settings and Now Playing can't be hidden, so they aren't listed (ADR-020, rule 15).
+ * row in place. Settings and Now Playing can't be hidden, so they aren't listed (ADR-020, rule 15), and
+ * neither is a row the main menu doesn't show yet ([ListedRows]).
  */
 @Composable
 internal fun MainMenuSettingsRoute(viewModel: MainMenuSettingsViewModel) {
@@ -32,8 +33,8 @@ internal fun MainMenuSettingsRoute(viewModel: MainMenuSettingsViewModel) {
     SaveFailureToast(saveFailed = state.saveFailed, onShow = viewModel::onSaveFailureShown)
     HandleWheelEvents { event ->
         when (event) {
-            is WheelEvent.Turn -> highlight.move(event.steps, MainMenuRow.entries.size)
-            WheelEvent.Center -> viewModel.onRowChange(MainMenuRow.entries[highlight.index])
+            is WheelEvent.Turn -> highlight.move(event.steps, ListedRows.size)
+            WheelEvent.Center -> viewModel.onRowChange(ListedRows[highlight.index])
             else -> Unit
         }
     }
@@ -43,7 +44,7 @@ internal fun MainMenuSettingsRoute(viewModel: MainMenuSettingsViewModel) {
 /** The stateless list that previews and screenshot tests call (ADR-021, rule 4). */
 @Composable
 internal fun MainMenuSettingsList(rows: Map<MainMenuRow, MainMenuRowVisibility>?, highlightedIndex: Int) {
-    val listRows = MainMenuRow.entries.map { row ->
+    val listRows = ListedRows.map { row ->
         val label = when (row) {
             MainMenuRow.MUSIC -> stringResource(R.string.settings_main_menu_music)
             MainMenuRow.PODCASTS -> stringResource(R.string.settings_main_menu_podcasts)
@@ -68,10 +69,16 @@ private fun MainMenuSettingsPreview() {
             Box(Modifier.fillMaxSize()) {
                 MainMenuSettingsList(
                     rows = MainMenuRow.entries.associateWith { MainMenuRowVisibility.SHOWN } +
-                        (MainMenuRow.AUDIOBOOKS to MainMenuRowVisibility.HIDDEN),
-                    highlightedIndex = MainMenuRow.AUDIOBOOKS.ordinal,
+                        (MainMenuRow.SHUFFLE_SONGS to MainMenuRowVisibility.HIDDEN),
+                    highlightedIndex = ListedRows.indexOf(MainMenuRow.SHUFFLE_SONGS),
                 )
             }
         }
     }
 }
+
+/**
+ * The rows this screen lists, in order. Audiobooks has no screens yet, so the main menu doesn't show it
+ * (`MenuRow.built` in `:device:ui:impl`, launch/03), and it isn't offered here. Its stored preference is kept.
+ */
+private val ListedRows = MainMenuRow.entries - MainMenuRow.AUDIOBOOKS

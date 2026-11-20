@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 // The keys of the music screens on the screen stack inside the display (ADR-018). They carry the ids
 // of what they show, not models (ADR-012, rule 2).
 
-/** The Music menu: Artists, Albums, Songs, Genres and Playlists. */
+/** The Music menu: Artists, Albums, Songs and Genres. */
 @Serializable
 data object MusicMenuKey : NavKey
 

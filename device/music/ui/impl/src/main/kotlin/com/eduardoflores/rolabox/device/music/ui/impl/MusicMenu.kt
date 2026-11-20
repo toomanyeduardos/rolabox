@@ -24,13 +24,25 @@ import com.eduardoflores.rolabox.device.host.ScreenTitle
 import com.eduardoflores.rolabox.device.host.rememberListHighlight
 import com.eduardoflores.rolabox.device.library.api.Progress
 
-/** The rows of the Music menu, in the order they are shown. */
-private enum class MusicMenuRow { Artists, Albums, Songs, Genres, Playlists }
+/**
+ * The rows of the Music menu, in the order they are shown. A row that isn't [built], because its screen
+ * doesn't exist yet, is never shown (launch/03).
+ */
+private enum class MusicMenuRow(val built: Boolean = true) {
+    Artists,
+    Albums,
+    Songs,
+    Genres,
+    Playlists(built = false),
+}
+
+/** The rows the Music menu shows, in order. */
+private val ShownRows = MusicMenuRow.entries.filter { it.built }
 
 /**
  * Music: its menu, or why there is none. Turning moves the highlight, which stops at the first and last
  * rows. Center on Artists, Albums, Songs or Genres reports [onArtistsClick], [onAlbumsClick],
- * [onSongsClick] or [onGenresClick]; Playlists does nothing until its screen exists.
+ * [onSongsClick] or [onGenresClick]. Playlists isn't built, so it isn't shown.
  * The first time it opens, it asks for the audio permission (ADR-024). Center on the row that takes the
  * menu's place asks again, or opens system settings when Android won't.
  */
@@ -57,9 +69,9 @@ internal fun MusicMenuRoute(
     HandleWheelEvents { event ->
         when (state) {
             is MusicMenuUiState.Menu -> when (event) {
-                is WheelEvent.Turn -> highlight.move(event.steps, MusicMenuRow.entries.size)
+                is WheelEvent.Turn -> highlight.move(event.steps, ShownRows.size)
 
-                WheelEvent.Center -> MusicMenuRow.entries[highlight.index]
+                WheelEvent.Center -> ShownRows[highlight.index]
                     .exit(onArtistsClick, onAlbumsClick, onSongsClick, onGenresClick)
                     ?.invoke()
 
@@ -129,7 +141,7 @@ private fun PermissionRow(text: String) {
 
 @Composable
 private fun MusicMenu(highlightedIndex: Int, readingTags: Progress?) {
-    val rows = MusicMenuRow.entries.map { row ->
+    val rows = ShownRows.map { row ->
         val label = when (row) {
             MusicMenuRow.Artists -> stringResource(R.string.music_menu_artists)
             MusicMenuRow.Albums -> stringResource(R.string.music_menu_albums)
