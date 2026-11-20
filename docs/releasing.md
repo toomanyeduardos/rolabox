@@ -88,6 +88,31 @@ project of the Play build, add the SHA-1 and SHA-256 of:
 keytool -list -v -keystore <keystore> -alias <alias> | grep -E "SHA1:|SHA256:"
 ```
 
+They go in Firebase console → Project settings → the Android app → **Add fingerprint**. The
+fingerprints are public, not secrets. After adding them, download `google-services.json` again and
+replace `app/google-services.json`: each fingerprint adds an Android OAuth client to it.
+
+The Play build uses the same Firebase project as development (ADR-008), and the release build reads
+the real `app/google-services.json` from your checkout, as a debug build does.
+
+### 6. Deploy the Firestore rules (with launch/02)
+
+The production project runs the rules in the repo, never ones edited in the console (ADR-010). From
+`firebase/`, after `npm ci` and `npx firebase login`:
+
+```bash
+npm run deploy:rules -- --project <project-id>
+```
+
+It runs the emulator tests first and deploys only if they pass. Then check what's deployed:
+
+```bash
+npm run rules:check -- --project <project-id>
+```
+
+It prints a diff and fails if the deployed rules aren't `firebase/firestore.rules`. Run the deploy
+again whenever the rules change.
+
 ## Each release
 
 1. **Bump the version** in the repo's `gradle.properties`:
@@ -102,8 +127,10 @@ keytool -list -v -keystore <keystore> -alias <alias> | grep -E "SHA1:|SHA256:"
    ```
 
    The bundle is `app/build/outputs/bundle/release/app-release.aab`. Its R8 mapping file is inside
-   it, so Play Console deobfuscates crashes. If the build printed "This release is signed with the
-   debug key", the signing values aren't set: don't upload it.
+   it, so Play Console deobfuscates crashes, and the build uploads it to Crashlytics too
+   (ADR-030). If the build printed "This release is signed with the debug key", the signing values
+   aren't set; if it printed "Firebase config: the placeholder", `app/google-services.json` is
+   missing, so sign-in won't work and Crashlytics gets no mapping file. Don't upload either.
 4. **Check the signature:**
 
    ```bash
@@ -112,7 +139,12 @@ keytool -list -v -keystore <keystore> -alias <alias> | grep -E "SHA1:|SHA256:"
 
    It should say `jar verified.` and be signed by your upload key's name, not `CN=Android Debug`.
 5. **Smoke-test** a minified build on a device (launch/15).
-6. **Upload the `.aab`** to the Play Console track. Never upload an APK.
+6. **Check the production rules:** `npm run rules:check -- --project <project-id>` from
+   `firebase/` passes (setup step 6).
+7. **Upload the `.aab`** to the Play Console track. Never upload an APK.
+8. **Check the build from Play:** install it from the track, and check that Google sign-in,
+   email/password sign-in and preference sync work. Google sign-in failing only here means the
+   app signing key's fingerprints are missing from Firebase (setup step 5).
 
 ## If the upload key is lost or leaked
 

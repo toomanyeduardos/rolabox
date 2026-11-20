@@ -15,6 +15,10 @@
   Firestore mapping moved to `:common:userdata:network:impl` (39.05a), and ADR-022's rule 3 is
   checked by the build. Rule 7 and the Decision are left as they were written. The decision is
   unchanged.
+- **Revised 2026-11-20:** Rules are deployed with `npm run deploy:rules`, which runs the emulator
+  tests first, and `npm run rules:check` compares a project's deployed rules with the repo (Decision,
+  rule 5, Consequences). Production had to be shown to run the repo's rules before launch
+  (launch/02), and nothing could check that. The decision is unchanged.
 
 ## Context
 
@@ -69,9 +73,12 @@ kept in the repo and tested against the emulator in CI.
   `firebase emulators:exec`, runs the tests, and stops the emulator. A `firestore-rules` job in CI
   does the same. It needs no secrets, so PRs from forks run it too.
 - **Rules are deployed only from the repo:**
-  `firebase deploy --only firestore:rules --project <id>`, from `firebase/`. The project ID is
-  passed on the command line, and `.firebaserc` is git-ignored for the same reason as
-  `google-services.json`.
+  `npm run deploy:rules -- --project <id>`, from `firebase/`, which runs the emulator tests and then
+  `firebase deploy --only firestore:rules`. The project ID is passed on the command line, and
+  `.firebaserc` is git-ignored for the same reason as `google-services.json`.
+  `npm run rules:check -- --project <id>` reads the project's deployed rules with the
+  `firebase login` account and fails if they differ from `firestore.rules`. It needs credentials,
+  so it isn't run in CI.
 - **Firestore is not the source of truth on the device.** Local storage (Room, or DataStore for
   preferences) stays the single source of truth (ADR-002). The sync code in `:common:sync:impl` is the only code that reads and writes Firestore, and the UI
   never observes Firestore directly.
@@ -111,7 +118,8 @@ kept in the repo and tested against the emulator in CI.
 - Deny-by-default means a new collection won't work until its rules are written. Forgetting them
   shows up as `PERMISSION_DENIED` in development, not as an open database in production.
 - Data can't be shared between users. Sharing would need a new ADR.
-- Deploying the rules is still manual, and nothing checks that the deployed rules match the repo.
+- Deploying the rules and checking the deployed rules against the repo are both manual, run by the
+  maintainer before each release. Rules edited in the console would only be caught then.
 
 ## Rules
 
@@ -125,7 +133,8 @@ kept in the repo and tested against the emulator in CI.
 4. `[convention]` All synced data lives under `users/{uid}`. Shared or top-level collections need a
    new ADR.
 5. `[convention]` Rules are changed only in `firebase/firestore.rules`, and deployed from there with
-   the Firebase CLI, never edited in the console.
+   `npm run deploy:rules`, never edited in the console. Before a release, `npm run rules:check`
+   passes against the production project.
 6. `[convention]` `.firebaserc` is never committed, just like a real `google-services.json` (ADR-008,
    rule 5).
 7. `[convention]` Only `:common:sync:impl` reads or writes Firestore. Local storage (Room, or

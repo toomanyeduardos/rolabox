@@ -153,8 +153,12 @@ cd firebase && npm ci && npm test
 To deploy them to your own project (never edit rules in the console):
 
 ```bash
-cd firebase && npx firebase deploy --only firestore:rules --project <your-project-id>
+cd firebase && npm run deploy:rules -- --project <your-project-id>
 ```
+
+It runs the tests first and deploys only if they pass. To check that a project's deployed rules are
+the repo's, run `npm run rules:check -- --project <your-project-id>` (it uses your `firebase login`
+account). The release steps are in [`docs/releasing.md`](docs/releasing.md).
 
 ## Architecture
 
