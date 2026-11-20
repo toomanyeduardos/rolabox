@@ -14,6 +14,9 @@ complexity:
     # Composables take many optional parameters by design.
     ignoreDefaultParameters: true
     ignoreAnnotated: ['Composable']
+  TooManyFunctions:
+    # A screen's previews live in its file, one for each state (ADR-016 rule 10), so they don't count.
+    ignoreAnnotatedFunctions: ['Preview', 'PreviewLightDark']
 
 coroutines:
   GlobalCoroutineUsage:
@@ -174,6 +177,10 @@ rolabox:
     # ADR-034 rule 3: only the podcasts area and tests write http:// URLs.
     active: true
     excludes: ['**/device/podcasts/**', '**/test/**', '**/testOffline/**', '**/testCloud/**', '**/androidTest/**']
+  PreviewOutsideItsFile:
+    # ADR-016 rule 10: a preview is in the file that creates the screen or component it shows, and no
+    # file holds previews alone.
+    active: true
   FixedHeightAroundText:
     # ADR-017 rule 3: a container of text grows with it.
     active: true

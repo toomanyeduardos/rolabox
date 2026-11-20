@@ -1,21 +1,33 @@
 package com.eduardoflores.rolabox.device.podcasts.ui.impl
 
 import android.widget.Toast
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceListDot
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceListDownload
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceListRow
+import com.eduardoflores.rolabox.common.designsystem.component.PreviewLightDark
+import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxTheme
+import com.eduardoflores.rolabox.device.host.DeviceScreen
 import com.eduardoflores.rolabox.device.host.ScreenTitle
+import com.eduardoflores.rolabox.device.podcasts.api.DirectoryId
 import com.eduardoflores.rolabox.device.podcasts.api.DownloadState
 import com.eduardoflores.rolabox.device.podcasts.api.Episode
+import com.eduardoflores.rolabox.device.podcasts.api.EpisodeId
+import com.eduardoflores.rolabox.device.podcasts.api.OwnerId
 import com.eduardoflores.rolabox.device.podcasts.api.PlayedState
+import com.eduardoflores.rolabox.device.podcasts.api.Show
+import com.eduardoflores.rolabox.device.podcasts.api.ShowId
+import kotlin.time.Duration
 
 /**
  * Connects a show to its ViewModel, which the entry creates (ADR-021). The title is the show's. Follow is the first
@@ -99,3 +111,86 @@ private const val PERCENT = 100
 
 // A fraction such as 0.38f is a hair under it as a float, and is still 38%.
 private const val ROUNDING_SLACK = 1e-4
+
+private val TheDaily = Show(ShowId(1), DirectoryId.itunes(1), "The Daily", OwnerId("ny times"), "NY Times", true)
+
+private val TheDailyEpisodes = listOf(
+    episode(1, "A Heat Wave Over the North Atlantic", PlayedState.Unplayed, DownloadState.NotDownloaded),
+    episode(2, "Inside the Race for a Cheaper Battery", PlayedState.Unplayed, DownloadState.Downloading(0.38f)),
+    episode(3, "The Town That Saved Its Pharmacy", PlayedState.Unplayed, DownloadState.Downloaded),
+    episode(
+        4,
+        "What Happened at the Port Strike, and What Comes Next",
+        PlayedState.PartlyPlayed,
+        DownloadState.Downloaded,
+    ),
+    episode(5, "A Quiet Election in a Loud Year", PlayedState.Played, DownloadState.Downloaded),
+    episode(6, "The Return of the Night Train", PlayedState.Played, DownloadState.Downloaded),
+    episode(7, "Who Owns the Moon?", PlayedState.Played, DownloadState.Downloaded),
+)
+
+private fun episode(id: Long, title: String, played: PlayedState, download: DownloadState) = Episode(
+    id = EpisodeId(id),
+    showId = TheDaily.id,
+    title = title,
+    publishedAt = null,
+    length = null,
+    description = null,
+    audioUrl = "https://example.com/$id.mp3",
+    audioSizeBytes = null,
+    playedState = played,
+    position = Duration.ZERO,
+    download = download,
+)
+
+@Composable
+private fun showWords() = ShowWords(
+    follow = stringResource(R.string.podcasts_follow),
+    on = stringResource(R.string.podcasts_on),
+    off = stringResource(R.string.podcasts_off),
+    unknownEpisode = stringResource(R.string.podcasts_unknown_episode),
+)
+
+/** Frame 25: Follow On, then the episodes newest first, the highlight on the half dot. */
+@PreviewLightDark
+@Composable
+private fun ShowPreview() {
+    RolaboxTheme {
+        DeviceScreen(title = "The Daily", batteryLevel = 0.7f, onWheelEvent = {}) {
+            Box(Modifier.fillMaxSize()) {
+                PodcastsList(
+                    ListUiState.Loaded(showRows(ShowContent(TheDaily, TheDailyEpisodes), showWords())),
+                    highlightedIndex = 4,
+                )
+            }
+        }
+    }
+}
+
+/** Follow Off: only the episodes with a download, done or in progress, and the highlight on Follow. */
+@PreviewLightDark
+@Composable
+private fun ShowFollowOffPreview() {
+    RolaboxTheme {
+        DeviceScreen(title = "The Daily", batteryLevel = 0.7f, onWheelEvent = {}) {
+            Box(Modifier.fillMaxSize()) {
+                val downloaded = TheDailyEpisodes.filter { it.download != DownloadState.NotDownloaded }
+                val content = ShowContent(TheDaily.copy(isFollowed = false), downloaded)
+                PodcastsList(ListUiState.Loaded(showRows(content, showWords())), highlightedIndex = 0)
+            }
+        }
+    }
+}
+
+/** The show was removed while its screen was open: MENU goes back. */
+@PreviewLightDark
+@Composable
+private fun GonePreview() {
+    RolaboxTheme {
+        DeviceScreen(title = "The Daily", batteryLevel = 0.7f, onWheelEvent = {}) {
+            Box(Modifier.fillMaxSize()) {
+                PodcastsList(ListUiState.Gone, highlightedIndex = 0)
+            }
+        }
+    }
+}

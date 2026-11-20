@@ -1,9 +1,13 @@
 package com.eduardoflores.rolabox.common.designsystem.component
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -20,6 +24,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
+import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxTheme
 
 /**
  * The label of a [DeviceList] row, on one line, ending in an ellipsis when it doesn't fit (ADR-017,
@@ -87,18 +93,45 @@ private val LongRows = listOf(
     DeviceListRow("Coda"),
 )
 
+private val DisplayPreviewHeight = 318.dp
+
 /** Long rows at rest: each one ends in an ellipsis, the highlighted one too, before it scrolls. */
 @PreviewLightDark
 @Composable
-private fun DeviceListLongRowsPreview() = DeviceListPreview("Songs", LongRows, highlightedIndex = 1)
+private fun DeviceListLongRowsPreview() {
+    RolaboxTheme {
+        Box(Modifier.padding(16.dp)) {
+            DeviceDisplay("Songs", batteryLevel = 0.7f, modifier = Modifier.heightIn(max = DisplayPreviewHeight)) {
+                DeviceList(LongRows, highlightedIndex = 1)
+            }
+        }
+    }
+}
 
 /** A long row with its `›` highlighted: the arrow keeps its place. */
 @PreviewLightDark
 @Composable
-private fun DeviceListLongRowsSubmenuPreview() = DeviceListPreview("Songs", LongRows, highlightedIndex = 4)
+private fun DeviceListLongRowsSubmenuPreview() {
+    RolaboxTheme {
+        Box(Modifier.padding(16.dp)) {
+            DeviceDisplay("Songs", batteryLevel = 0.7f, modifier = Modifier.heightIn(max = DisplayPreviewHeight)) {
+                DeviceList(LongRows, highlightedIndex = 4)
+            }
+        }
+    }
+}
 
 /** With the system's animations off, the highlighted row wraps its label, and only it. */
 @PreviewLightDark
 @Composable
-private fun DeviceListLongRowsAnimationsOffPreview() =
-    DeviceListPreview("Songs", LongRows, highlightedIndex = 1, animationsOff = true)
+private fun DeviceListLongRowsAnimationsOffPreview() {
+    RolaboxTheme {
+        CompositionLocalProvider(LocalAnimationsOff provides true) {
+            Box(Modifier.padding(16.dp)) {
+                DeviceDisplay("Songs", batteryLevel = 0.7f, modifier = Modifier.heightIn(max = DisplayPreviewHeight)) {
+                    DeviceList(LongRows, highlightedIndex = 1)
+                }
+            }
+        }
+    }
+}
