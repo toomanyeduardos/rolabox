@@ -1,6 +1,7 @@
 # ADR-027: Covers missing from the phone are downloaded from the Cover Art Archive, in WorkManager, and kept as the user's data
 
-- **Status:** Accepted
+- **Status:** Accepted. Rule 6 superseded by [ADR-036](036-android-backup.md) across a backup and
+  restore: the record and the covers stay on the phone, and are downloaded again on a restored one
 - **Date:** 2026-11-03
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review

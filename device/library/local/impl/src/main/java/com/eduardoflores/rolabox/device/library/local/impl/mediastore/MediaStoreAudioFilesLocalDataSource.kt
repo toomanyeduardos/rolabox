@@ -50,11 +50,13 @@ internal class MediaStoreAudioFilesLocalDataSource @Inject constructor(
 
     override fun observePermissionAsked(): Flow<Either<LibraryError, Boolean>> =
         preferences.observeString(PERMISSION_ASKED_KEY).map { stored ->
-            stored.mapLeft(LibraryError::Storage).map { it != null }
+            stored.mapLeft(LibraryError::Storage).map { askedOnThisInstall(it, installedAt()) }
         }
 
     override suspend fun setPermissionAsked(): Either<LibraryError, Unit> =
-        preferences.setString(PERMISSION_ASKED_KEY, "true").mapLeft(LibraryError::Storage)
+        preferences.setString(PERMISSION_ASKED_KEY, installedAt().toString()).mapLeft(LibraryError::Storage)
+
+    private fun installedAt(): Long = context.packageManager.getPackageInfo(context.packageName, 0).firstInstallTime
 
     override suspend fun getAudioFiles(): Either<LibraryError, AudioFileListing> = catchNamed({
         toLibraryError(it, report)
@@ -106,6 +108,9 @@ internal class MediaStoreAudioFilesLocalDataSource @Inject constructor(
     }
 }
 
+// The value is when this install was made: the preferences are backed up and restored to another install, or
+// another phone, where Android has never asked (ADR-036, rule 4). The key is stored on users' devices, so it
+// doesn't change.
 private const val PERMISSION_ASKED_KEY = "library_audio_permission_asked"
 
 internal fun audioPermission(sdk: Int): String = if (sdk >= Build.VERSION_CODES.TIRAMISU) {

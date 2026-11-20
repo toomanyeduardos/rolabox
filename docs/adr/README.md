@@ -35,7 +35,7 @@ New ADR: copy [`template.md`](template.md), take the next number, and add it to 
 | [024](024-library-index.md) | The library index: MediaStore finds the files, and Rolabox's own database is what the device reads | Accepted |
 | [025](025-process-start-tasks.md) | Parts run work at process start through a set in `:common:util`, which `:app` runs | Accepted |
 | [026](026-artwork.md) | Artwork is a reference in the library, loaded from MediaStore's thumbnail of the song, with no image library | Accepted, partly superseded by ADR-031 |
-| [027](027-artwork-from-the-internet.md) | Covers missing from the phone are downloaded from the Cover Art Archive, in WorkManager, and kept as the user's data | Accepted |
+| [027](027-artwork-from-the-internet.md) | Covers missing from the phone are downloaded from the Cover Art Archive, in WorkManager, and kept as the user's data | Accepted, partly superseded by ADR-036 |
 | [028](028-shuffle-and-repeat.md) | Shuffle and repeat are two settings that the queue follows, in Media3's own modes | Accepted |
 | [029](029-sync-failures-are-logged.md) | Sync failures are logged, with the backend's reason where the exception is converted | Accepted |
 | [030](030-crash-reporting.md) | Crashlytics reports crashes, ANRs and named non-fatal errors from every user, with nothing that identifies them | Accepted |
@@ -44,3 +44,4 @@ New ADR: copy [`template.md`](template.md), take the next number, and add it to 
 | [033](033-shared-firestore-module.md) | Firestore is provided once, by `:common:firestore`, which also turns its errors into `RemoteError` | Accepted |
 | [034](034-plain-http-for-podcasts.md) | Plain HTTP is allowed for podcast feeds, images and audio, tried as HTTPS first, and HTTPS is forced for every service Rolabox talks to | Accepted |
 | [035](035-release-signing-and-versioning.md) | Releases are signed with an upload key kept outside the repo, Google holds the app signing key, and the version comes from one semver property | Accepted |
+| [036](036-android-backup.md) | Android backs up only the preferences and the podcasts' database, by an include-list, the same for cloud backup and device transfer | Accepted |
