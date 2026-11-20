@@ -3,13 +3,14 @@ package com.eduardoflores.rolabox.device.ui.impl
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRow
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRowVisibility
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Test
 
 class MainMenuRowsTest {
     @Test
-    fun everyRowShown_andNothingLoaded_isTheWholeMenuButNowPlaying() {
+    fun everyRowShown_andNothingLoaded_isEveryBuiltRowButNowPlaying() {
         assertEquals(
-            MenuRow.entries - MenuRow.NowPlaying,
+            listOf(MenuRow.Music, MenuRow.Podcasts, MenuRow.ShuffleSongs, MenuRow.Settings),
             shownMenuRows(nowPlayingShown = false, visibility = AllShown),
         )
     }
@@ -19,9 +20,22 @@ class MainMenuRowsTest {
         val visibility = AllShown + (MainMenuRow.MUSIC to MainMenuRowVisibility.HIDDEN)
 
         assertEquals(
-            listOf(MenuRow.NowPlaying, MenuRow.Podcasts, MenuRow.Audiobooks, MenuRow.ShuffleSongs, MenuRow.Settings),
+            listOf(MenuRow.NowPlaying, MenuRow.Podcasts, MenuRow.ShuffleSongs, MenuRow.Settings),
             shownMenuRows(nowPlayingShown = true, visibility = visibility),
         )
+    }
+
+    // Audiobooks has no screens in v1 (launch/03): its stored preference, shown or hidden, is kept but not shown.
+    @Test
+    fun audiobooks_isNeverShown_whateverItsPreference() {
+        MainMenuRowVisibility.entries.forEach { visibility ->
+            val rows = shownMenuRows(
+                nowPlayingShown = true,
+                visibility = AllShown + (MainMenuRow.AUDIOBOOKS to visibility),
+            )
+
+            assertFalse(MenuRow.Audiobooks in rows)
+        }
     }
 
     // Settings and Now Playing can't be hidden: hiding every row that can be leaves them.

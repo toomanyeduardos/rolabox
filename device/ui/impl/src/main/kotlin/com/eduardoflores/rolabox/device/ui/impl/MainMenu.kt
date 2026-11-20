@@ -47,8 +47,8 @@ internal fun EntryProviderScope<NavKey>.mainMenuEntry(
 /**
  * Turning moves the highlight, which stops at the first and last of the [shown] rows. Center on Now
  * Playing reports [onNowPlayingClick], on Music [onMusicClick], on Podcasts [onPodcastsClick], on Shuffle Songs
- * [onShuffleSongsClick], which plays (ADR-028), and on Settings [onSettingsClick]; Audiobooks does nothing until its
- * screens exist.
+ * [onShuffleSongsClick], which plays (ADR-028), and on Settings [onSettingsClick]. Audiobooks isn't built, so it is
+ * never in [shown].
  *
  * The highlight is the row, not its place: when Now Playing appears above it, the highlight stays on the
  * row it was on. It is saved with the entry like every list's (ADR-018, rule 7).
@@ -112,7 +112,7 @@ private fun MainMenuList(rows: List<MenuRow>, highlightedIndex: Int) {
 private fun MainMenuPreview() {
     RolaboxTheme {
         DeviceScreen(title = stringResource(R.string.device_title), batteryLevel = 0.7f, onWheelEvent = {}) {
-            MainMenuList(rows = MenuRow.entries - MenuRow.NowPlaying, highlightedIndex = 0)
+            MainMenuList(rows = BuiltRows - MenuRow.NowPlaying, highlightedIndex = 0)
         }
     }
 }
@@ -123,12 +123,12 @@ private fun MainMenuPreview() {
 private fun MainMenuNowPlayingPreview() {
     RolaboxTheme {
         DeviceScreen(title = stringResource(R.string.device_title), batteryLevel = 0.7f, onWheelEvent = {}) {
-            MainMenuList(rows = MenuRow.entries, highlightedIndex = 1)
+            MainMenuList(rows = BuiltRows, highlightedIndex = 1)
         }
     }
 }
 
-/** Podcasts and Audiobooks were hidden in Settings, so the main menu doesn't show them. */
+/** Podcasts was hidden in Settings, so the main menu doesn't show it. */
 @PreviewLightDark
 @Composable
 private fun MainMenuHiddenRowsPreview() {
@@ -138,3 +138,5 @@ private fun MainMenuHiddenRowsPreview() {
         }
     }
 }
+
+private val BuiltRows = MenuRow.entries.filter { it.built }
