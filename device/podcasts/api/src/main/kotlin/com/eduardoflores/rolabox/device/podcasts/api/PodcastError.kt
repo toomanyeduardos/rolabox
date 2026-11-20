@@ -16,6 +16,12 @@ sealed interface PodcastError {
     /** A feed couldn't be fetched, isn't RSS, or ended early. */
     data object FeedUnreadable : PodcastError
 
+    /**
+     * The publisher's server refuses the episode's audio, with a 401, 403 or 410, as it does a paid episode kept in a
+     * public feed (ADR-031, Search).
+     */
+    data object AudioRefused : PodcastError
+
     data class OwnerNotFound(val id: OwnerId) : PodcastError
 
     data class ShowNotFound(val id: ShowId) : PodcastError

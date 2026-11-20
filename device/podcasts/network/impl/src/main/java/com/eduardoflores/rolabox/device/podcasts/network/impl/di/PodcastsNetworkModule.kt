@@ -1,5 +1,6 @@
 package com.eduardoflores.rolabox.device.podcasts.network.impl.di
 
+import com.eduardoflores.rolabox.device.podcasts.network.api.AudioNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.api.ConnectionNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.api.DirectoryNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.api.FeedNetworkDataSource
@@ -11,6 +12,7 @@ import com.eduardoflores.rolabox.device.podcasts.network.impl.DirectorySearchUrl
 import com.eduardoflores.rolabox.device.podcasts.network.impl.FirestoreFollowsNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.impl.HttpsFirstInterceptor
 import com.eduardoflores.rolabox.device.podcasts.network.impl.ITunesDirectoryNetworkDataSource
+import com.eduardoflores.rolabox.device.podcasts.network.impl.OkHttpAudioNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.impl.OkHttpImageNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.impl.PodcastsClient
 import com.eduardoflores.rolabox.device.podcasts.network.impl.RssFeedNetworkDataSource
@@ -51,6 +53,9 @@ abstract class PodcastsNetworkModule {
     @Binds
     internal abstract fun bindsImageNetworkDataSource(dataSource: OkHttpImageNetworkDataSource): ImageNetworkDataSource
 
+    @Binds
+    internal abstract fun bindsAudioNetworkDataSource(dataSource: OkHttpAudioNetworkDataSource): AudioNetworkDataSource
+
     internal companion object {
         private val CONNECT_TIMEOUT = 15.seconds
 
@@ -65,8 +70,9 @@ abstract class PodcastsNetworkModule {
         fun providesDeviceCountry(): DeviceCountry = DeviceCountry.FromLocale
 
         /**
-         * The podcasts' client, for the directory, the feeds and their images. It sends nothing of its own, and keeps
-         * no cookies (ADR-031, rule 1; ADR-034, rule 5). An `http://` URL is tried as HTTPS first (ADR-034, rule 4).
+         * The podcasts' client, for the directory, the feeds, their images and the audio check. It sends nothing of its
+         * own, and keeps no cookies (ADR-031, rule 1; ADR-034, rule 5). An `http://` URL is tried as HTTPS first
+         * (ADR-034, rule 4).
          */
         @Provides
         @Singleton

@@ -6,6 +6,8 @@ import androidx.annotation.OptIn
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DataSpec
+import androidx.media3.datasource.HttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.test.utils.FakeClock
 import androidx.media3.test.utils.robolectric.RobolectricUtil
@@ -38,6 +40,7 @@ import com.eduardoflores.rolabox.device.podcasts.testing.FakeEpisodeProgressRepo
 import com.eduardoflores.rolabox.device.podcasts.testing.FakePodcastArtworkRepository
 import com.eduardoflores.rolabox.device.podcasts.testing.FakePodcastsRepository
 import java.io.File
+import java.io.IOException
 import kotlin.coroutines.ContinuationInterceptor
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.seconds
@@ -481,6 +484,45 @@ class UnplayableFilesTest {
         )
 
         kinds.forEach { (code, kind) -> assertEquals(kind, PlaybackException("", null, code).toUnplayable()) }
+    }
+
+    // podcasts/12: a publisher refusing a paid episode's audio, as the stream or the download's cache meets it.
+    @Test
+    fun a401_403Or410_isRefused_evenThroughTheCache() {
+        listOf(401, 403, 410).forEach { status ->
+            assertEquals(PlaybackError.Unplayable.Refused, httpError(status).toUnplayable())
+            assertEquals(PlaybackError.Unplayable.Refused, httpError(status, wrapped = true).toUnplayable())
+        }
+    }
+
+    @Test
+    fun anotherHttpError_isUnreadable() {
+        assertEquals(PlaybackError.Unplayable.Unreadable, httpError(404).toUnplayable())
+        assertEquals(PlaybackError.Unplayable.Unreadable, httpError(500).toUnplayable())
+    }
+
+    // ADR-030, rule 6: the publisher's choice, not a bug.
+    @Test
+    fun refusedAudio_isNotReported() {
+        val error = httpError(403)
+
+        reportUnplayable(report, error.toUnplayable(), error)
+
+        assertEquals(emptyList<String>(), report.kinds)
+    }
+
+    /** What Media3 raises when a server answers [status], directly or, [wrapped], inside the cache's own error. */
+    private fun httpError(status: Int, wrapped: Boolean = false): PlaybackException {
+        val http = HttpDataSource.InvalidResponseCodeException(
+            status,
+            null,
+            null,
+            emptyMap(),
+            DataSpec(Uri.parse("https://e.com/episode.mp3")),
+            ByteArray(0),
+        )
+        val cause = if (wrapped) IOException(http) else http
+        return PlaybackException("", cause, PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS)
     }
 
     /** The library says the songs [numbers] are protected, and no other (ADR-024). */

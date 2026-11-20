@@ -16,12 +16,17 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.launch
 
 /** An episode from search, found in its show's feed: what Play adds to the library. */
@@ -36,35 +41,59 @@ private data class FoundInFeed(val show: DirectoryShow, val episode: DirectoryEp
 internal class FoundEpisodeViewModelImpl @AssistedInject constructor(
     @Assisted key: PodcastSearchEpisodeKey,
     savedState: SavedStateHandle,
-    directory: PodcastDirectory,
+    private val directory: PodcastDirectory,
     private val podcastsRepository: PodcastsRepository,
     private val playbackController: PlaybackController,
-    episodeNetwork: EpisodeNetwork,
+    private val episodeNetwork: EpisodeNetwork,
 ) : EpisodeViewModel() {
     private var found: FoundInFeed? = null
 
-    override val uiState: StateFlow<ListUiState<EpisodeContent>> = combine(
-        directory.feedOf(key.show.toDirectoryShow()),
-        episodeNetwork.observeNeedsWifi(),
-    ) { read, needWifi ->
-        read.fold(
-            ifLeft = { error ->
-                when (error) {
-                    PodcastError.NoConnection -> ListUiState.NoConnection
-                    else -> ListUiState.FeedUnreadable
-                }
-            },
-            ifRight = { feed ->
-                val episode = feed.episodeOf(key.guid, key.audioUrl)
-                if (episode == null) {
-                    ListUiState.NotInFeed
+    // Whether the publisher refused the audio, once it was checked: asked once, not again each time Wi-Fi comes back.
+    private var refused: Boolean? = null
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override val uiState: StateFlow<ListUiState<EpisodeContent>> = directory.feedOf(key.show.toDirectoryShow())
+        .flatMapLatest { read ->
+            read.fold(
+                ifLeft = { error ->
+                    flowOf(
+                        when (error) {
+                            PodcastError.NoConnection -> ListUiState.NoConnection
+                            else -> ListUiState.FeedUnreadable
+                        },
+                    )
+                },
+                ifRight = { feed ->
+                    val episode = feed.episodeOf(key.guid, key.audioUrl)
+                    if (episode == null) {
+                        flowOf(ListUiState.NotInFeed)
+                    } else {
+                        found = FoundInFeed(feed.show, episode)
+                        playableState(feed.show, episode)
+                    }
+                },
+            )
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ListUiState.Loading)
+
+    /**
+     * The episode's screen, once its audio is checked (ADR-031, Search): Play, or Not available when the publisher
+     * refuses it. Nothing is offered until the check answers, so a press can't add the episode first. While episodes
+     * need Wi-Fi, no byte of it is asked for (rule 9): the screen says Needs Wi-Fi, and checks once the network allows.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun playableState(show: DirectoryShow, episode: DirectoryEpisode): Flow<ListUiState<EpisodeContent>> =
+        episodeNetwork.observeNeedsWifi().distinctUntilChanged()
+            .transformLatest { needWifi ->
+                if (needWifi) {
+                    emit(ListUiState.Loaded(foundEpisodeContent(show, episode, needWifi = true)))
                 } else {
-                    found = FoundInFeed(feed.show, episode)
-                    ListUiState.Loaded(foundEpisodeContent(feed.show, episode, needWifi))
+                    val refusedNow = refused
+                        ?: (directory.checkAudio(episode.audioUrl).leftOrNull() == PodcastError.AudioRefused)
+                            .also { refused = it }
+                    emit(ListUiState.Loaded(foundEpisodeContent(show, episode, refused = refusedNow)))
                 }
-            },
-        )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ListUiState.Loading)
+            }
 
     private val savedWheel = SavedEpisodeWheel(savedState, viewModelScope)
     override val wheel: StateFlow<EpisodeWheel> = savedWheel.wheel
@@ -84,7 +113,10 @@ internal class FoundEpisodeViewModelImpl @AssistedInject constructor(
         val found = found ?: return
         when (rows.getOrNull(savedWheel.current().row.coerceIn(0, rows.lastIndex))) {
             EpisodeRow.NeedsWifi -> onAllowMobileData()
-            null -> Unit
+
+            // The publisher refuses the audio: nothing is added (ADR-031, Search).
+            EpisodeRow.NotAvailable, null -> Unit
+
             else -> play(found, onPlaying)
         }
     }

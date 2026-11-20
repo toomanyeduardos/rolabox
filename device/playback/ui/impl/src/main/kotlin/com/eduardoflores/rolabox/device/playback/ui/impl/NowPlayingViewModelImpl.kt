@@ -276,6 +276,7 @@ private fun SkippedItems.toUi() = SkippedSongs(
         PlaybackError.Unplayable.Unsupported -> SkipReason.Unsupported
         PlaybackError.Unplayable.Protected -> SkipReason.Protected
         PlaybackError.Unplayable.Unreadable -> SkipReason.Unreadable
+        PlaybackError.Unplayable.Refused -> SkipReason.Refused
         PlaybackError.Unplayable.EngineFailed -> SkipReason.Unknown
     },
 )

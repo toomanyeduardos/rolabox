@@ -58,6 +58,12 @@ sealed interface PlaybackError {
         /** The file is there, but reading it failed. */
         data object Unreadable : Unplayable
 
+        /**
+         * The server refused the audio, with a 401, 403 or 410, as a publisher does a paid episode kept in its public
+         * feed (ADR-031, Errors). It is the publisher's choice, not a bug.
+         */
+        data object Refused : Unplayable
+
         /** The file may be fine, and the engine failed for a reason of its own. */
         data object EngineFailed : Unplayable
     }

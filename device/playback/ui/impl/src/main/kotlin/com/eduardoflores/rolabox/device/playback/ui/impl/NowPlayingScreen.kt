@@ -114,6 +114,7 @@ private fun SkipReason.text(): String = stringResource(
         SkipReason.Unsupported -> R.string.now_playing_skip_unsupported
         SkipReason.Protected -> R.string.now_playing_skip_protected
         SkipReason.Unreadable -> R.string.now_playing_skip_unreadable
+        SkipReason.Refused -> R.string.now_playing_skip_refused
         SkipReason.Unknown -> R.string.now_playing_skip_unknown
     },
 )

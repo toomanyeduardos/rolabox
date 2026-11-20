@@ -18,6 +18,7 @@ class InfoLineTest {
         resume = "Resume",
         playFromStart = "Play from Start",
         needsWifi = "Needs Wi-Fi. Select to allow mobile data.",
+        notAvailable = "Not available",
         dateThisYear = "MMM d",
         dateOtherYear = "MMM d, yyyy",
         minutes = "%d MIN",

@@ -252,9 +252,20 @@ private fun EpisodeNoDescriptionPreview() = EpisodePreview(
 /** Frame 32 opens the same screen for an episode of a show from search: Play only. */
 @PreviewLightDark
 @Composable
-private fun EpisodeFromSearchPreview() {
+private fun EpisodeFromSearchPreview() = EpisodePreview(foundEpisodeContent(FoundShow, foundEpisode()))
+
+/** An episode from search whose publisher refuses its audio: Not available in place of Play (ADR-031, Search). */
+@PreviewLightDark
+@Composable
+private fun EpisodeFromSearchNotAvailablePreview() =
+    EpisodePreview(foundEpisodeContent(FoundShow, foundEpisode(), refused = true))
+
+private val FoundShow =
+    DirectoryShow(TheDaily.directoryId, TheDaily.title, "NY Times", "https://example.com/the-daily.xml")
+
+private fun foundEpisode(): DirectoryEpisode {
     val episode = partOfTheDaily(Duration.ZERO, PlayedState.Unplayed)
-    val found = DirectoryEpisode(
+    return DirectoryEpisode(
         guid = null,
         title = episode.title,
         publishedAt = Instant.parse("2025-03-02T12:00:00Z"),
@@ -262,8 +273,6 @@ private fun EpisodeFromSearchPreview() {
         description = episode.description,
         audioUrl = episode.audioUrl,
     )
-    val show = DirectoryShow(TheDaily.directoryId, TheDaily.title, "NY Times", "https://example.com/the-daily.xml")
-    EpisodePreview(foundEpisodeContent(show, found))
 }
 
 /** The show was removed while its screen was open: MENU goes back. */

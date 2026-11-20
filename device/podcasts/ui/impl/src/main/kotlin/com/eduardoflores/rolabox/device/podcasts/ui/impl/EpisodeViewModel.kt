@@ -54,6 +54,12 @@ internal enum class EpisodeRow {
      * the podcasts' settings, where Use Mobile Data is.
      */
     NeedsWifi,
+
+    /**
+     * In place of Play, for an episode from search whose publisher refuses its audio (ADR-031, Search). Center does
+     * nothing, so nothing is added to the library.
+     */
+    NotAvailable,
 }
 
 /** Why center couldn't play the episode, as the screen tells the user (ADR-018, rule 18). */
@@ -184,7 +190,14 @@ internal class EpisodeViewModelImpl @AssistedInject constructor(
     override fun onCenter(onPlaying: () -> Unit, onAllowMobileData: () -> Unit) {
         val rows = (uiState.value as? ListUiState.Loaded)?.value?.rows ?: return
         val row = rows.getOrNull(savedWheel.current().row.coerceIn(0, rows.lastIndex)) ?: return
-        if (row == EpisodeRow.NeedsWifi) onAllowMobileData() else play(row, onPlaying)
+        when (row) {
+            EpisodeRow.NeedsWifi -> onAllowMobileData()
+
+            // Only an episode from search is checked, so the library's screen never has it.
+            EpisodeRow.NotAvailable -> Unit
+
+            EpisodeRow.Play, EpisodeRow.Resume, EpisodeRow.PlayFromStart -> play(row, onPlaying)
+        }
     }
 
     private fun play(row: EpisodeRow, onPlaying: () -> Unit) {
@@ -282,15 +295,22 @@ internal fun episodeContent(show: Show, episode: Episode, needWifi: Boolean = fa
 
 /**
  * An episode from search that isn't in the library (ADR-031, Search): it has no position and no download, so Play is
- * its only row, or Needs Wi-Fi while episodes [needWifi].
+ * its only row, Needs Wi-Fi while episodes [needWifi], or Not available when its publisher [refused] its audio.
  */
 internal fun foundEpisodeContent(
     show: DirectoryShow,
     episode: DirectoryEpisode,
     needWifi: Boolean = false,
+    refused: Boolean = false,
 ): EpisodeContent = EpisodeContent(
     showTitle = show.title,
-    rows = listOf(if (needWifi) EpisodeRow.NeedsWifi else EpisodeRow.Play),
+    rows = listOf(
+        when {
+            needWifi -> EpisodeRow.NeedsWifi
+            refused -> EpisodeRow.NotAvailable
+            else -> EpisodeRow.Play
+        },
+    ),
     info = EpisodeInfo(publishedAt = episode.publishedAt, length = episode.length, left = null),
     description = episode.description?.takeIf { it.isNotBlank() },
 )

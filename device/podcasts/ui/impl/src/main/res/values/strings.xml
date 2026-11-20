@@ -19,6 +19,8 @@
     <string name="podcasts_play_from_start">Play from Start</string>
     <!-- In place of Play, for an episode not downloaded while Use Mobile Data is off on mobile data (frame 36). -->
     <string name="podcasts_needs_wifi">Needs Wi-Fi. Select to allow mobile data.</string>
+    <!-- In place of Play, for an episode from search whose publisher refuses its audio, as a paid one gets. -->
+    <string name="podcasts_not_available">Not available</string>
     <!-- The episode's date on its screen, drawn in capitals: NOV 8. A date of another year adds it. -->
     <string name="podcasts_date_this_year" translatable="false">MMM d</string>
     <string name="podcasts_date_other_year" translatable="false">MMM d, yyyy</string>

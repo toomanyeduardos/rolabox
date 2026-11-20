@@ -10,6 +10,7 @@ import com.eduardoflores.rolabox.device.playback.testing.FakePlayback
 import com.eduardoflores.rolabox.device.podcasts.api.DirectoryEpisode
 import com.eduardoflores.rolabox.device.podcasts.api.DirectoryId
 import com.eduardoflores.rolabox.device.podcasts.api.DirectoryShow
+import com.eduardoflores.rolabox.device.podcasts.api.PodcastError
 import com.eduardoflores.rolabox.device.podcasts.api.ShowFeed
 import com.eduardoflores.rolabox.device.podcasts.testing.FakePodcastDirectory
 import com.eduardoflores.rolabox.device.podcasts.testing.FakePodcastsRepository
@@ -121,6 +122,62 @@ class FoundEpisodeViewModelTest {
             playback.playCalls,
         )
         assertEquals(1, playing)
+    }
+
+    @Test
+    fun theFeedsAudio_isChecked_beforePlayIsOffered() = runTest {
+        // The directory's enclosure URL may differ from the feed's: the feed's is what plays, so it is what's checked.
+        val viewModel = observedViewModel(PodcastSearchEpisodeKey(show.toKey(), "g2", "https://other/2.mp3"))
+
+        assertEquals(listOf(EpisodeRow.Play), viewModel.content().rows)
+        assertEquals(listOf("https://e.com/2.mp3"), directory.audioChecked)
+    }
+
+    @Test
+    fun refusedAudio_isNotAvailable_andCenterAddsNothing() = runTest {
+        directory.audioErrors = mapOf(battery.audioUrl to PodcastError.AudioRefused)
+        val viewModel = observedViewModel(episodeKeyOf(show, battery))
+        var playing = 0
+        var allowed = 0
+
+        viewModel.onCenter(onPlaying = { playing++ }, onAllowMobileData = { allowed++ })
+
+        assertEquals(foundEpisodeContent(show, battery, refused = true), viewModel.content())
+        assertEquals(listOf(EpisodeRow.NotAvailable), viewModel.content().rows)
+        assertEquals(emptyList<Pair<DirectoryShow, DirectoryEpisode>>(), podcasts.added)
+        assertEquals(emptyList<FakePlayback.PlayCall>(), playback.playCalls)
+        assertEquals(0, playing)
+        assertEquals(0, allowed)
+        assertEquals(null, viewModel.playFailure.value)
+    }
+
+    // A check that couldn't be made offers Play, as before it: the player says what it finds.
+    @Test
+    fun aCheckWithNoConnection_offersPlay() = runTest {
+        directory.audioErrors = mapOf(battery.audioUrl to PodcastError.NoConnection)
+
+        assertEquals(listOf(EpisodeRow.Play), observedViewModel(episodeKeyOf(show, battery)).content().rows)
+    }
+
+    // ADR-031, rule 9: no byte of an episode over mobile data while Use Mobile Data is off.
+    @Test
+    fun whileEpisodesNeedWifi_nothingIsChecked_untilTheNetworkAllowsIt_thenOnce() = runTest {
+        network.needsWifi.value = true
+        directory.audioErrors = mapOf(battery.audioUrl to PodcastError.AudioRefused)
+        val viewModel = observedViewModel(episodeKeyOf(show, battery))
+
+        assertEquals(listOf(EpisodeRow.NeedsWifi), viewModel.content().rows)
+        assertEquals(emptyList<String>(), directory.audioChecked)
+
+        network.needsWifi.value = false
+
+        assertEquals(listOf(EpisodeRow.NotAvailable), viewModel.content().rows)
+
+        network.needsWifi.value = true
+        network.needsWifi.value = false
+
+        assertEquals(listOf(EpisodeRow.NotAvailable), viewModel.content().rows)
+        assertEquals(listOf(battery.audioUrl), directory.audioChecked)
     }
 
     @Test
