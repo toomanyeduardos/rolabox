@@ -155,6 +155,35 @@ class FollowsSyncerTest {
         watching.cancel()
     }
 
+    // ADR-037: deleting the account deletes every follow in the cloud, Off ones too.
+    @Test
+    fun deleteRemote_deletesTheUsersFollows() = runTest {
+        network.remote = mapOf(DAILY to synced(1, followed = true, at = 1_000), SERIAL to synced(2, false, 1_000))
+
+        assertEquals(Unit.right(), syncer.deleteRemote(USER))
+
+        assertEquals(listOf(USER), network.deletedFor)
+        assertEquals(emptyMap<DirectoryId, SyncedValue<Follow>>(), network.remote)
+    }
+
+    @Test
+    fun deleteRemote_failing_isTheRemoteError() = runTest {
+        network.deleteError = RemoteError.Unavailable
+
+        assertEquals(RemoteError.Unavailable.left(), syncer.deleteRemote(USER))
+    }
+
+    // ADR-037, rule 3: sync never deletes a follow, even one this phone doesn't have.
+    @Test
+    fun sync_neverDeletes() = runTest {
+        network.remote = mapOf(DAILY to synced(1, followed = true, at = 1_000))
+
+        syncer.sync(USER)
+
+        assertEquals(emptyList<String>(), network.deletedFor)
+        assertEquals(mapOf(DAILY to synced(1, followed = true, at = 1_000)), network.remote)
+    }
+
     private companion object {
         const val USER = "alice"
         val DAILY = DirectoryId.itunes(1)

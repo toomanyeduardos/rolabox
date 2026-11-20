@@ -34,4 +34,10 @@ class FakePreferencesNetworkDataSource @Inject constructor() : PreferencesNetwor
         }
         return merged.right()
     }
+
+    /** When set, [delete] fails with this error and deletes nothing. */
+    var deleteError: RemoteError? = null
+
+    override suspend fun delete(userId: String): Either<RemoteError, Unit> =
+        deleteError?.left() ?: byUser.remove(userId).let { Unit.right() }
 }

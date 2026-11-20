@@ -8,8 +8,10 @@ import com.eduardoflores.rolabox.auth.data.api.AuthRepository
 import com.eduardoflores.rolabox.auth.data.api.AuthState
 import com.eduardoflores.rolabox.auth.data.api.AuthUser
 import com.eduardoflores.rolabox.auth.data.api.SignInCredential
+import com.eduardoflores.rolabox.auth.data.api.SignInMethod
 import com.eduardoflores.rolabox.common.util.catchNamed
 import com.google.firebase.auth.AuthCredential
+import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.FirebaseUser
@@ -81,6 +83,31 @@ internal class FirebaseAuthRepository @Inject constructor(private val firebaseAu
     // Firebase signs out synchronously from its local state and doesn't fail. Clearing Credential
     // Manager's saved state joins it when the sign-in UI exists (ADR-009), and that can fail.
     override suspend fun signOut(): Either<AuthError, Unit> = firebaseAuth.signOut().right()
+
+    // Another account's credential fails with Firebase's user-mismatch error, an invalid-user exception, which is
+    // InvalidCredential: the user signed in with something that isn't this account.
+    override suspend fun reauthenticate(credential: SignInCredential): Either<AuthError, Unit> =
+        catchNamed(Throwable::asAuthError) {
+            signedInUser().reauthenticate(credential.toFirebaseCredential()).await()
+            Unit
+        }
+
+    override suspend fun reauthenticateWithPassword(password: String): Either<AuthError, Unit> =
+        catchNamed(Throwable::asAuthError) {
+            val user = signedInUser()
+            val email = checkNotNull(user.email) { "An account with a password has an email" }
+            user.reauthenticate(EmailAuthProvider.getCredential(email, password)).await()
+            Unit
+        }
+
+    // Firebase signs out by itself once the account is deleted.
+    override suspend fun deleteUser(): Either<AuthError, Unit> = catchNamed(Throwable::asAuthError) {
+        firebaseAuth.currentUser?.delete()?.await()
+        Unit
+    }
+
+    // Re-authenticating is only offered while signed in, so being signed out here is a bug.
+    private fun signedInUser(): FirebaseUser = checkNotNull(firebaseAuth.currentUser) { "Nobody is signed in" }
 }
 
 private fun SignInCredential.toFirebaseCredential(): AuthCredential = when (this) {
@@ -90,4 +117,16 @@ private fun SignInCredential.toFirebaseCredential(): AuthCredential = when (this
 private fun FirebaseUser?.toAuthState(): AuthState =
     this?.let { AuthState.SignedIn(it.toAuthUser()) } ?: AuthState.SignedOut
 
-private fun FirebaseUser.toAuthUser() = AuthUser(id = uid, displayName = displayName, photoUrl = photoUrl?.toString())
+private fun FirebaseUser.toAuthUser() = AuthUser(
+    id = uid,
+    displayName = displayName,
+    photoUrl = photoUrl?.toString(),
+    signInMethods = providerData.mapNotNullTo(mutableSetOf()) { it.providerId.toSignInMethod() },
+)
+
+// The user's own entry, "firebase", and providers Rolabox doesn't offer, aren't ways to re-authenticate.
+private fun String.toSignInMethod(): SignInMethod? = when (this) {
+    EmailAuthProvider.PROVIDER_ID -> SignInMethod.PASSWORD
+    GoogleAuthProvider.PROVIDER_ID -> SignInMethod.GOOGLE
+    else -> null
+}

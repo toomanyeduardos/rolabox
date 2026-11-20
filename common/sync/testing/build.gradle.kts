@@ -4,6 +4,7 @@ plugins {
 
 dependencies {
     implementation(project(":common:sync:api"))
+    implementation(libs.arrow.core)
     implementation(libs.javax.inject)
     implementation(libs.kotlinx.coroutines.core)
 }

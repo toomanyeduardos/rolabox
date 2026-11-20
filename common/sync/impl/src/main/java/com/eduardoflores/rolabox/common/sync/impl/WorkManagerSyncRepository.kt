@@ -9,6 +9,8 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import arrow.core.Either
+import com.eduardoflores.rolabox.common.sync.api.RemoteError
 import com.eduardoflores.rolabox.common.sync.api.SyncRepository
 import com.eduardoflores.rolabox.common.sync.api.SyncUserProvider
 import com.eduardoflores.rolabox.common.sync.api.Syncer
@@ -29,15 +31,18 @@ import kotlinx.coroutines.flow.onEach
  * being killed, and WorkManager retries it with backoff.
  *
  * Nothing is requested while the [SyncUserProvider] has nobody to sync for, which is while signed out
- * or in offline mode. So in offline mode no work is ever enqueued (ADR-008 rule 6).
+ * or in offline mode. So in offline mode no work is ever enqueued (ADR-008 rule 6). Nor is anything
+ * requested for a user whose account's data is being deleted (ADR-037).
  */
 internal class WorkManagerSyncRepository @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val syncUserProvider: SyncUserProvider,
     private val syncers: Set<@JvmSuppressWildcards Syncer>,
     @param:ApplicationScope private val applicationScope: CoroutineScope,
+    private val pause: SyncPause,
+    private val deletion: SyncedDataDeletion,
 ) : SyncRepository {
-    // Null until start(), and while there is nobody to sync for.
+    // Null until start(), while there is nobody to sync for, and while their data is being deleted.
     private val allowedUser = MutableStateFlow<String?>(null)
     private val foreground = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
@@ -50,7 +55,7 @@ internal class WorkManagerSyncRepository @Inject constructor(
                 }
             },
         )
-        syncUserProvider.observeSyncUser()
+        allowedSyncUser(syncUserProvider.observeSyncUser(), pause.pausedFor)
             .onEach { allowedUser.value = it }
             .launchIn(applicationScope)
         syncRequests(allowedUser, syncers.map { it.observeLocalChanges() }.merge(), foreground)
@@ -61,6 +66,15 @@ internal class WorkManagerSyncRepository @Inject constructor(
     override fun requestSync() {
         if (allowedUser.value != null) enqueueSync()
     }
+
+    // Pending work is cancelled too, though the runner would skip it: there's no point waiting for a
+    // network to do nothing.
+    override suspend fun deleteRemoteData(userId: String): Either<RemoteError, Unit> {
+        WorkManager.getInstance(context).cancelUniqueWork(SYNC_WORK_NAME)
+        return deletion.deleteRemoteData(userId)
+    }
+
+    override fun resume() = deletion.resume()
 
     // A newer request replaces a pending or running one. Syncing is idempotent, so cancelling one
     // halfway loses nothing, and the new one reads the latest local changes.

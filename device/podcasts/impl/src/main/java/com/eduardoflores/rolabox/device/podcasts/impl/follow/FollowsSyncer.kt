@@ -4,6 +4,7 @@ import arrow.core.Either
 import arrow.core.raise.either
 import com.eduardoflores.rolabox.common.storage.api.StorageError
 import com.eduardoflores.rolabox.common.sync.api.LastWriteWins
+import com.eduardoflores.rolabox.common.sync.api.RemoteError
 import com.eduardoflores.rolabox.common.sync.api.SyncError
 import com.eduardoflores.rolabox.common.sync.api.Syncer
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastError
@@ -20,6 +21,7 @@ import kotlinx.coroutines.flow.map
  * Syncs the follows show by show, with last-write-wins on when the user last set each (ADR-031, Syncing follows). It
  * is the only class that uses both the local and the network side of the follows (ADR-022, rule 2). Follows made
  * without an account were stored with their time, so the first sync after signing in merges them like any change.
+ * Sync never deletes a follow: only deleting the account does, every one of them (ADR-037).
  */
 internal class FollowsSyncer @Inject constructor(
     private val local: PodcastsLocalDataSource,
@@ -47,6 +49,8 @@ internal class FollowsSyncer @Inject constructor(
             turnedOn.forEach(followCheck::checkShow)
         }
     }
+
+    override suspend fun deleteRemote(userId: String): Either<RemoteError, Unit> = network.delete(userId)
 
     // Each show is resolved on its own, so following one show on one phone and another on a second keeps both.
     private fun SyncedFollows.mergedWith(remote: SyncedFollows): SyncedFollows =

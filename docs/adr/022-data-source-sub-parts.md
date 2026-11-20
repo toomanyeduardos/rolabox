@@ -2,7 +2,9 @@
 
 - **Status:** Accepted. Rule 2 superseded by [ADR-031](031-podcasts.md) for a podcast directory's
   answers and a show opened from search. Rule 3 superseded by [ADR-033](033-shared-firestore-module.md):
-  Firestore is also a dependency of `:common:firestore`
+  Firestore is also a dependency of `:common:firestore`. Rule 5 superseded by
+  [ADR-037](037-deleting-an-account.md) for deleting an account: a `Syncer`'s delete runs in the
+  foreground
 - **Date:** 2026-10-12
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review

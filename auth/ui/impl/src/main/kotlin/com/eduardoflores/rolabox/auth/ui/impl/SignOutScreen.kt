@@ -16,6 +16,7 @@ import com.eduardoflores.rolabox.common.designsystem.component.FieldError
 import com.eduardoflores.rolabox.common.designsystem.component.PreviewLightDark
 import com.eduardoflores.rolabox.common.designsystem.component.PrimaryButton
 import com.eduardoflores.rolabox.common.designsystem.component.SecondaryButton
+import com.eduardoflores.rolabox.common.designsystem.component.UnderlinedLink
 import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxTheme
 
 /**
@@ -26,6 +27,7 @@ import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxTheme
 internal fun SignOutRoute(
     viewModel: SignOutViewModel,
     onCancelClick: () -> Unit,
+    onDeleteAccountClick: () -> Unit,
     onSignedOut: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -38,6 +40,7 @@ internal fun SignOutRoute(
         state = state,
         onSignOutClick = viewModel::onSignOutClick,
         onCancelClick = onCancelClick,
+        onDeleteAccountClick = onDeleteAccountClick,
         modifier = modifier,
     )
 }
@@ -47,6 +50,7 @@ internal fun SignOutScreen(
     state: SignOutUiState,
     onSignOutClick: () -> Unit,
     onCancelClick: () -> Unit,
+    onDeleteAccountClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     AuthScaffold(
@@ -56,7 +60,14 @@ internal fun SignOutScreen(
         onBack = onCancelClick,
         title = stringResource(R.string.account_sign_out_title),
         subtitle = stringResource(R.string.account_sign_out_subtitle),
-        footer = {},
+        // Deleting the account is the screen's quiet way out: it opens a screen of its own that confirms it (ADR-037).
+        footer = {
+            UnderlinedLink(
+                text = stringResource(R.string.account_sign_out_delete_account),
+                onClick = onDeleteAccountClick,
+                modifier = Modifier.testTag(SignOutTags.DELETE_ACCOUNT),
+            )
+        },
     ) {
         Column(Modifier.padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             PrimaryButton(
@@ -80,7 +91,7 @@ internal fun SignOutScreen(
 @Composable
 private fun SignOutPreview() {
     RolaboxTheme {
-        SignOutScreen(state = SignOutUiState(), onSignOutClick = {}, onCancelClick = {})
+        SignOutScreen(state = SignOutUiState(), onSignOutClick = {}, onCancelClick = {}, onDeleteAccountClick = {})
     }
 }
 
@@ -88,6 +99,11 @@ private fun SignOutPreview() {
 @Composable
 private fun SignOutErrorPreview() {
     RolaboxTheme {
-        SignOutScreen(state = SignOutUiState(hasError = true), onSignOutClick = {}, onCancelClick = {})
+        SignOutScreen(
+            state = SignOutUiState(hasError = true),
+            onSignOutClick = {},
+            onCancelClick = {},
+            onDeleteAccountClick = {},
+        )
     }
 }

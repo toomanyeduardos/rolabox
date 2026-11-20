@@ -15,6 +15,8 @@ dependencies {
     implementation(project(":auth:data:api"))
     implementation(project(":auth:ui:api"))
     implementation(project(":common:storage:api"))
+    // Deleting the account can fail in the cloud, with sync's RemoteError (ADR-037).
+    implementation(project(":common:sync:api"))
     implementation(project(":common:userdata:api"))
 
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
@@ -28,6 +30,7 @@ dependencies {
     testImplementation(project(":auth:data:testing"))
     testImplementation(project(":common:testing"))
     testImplementation(project(":common:userdata:testing"))
+    testImplementation(project(":common:sync:api"))
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
 

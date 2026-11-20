@@ -1,6 +1,7 @@
 # ADR-031: Podcasts: Apple's directory, feeds read on the phone, downloads in playback's Media3 cache, and follows synced per show
 
-- **Status:** Accepted
+- **Status:** Accepted. "Follows are never deleted" (Syncing follows) superseded by
+  [ADR-037](037-deleting-an-account.md) for deleting an account: sync still never deletes a follow
 - **Date:** 2026-11-16
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review

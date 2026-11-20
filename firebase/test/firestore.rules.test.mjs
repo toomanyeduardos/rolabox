@@ -208,9 +208,20 @@ describe('users/{uid}/settings/preferences access', () => {
     await assertFails(setDoc(preferencesDoc(db, ALICE), { darkThemeConfig: synced('LIGHT', NEWER) }));
   });
 
-  it('denies deleting the preferences', async () => {
+  // ADR-037: deleting the account deletes the preferences. Sync itself never deletes them.
+  it('lets the owner delete their preferences', async () => {
     await seedPreferences(ALICE, { darkThemeConfig: synced('DARK', OLDER) });
-    await assertFails(deleteDoc(preferencesDoc(firestoreAs(ALICE), ALICE)));
+    await assertSucceeds(deleteDoc(preferencesDoc(firestoreAs(ALICE), ALICE)));
+  });
+
+  it("denies deleting another user's preferences", async () => {
+    await seedPreferences(BOB, { darkThemeConfig: synced('DARK', OLDER) });
+    await assertFails(deleteDoc(preferencesDoc(firestoreAs(ALICE), BOB)));
+  });
+
+  it('denies deleting the preferences when signed out', async () => {
+    await seedPreferences(ALICE, { darkThemeConfig: synced('DARK', OLDER) });
+    await assertFails(deleteDoc(preferencesDoc(firestoreAs(null), ALICE)));
   });
 
   it('denies other documents in the settings collection', async () => {
@@ -386,9 +397,21 @@ describe('users/{uid}/podcastFollows access', () => {
     await assertFails(setDoc(followDoc(db, ALICE), follow(false, NEWER)));
   });
 
-  it('denies deleting a follow: an unfollow is kept as followed: false', async () => {
+  // ADR-037: deleting the account deletes every follow. Sync itself never deletes one: an unfollow is kept as
+  // followed: false (ADR-031).
+  it('lets the owner delete their follows', async () => {
     await seedFollow(ALICE, follow(true, OLDER));
-    await assertFails(deleteDoc(followDoc(firestoreAs(ALICE), ALICE)));
+    await assertSucceeds(deleteDoc(followDoc(firestoreAs(ALICE), ALICE)));
+  });
+
+  it("denies deleting another user's follows", async () => {
+    await seedFollow(BOB, follow(true, OLDER));
+    await assertFails(deleteDoc(followDoc(firestoreAs(ALICE), BOB)));
+  });
+
+  it('denies deleting a follow when signed out', async () => {
+    await seedFollow(ALICE, follow(true, OLDER));
+    await assertFails(deleteDoc(followDoc(firestoreAs(null), ALICE)));
   });
 });
 

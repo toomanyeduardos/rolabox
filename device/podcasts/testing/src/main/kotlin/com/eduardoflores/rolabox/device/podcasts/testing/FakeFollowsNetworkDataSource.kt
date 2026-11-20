@@ -31,4 +31,17 @@ class FakeFollowsNetworkDataSource @Inject constructor() : FollowsNetworkDataSou
         remote = remote + merged
         return merged.right()
     }
+
+    /** When set, [delete] fails with this error and deletes nothing. */
+    var deleteError: RemoteError? = null
+
+    /** The users whose follows [delete] deleted, in order. */
+    val deletedFor = mutableListOf<String>()
+
+    override suspend fun delete(userId: String): Either<RemoteError, Unit> {
+        deleteError?.let { return it.left() }
+        deletedFor += userId
+        remote = emptyMap()
+        return Unit.right()
+    }
 }

@@ -73,8 +73,9 @@ service cloud.firestore {
           && request.resource.data[field].updatedAt >= resource.data[field].updatedAt);
     }
 
+    // Deleting the account deletes the preferences (ADR-037). Sync never deletes them.
     match /users/{uid}/settings/preferences {
-      allow read: if isOwner(uid);
+      allow read, delete: if isOwner(uid);
       allow create: if isOwner(uid) && isValidPreferences(request.resource.data);
       allow update: if isOwner(uid)
         && isValidPreferences(request.resource.data)
@@ -92,7 +93,8 @@ service cloud.firestore {
     // Podcast follows (ADR-031, Syncing follows): one document per show, named by its directory id, with the feed a
     // phone without the show reads it from. Devices resolve conflicts with last-write-wins on updatedAt, checked as
     // ADR-011 rule 6 says: at most a day ahead of the server, never moved back in time, and never removed. An
-    // unfollow is kept as followed: false, the record that wins over an older follow, so a follow is never deleted.
+    // unfollow is kept as followed: false, the record that wins over an older follow, so sync never deletes a follow.
+    // Only deleting the account does, and then it deletes every one (ADR-037).
     function isValidFollow(data) {
       return data.keys().hasOnly(['feedUrl', 'followed', 'updatedAt'])
         && data.keys().hasAll(['feedUrl', 'followed', 'updatedAt'])
@@ -105,7 +107,7 @@ service cloud.firestore {
     }
 
     match /users/{uid}/podcastFollows/{showKey} {
-      allow read: if isOwner(uid);
+      allow read, delete: if isOwner(uid);
       allow create: if isOwner(uid)
         && showKey.matches('itunes-[0-9]+')
         && isValidFollow(request.resource.data);

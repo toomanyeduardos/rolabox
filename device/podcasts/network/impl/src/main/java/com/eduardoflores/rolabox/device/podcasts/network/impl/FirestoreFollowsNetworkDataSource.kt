@@ -1,6 +1,8 @@
 package com.eduardoflores.rolabox.device.podcasts.network.impl
 
 import arrow.core.Either
+import arrow.core.flatMap
+import arrow.core.raise.either
 import com.eduardoflores.rolabox.common.firestore.asLoggedRemoteError
 import com.eduardoflores.rolabox.common.sync.api.RemoteError
 import com.eduardoflores.rolabox.common.sync.api.SyncTimestamp
@@ -15,6 +17,7 @@ import com.google.firebase.Timestamp
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Source
 import com.google.firebase.firestore.Transaction
 import dagger.Lazy
 import java.util.Date
@@ -24,8 +27,8 @@ import kotlinx.coroutines.tasks.await
 /**
  * Stores the follows in `users/{uid}/podcastFollows/{showKey}` (ADR-031, Syncing follows), where `showKey` is the
  * show's directory id, `itunes-<collectionId>`, with `feedUrl`, `followed` and `updatedAt`. The fields are checked by
- * `firebase/firestore.rules`, so they change only together with the rules. A follow is never deleted: Off is the
- * record that wins over an older On.
+ * `firebase/firestore.rules`, so they change only together with the rules. Sync never deletes a follow: Off is the
+ * record that wins over an older On. Only deleting the account does, every one of them (ADR-037).
  *
  * Firestore is created on the first sync, never before, so no-account mode never creates it (ADR-008, rule 8).
  */
@@ -63,9 +66,28 @@ internal class FirestoreFollowsNetworkDataSource @Inject constructor(
         }.await()
     }
 
+    // Listed from the server, so offline fails here and deletes nothing. Each batch waits for the server too:
+    // offline, Firestore would queue it and never fail it, which would read as done (ADR-037, rule 4).
+    override suspend fun delete(userId: String): Either<RemoteError, Unit> =
+        catchNamed({ it.asLoggedRemoteError(report) }) {
+            val db = firestore.get()
+            val follows = db.collection(USERS).document(userId).collection(PODCAST_FOLLOWS)
+            val listed = follows.get(Source.SERVER).await().documents
+            either {
+                listed.chunked(MAX_WRITES_PER_BATCH).forEach { chunk ->
+                    withinServerTimeout {
+                        db.batch().apply { chunk.forEach { delete(it.reference) } }.commit().await()
+                    }.bind()
+                }
+            }
+        }.flatMap { it }
+
     private companion object {
         const val USERS = "users"
         const val PODCAST_FOLLOWS = "podcastFollows"
+
+        // Firestore's limit of writes in one batch.
+        const val MAX_WRITES_PER_BATCH = 500
     }
 }
 
