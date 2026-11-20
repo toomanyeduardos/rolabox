@@ -11,8 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "com.eduardoflores.rolabox"
-        versionCode = 1
-        versionName = "1.0"
+        // versionCode and versionName come from rolabox.versionName in gradle.properties (ADR-035).
 
         testInstrumentationRunner = "com.eduardoflores.rolabox.common.testing.RolaboxTestRunner"
     }

@@ -44,6 +44,14 @@ jobs:
             exit 1
           fi
 
+      # ADR-035 rule 2: no keystore is committed, even with `git add -f`. The upload key lives outside the repo.
+      - name: No keystore committed
+        run: |
+          if git ls-files | grep -iE '\.(jks|keystore|p12)$'; then
+            echo "::error::A keystore is tracked. Remove it with git rm --cached; it's git-ignored (ADR-035)."
+            exit 1
+          fi
+
       - name: ktlint
         run: ./gradlew ktlintCheck
 

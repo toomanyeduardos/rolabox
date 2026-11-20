@@ -4,7 +4,9 @@ import com.eduardoflores.rolabox.buildlogic.DEFAULT_ANDROID_UNIT_TEST_TASK
 import com.eduardoflores.rolabox.buildlogic.ProjectConfig
 import com.eduardoflores.rolabox.buildlogic.alignCoroutines
 import com.eduardoflores.rolabox.buildlogic.applyStaticAnalysis
+import com.eduardoflores.rolabox.buildlogic.configureAppVersion
 import com.eduardoflores.rolabox.buildlogic.configureReleaseOptimization
+import com.eduardoflores.rolabox.buildlogic.configureReleaseSigning
 import com.eduardoflores.rolabox.buildlogic.enforceReleaseOptimization
 import com.eduardoflores.rolabox.buildlogic.enforceModuleRules
 import com.eduardoflores.rolabox.buildlogic.enforceNoProductFlavors
@@ -29,6 +31,8 @@ class RolaboxAndroidApplicationConventionPlugin : Plugin<Project> {
             registerScreenshotPluginCheck()
             configureReleaseOptimization()
             enforceReleaseOptimization()
+            configureReleaseSigning()
+            configureAppVersion()
 
             extensions.configure<ApplicationExtension> {
                 compileSdk = ProjectConfig.COMPILE_SDK
