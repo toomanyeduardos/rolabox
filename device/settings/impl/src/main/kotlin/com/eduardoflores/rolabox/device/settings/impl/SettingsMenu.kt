@@ -1,21 +1,28 @@
 package com.eduardoflores.rolabox.device.settings.impl
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavKey
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceList
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceListRow
+import com.eduardoflores.rolabox.common.designsystem.component.PreviewLightDark
+import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxTheme
 import com.eduardoflores.rolabox.common.designsystem.wheel.WheelEvent
 import com.eduardoflores.rolabox.common.userdata.api.Clicker
 import com.eduardoflores.rolabox.common.userdata.api.DarkThemeConfig
 import com.eduardoflores.rolabox.common.userdata.api.Repeat
 import com.eduardoflores.rolabox.common.userdata.api.Shuffle
+import com.eduardoflores.rolabox.device.host.DeviceScreen
 import com.eduardoflores.rolabox.device.host.HandleWheelEvents
 import com.eduardoflores.rolabox.device.host.ScreenTitle
 import com.eduardoflores.rolabox.device.host.rememberListHighlight
+import com.eduardoflores.rolabox.device.settings.api.SettingsRow
 
 /**
  * The settings list, a device screen (ADR-018, rule 11). Turning moves the highlight, which stops at the first and last
@@ -132,3 +139,49 @@ private val DarkThemeConfig.label: Int
         DarkThemeConfig.LIGHT -> R.string.settings_theme_light
         DarkThemeConfig.DARK -> R.string.settings_theme_dark
     }
+
+private data object PreviewKey : NavKey
+
+@PreviewLightDark
+@Composable
+private fun SettingsPreview() {
+    RolaboxTheme {
+        DeviceScreen(title = "Settings", batteryLevel = 0.7f, onWheelEvent = {}) {
+            Box(Modifier.fillMaxSize()) {
+                SettingsList(
+                    state = SettingsUiState(
+                        shuffle = Shuffle.OFF,
+                        repeat = Repeat.ALL,
+                        clicker = Clicker.ON,
+                        darkTheme = DarkThemeConfig.FOLLOW_SYSTEM,
+                        onlineArtwork = true,
+                        sections = listOf(SettingsRow(title = { "Account" }, opens = PreviewKey)),
+                    ),
+                    highlightedIndex = 0,
+                )
+            }
+        }
+    }
+}
+
+// The other values of Shuffle and Repeat (ADR-028), stepped in place on center.
+@PreviewLightDark
+@Composable
+private fun SettingsShuffleAndRepeatPreview() {
+    RolaboxTheme {
+        DeviceScreen(title = "Settings", batteryLevel = 0.7f, onWheelEvent = {}) {
+            Box(Modifier.fillMaxSize()) {
+                SettingsList(
+                    state = SettingsUiState(
+                        shuffle = Shuffle.ALBUMS,
+                        repeat = Repeat.ONE,
+                        clicker = Clicker.ON,
+                        darkTheme = DarkThemeConfig.FOLLOW_SYSTEM,
+                        onlineArtwork = true,
+                    ),
+                    highlightedIndex = 1,
+                )
+            }
+        }
+    }
+}

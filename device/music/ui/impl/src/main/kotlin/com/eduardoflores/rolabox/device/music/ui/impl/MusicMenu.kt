@@ -1,5 +1,6 @@
 package com.eduardoflores.rolabox.device.music.ui.impl
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -14,7 +15,10 @@ import com.eduardoflores.rolabox.common.designsystem.component.DeviceList
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceListRow
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceMessage
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceThinProgressBar
+import com.eduardoflores.rolabox.common.designsystem.component.PreviewLightDark
+import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxTheme
 import com.eduardoflores.rolabox.common.designsystem.wheel.WheelEvent
+import com.eduardoflores.rolabox.device.host.DeviceScreen
 import com.eduardoflores.rolabox.device.host.HandleWheelEvents
 import com.eduardoflores.rolabox.device.host.ScreenTitle
 import com.eduardoflores.rolabox.device.host.rememberListHighlight
@@ -142,6 +146,81 @@ private fun MusicMenu(highlightedIndex: Int, readingTags: Progress?) {
                 progress = readingTags.done.toFloat() / readingTags.total,
                 description = stringResource(R.string.music_reading_tags),
             )
+        }
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun MusicMenuPreview() {
+    RolaboxTheme {
+        DeviceScreen(title = "Music", batteryLevel = 0.7f, onWheelEvent = {}) {
+            Box(Modifier.fillMaxSize()) {
+                MusicMenuScreen(MusicMenuUiState.Menu(readingTags = null), highlightedIndex = 0)
+            }
+        }
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun PermissionDeniedPreview() {
+    RolaboxTheme {
+        DeviceScreen(title = "Music", batteryLevel = 0.7f, onWheelEvent = {}) {
+            Box(Modifier.fillMaxSize()) {
+                MusicMenuScreen(MusicMenuUiState.PermissionDenied, highlightedIndex = 0)
+            }
+        }
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun PermissionPermanentlyDeniedPreview() {
+    RolaboxTheme {
+        DeviceScreen(title = "Music", batteryLevel = 0.7f, onWheelEvent = {}) {
+            Box(Modifier.fillMaxSize()) {
+                MusicMenuScreen(MusicMenuUiState.PermissionPermanentlyDenied, highlightedIndex = 0)
+            }
+        }
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun FirstScanPreview() {
+    RolaboxTheme {
+        DeviceScreen(title = "Music", batteryLevel = 0.7f, onWheelEvent = {}) {
+            Box(Modifier.fillMaxSize()) {
+                MusicMenuScreen(MusicMenuUiState.Scanning, highlightedIndex = 0)
+            }
+        }
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun NoMusicPreview() {
+    RolaboxTheme {
+        DeviceScreen(title = "Music", batteryLevel = 0.7f, onWheelEvent = {}) {
+            Box(Modifier.fillMaxSize()) {
+                MusicMenuScreen(MusicMenuUiState.Empty, highlightedIndex = 0)
+            }
+        }
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun ReadingTagsPreview() {
+    RolaboxTheme {
+        DeviceScreen(title = "Music", batteryLevel = 0.7f, onWheelEvent = {}) {
+            Box(Modifier.fillMaxSize()) {
+                MusicMenuScreen(
+                    MusicMenuUiState.Menu(readingTags = Progress(done = 40, total = 100)),
+                    highlightedIndex = 0,
+                )
+            }
         }
     }
 }

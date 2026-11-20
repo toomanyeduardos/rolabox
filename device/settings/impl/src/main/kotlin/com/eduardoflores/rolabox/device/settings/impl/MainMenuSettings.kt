@@ -1,14 +1,20 @@
 package com.eduardoflores.rolabox.device.settings.impl
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceList
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceListRow
+import com.eduardoflores.rolabox.common.designsystem.component.PreviewLightDark
+import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxTheme
 import com.eduardoflores.rolabox.common.designsystem.wheel.WheelEvent
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRow
 import com.eduardoflores.rolabox.common.userdata.api.MainMenuRowVisibility
+import com.eduardoflores.rolabox.device.host.DeviceScreen
 import com.eduardoflores.rolabox.device.host.HandleWheelEvents
 import com.eduardoflores.rolabox.device.host.ScreenTitle
 import com.eduardoflores.rolabox.device.host.rememberListHighlight
@@ -52,4 +58,20 @@ internal fun MainMenuSettingsList(rows: Map<MainMenuRow, MainMenuRowVisibility>?
         DeviceListRow(label, value = value)
     }
     DeviceList(rows = listRows, highlightedIndex = highlightedIndex)
+}
+
+@PreviewLightDark
+@Composable
+private fun MainMenuSettingsPreview() {
+    RolaboxTheme {
+        DeviceScreen(title = "Main Menu", batteryLevel = 0.7f, onWheelEvent = {}) {
+            Box(Modifier.fillMaxSize()) {
+                MainMenuSettingsList(
+                    rows = MainMenuRow.entries.associateWith { MainMenuRowVisibility.SHOWN } +
+                        (MainMenuRow.AUDIOBOOKS to MainMenuRowVisibility.HIDDEN),
+                    highlightedIndex = MainMenuRow.AUDIOBOOKS.ordinal,
+                )
+            }
+        }
+    }
 }

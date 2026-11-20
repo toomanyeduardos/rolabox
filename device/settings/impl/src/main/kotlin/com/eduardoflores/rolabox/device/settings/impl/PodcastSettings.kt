@@ -1,16 +1,22 @@
 package com.eduardoflores.rolabox.device.settings.impl
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceList
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceListRow
+import com.eduardoflores.rolabox.common.designsystem.component.PreviewLightDark
+import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxTheme
 import com.eduardoflores.rolabox.common.designsystem.wheel.WheelEvent
 import com.eduardoflores.rolabox.common.userdata.api.EpisodesOnMobileData
 import com.eduardoflores.rolabox.common.userdata.api.UserDataRepository
+import com.eduardoflores.rolabox.device.host.DeviceScreen
 import com.eduardoflores.rolabox.device.host.HandleWheelEvents
 import com.eduardoflores.rolabox.device.host.ScreenTitle
 import com.eduardoflores.rolabox.device.host.rememberListHighlight
@@ -110,5 +116,18 @@ internal class PodcastSettingsViewModelImpl @Inject constructor(private val user
 
     private companion object {
         const val STOP_TIMEOUT_MILLIS = 5_000L
+    }
+}
+
+/** Settings → Podcasts, with Use Mobile Data off (ADR-031, frame 35). */
+@PreviewLightDark
+@Composable
+private fun PodcastSettingsPreview() {
+    RolaboxTheme {
+        DeviceScreen(title = "Podcasts", batteryLevel = 0.7f, onWheelEvent = {}) {
+            Box(Modifier.fillMaxSize()) {
+                PodcastSettingsList(mobileData = EpisodesOnMobileData.OFF, highlightedIndex = 0)
+            }
+        }
     }
 }

@@ -11,7 +11,6 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
@@ -193,21 +192,13 @@ private val Settings = listOf(
     DeviceListRow("Account", opensSubmenu = true),
 )
 
-/** A [DeviceList] in a display, for the previews of the list and of its rows' labels. */
+@PreviewLightDark
 @Composable
-internal fun DeviceListPreview(
-    title: String,
-    rows: List<DeviceListEntry>,
-    highlightedIndex: Int,
-    animationsOff: Boolean = false,
-    message: DeviceListMessage? = null,
-) {
+private fun DeviceListShortPreview() {
     RolaboxTheme {
-        CompositionLocalProvider(LocalAnimationsOff provides animationsOff) {
-            Box(Modifier.padding(16.dp)) {
-                DeviceDisplay(title, batteryLevel = 0.7f, modifier = Modifier.heightIn(max = DisplayPreviewHeight)) {
-                    DeviceList(rows, highlightedIndex, message = message)
-                }
+        Box(Modifier.padding(16.dp)) {
+            DeviceDisplay("rolabox", batteryLevel = 0.7f, modifier = Modifier.heightIn(max = DisplayPreviewHeight)) {
+                DeviceList(MainMenu, highlightedIndex = 0)
             }
         }
     }
@@ -215,20 +206,48 @@ internal fun DeviceListPreview(
 
 @PreviewLightDark
 @Composable
-private fun DeviceListShortPreview() = DeviceListPreview("rolabox", MainMenu, highlightedIndex = 0)
+private fun DeviceListLongFirstPreview() {
+    RolaboxTheme {
+        Box(Modifier.padding(16.dp)) {
+            DeviceDisplay("Artists", batteryLevel = 0.7f, modifier = Modifier.heightIn(max = DisplayPreviewHeight)) {
+                DeviceList(Artists, highlightedIndex = 0)
+            }
+        }
+    }
+}
 
 @PreviewLightDark
 @Composable
-private fun DeviceListLongFirstPreview() = DeviceListPreview("Artists", Artists, highlightedIndex = 0)
+private fun DeviceListLongMiddlePreview() {
+    RolaboxTheme {
+        Box(Modifier.padding(16.dp)) {
+            DeviceDisplay("Artists", batteryLevel = 0.7f, modifier = Modifier.heightIn(max = DisplayPreviewHeight)) {
+                DeviceList(Artists, highlightedIndex = 7)
+            }
+        }
+    }
+}
 
 @PreviewLightDark
 @Composable
-private fun DeviceListLongMiddlePreview() = DeviceListPreview("Artists", Artists, highlightedIndex = 7)
+private fun DeviceListLongLastPreview() {
+    RolaboxTheme {
+        Box(Modifier.padding(16.dp)) {
+            DeviceDisplay("Artists", batteryLevel = 0.7f, modifier = Modifier.heightIn(max = DisplayPreviewHeight)) {
+                DeviceList(Artists, highlightedIndex = Artists.lastIndex)
+            }
+        }
+    }
+}
 
 @PreviewLightDark
 @Composable
-private fun DeviceListLongLastPreview() = DeviceListPreview("Artists", Artists, highlightedIndex = Artists.lastIndex)
-
-@PreviewLightDark
-@Composable
-private fun DeviceListValuesPreview() = DeviceListPreview("Settings", Settings, highlightedIndex = 2)
+private fun DeviceListValuesPreview() {
+    RolaboxTheme {
+        Box(Modifier.padding(16.dp)) {
+            DeviceDisplay("Settings", batteryLevel = 0.7f, modifier = Modifier.heightIn(max = DisplayPreviewHeight)) {
+                DeviceList(Settings, highlightedIndex = 2)
+            }
+        }
+    }
+}

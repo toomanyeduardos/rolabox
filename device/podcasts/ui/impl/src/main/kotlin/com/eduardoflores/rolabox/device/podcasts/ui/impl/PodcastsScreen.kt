@@ -1,14 +1,22 @@
 package com.eduardoflores.rolabox.device.podcasts.ui.impl
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceListMessage
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceListRow
+import com.eduardoflores.rolabox.common.designsystem.component.DeviceRecord
+import com.eduardoflores.rolabox.common.designsystem.component.PreviewLightDark
+import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxTheme
+import com.eduardoflores.rolabox.device.host.DeviceScreen
 import com.eduardoflores.rolabox.device.host.ScreenTitle
 import com.eduardoflores.rolabox.device.podcasts.api.Owner
+import com.eduardoflores.rolabox.device.podcasts.api.OwnerId
 
 /**
  * Connects Podcasts to its ViewModel (ADR-021). Search is always the first row, then the owners A to Z (frame 22).
@@ -50,3 +58,85 @@ internal fun podcastsRows(owners: List<Owner>, search: String, unknownOwner: Str
         owners.map { DeviceListRow(it.name ?: unknownOwner, opensSubmenu = true) }
 
 private const val SEARCH_INDEX = 0
+
+private val Owners = listOf("Field Notes Media", "Harbor Audio", "NY Times", "Small Rooms", "Weekly Bench")
+    .map { Owner(OwnerId(it.lowercase()), it) }
+
+@Composable
+private fun ownerRows(owners: List<Owner>): List<DeviceListRow> = podcastsRows(
+    owners,
+    search = stringResource(R.string.podcasts_search),
+    unknownOwner = stringResource(R.string.podcasts_unknown_owner),
+)
+
+/** Frame 22: Search, then the owners A to Z, the highlight on NY Times. */
+@PreviewLightDark
+@Composable
+private fun PodcastsPreview() {
+    RolaboxTheme {
+        DeviceScreen(title = "Podcasts", batteryLevel = 0.7f, onWheelEvent = {}) {
+            Box(Modifier.fillMaxSize()) {
+                PodcastsList(ListUiState.Loaded(ownerRows(Owners)), highlightedIndex = 3)
+            }
+        }
+    }
+}
+
+/** Frame 09: the same list while music plays, with the spinning record in the header. */
+@PreviewLightDark
+@Composable
+private fun PodcastsWhilePlayingPreview() {
+    RolaboxTheme {
+        DeviceScreen(title = "Podcasts", batteryLevel = 0.7f, onWheelEvent = {}, record = DeviceRecord.Spinning) {
+            Box(Modifier.fillMaxSize()) {
+                PodcastsList(ListUiState.Loaded(ownerRows(Owners)), highlightedIndex = 3)
+            }
+        }
+    }
+}
+
+/** Frame 23: no podcasts yet, so Search is alone and highlighted, with the message under it. */
+@PreviewLightDark
+@Composable
+private fun NoPodcastsPreview() {
+    RolaboxTheme {
+        DeviceScreen(title = "Podcasts", batteryLevel = 0.7f, onWheelEvent = {}) {
+            Box(Modifier.fillMaxSize()) {
+                PodcastsList(
+                    ListUiState.Loaded(ownerRows(emptyList())),
+                    highlightedIndex = 0,
+                    message = DeviceListMessage(
+                        stringResource(R.string.podcasts_none_title),
+                        stringResource(R.string.podcasts_none_body),
+                    ),
+                )
+            }
+        }
+    }
+}
+
+/** The owner with no name, last. */
+@PreviewLightDark
+@Composable
+private fun UnknownOwnerPreview() {
+    RolaboxTheme {
+        DeviceScreen(title = "Podcasts", batteryLevel = 0.7f, onWheelEvent = {}) {
+            Box(Modifier.fillMaxSize()) {
+                val owners = Owners + Owner(OwnerId(""), null)
+                PodcastsList(ListUiState.Loaded(ownerRows(owners)), highlightedIndex = owners.size)
+            }
+        }
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun FailedPreview() {
+    RolaboxTheme {
+        DeviceScreen(title = "Podcasts", batteryLevel = 0.7f, onWheelEvent = {}) {
+            Box(Modifier.fillMaxSize()) {
+                PodcastsList(ListUiState.Failed, highlightedIndex = 0)
+            }
+        }
+    }
+}

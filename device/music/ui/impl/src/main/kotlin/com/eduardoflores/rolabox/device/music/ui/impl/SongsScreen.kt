@@ -1,11 +1,17 @@
 package com.eduardoflores.rolabox.device.music.ui.impl
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceListRow
+import com.eduardoflores.rolabox.common.designsystem.component.PreviewLightDark
+import com.eduardoflores.rolabox.common.designsystem.theme.RolaboxTheme
+import com.eduardoflores.rolabox.device.host.DeviceScreen
 import com.eduardoflores.rolabox.device.host.ScreenTitle
 
 /**
@@ -31,4 +37,42 @@ internal fun SongsRoute(viewModel: SongsViewModel, sortedByName: Boolean, onSong
         onPlayPause = onSongRow,
         sortedByName = sortedByName,
     )
+}
+
+private val Songs = listOf(
+    "Dial Tone", "Every Other Window", "Glasshouse", "Tin Can Summer", "Weather Report", "Satellite Hymn",
+    "Coastline", "Halfway Houses", "Night Bus", "Paper Satellites",
+).map { DeviceListRow(it) }
+
+@PreviewLightDark
+@Composable
+private fun SongsPreview() {
+    RolaboxTheme {
+        DeviceScreen(title = "Paper Satellites", batteryLevel = 0.7f, onWheelEvent = {}) {
+            Box(Modifier.fillMaxSize()) {
+                MusicList(
+                    ListUiState.Loaded(Songs),
+                    highlightedIndex = 2,
+                    emptyText = stringResource(R.string.music_no_songs),
+                )
+            }
+        }
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun AllSongsFastTurningPreview() {
+    RolaboxTheme {
+        DeviceScreen(title = "Songs", batteryLevel = 0.7f, onWheelEvent = {}) {
+            Box(Modifier.fillMaxSize()) {
+                MusicList(
+                    ListUiState.Loaded(Songs.sortedBy { it.label }),
+                    highlightedIndex = 6,
+                    emptyText = stringResource(R.string.music_no_songs),
+                    letter = "P",
+                )
+            }
+        }
+    }
 }
