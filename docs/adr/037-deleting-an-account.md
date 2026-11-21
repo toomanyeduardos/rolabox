@@ -1,6 +1,6 @@
 # ADR-037: Deleting an account: the signed-in user re-authenticates, each `Syncer` deletes its data in the cloud, then the account, then Android erases the app's data
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-20
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review

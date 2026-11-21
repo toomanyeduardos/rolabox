@@ -1,6 +1,6 @@
 # ADR-038: Rolabox's public web pages are static files in `site/`, deployed to GitHub Pages, and the privacy policy changes with the code it describes
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-21
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review
