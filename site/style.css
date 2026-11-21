@@ -1,0 +1,72 @@
+/* Rolabox's public pages (ADR-038). No scripts, fonts or third-party resources. */
+:root {
+  color-scheme: light dark;
+  --text: #1b1b1f;
+  --muted: #55565c;
+  --bg: #ffffff;
+  --rule: #d6d6dc;
+  --link: #0b57d0;
+  --code-bg: #f1f1f4;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: #e4e4e8;
+    --muted: #a9a9b1;
+    --bg: #121214;
+    --rule: #3a3a40;
+    --link: #a8c7fa;
+    --code-bg: #232327;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html {
+  /* Follows the reader's text size; everything below is in rem/em. */
+  font-size: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.6;
+}
+
+main {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 4rem;
+}
+
+h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 0.5rem; }
+h2 { font-size: 1.375rem; line-height: 1.3; margin: 2.5rem 0 0.75rem; padding-top: 1rem; border-top: 1px solid var(--rule); }
+h3 { font-size: 1.125rem; margin: 1.75rem 0 0.5rem; }
+
+a { color: var(--link); text-underline-offset: 0.15em; }
+a:focus-visible { outline: 3px solid var(--link); outline-offset: 2px; }
+
+.meta { color: var(--muted); margin: 0 0 1.5rem; }
+
+nav.top { margin-bottom: 1.5rem; }
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+  background: var(--code-bg);
+  padding: 0.1em 0.3em;
+  border-radius: 4px;
+}
+
+.table-wrap { overflow-x: auto; }
+
+table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+th, td { text-align: left; vertical-align: top; padding: 0.5rem 0.6rem; border: 1px solid var(--rule); }
+th { background: var(--code-bg); }
+
+ol li, ul li { margin: 0.35rem 0; }
+
+footer { margin-top: 3rem; color: var(--muted); font-size: 0.95rem; }

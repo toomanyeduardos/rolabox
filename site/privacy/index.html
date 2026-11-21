@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy policy · Rolabox</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<main>
+  <nav class="top"><a href="../">Rolabox</a></nav>
+
+  <h1>Rolabox privacy policy</h1>
+  <p class="meta">Effective 21 November 2026</p>
+
+  <p>
+    Rolabox is a music and podcast player for Android. It is made by Eduardo Flores, an individual
+    developer, who is responsible for the data described here. If you have a question about this policy,
+    or want to ask for something below, email
+    <a href="mailto:rolabox.app@gmail.com">rolabox.app@gmail.com</a>.
+  </p>
+  <p>
+    Rolabox has no servers of its own, shows no ads, and doesn't sell your data or share it for
+    advertising. Your music never leaves your phone. This page lists everything that does leave it,
+    where it goes and why.
+  </p>
+
+  <h2 id="summary">Summary</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th scope="col">What</th><th scope="col">When</th><th scope="col">Sent to</th><th scope="col">Why</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Email address, name and profile photo link (Google sign-in), account ID</td>
+          <td>Only if you create an account or sign in</td>
+          <td>Google Firebase Authentication</td>
+          <td>To sign you in</td>
+        </tr>
+        <tr>
+          <td>Settings and the podcasts you follow</td>
+          <td>Only while you're signed in</td>
+          <td>Google Cloud Firestore</td>
+          <td>To sync them between your devices</td>
+        </tr>
+        <tr>
+          <td>Crash reports: stack trace, device model, Android version, app version, installation IDs</td>
+          <td>Always, when the app crashes, freezes or hits a serious error</td>
+          <td>Google Firebase Crashlytics</td>
+          <td>To find and fix bugs</td>
+        </tr>
+        <tr>
+          <td>An album's title and artist name</td>
+          <td>When an album has no cover on your phone, unless Online Artwork is off</td>
+          <td>MusicBrainz and the Cover Art Archive</td>
+          <td>To download the album's cover</td>
+        </tr>
+        <tr>
+          <td>The text of a podcast search, and your phone's country</td>
+          <td>When you search for a podcast</td>
+          <td>Apple's iTunes Search API</td>
+          <td>To find shows and episodes</td>
+        </tr>
+        <tr>
+          <td>Requests for feeds, images and audio</td>
+          <td>When you open, follow, download or play a podcast</td>
+          <td>The server that hosts each show</td>
+          <td>To get its episodes and play them</td>
+        </tr>
+        <tr>
+          <td>Settings and podcasts data</td>
+          <td>When Android backs up your phone, if backup is on</td>
+          <td>Your own Google account's backup</td>
+          <td>To restore them on a new phone</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="on-your-phone">What stays on your phone</h2>
+  <p>
+    Rolabox asks for permission to read your audio files (<code>READ_MEDIA_AUDIO</code>). It reads your
+    music files and their tags (title, artist, album, genre, track number, length) to build a library on
+    your phone. Your music files, their tags and the library are never uploaded. Neither are your play
+    queue, playback positions, downloaded episodes or downloaded covers. Everything about your library
+    stays on your phone.
+  </p>
+  <p>
+    Rolabox doesn't ask for your location, contacts, camera, microphone or any other personal data.
+  </p>
+
+  <h2 id="without-an-account">Using Rolabox without an account</h2>
+  <p>
+    You can use Rolabox without an account. Then nothing is sent to Firebase Authentication or
+    Firestore, and your settings and follows exist only on your phone. These still apply:
+    <a href="#crash-reports">crash reports</a>, <a href="#album-covers">album covers</a>,
+    <a href="#podcasts">podcasts</a> and <a href="#backup">Android backup</a>.
+  </p>
+
+  <h2 id="account">With an account</h2>
+  <p>An account is optional. It lets you sync your settings and podcasts between devices.</p>
+  <h3>What's stored</h3>
+  <ul>
+    <li>
+      <strong>Your email address.</strong> If you sign up with a password, Firebase stores the password
+      as a hash. Rolabox never sees or stores it.
+    </li>
+    <li>
+      <strong>Your Google account's name and profile photo link,</strong> if you sign in with Google.
+      Firebase copies these from Google when you sign in. Rolabox doesn't use them.
+    </li>
+    <li><strong>An account ID,</strong> created by Firebase, that ties your synced data to you.</li>
+    <li>
+      <strong>Your settings:</strong> theme, accent color, click sound, shuffle, repeat, and which rows
+      the main menu shows.
+    </li>
+    <li><strong>The podcasts you follow,</strong> each with when you followed or unfollowed it.</li>
+  </ul>
+  <p>
+    This data is stored by Google Firebase (Authentication and Cloud Firestore), which may store it on
+    servers outside your country. Security rules let only your own account read or write your synced
+    data. It is used only to sign you in and to sync, and isn't shared with anyone else.
+  </p>
+
+  <h2 id="crash-reports">Crash reports</h2>
+  <p>
+    Rolabox uses Google Firebase Crashlytics to report crashes, freezes ("app not responding") and a few
+    named errors that mean something in the app is broken. This happens for every user, with or without
+    an account, and there's no setting to turn it off, because a report holds nothing about you or your
+    music.
+  </p>
+  <p>A report holds:</p>
+  <ul>
+    <li>where in Rolabox's code the error happened (the stack trace) and the name of the error;</li>
+    <li>your device's model, Android version, free memory and storage, screen orientation, and whether it's rooted;</li>
+    <li>whether Rolabox was on screen, and Rolabox's version;</li>
+    <li>random installation IDs that Crashlytics and Firebase create for this install of the app.</li>
+  </ul>
+  <p>
+    A report never holds your account ID, email, the names of your songs, albums, artists or podcasts,
+    file paths, or the text of any error message. Rolabox doesn't use Google Analytics or any other
+    analytics. Crashlytics keeps reports for 90 days.
+  </p>
+
+  <h2 id="album-covers">Album covers</h2>
+  <p>
+    When an album has no cover on your phone, Rolabox searches
+    <a href="https://musicbrainz.org/">MusicBrainz</a> for it and downloads the cover from the
+    <a href="https://coverartarchive.org/">Cover Art Archive</a>, which is run by MetaBrainz and the
+    Internet Archive. What's sent is the album's title and artist name, and nothing about you or your
+    account. Like any web request, these services see your phone's IP address. You can turn this off
+    with <strong>Settings → Online Artwork</strong>.
+  </p>
+
+  <h2 id="podcasts">Podcasts</h2>
+  <ul>
+    <li>
+      <strong>Search.</strong> When you search for a podcast, the text you type and your phone's country
+      are sent to Apple's iTunes Search API, which finds the shows and episodes. Nothing about you or
+      your account is sent.
+    </li>
+    <li>
+      <strong>Feeds, images and audio.</strong> Each show's episodes, artwork and audio come from the
+      server its publisher uses, which can be any company. Those servers see your phone's IP address and
+      what it asks for, as with any download, under their own privacy policies. Rolabox always tries
+      HTTPS first. A show whose server only offers plain HTTP is still fetched over HTTP, which isn't
+      encrypted.
+    </li>
+  </ul>
+
+  <h2 id="backup">Android backup</h2>
+  <p>
+    If Android backup is on for your phone, Android saves Rolabox's settings and podcasts data
+    (follows, episodes and positions) to your own Google account's backup, and copies them when you set
+    up a new phone. Nothing else of Rolabox's is backed up. Android and Google control this, and you can
+    turn it off in your phone's settings.
+  </p>
+
+  <h2 id="retention">How long data is kept</h2>
+  <ul>
+    <li>Your account and synced data: until you <a href="../delete-account/">delete your account</a>.</li>
+    <li>Crash reports: 90 days.</li>
+    <li>Data on your phone: until you delete it, clear Rolabox's storage, or uninstall the app.</li>
+  </ul>
+
+  <h2 id="delete">Deleting your data</h2>
+  <p>
+    You can delete your account and its synced data in the app, or by email.
+    <a href="../delete-account/">How to delete your Rolabox account</a>.
+  </p>
+  <p>
+    To see a copy of your account's data, or to correct it, email
+    <a href="mailto:rolabox.app@gmail.com">rolabox.app@gmail.com</a> from the account's email address.
+  </p>
+
+  <h2 id="children">Children</h2>
+  <p>
+    Rolabox isn't directed at children under 13, and doesn't knowingly collect personal data from them.
+    If you think a child has created an account, email us and it will be deleted.
+  </p>
+
+  <h2 id="security">Security</h2>
+  <p>
+    Everything Rolabox sends to Firebase, Apple, MusicBrainz and the Cover Art Archive goes over HTTPS.
+    The only plain HTTP is to podcast servers that don't offer HTTPS, as described
+    <a href="#podcasts">above</a>.
+  </p>
+
+  <h2 id="changes">Changes to this policy</h2>
+  <p>
+    If this policy changes, the date at the top changes too. Every version is kept in Rolabox's
+    <a href="https://github.com/toomanyeduardos/rolabox/commits/main/site/privacy/index.html">public
+    source code</a>.
+  </p>
+
+  <h2 id="third-parties">Services Rolabox uses</h2>
+  <ul>
+    <li>Google Firebase (Authentication, Cloud Firestore, Crashlytics): <a href="https://firebase.google.com/support/privacy">Firebase privacy</a>, <a href="https://policies.google.com/privacy">Google privacy policy</a></li>
+    <li>Apple iTunes Search API: <a href="https://www.apple.com/legal/privacy/">Apple privacy policy</a></li>
+    <li>MusicBrainz and the Cover Art Archive: <a href="https://metabrainz.org/privacy">MetaBrainz privacy policy</a></li>
+    <li>Internet Archive, which hosts the Cover Art Archive's images: <a href="https://archive.org/about/terms.php">Internet Archive terms</a></li>
+  </ul>
+
+  <footer>
+    Rolabox · Eduardo Flores ·
+    <a href="mailto:rolabox.app@gmail.com">rolabox.app@gmail.com</a>
+  </footer>
+</main>
+</body>
+</html>

@@ -1,0 +1,62 @@
+name: Pages
+
+# Rolabox's public pages: the privacy policy and the account deletion page (ADR-038).
+# PRs check them; a push to main checks and deploys them to GitHub Pages.
+on:
+  pull_request:
+    paths: ['site/**', '.github/workflows/pages.yml']
+  push:
+    branches: [main]
+    paths: ['site/**', '.github/workflows/pages.yml']
+  workflow_dispatch:
+
+# Deploys never overlap, and a deploy in progress is never cancelled halfway.
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+
+      # ADR-038 rule 2: every link between the pages, and to their stylesheet, resolves.
+      # Offline: links to other sites aren't fetched, so a third party being down never fails a build.
+      - name: Internal links resolve
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: --offline --no-progress 'site/**/*.html'
+          fail: true
+
+      # ADR-038 rule 4: no scripts and no resources from other sites.
+      - name: No scripts or third-party resources
+        run: |
+          if grep -rniE '<script|<iframe|<(link|img|source|video|audio)[^>]+(src|href)="(https?:)?//' site; then
+            echo "::error::site/ loads a script or a resource from another site (ADR-038, rule 4)."
+            exit 1
+          fi
+
+      - if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
