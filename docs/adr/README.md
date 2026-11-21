@@ -46,3 +46,4 @@ New ADR: copy [`template.md`](template.md), take the next number, and add it to 
 | [035](035-release-signing-and-versioning.md) | Releases are signed with an upload key kept outside the repo, Google holds the app signing key, and the version comes from one semver property | Accepted |
 | [036](036-android-backup.md) | Android backs up only the preferences and the podcasts' database, by an include-list, the same for cloud backup and device transfer | Accepted |
 | [037](037-deleting-an-account.md) | Deleting an account: the signed-in user re-authenticates, each `Syncer` deletes its data in the cloud, then the account, then Android erases the app's data | Proposed |
+| [038](038-public-web-pages.md) | Rolabox's public web pages are static files in `site/`, deployed to GitHub Pages, and the privacy policy changes with the code it describes | Proposed |
