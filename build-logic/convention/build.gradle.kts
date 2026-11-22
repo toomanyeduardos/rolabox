@@ -17,6 +17,7 @@ dependencies {
     implementation(libs.googleServices.gradlePlugin)
     implementation(libs.crashlytics.gradlePlugin)
     implementation(libs.paparazzi.gradlePlugin)
+    implementation(libs.aboutlibraries.gradlePlugin)
 
     testImplementation(libs.junit)
 }
@@ -34,6 +35,10 @@ gradlePlugin {
         register("androidApplicationFirebase") {
             id = "rolabox.android.application.firebase"
             implementationClass = "RolaboxAndroidApplicationFirebaseConventionPlugin"
+        }
+        register("androidApplicationLicences") {
+            id = "rolabox.android.application.licences"
+            implementationClass = "RolaboxAndroidApplicationLicencesConventionPlugin"
         }
         register("androidCompose") {
             id = "rolabox.android.compose"

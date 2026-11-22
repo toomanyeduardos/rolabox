@@ -4,6 +4,8 @@ import com.eduardoflores.rolabox.device.settings.api.SettingsEntries
 import com.eduardoflores.rolabox.device.settings.api.SettingsSection
 import com.eduardoflores.rolabox.device.settings.impl.AppVersion
 import com.eduardoflores.rolabox.device.settings.impl.DefaultSettingsEntries
+import com.eduardoflores.rolabox.device.settings.impl.GeneratedLicences
+import com.eduardoflores.rolabox.device.settings.impl.Licences
 import com.eduardoflores.rolabox.device.settings.impl.PackageAppVersion
 import dagger.Binds
 import dagger.Module
@@ -19,6 +21,9 @@ abstract class SettingsModule {
 
     @Binds
     internal abstract fun bindsAppVersion(appVersion: PackageAppVersion): AppVersion
+
+    @Binds
+    internal abstract fun bindsLicences(licences: GeneratedLicences): Licences
 
     // Declared here so the set may be empty: the device is built and shown without any part that
     // contributes a section (ADR-020). A part adds one with @Binds @IntoSet.

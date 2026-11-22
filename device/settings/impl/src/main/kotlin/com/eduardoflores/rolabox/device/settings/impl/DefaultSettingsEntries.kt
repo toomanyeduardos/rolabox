@@ -4,6 +4,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import com.eduardoflores.rolabox.device.settings.api.AboutKey
+import com.eduardoflores.rolabox.device.settings.api.LicenceKey
+import com.eduardoflores.rolabox.device.settings.api.LicencesKey
 import com.eduardoflores.rolabox.device.settings.api.MainMenuSettingsKey
 import com.eduardoflores.rolabox.device.settings.api.PodcastSettingsKey
 import com.eduardoflores.rolabox.device.settings.api.SettingsEntries
@@ -25,6 +27,8 @@ internal class DefaultSettingsEntries @Inject constructor(sections: Set<@JvmSupp
         onMainMenuClick: () -> Unit,
         onPodcastsClick: () -> Unit,
         onAboutClick: () -> Unit,
+        onLicencesClick: () -> Unit,
+        onLicenceClick: (LicenceKey) -> Unit,
         onOpenFullScreen: (NavKey) -> Unit,
     ) = with(scope) {
         entry<SettingsKey> {
@@ -40,7 +44,19 @@ internal class DefaultSettingsEntries @Inject constructor(sections: Set<@JvmSupp
         entry<PodcastSettingsKey> {
             PodcastSettingsRoute(viewModel = hiltViewModel<PodcastSettingsViewModelImpl>())
         }
-        entry<AboutKey> { AboutRoute(viewModel = hiltViewModel<AboutViewModelImpl>()) }
+        entry<AboutKey> {
+            AboutRoute(viewModel = hiltViewModel<AboutViewModelImpl>(), onLicencesClick = onLicencesClick)
+        }
+        entry<LicencesKey> {
+            LicencesRoute(viewModel = hiltViewModel<LicencesViewModelImpl>(), onLicenceClick = onLicenceClick)
+        }
+        entry<LicenceKey> { key ->
+            LicenceRoute(
+                viewModel = hiltViewModel<LicenceViewModelImpl, LicenceViewModelImpl.Factory>(
+                    creationCallback = { factory -> factory.create(key.libraryId) },
+                ),
+            )
+        }
     }
 
     override fun appStackEntries(scope: EntryProviderScope<NavKey>, onBack: () -> Unit) {

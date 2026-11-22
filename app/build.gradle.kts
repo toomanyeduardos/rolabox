@@ -1,6 +1,7 @@
 plugins {
     id("rolabox.android.application")
     id("rolabox.android.application.firebase")
+    id("rolabox.android.application.licences")
     id("rolabox.android.compose")
     id("rolabox.hilt")
     id("rolabox.navigation")

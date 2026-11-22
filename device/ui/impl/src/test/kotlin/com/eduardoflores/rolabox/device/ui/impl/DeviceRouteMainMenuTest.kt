@@ -19,6 +19,7 @@ import com.eduardoflores.rolabox.device.playback.ui.api.PlaybackEntries
 import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastSearchEpisodeKey
 import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastSearchShowKey
 import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastsEntries
+import com.eduardoflores.rolabox.device.settings.api.LicenceKey
 import com.eduardoflores.rolabox.device.settings.api.SettingsEntries
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Rule
@@ -122,6 +123,8 @@ private object NoSettingsEntries : SettingsEntries {
         onMainMenuClick: () -> Unit,
         onPodcastsClick: () -> Unit,
         onAboutClick: () -> Unit,
+        onLicencesClick: () -> Unit,
+        onLicenceClick: (LicenceKey) -> Unit,
         onOpenFullScreen: (NavKey) -> Unit,
     ) = Unit
 

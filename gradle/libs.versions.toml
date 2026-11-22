@@ -36,6 +36,7 @@ robolectric = "4.17"
 androidxTestCore = "1.7.0"
 room = "2.8.5"
 okhttp = "5.5.1"
+aboutlibraries = "15.3.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -125,3 +126,4 @@ detekt-gradlePlugin = { group = "dev.detekt", name = "detekt-gradle-plugin", ver
 paparazzi-gradlePlugin = { group = "app.cash.paparazzi", name = "paparazzi-gradle-plugin", version.ref = "paparazzi" }
 googleServices-gradlePlugin = { group = "com.google.gms", name = "google-services", version.ref = "googleServices" }
 crashlytics-gradlePlugin = { group = "com.google.firebase", name = "firebase-crashlytics-gradle", version.ref = "crashlyticsGradle" }
+aboutlibraries-gradlePlugin = { group = "com.mikepenz.aboutlibraries.plugin", name = "aboutlibraries-plugin", version.ref = "aboutlibraries" }

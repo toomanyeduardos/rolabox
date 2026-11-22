@@ -43,6 +43,7 @@ import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastShowKey
 import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastsEntries
 import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastsKey
 import com.eduardoflores.rolabox.device.settings.api.AboutKey
+import com.eduardoflores.rolabox.device.settings.api.LicencesKey
 import com.eduardoflores.rolabox.device.settings.api.MainMenuSettingsKey
 import com.eduardoflores.rolabox.device.settings.api.PodcastSettingsKey
 import com.eduardoflores.rolabox.device.settings.api.SettingsEntries
@@ -131,6 +132,8 @@ internal fun DeviceRoute(
                 onMainMenuClick = { stack.push(MainMenuSettingsKey) },
                 onPodcastsClick = { stack.push(PodcastSettingsKey) },
                 onAboutClick = { stack.push(AboutKey) },
+                onLicencesClick = { stack.push(LicencesKey) },
+                onLicenceClick = { key -> stack.push(key) },
                 onOpenFullScreen = onOpenFullScreen,
             )
         },

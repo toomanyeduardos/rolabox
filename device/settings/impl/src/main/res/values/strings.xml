@@ -30,4 +30,15 @@
     <string name="settings_about_version">Version</string>
     <string name="settings_about_songs">Songs</string>
     <string name="settings_about_unavailable">Unavailable</string>
+    <string name="settings_about_privacy_policy">Privacy Policy</string>
+    <string name="settings_about_licences">Open-Source Licences</string>
+    <string name="settings_about_feedback">Send Feedback</string>
+    <!-- The privacy policy on Rolabox's public pages (ADR-038). -->
+    <string name="settings_about_privacy_policy_url" translatable="false">https://toomanyeduardos.github.io/rolabox/privacy/</string>
+    <!-- The address the privacy policy gives for contact. -->
+    <string name="settings_about_feedback_address" translatable="false">rolabox.app@gmail.com</string>
+    <!-- The subject of the feedback email, with the app's version. -->
+    <string name="settings_about_feedback_subject">Rolabox feedback (%1$s)</string>
+    <string name="settings_about_no_app">No app can open this</string>
+    <string name="settings_licences_unavailable">Licences unavailable</string>
 </resources>

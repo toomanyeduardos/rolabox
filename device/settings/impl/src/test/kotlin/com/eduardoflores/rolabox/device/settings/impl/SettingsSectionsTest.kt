@@ -3,6 +3,8 @@ package com.eduardoflores.rolabox.device.settings.impl
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import com.eduardoflores.rolabox.device.settings.api.AboutKey
+import com.eduardoflores.rolabox.device.settings.api.LicenceKey
+import com.eduardoflores.rolabox.device.settings.api.LicencesKey
 import com.eduardoflores.rolabox.device.settings.api.MainMenuSettingsKey
 import com.eduardoflores.rolabox.device.settings.api.SettingsKey
 import com.eduardoflores.rolabox.device.settings.api.SettingsSection
@@ -46,13 +48,22 @@ class SettingsSectionsTest {
         val settingsEntries = DefaultSettingsEntries(setOf(FakeSection(SettingsSlot.Account)))
 
         val provider = entryProvider<NavKey> {
-            settingsEntries.screenStackEntries(this, onMainMenuClick = {
-            }, onPodcastsClick = {}, onAboutClick = {}, onOpenFullScreen = {})
+            settingsEntries.screenStackEntries(
+                this,
+                onMainMenuClick = {},
+                onPodcastsClick = {},
+                onAboutClick = {},
+                onLicencesClick = {},
+                onLicenceClick = {},
+                onOpenFullScreen = {},
+            )
         }
 
         provider(SettingsKey)
         provider(MainMenuSettingsKey)
         provider(AboutKey)
+        provider(LicencesKey)
+        provider(LicenceKey("androidx.activity:activity"))
         assertThrows(IllegalStateException::class.java) { provider(FakeKey) }
     }
 
