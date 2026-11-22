@@ -4,6 +4,9 @@
 - **Date:** 2026-11-20
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review
+- **Revised 2026-11-21:** Credential Manager's saved state is now cleared once the account is
+  deleted, before the erase (launch/07, [ADR-009](009-ui-bound-sdks.md) rule 6), in Decision
+  and Conformance. The order of the other steps is unchanged.
 - **Supersedes:** [ADR-022](022-data-source-sub-parts.md) (rule 5, for deleting an account: a
   `Syncer`'s delete runs in the foreground, not as WorkManager work) and
   [ADR-031](031-podcasts.md) ("Follows are never deleted", in Syncing follows, for deleting an
@@ -127,8 +130,9 @@ with emulator tests showing that the owner can and another user can't. Sync neve
 which `FollowsSyncer`'s and `PreferencesSyncer`'s tests check: ADR-031's tombstones and ADR-011's
 rule 6 hold for every write that isn't an account being deleted.
 
-**Credential Manager** isn't cleared when an account is deleted, as it isn't on sign-out yet.
-launch/07 clears it on both.
+**Credential Manager**'s saved state is cleared once the account is deleted, before the erase, as
+on sign-out ([ADR-009](009-ui-bound-sdks.md), rule 6): Firebase signs out by itself, so sign-out
+doesn't run. The account is gone by then, so a failed clear doesn't fail the deletion.
 
 ## Alternatives considered
 
@@ -209,7 +213,9 @@ launch/07 clears it on both.
 Rule 2 is `DeleteAccountUseCaseTest` in `:auth:data:impl`, which covers the order, a failed
 re-authentication deleting nothing, a failed cloud delete or account delete keeping the account,
 the pause and the phone's data, the erase coming only after the account is deleted, and Android
-refusing to erase still succeeding. `DeleteAccountViewModelTest` in `:auth:ui:impl` covers which ways to
+refusing to erase still succeeding. It also covers Credential Manager being cleared after the
+account is deleted and before the erase, and a failed clear still succeeding.
+`DeleteAccountViewModelTest` in `:auth:ui:impl` covers which ways to
 re-authenticate the screen offers. The pause is covered by `SyncedDataDeletionTest`, `SyncRunnerTest`
 and `SyncTriggersTest` in `:common:sync:impl`. Rule 3 is reviewed, and the `Syncer`s' tests check
 that `sync` deletes nothing. Rule 4 is `ServerTimeoutTest` in each `:network:impl`, which the

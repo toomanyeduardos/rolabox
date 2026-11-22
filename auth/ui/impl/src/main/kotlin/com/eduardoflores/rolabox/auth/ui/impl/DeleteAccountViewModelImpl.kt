@@ -136,12 +136,14 @@ private fun DeleteAccountUiState.withError(error: DeleteAccountError, withPasswo
             AuthError.RequiresRecentLogin -> withFormError(DeleteAccountFormError.SignInAgain)
 
             // Rate limiting, a disabled account, or errors that can't come from re-authenticating and deleting.
+            // A failed clear of the saved sign-in state doesn't fail the deletion.
             AuthError.TooManyRequests,
             AuthError.AccountDisabled,
             AuthError.EmailAlreadyInUse,
             AuthError.InvalidEmail,
             AuthError.WeakPassword,
             AuthError.Unknown,
+            AuthError.CredentialStateNotCleared,
             -> withFormError(DeleteAccountFormError.Unknown)
         }
     }

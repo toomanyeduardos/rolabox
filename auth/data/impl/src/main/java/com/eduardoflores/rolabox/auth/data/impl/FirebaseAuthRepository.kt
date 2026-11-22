@@ -2,7 +2,6 @@ package com.eduardoflores.rolabox.auth.data.impl
 
 import android.util.Log
 import arrow.core.Either
-import arrow.core.right
 import com.eduardoflores.rolabox.auth.data.api.AuthError
 import com.eduardoflores.rolabox.auth.data.api.AuthRepository
 import com.eduardoflores.rolabox.auth.data.api.AuthState
@@ -26,7 +25,10 @@ import kotlinx.coroutines.tasks.await
 
 private const val TAG = "FirebaseAuthRepository"
 
-internal class FirebaseAuthRepository @Inject constructor(private val firebaseAuth: FirebaseAuth) : AuthRepository {
+internal class FirebaseAuthRepository @Inject constructor(
+    private val firebaseAuth: FirebaseAuth,
+    private val credentialStateClearer: CredentialStateClearer,
+) : AuthRepository {
     // The auth state is read from Firebase's local cache, so observing it can't fail.
     override fun observeAuthState(): Flow<AuthState> = callbackFlow {
         val listener = FirebaseAuth.AuthStateListener { auth ->
@@ -80,9 +82,11 @@ internal class FirebaseAuthRepository @Inject constructor(private val firebaseAu
             Unit
         }
 
-    // Firebase signs out synchronously from its local state and doesn't fail. Clearing Credential
-    // Manager's saved state joins it when the sign-in UI exists (ADR-009), and that can fail.
-    override suspend fun signOut(): Either<AuthError, Unit> = firebaseAuth.signOut().right()
+    // Credential Manager's saved state is cleared first (ADR-009, rule 6), because that can fail and Firebase's
+    // sign-out can't: it's synchronous, from its local state. A failed clear leaves the user signed in, to retry.
+    override suspend fun signOut(): Either<AuthError, Unit> = credentialStateClearer.clear().map {
+        firebaseAuth.signOut()
+    }
 
     // Another account's credential fails with Firebase's user-mismatch error, an invalid-user exception, which is
     // InvalidCredential: the user signed in with something that isn't this account.

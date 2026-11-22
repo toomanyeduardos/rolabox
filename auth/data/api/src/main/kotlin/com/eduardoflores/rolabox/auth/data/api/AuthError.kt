@@ -29,6 +29,12 @@ sealed interface AuthError {
      */
     data object RequiresRecentLogin : AuthError
 
+    /**
+     * Sign-out: the phone's saved sign-in state (Credential Manager's) couldn't be cleared, so the user wasn't signed
+     * out (ADR-009, rule 6). Retrying may work.
+     */
+    data object CredentialStateNotCleared : AuthError
+
     /** The backend is rate limiting this device or account. Retrying now won't help, later may. */
     data object TooManyRequests : AuthError
 

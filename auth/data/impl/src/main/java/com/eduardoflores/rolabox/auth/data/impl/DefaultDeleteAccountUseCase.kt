@@ -15,11 +15,15 @@ import kotlinx.coroutines.flow.first
 
 private const val TAG = "DeleteAccount"
 
-/** The order of ADR-037: why each step comes where it does is said in Decision. The last step closes the app. */
+/**
+ * The order of ADR-037: why each step comes where it does is said in Decision. Once the account is deleted, Credential
+ * Manager's saved state is cleared too, as on sign-out (ADR-009, rule 6). The last step closes the app.
+ */
 internal class DefaultDeleteAccountUseCase @Inject constructor(
     private val authRepository: AuthRepository,
     private val syncRepository: SyncRepository,
     private val appDataEraser: AppDataEraser,
+    private val credentialStateClearer: CredentialStateClearer,
 ) : DeleteAccountUseCase {
     override suspend operator fun invoke(credential: SignInCredential): Either<DeleteAccountError, Unit> =
         deleteAfter { authRepository.reauthenticate(credential) }
@@ -42,6 +46,11 @@ internal class DefaultDeleteAccountUseCase @Inject constructor(
         // whatever happens, until the end or cancel().
         syncRepository.deleteRemoteData(userId).mapLeft(DeleteAccountError::Remote).bind()
         authRepository.deleteUser().mapLeft(DeleteAccountError::Auth).bind()
+        // Firebase signed out by itself, so signOut() doesn't run: Credential Manager's saved state is cleared here,
+        // before the erase closes the app (ADR-009, rule 6). The account is gone whatever happens, so a failed clear
+        // doesn't fail the deletion (ADR-007, rule 7): the clearer has logged it, and reported it where it means
+        // something is broken.
+        credentialStateClearer.clear()
         // The phone goes back to a fresh install: Android erases everything and closes the app. Nothing after this
         // is sure to run. The account is gone whatever happens here, so Android refusing doesn't fail the deletion
         // (ADR-007, rule 7). It's logged (ADR-029), sync resumes for nobody, as the user is signed out, and the user

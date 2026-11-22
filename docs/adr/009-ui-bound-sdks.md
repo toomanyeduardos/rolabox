@@ -37,6 +37,12 @@
   5. A UI step still may run while it is chosen, and the data step still turns it off before its
   Firebase request. ADR-008 now allows non-Firebase requests in no-account mode, which doesn't
   change this ADR: a sign-in is a Firebase request. The decision is unchanged.
+- **Revised 2026-11-21:** Rule 6 is built in launch/07, so it's `[convention]`, no longer
+  `[planned]`. `:auth:data:impl` clears Credential Manager's saved state with the application
+  context when the session ends: on sign-out, before Firebase's own sign-out, and once the account
+  is deleted, in `DeleteAccountUseCase` ([ADR-037](037-deleting-an-account.md)), since Firebase
+  signs out by itself there. A failed clear fails sign-out and leaves the user signed in, and
+  doesn't fail a deletion (Decision, rule 6). The decision is unchanged.
 
 ## Context
 
@@ -93,8 +99,10 @@ Credential Manager bottom sheet ──▶  SignInCredential   ──▶   Fireba
   no-account mode as it was. SDKs that bring Play services are ordinary dependencies, since there's
   only one app.
 - **Non-UI calls of the same SDK stay in the `:impl`.** Clearing Credential Manager's saved state on
-  sign-out needs only the application context, so `:auth:data:impl` does it (rule 6, not built
-  yet).
+  sign-out needs only the application context, so `:auth:data:impl` does it (rule 6). It's cleared
+  first, because it can fail and Firebase's sign-out can't: a failure is
+  `AuthError.CredentialStateNotCleared`, and the user stays signed in to retry. Deleting the
+  account clears it too, after the account is gone, and a failure there doesn't fail the deletion.
 
 ## Alternatives considered
 
@@ -133,6 +141,6 @@ Credential Manager bottom sheet ──▶  SignInCredential   ──▶   Fireba
    by `:app` through Hilt, in a plain type declared in the `:api` of the part with screens.
 5. `[convention]` A UI step that reaches the network runs only when the user starts it. It doesn't
    change no-account mode: the data step does, as ADR-008 rule 7 says.
-6. `[planned]` (Credential Manager sign-out ticket, TBD) Calls of the same SDK that don't need an
-   `Activity` are made in the area's `:impl`. `:auth:data:impl` clears Credential Manager's saved
-   state on sign-out.
+6. `[convention]` Calls of the same SDK that don't need an `Activity` are made in the area's
+   `:impl`, with the application context. `:auth:data:impl` clears Credential Manager's saved state
+   when the session ends: on sign-out, and once the account is deleted.

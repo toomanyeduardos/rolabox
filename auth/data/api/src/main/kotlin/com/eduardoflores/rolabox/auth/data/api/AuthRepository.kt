@@ -33,7 +33,11 @@ interface AuthRepository {
      */
     suspend fun sendPasswordResetEmail(email: String): Either<AuthError, Unit>
 
-    /** Ends the session. Signing out while signed out succeeds. */
+    /**
+     * Ends the session. The phone's saved sign-in state is cleared first, so the next Google sign-in starts from the
+     * account picker. If that fails, it fails with [AuthError.CredentialStateNotCleared] and the user is still signed
+     * in. Signing out while signed out succeeds.
+     */
     suspend fun signOut(): Either<AuthError, Unit>
 
     /**
