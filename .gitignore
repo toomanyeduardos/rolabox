@@ -27,3 +27,6 @@ firebase/*-debug.log
 *.jks
 *.keystore
 *.p12
+
+# Real artwork for the README's screenshots (ADR-039): read at render time, never committed.
+.screenshots-local/

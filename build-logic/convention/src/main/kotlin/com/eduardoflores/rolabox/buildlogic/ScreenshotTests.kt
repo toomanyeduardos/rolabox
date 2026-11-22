@@ -14,6 +14,7 @@ import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.testing.Test
+import java.io.File
 
 private const val PAPARAZZI_PLUGIN = "app.cash.paparazzi"
 private const val TASK_NAME = "checkScreenshotTests"
@@ -23,6 +24,13 @@ private const val SKIP_PROPERTY = "rolabox.skipScreenshotTests"
 
 // Every screenshot test class is named *SnapshotTest (ADR-016 rule 4), which is how it is skipped.
 private const val SNAPSHOT_TEST_PATTERN = "*SnapshotTest"
+
+// Store and README screenshots (ADR-039): the task that renders them, their tests, and where their files are.
+private const val STORE_TASK = "storeScreenshots"
+private const val STORE_TEST_TASK = "testDebugUnitTest"
+private const val STORE_TEST_PATTERN = "*StoreScreenshotTest"
+private const val STORE_OUTPUT = "build/store-screenshots"
+private const val STORE_ART = ".screenshots-local"
 
 // A preview annotation at the start of a line: @Preview, @PreviewLightDark, @PreviewFontScale, …
 private val PREVIEW_ANNOTATION = Regex("""^\s*@Preview\w*\b""")
@@ -47,13 +55,46 @@ internal fun Project.registerScreenshotPluginCheck() {
     tasks.matching { it.name == "preBuild" || it.name == "check" }.configureEach { dependsOn(check) }
 }
 
-/** `-Prolabox.skipScreenshotTests` leaves the screenshot tests out of the module's test runs. */
+/**
+ * `-Prolabox.skipScreenshotTests` leaves the screenshot tests out of the module's test runs. Store and README
+ * screenshots (ADR-039) run only under `./gradlew storeScreenshots`, and every other test run leaves them out.
+ */
 internal fun Project.configureScreenshotTests() {
     if (providers.gradleProperty(SKIP_PROPERTY).isPresent) {
         tasks.withType(Test::class.java).configureEach {
             filter.excludeTestsMatching(SNAPSHOT_TEST_PATTERN)
             filter.isFailOnNoMatchingTests = false
         }
+    }
+    configureStoreScreenshots()
+}
+
+/**
+ * ADR-039 rule 2. Asking for `storeScreenshots` makes the unit test tasks run only the `StoreScreenshotTest`s, never
+ * up to date, and tells them where to write the images and where the README's real art is. Without it, those tests
+ * are excluded, so `check`, `recordPaparazziDebug` and `verifyPaparazziDebug` never run them.
+ */
+private fun Project.configureStoreScreenshots() {
+    val storeRun = gradle.startParameter.taskNames.any { it.substringAfterLast(':') == STORE_TASK }
+    val output = File(rootDir, STORE_OUTPUT).absolutePath
+    val art = File(rootDir, STORE_ART).absolutePath
+    tasks.withType(Test::class.java).configureEach {
+        if (storeRun) {
+            filter.setIncludePatterns(STORE_TEST_PATTERN)
+            filter.isFailOnNoMatchingTests = false
+            systemProperty("rolabox.storeScreenshots", "true")
+            systemProperty("rolabox.storeScreenshots.out", output)
+            systemProperty("rolabox.storeScreenshots.art", art)
+            outputs.upToDateWhen { false }
+            outputs.cacheIf { false }
+        } else {
+            filter.excludeTestsMatching(STORE_TEST_PATTERN)
+        }
+    }
+    tasks.register(STORE_TASK) {
+        group = "documentation"
+        description = "Renders the store and README screenshots to build/store-screenshots (ADR-039)."
+        dependsOn(STORE_TEST_TASK)
     }
 }
 

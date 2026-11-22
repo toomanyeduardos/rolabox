@@ -1,3 +1,5 @@
 # Screenshot test goldens are stored in Git LFS (ADR-016). Install git-lfs once per machine:
 # `brew install git-lfs && git lfs install`.
 **/src/test/snapshots/**/*.png filter=lfs diff=lfs merge=lfs -text
+# The README's screenshots with no real art (ADR-039), copied from ./gradlew storeScreenshots.
+docs/images/readme/*.png filter=lfs diff=lfs merge=lfs -text
