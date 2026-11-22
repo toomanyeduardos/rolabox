@@ -21,6 +21,17 @@ data object MainMenuSettingsKey : NavKey
 @Serializable
 data object PodcastSettingsKey : NavKey
 
-/** The app's name and version, and the number of songs in the library. */
+/**
+ * The app's name and version, the number of songs in the library, and the rows that open the privacy policy, the
+ * open-source licences and an email for feedback.
+ */
 @Serializable
 data object AboutKey : NavKey
+
+/** The open-source libraries the app ships, each opening its licence. */
+@Serializable
+data object LicencesKey : NavKey
+
+/** The licence of one open-source library, by the library's id in the list of [LicencesKey]. */
+@Serializable
+data class LicenceKey(val libraryId: String) : NavKey

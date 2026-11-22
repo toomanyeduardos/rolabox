@@ -1,6 +1,8 @@
 plugins {
     id("rolabox.android.screens")
     id("rolabox.android.paparazzi")
+    // The licences are parsed with Android's org.json, which runs on Robolectric.
+    id("rolabox.android.robolectric")
 }
 
 android {
@@ -15,6 +17,8 @@ dependencies {
     implementation(project(":common:storage:api"))
     implementation(project(":common:userdata:api"))
     implementation(project(":device:library:api"))
+    // The licences are read on the IO dispatcher, and their errors converted with catchNamed (ADR-007).
+    implementation(project(":common:util"))
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
 
@@ -23,4 +27,5 @@ dependencies {
     testImplementation(project(":device:library:testing"))
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.robolectric)
 }
