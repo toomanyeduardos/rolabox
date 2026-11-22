@@ -21,9 +21,13 @@ dependencies {
     implementation(project(":common:userdata:api"))
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
+    // Clears Credential Manager's saved state when the session ends (ADR-009, rule 6). The provider that does it comes
+    // with the sign-in UI.
+    implementation(libs.androidx.credentials)
     // Awaits Firebase's Tasks.
     implementation(libs.kotlinx.coroutines.play.services)
     testImplementation(project(":auth:data:testing"))
+    testImplementation(project(":common:testing"))
     testImplementation(project(":common:userdata:testing"))
     testImplementation(project(":common:sync:testing"))
     testImplementation(libs.junit)

@@ -1,5 +1,7 @@
 package com.eduardoflores.rolabox.auth.data.impl.di
 
+import android.content.Context
+import androidx.credentials.CredentialManager
 import com.eduardoflores.rolabox.auth.data.api.DeleteAccountUseCase
 import com.eduardoflores.rolabox.auth.data.api.PasswordPolicy
 import com.eduardoflores.rolabox.auth.data.api.ResolveStartDestinationUseCase
@@ -8,6 +10,8 @@ import com.eduardoflores.rolabox.auth.data.api.SignUpUseCase
 import com.eduardoflores.rolabox.auth.data.impl.AndroidAppDataEraser
 import com.eduardoflores.rolabox.auth.data.impl.AppDataEraser
 import com.eduardoflores.rolabox.auth.data.impl.AuthSyncUserProvider
+import com.eduardoflores.rolabox.auth.data.impl.CredentialManagerStateClearer
+import com.eduardoflores.rolabox.auth.data.impl.CredentialStateClearer
 import com.eduardoflores.rolabox.auth.data.impl.DefaultDeleteAccountUseCase
 import com.eduardoflores.rolabox.auth.data.impl.DefaultPasswordPolicy
 import com.eduardoflores.rolabox.auth.data.impl.DefaultResolveStartDestinationUseCase
@@ -16,13 +20,16 @@ import com.eduardoflores.rolabox.auth.data.impl.DefaultSignUpUseCase
 import com.eduardoflores.rolabox.common.sync.api.SyncUserProvider
 import dagger.Binds
 import dagger.Module
+import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 
 /**
  * Binds auth's rules: the use cases built on the repositories (ADR-021), the password policy, and
  * what auth provides to sync (ADR-020, rule 18). It's apart from [AuthModule], so a test that
- * replaces the repository with a fake still gets the real rules on top of it.
+ * replaces the repository with a fake still gets the real rules on top of it. Credential Manager's clear is here too,
+ * as the delete-account use case calls it, besides the repository.
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -42,6 +49,9 @@ abstract class AuthUseCasesModule {
     internal abstract fun bindsAppDataEraser(eraser: AndroidAppDataEraser): AppDataEraser
 
     @Binds
+    internal abstract fun bindsCredentialStateClearer(clearer: CredentialManagerStateClearer): CredentialStateClearer
+
+    @Binds
     internal abstract fun bindsDeleteAccountUseCase(useCase: DefaultDeleteAccountUseCase): DeleteAccountUseCase
 
     @Binds
@@ -49,4 +59,11 @@ abstract class AuthUseCasesModule {
 
     @Binds
     internal abstract fun bindsSyncUserProvider(provider: AuthSyncUserProvider): SyncUserProvider
+
+    companion object {
+        // The application context only: clearing needs no Activity (ADR-009, rule 6).
+        @Provides
+        fun providesCredentialManager(@ApplicationContext context: Context): CredentialManager =
+            CredentialManager.create(context)
+    }
 }

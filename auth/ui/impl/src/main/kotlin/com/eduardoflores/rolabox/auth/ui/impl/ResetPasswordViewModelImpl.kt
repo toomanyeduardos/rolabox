@@ -86,8 +86,9 @@ internal class ResetPasswordViewModelImpl @Inject constructor(private val authRe
 
         AuthError.TooManyRequests -> copy(isLoading = false, error = ResetPasswordError.TooManyRequests)
 
-        // Sign-in, sign-up and deletion errors can't come from sending a link. Nothing the user can fix.
+        // Sign-in, sign-up, sign-out and deletion errors can't come from sending a link. Nothing the user can fix.
         AuthError.Unknown,
+        AuthError.CredentialStateNotCleared,
         AuthError.RequiresRecentLogin,
         AuthError.InvalidCredential,
         AuthError.AccountDisabled,
