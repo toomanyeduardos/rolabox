@@ -2,6 +2,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!--
+        The portrait lock (ADR-018, rule 13) makes Android assume a portrait screen is required,
+        and Play then hides the app from devices without one. Large screens ignore the lock, and the
+        device is drawn at its own proportions there, so the screen orientation isn't required.
+    -->
+    <uses-feature
+        android:name="android.hardware.screen.portrait"
+        android:required="false" />
+
     <application
         android:name=".RolaboxApplication"
         android:allowBackup="true"
