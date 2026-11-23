@@ -12,15 +12,37 @@ Offline first, account optional, and dressed like the hi-fi you wanted in the ea
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.4-7F52FF?logo=kotlin&logoColor=white)
 ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?logo=jetpackcompose&logoColor=white)
 
-<img src="https://media.githubusercontent.com/media/toomanyeduardos/rolabox/main/auth/ui/impl/src/test/snapshots/images/com.eduardoflores.rolabox.auth.ui.impl_PreviewSnapshotTest_snapshot%5BSignInScreen_SignInScreenPreview_Dark%5D.png" width="240" alt="Sign in screen, dark theme">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://media.githubusercontent.com/media/toomanyeduardos/rolabox/main/docs/images/readme/main-menu_Dark.png">
+  <img src="https://media.githubusercontent.com/media/toomanyeduardos/rolabox/main/docs/images/readme/main-menu_Light.png" width="200" alt="The main menu: Now Playing, Music, Podcasts, Shuffle Songs and Settings, over the click wheel">
+</picture>
 &nbsp;
-<img src="https://media.githubusercontent.com/media/toomanyeduardos/rolabox/main/auth/ui/impl/src/test/snapshots/images/com.eduardoflores.rolabox.auth.ui.impl_PreviewSnapshotTest_snapshot%5BCreateAccountScreen_CreateAccountScreenPreview_Light%5D.png" width="240" alt="Create account screen, light theme">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://media.githubusercontent.com/media/toomanyeduardos/rolabox/main/docs/images/readme/songs-u2-best-of_Dark.png">
+  <img src="https://media.githubusercontent.com/media/toomanyeduardos/rolabox/main/docs/images/readme/songs-u2-best-of_Light.png" width="200" alt="The songs of U2's The Best of 1990-2000, with Even Better Than the Real Thing highlighted">
+</picture>
 &nbsp;
-<img src="https://media.githubusercontent.com/media/toomanyeduardos/rolabox/main/auth/ui/impl/src/test/snapshots/images/com.eduardoflores.rolabox.auth.ui.impl_PreviewSnapshotTest_snapshot%5BResetPasswordScreen_ResetPasswordStep1Preview_Dark%5D.png" width="240" alt="Reset password screen, dark theme">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/user-attachments/assets/2314787b-a41a-443e-870d-bb5cf1a786aa">
+  <img src="https://github.com/user-attachments/assets/8687d3c9-da42-475c-8932-22be45417966" width="200" alt="Now Playing: Even Better Than the Real Thing by U2, track 1 of 16, with the album's cover">
+</picture>
 
-*These are the real screenshot-test goldens, checked by Paparazzi on every CI run.*
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://media.githubusercontent.com/media/toomanyeduardos/rolabox/main/docs/images/readme/show-the-daily_Dark.png">
+  <img src="https://media.githubusercontent.com/media/toomanyeduardos/rolabox/main/docs/images/readme/show-the-daily_Light.png" width="200" alt="The Daily's episodes, newest first, with Want to Enjoy Music More? Go For a Run. highlighted">
+</picture>
+&nbsp;
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/user-attachments/assets/7cda9e91-b138-4e5d-85b3-9b889549eff4">
+  <img src="https://github.com/user-attachments/assets/126ac55b-6785-45a9-b40e-1eb619297575" width="200" alt="Now Playing: an episode of The Daily, with its artwork">
+</picture>
+&nbsp;
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://media.githubusercontent.com/media/toomanyeduardos/rolabox/main/docs/images/readme/settings_Dark.png">
+  <img src="https://media.githubusercontent.com/media/toomanyeduardos/rolabox/main/docs/images/readme/settings_Light.png" width="200" alt="Settings: Shuffle, Repeat, Clicker, Theme, Online Artwork, Main Menu, Podcasts, About and Account">
+</picture>
 
-*Work in progress: new screens are landing every few days, so this set will grow (and change) soon.*
+*Rendered by Paparazzi from the app's own screens, in light or dark to match your GitHub theme ([ADR-039](docs/adr/039-store-and-readme-screenshots.md)). Album and show artwork belongs to its owners and isn't part of this repository.*
 
 </div>
 
@@ -35,23 +57,26 @@ need.
 It also has a look: brushed aluminum, a backlit LCD status bar, and a spinning record in the
 wordmark. Think of a hardware player, not a streaming app.
 
-> [!NOTE]
-> **Rolabox is early and under very active development.** The foundations are in place (accounts,
-> use without an account, preference sync, the design system, and the architecture and tooling around them),
-> and new UI is landing every few days. The library and playback screens come next, so Home is
-> still empty, and the screens and screenshots here will change often.
+Pick an artist, an album or a podcast with the wheel, and press play. Rolabox indexes the audio
+files on your phone, plays them with shuffle and repeat, finds covers that your files are missing,
+and follows, downloads and plays podcasts. Everything works without an account; with one, your
+settings and the podcasts you follow sync between devices, and you can delete the account and its
+data from the app.
 
 ## How it behaves
 
 - **You choose whether to have an account on first launch.** The app opens on *Sign in*, where you
   can sign in with email and password, continue with Google, create an account, or tap **Use
-  without an account**. Rolabox remembers the choice, and opens straight on Home from then on
+  without an account**. Rolabox remembers the choice, and opens straight on the device's main menu from then on
   ([ADR-008](docs/adr/008-one-app-with-an-optional-account.md)).
-- **No account means no Firebase.** In no-account mode the app makes no Firebase request at all:
-  nothing is stored in the cloud and nothing syncs. It's a choice that belongs to the device, not a
-  separate build. It isn't a way to stay off the network: missing covers are still downloaded from
-  the Cover Art Archive, as they are when signed in, and the Online Artwork setting turns that off
-  ([ADR-027](docs/adr/027-artwork-from-the-internet.md)).
+- **No account means nothing in the cloud.** In no-account mode the app never talks to Firebase
+  Authentication or Firestore: nothing is stored in the cloud and nothing syncs. It's a choice that
+  belongs to the device, not a separate build. It isn't a way to stay off the network: crash reports
+  still go to Crashlytics, with nothing that identifies you
+  ([ADR-030](docs/adr/030-crash-reporting.md)), missing covers are still downloaded from the Cover
+  Art Archive unless the Online Artwork setting is off
+  ([ADR-027](docs/adr/027-artwork-from-the-internet.md)), and podcasts are searched in Apple's
+  directory and fetched from their publishers ([ADR-031](docs/adr/031-podcasts.md)).
 - **Your data lives on your phone first.** The local database is the single source of truth. The
   UI reads local data, and sync happens in the background when you're signed in
   ([ADR-002](docs/adr/002-offline-first-data-flow.md)).
@@ -65,6 +90,18 @@ wordmark. Think of a hardware player, not a streaming app.
 - **Only you can read your data.** Firestore security rules limit each user to their own document,
   and they're tested against the emulator on every CI run
   ([ADR-010](docs/adr/010-firestore-security-rules.md)).
+- **The wheel drives everything.** Turn it to move through a list, press the center to open a row,
+  and MENU goes back one screen ([ADR-018](docs/adr/018-device-navigation.md)). When a screen needs
+  text, such as a podcast search, the phone's keyboard opens over the wheel
+  ([ADR-032](docs/adr/032-typing-on-the-device.md)).
+- **Podcasts without a podcast service.** Shows are found in Apple's directory, their feeds are read
+  on the phone, and episodes download before they play. Signed in, the shows you follow sync too
+  ([ADR-031](docs/adr/031-podcasts.md)).
+- **Delete your account whenever you like.** Settings → Account deletes your synced data, then the
+  account, then the app's data on the phone
+  ([ADR-037](docs/adr/037-deleting-an-account.md)). Without the app, the
+  [account deletion page](https://toomanyeduardos.github.io/rolabox/delete-account/) says how to ask
+  by email.
 
 ## Tech stack
 
@@ -160,6 +197,16 @@ It runs the tests first and deploys only if they pass. To check that a project's
 the repo's, run `npm run rules:check -- --project <your-project-id>` (it uses your `firebase login`
 account). The release steps are in [`docs/releasing.md`](docs/releasing.md).
 
+## Releasing
+
+Releases are signed with an upload key that lives outside the repo, and Google holds the app signing
+key through Play App Signing, so a lost upload key can be replaced. The version comes from one
+property, `rolabox.versionName=MAJOR.MINOR.PATCH` in `gradle.properties`, and the build derives
+`versionCode` from it ([ADR-035](docs/adr/035-release-signing-and-versioning.md)). Without the
+signing values, a release build is signed with the debug key and says so.
+[`docs/releasing.md`](docs/releasing.md) has the one-time setup, the steps of each release, the
+store screenshots, and what to do if the upload key is lost.
+
 ## Architecture
 
 Rolabox is a layered, offline-first, multi-module app: UI → domain → data, with the domain layer
@@ -201,8 +248,20 @@ and the rules that follow. Most rules are enforced by the build or by tests, not
 | [023](docs/adr/023-playback-engine.md) | Playback with Media3, in a session service that the playback area owns |
 | [024](docs/adr/024-library-index.md) | The library index: MediaStore finds the files, and Rolabox's own database is what the device reads |
 | [025](docs/adr/025-process-start-tasks.md) | Parts run work at process start through a set in `:common:util`, which `:app` runs |
+| [026](docs/adr/026-artwork.md) | Artwork is a reference in the library, loaded from MediaStore's thumbnail of the song, with no image library |
+| [027](docs/adr/027-artwork-from-the-internet.md) | Covers missing from the phone are downloaded from the Cover Art Archive, in WorkManager, and kept as the user's data |
+| [028](docs/adr/028-shuffle-and-repeat.md) | Shuffle and repeat are two settings that the queue follows, in Media3's own modes |
+| [029](docs/adr/029-sync-failures-are-logged.md) | Sync failures are logged, with the backend's reason where the exception is converted |
+| [030](docs/adr/030-crash-reporting.md) | Crashlytics reports crashes, ANRs and named non-fatal errors from every user, with nothing that identifies them |
 | [031](docs/adr/031-podcasts.md) | Podcasts: Apple's directory, feeds read on the phone, downloads in playback's Media3 cache, and follows synced per show |
+| [032](docs/adr/032-typing-on-the-device.md) | Typing on the device: the phone's keyboard over the wheel, into a field that is a row of the display |
 | [033](docs/adr/033-shared-firestore-module.md) | Firestore is provided once, by `:common:firestore`, which also turns its errors into `RemoteError` |
+| [034](docs/adr/034-plain-http-for-podcasts.md) | Plain HTTP is allowed for podcast feeds, images and audio, tried as HTTPS first, and HTTPS is forced for every service Rolabox talks to |
+| [035](docs/adr/035-release-signing-and-versioning.md) | Releases are signed with an upload key kept outside the repo, Google holds the app signing key, and the version comes from one semver property |
+| [036](docs/adr/036-android-backup.md) | Android backs up only the preferences and the podcasts' database, by an include-list, the same for cloud backup and device transfer |
+| [037](docs/adr/037-deleting-an-account.md) | Deleting an account: the signed-in user re-authenticates, each `Syncer` deletes its data in the cloud, then the account, then Android erases the app's data |
+| [038](docs/adr/038-public-web-pages.md) | Rolabox's public web pages are static files in `site/`, deployed to GitHub Pages, and the privacy policy changes with the code it describes |
+| [039](docs/adr/039-store-and-readme-screenshots.md) | Store and README screenshots are rendered by Paparazzi at the device's resolution, on demand, apart from the goldens |
 
 ### Modules
 
@@ -232,6 +291,11 @@ there is something to fake, a `:testing` module.
 | `:device:library:local:impl` | The index in Room, the MediaStore queries, the downloaded covers, and the manifest with the audio permission |
 | `:device:library:network:api` | The library's network source as an interface: covers missing from the phone |
 | `:device:library:network:impl` | That source over OkHttp: MusicBrainz's search and the Cover Art Archive ([ADR-027](docs/adr/027-artwork-from-the-internet.md)) |
+| `:device:playback:api` | Playback's API: `PlaybackController`, `PlaybackState`, the queue's models, episode downloads and the network they wait for, `PlaybackError` ([ADR-023](docs/adr/023-playback-engine.md)) |
+| `:device:playback:impl` | Media3: the `PlaybackService` and its session, the queue and play orders, resuming, and episode downloads in a `dataSync` service, HTTPS first ([ADR-023](docs/adr/023-playback-engine.md), [ADR-031](docs/adr/031-podcasts.md), [ADR-034](docs/adr/034-plain-http-for-podcasts.md)) |
+| `:device:playback:testing` | `FakePlayback`, `FakeItemDownloads`, `FakeEpisodeNetwork`, `FakePlaybackLocalDataSource` |
+| `:device:playback:ui:api` | The key and entry contract of Now Playing |
+| `:device:playback:ui:impl` | Now Playing and its ViewModel |
 | `:device:playback:local:api` | Playback's local source as an interface: the point to resume from |
 | `:device:playback:local:impl` | That point on `PreferencesStore`: on the phone, and never synced |
 | `:device:podcasts:api` | The podcasts' API: shows, owners, episodes, their repositories, `PodcastDirectory`, `EpisodeProgressRepository`, `PodcastArtworkRepository`, `PodcastError` ([ADR-031](docs/adr/031-podcasts.md)) |
@@ -248,7 +312,8 @@ there is something to fake, a `:testing` module.
 | `:device:settings:api` | The keys of the settings screens, the slots of the settings list, and the contract of a contributed section |
 | `:device:settings:impl` | The settings screens in the display: Settings, Main Menu and About |
 | `:common:util` | Coroutine dispatchers and scopes, helpers that turn exceptions into typed errors, and `ProcessStartTask` |
-| `:common:designsystem` | The visual language: theme, shared composables, the device's parts |
+| `:common:designsystem` | The visual language: theme, shared composables, the device's parts, and the screenshot harnesses in its test fixtures ([ADR-016](docs/adr/016-screenshot-testing.md), [ADR-039](docs/adr/039-store-and-readme-screenshots.md)) |
+| `:common:crashreporting:impl` | Crashlytics, the only module that depends on it: crashes, ANRs and the named non-fatal errors that `:common:util`'s `NonFatalReport` sends, with nothing that identifies the user ([ADR-030](docs/adr/030-crash-reporting.md)) |
 | `:common:firestore` | The one provider of `FirebaseFirestore`, and the conversion of its exceptions to `RemoteError`, for `:network:impl` modules ([ADR-033](docs/adr/033-shared-firestore-module.md)) |
 | `:common:testing` | Test-only: Hilt test runner, `MainDispatcherRule` |
 | `:common:storage:api` | Local storage API: `PreferencesStore` (key-value settings), `StorageError` |
@@ -591,6 +656,8 @@ Prefix a task with a module path to run it for one module, for example `./gradle
 - **A failing verify** writes the actual image and a `delta-` diff to `<module>/build/paparazzi/failures/`, and an HTML report to `<module>/build/reports/paparazzi/`. On CI they are the `screenshot-diffs` artifact.
 - **A module with `@Preview` composables applies `rolabox.android.paparazzi`** and has a `PreviewSnapshotTest` (see [`auth/ui/impl`](auth/ui/impl/src/test/kotlin/com/eduardoflores/rolabox/auth/ui/impl/PreviewSnapshotTest.kt)). The build fails if it doesn't. The shared harness is in the design system's test fixtures.
 - **Commit the goldens with the change** that caused them, in the same pull request. CI only verifies.
+
+**Store and README screenshots** come from the same composables, rendered at the Pixel 6's full 1080 × 2400 in light and dark by `./gradlew storeScreenshots` ([ADR-039](docs/adr/039-store-and-readme-screenshots.md)). They are cases in each module's `StoreScreenshotTest`, which no other test run includes, and they are written to `build/store-screenshots/`, never compared and never committed. The Play set is made up; the README set uses real music and podcasts, whose art is read from the gitignored `.screenshots-local/`. [`docs/releasing.md`](docs/releasing.md#store-and-readme-screenshots) has the steps.
 
 ### Test audio
 

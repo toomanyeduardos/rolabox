@@ -146,6 +146,58 @@ again whenever the rules change.
    email/password sign-in and preference sync work. Google sign-in failing only here means the
    app signing key's fingerprints are missing from Firebase (setup step 5).
 
+## Store and README screenshots
+
+The Play listing's screenshots and the README's are rendered by Paparazzi on the JVM, at a Pixel 6's
+1080 × 2400, in light and in dark (ADR-039). Redo them when a screen they show changes, and before a
+release whose listing should show it.
+
+1. **Get the README's art,** once per machine. The README set shows real music and a real podcast,
+   whose art is never committed. It lives in `.screenshots-local/` at the root of the repo, which
+   Git ignores. Without these files the README cases are skipped, and the Play set is still made.
+
+   | File | What | Where it comes from |
+   | --- | --- | --- |
+   | `u2-best-of-1990-2000.jpg` | U2, *The Best of 1990-2000* | Cropped from a phone screenshot of Now Playing; ask the maintainer, or crop the cover from your own copy to a square |
+   | `the-daily-2026-11-01.jpg` | *The Daily*, "Want to Enjoy Music More? Go For a Run." (1 Nov 2026) | The episode's `itunes:image` in the feed, `https://feeds.simplecast.com/54nAGcIl` |
+
+   ```bash
+   mkdir -p .screenshots-local
+   curl -L -o .screenshots-local/the-daily-2026-11-01.jpg https://image.simplecastcdn.com/images/12d3db32-0c1e-4c49-b672-cf6fe68edf5d/c7ad2106-c464-4c75-9045-5849873dd050/640x640/3000241103_km_nyc_marathon_f_633966.jpg
+   ```
+
+2. **Render them:**
+
+   ```bash
+   ./gradlew storeScreenshots
+   ```
+
+   The images are in `build/store-screenshots/play/` and `build/store-screenshots/readme/`, each
+   screen as `<name>_Light.png` and `<name>_Dark.png`.
+
+3. **Upload the Play set** in Play Console → Grow users → Store presence → Main store listing →
+   Phone screenshots. Play takes 2 to 8, each side between 320 and 3840 px, at most 2:1; four or
+   more at 1080 px or more make the app eligible for Play's recommendations. There are 9 screens,
+   so leave one out. The suggested 8, in this order, are `01` to `04` and `06` to `09`: main menu,
+   artists, an album's songs, Now Playing, Settings, sign in, a show's episodes, and Now Playing an
+   episode. Mix light and dark so the listing shows both, for example light for the odd numbers
+   and dark for the even ones.
+
+4. **Update the README's images,** if they changed:
+   - Images with no real art (`play/01-main-menu`, `play/06-settings`,
+     `readme/songs-u2-best-of` and `readme/show-the-daily`) are copied to `docs/images/readme/`
+     and committed. Git LFS tracks them.
+   - Images with real art (`readme/now-playing-u2` and `readme/now-playing-the-daily`) are never
+     committed. Drag them into a comment on a GitHub issue or pull request, and paste the
+     `https://github.com/user-attachments/assets/…` URLs that GitHub makes into the README's
+     `<picture>` blocks.
+
+**Adding a screen.** Add a `@Test` to the `StoreScreenshotTest` of the module that owns the screen,
+or create one that extends `StoreScreenshot`, and call `shoot(StoreSet.Play or StoreSet.Readme,
+"<name>") { … }` with the screen in its `RolaboxTheme` and `DeviceScreen`. Play cases use only
+made-up names and `colorMixCover` art. README cases may use real names and `localArtwork("<file>")`,
+with the file added to the table above.
+
 ## If the upload key is lost or leaked
 
 The app signing key is Google's, so the app is safe: only the upload key has to be replaced.

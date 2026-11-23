@@ -92,8 +92,9 @@ private fun MainMenu(
     MainMenuList(rows = shown, highlightedIndex = shown.indexOf(highlighted))
 }
 
+/** The stateless main menu that previews and the store screenshots call (ADR-039). */
 @Composable
-private fun MainMenuList(rows: List<MenuRow>, highlightedIndex: Int) {
+internal fun MainMenuList(rows: List<MenuRow>, highlightedIndex: Int) {
     val listRows = rows.map { row ->
         when (row) {
             MenuRow.NowPlaying -> DeviceListRow(stringResource(R.string.device_now_playing))
