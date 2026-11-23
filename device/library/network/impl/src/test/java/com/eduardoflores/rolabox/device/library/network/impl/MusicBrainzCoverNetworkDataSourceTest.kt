@@ -52,7 +52,12 @@ class MusicBrainzCoverNetworkDataSourceTest {
         }
     }
 
-    private class Answer(val code: Int, val body: ByteArray, val type: String)
+    private class Answer(
+        val code: Int,
+        val body: ByteArray,
+        val type: String,
+        val headers: Map<String, String> = emptyMap(),
+    )
 
     private val client = OkHttpClient.Builder()
         .addInterceptor(
@@ -66,6 +71,7 @@ class MusicBrainzCoverNetworkDataSourceTest {
                     .code(served.code)
                     .message("recorded")
                     .header("Content-Type", served.type)
+                    .apply { served.headers.forEach { (name, value) -> header(name, value) } }
                     .body(served.body.toResponseBody(served.type.toMediaType()))
                     .build()
             },
@@ -114,9 +120,83 @@ class MusicBrainzCoverNetworkDataSourceTest {
     }
 
     @Test
-    fun aRequestToSlowDown_isAServerError() = runTest {
-        answer = { Answer(503, ByteArray(0), "text/plain") }
+    fun aRequestToSlowDown_isSentAgain_andTheCoverIsFound() = runTest {
+        answer = busyFirst(times = 1, retryAfter = "1")
+        assertEquals(Cover(LIVE_2012, Jpeg).right(), source().findCover(Live2012))
+        assertEquals(listOf("musicbrainz.org", "musicbrainz.org", "coverartarchive.org"), requests.map { it.host })
+    }
+
+    @Test
+    fun aRequestToSlowDown_waitsForItsRetryAfter() = runTest {
+        answer = busyFirst(times = 2, retryAfter = "3")
+        assertEquals(Cover(LIVE_2012, Jpeg).right(), source().findCover(Live2012))
+        assertEquals(6_000L, testScheduler.currentTime)
+    }
+
+    @Test
+    fun aRequestToSlowDown_withNoRetryAfter_waitsASecond() = runTest {
+        answer = busyFirst(times = 1, retryAfter = null)
+        assertEquals(Cover(LIVE_2012, Jpeg).right(), source().findCover(Live2012))
+        assertEquals(1_000L, testScheduler.currentTime)
+    }
+
+    @Test
+    fun aRequestToSlowDown_afterEveryRetry_isAServerError() = runTest {
+        answer = { Answer(503, ByteArray(0), "text/plain", mapOf("Retry-After" to "1")) }
         assertEquals(CoverSourceError.Server(503).left(), source().findCover(Live2012))
+        assertEquals(1 + BUSY_RETRIES, requests.size)
+    }
+
+    @Test
+    fun aRequestToSlowDown_forLongerThanTheRunWaits_isAServerErrorAtOnce() = runTest {
+        val longer = MAX_BUSY_WAIT.inWholeSeconds + 1
+        answer = { Answer(503, ByteArray(0), "text/plain", mapOf("Retry-After" to "$longer")) }
+        assertEquals(CoverSourceError.Server(503).left(), source().findCover(Live2012))
+        assertEquals(1, requests.size)
+        assertEquals(0L, testScheduler.currentTime)
+    }
+
+    @Test
+    fun anotherServerError_isntSentAgain() = runTest {
+        answer = { Answer(502, ByteArray(0), "text/plain", mapOf("Retry-After" to "1")) }
+        assertEquals(CoverSourceError.Server(502).left(), source().findCover(Live2012))
+        assertEquals(1, requests.size)
+    }
+
+    @Test
+    fun aRequestToSlowDownFromTheArchive_isSentAgainToo() = runTest {
+        val search = answer
+        var busy = 1
+        answer = { url ->
+            if (url.host == "coverartarchive.org" && busy-- > 0) {
+                Answer(503, ByteArray(0), "text/plain")
+            } else {
+                search(url)
+            }
+        }
+        assertEquals(Cover(LIVE_2012, Jpeg).right(), source().findCover(Live2012))
+    }
+
+    @Test
+    fun retryAfter_isWholeSeconds_andASecondAtLeast() {
+        assertEquals(4.seconds, retryAfterOf("4"))
+        assertEquals(1.seconds, retryAfterOf(null))
+        assertEquals(1.seconds, retryAfterOf("0"))
+        assertEquals(1.seconds, retryAfterOf("Wed, 21 Oct 2026 07:28:00 GMT"))
+    }
+
+    /** MusicBrainz asks [times] times to slow down, then answers as recorded. */
+    private fun busyFirst(times: Int, retryAfter: String?): (HttpUrl) -> Answer {
+        val recorded = answer
+        var busy = times
+        val headers = retryAfter?.let { mapOf("Retry-After" to it) }.orEmpty()
+        return { url ->
+            if (url.host == "musicbrainz.org" && busy-- > 0) {
+                Answer(503, ByteArray(0), "text/plain", headers)
+            } else {
+                recorded(url)
+            }
+        }
     }
 
     @Test

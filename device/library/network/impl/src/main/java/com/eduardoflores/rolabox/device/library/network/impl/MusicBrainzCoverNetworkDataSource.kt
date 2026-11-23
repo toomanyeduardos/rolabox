@@ -15,7 +15,10 @@ import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Qualifier
 import javax.inject.Singleton
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -37,6 +40,16 @@ private const val MAX_COVER_BYTES = 4 * 1024 * 1024
 
 private const val HTTP_OK = 200
 private const val HTTP_NOT_FOUND = 404
+private const val HTTP_SERVICE_UNAVAILABLE = 503
+
+/** How many times a `503` is sent again in the same run before it ends the run (ADR-040). */
+internal const val BUSY_RETRIES = 3
+
+/** The wait after a `503` with no `Retry-After`, and the least one: the second between requests (ADR-027, rule 2). */
+private val DEFAULT_BUSY_WAIT = 1.seconds
+
+/** The longest `Retry-After` waited for in the run. A longer one ends the run, and WorkManager's backoff waits. */
+internal val MAX_BUSY_WAIT = 10.seconds
 
 /** The HTTP client of the cover source, with its `User-Agent` (ADR-027). */
 @Qualifier
@@ -94,21 +107,53 @@ internal class MusicBrainzCoverNetworkDataSource @Inject constructor(
         .addQueryParameter("limit", limit.toString())
         .build()
 
-    /** The body of [url], or `null` for a 404. Redirects are followed, as the archive's are. */
-    private suspend fun get(url: HttpUrl): Either<CoverSourceError, Body?> = spacing.next {
+    /**
+     * The body of [url], or `null` for a 404. Redirects are followed, as the archive's are. A `503` with a short
+     * wait is sent again after that wait, a few times, before it ends the run (ADR-040).
+     */
+    private suspend fun get(url: HttpUrl): Either<CoverSourceError, Body?> {
+        var retries = 0
+        while (true) {
+            val answer = send(url)
+            val wait = (answer as? Answer.Busy)?.wait
+            if (wait == null || wait > MAX_BUSY_WAIT || retries == BUSY_RETRIES) return answer.toEither()
+            retries++
+            delay(wait)
+        }
+    }
+
+    private suspend fun send(url: HttpUrl): Answer = spacing.next {
         withContext(ioDispatcher) {
             try {
                 client.get().newCall(Request.Builder().url(url).build()).execute().use { response ->
                     when (response.code) {
-                        HTTP_OK -> Body(response.body.bytes(), response.header("Content-Type").orEmpty()).right()
-                        HTTP_NOT_FOUND -> null.right()
-                        else -> CoverSourceError.Server(response.code).left()
+                        HTTP_OK -> Answer.Done(Body(response.body.bytes(), response.header("Content-Type").orEmpty()))
+                        HTTP_NOT_FOUND -> Answer.Done(null)
+                        HTTP_SERVICE_UNAVAILABLE -> Answer.Busy(retryAfterOf(response.header("Retry-After")))
+                        else -> Answer.Failed(CoverSourceError.Server(response.code))
                     }
                 }
             } catch (_: IOException) {
                 // No network, a connection that failed, or a timeout.
-                CoverSourceError.Unreachable.left()
+                Answer.Failed(CoverSourceError.Unreachable)
             }
+        }
+    }
+
+    private sealed interface Answer {
+        fun toEither(): Either<CoverSourceError, Body?>
+
+        class Done(val body: Body?) : Answer {
+            override fun toEither() = body.right()
+        }
+
+        /** A `503`: the source asks to be asked again after [wait]. */
+        class Busy(val wait: Duration) : Answer {
+            override fun toEither() = CoverSourceError.Server(HTTP_SERVICE_UNAVAILABLE).left()
+        }
+
+        class Failed(val error: CoverSourceError) : Answer {
+            override fun toEither() = error.left()
         }
     }
 
@@ -116,3 +161,10 @@ internal class MusicBrainzCoverNetworkDataSource @Inject constructor(
         val isImage: Boolean get() = contentType.startsWith("image/")
     }
 }
+
+/**
+ * The wait a `Retry-After` asks for, in whole seconds, or a second when it is missing or is a date: MusicBrainz sends
+ * seconds. Never less than the second between requests (ADR-027, rule 2).
+ */
+internal fun retryAfterOf(header: String?): Duration =
+    maxOf(header?.trim()?.toLongOrNull()?.seconds ?: DEFAULT_BUSY_WAIT, DEFAULT_BUSY_WAIT)
