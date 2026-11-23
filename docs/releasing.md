@@ -95,6 +95,33 @@ approved, internal testers see the app as "com.eduardoflores.rolabox (unreviewed
 description, and "Send app for review" stays grayed out. Play didn't generate a pre-launch report
 for the internal upload either. It runs on the first closed test upload.
 
+### 4b. Set up the closed test (with launch/11)
+
+The developer account is personal and older than November 2023, so Play's rule of 12 testers for
+14 days before production doesn't apply. The closed test is there for the review, the pre-launch
+report, and real testers. Console paths go after the app's URL, `…/app/<app id>/`.
+
+1. **`closed-testing`** → **Manage track** on "Closed testing – Alpha".
+2. **Countries / regions:** United States.
+3. **Testers:** an email list named "Rolabox closed test", with each tester's Google account. Its
+   **feedback email** is the contact email in the privacy policy. The opt-in link on this tab only
+   works once a release on the track is approved.
+4. **Create new release** and upload the bundle there, rather than adding an earlier one from the
+   library. A saved release can't be edited: create a new one, which replaces the draft.
+5. **`publishing`** → **Send changes for review.** The first review covers everything at once: the
+   store listing, App content, countries and the release. Google says up to 7 days. With managed
+   publishing off, an approved release goes live by itself.
+
+What Play reported on the first closed release (1.0.0, 2026-11-23):
+
+- **"Required hardware feature declarations are restricting your app's availability":
+  `android.hardware.screen.portrait`.** This blocks sending for review. The portrait lock (ADR-018)
+  makes Android assume a portrait screen is required, so the manifest declares it with
+  `android:required="false"`. Fixed in 1.0.1. The lock itself stays.
+- **"This App Bundle contains native code, and you've not uploaded debug symbols."** Only a warning,
+  so ignore it. The only native libraries are AndroidX's (`libandroidx.graphics.path.so` and
+  `libdatastore_shared_counter.so`), which ship stripped, so there are no symbols to upload.
+
 ### 5. Register the key fingerprints in Firebase (with launch/02)
 
 Sign in with Google checks the SHA-1 of the key that signed the installed APK. In the Firebase
@@ -174,7 +201,16 @@ again whenever the rules change.
    `rolabox.versionName=MAJOR.MINOR.PATCH`. The build derives `versionCode` as
    `MAJOR * 10000 + MINOR * 100 + PATCH`. Every upload needs a version no earlier upload had, even
    a rebuild of the same code. `MINOR` and `PATCH` go up to 99.
-2. **Commit and tag it** `v<versionName>`, for example `v1.0.0`.
+2. **Commit and tag it** `v<versionName>`, for example `v1.0.0`, and push the tag: pushing the
+   branch doesn't push tags.
+
+   ```bash
+   git tag v1.0.1
+   ```
+
+   ```bash
+   git push origin v1.0.1
+   ```
 3. **Build the bundle** from that commit, with the signing values from step 3 set:
 
    ```bash
