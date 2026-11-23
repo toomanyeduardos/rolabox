@@ -90,6 +90,11 @@ bundle you upload registers your upload key. The App content forms are in "Play 
 declarations" below. Play asks for the foreground service declarations only after a bundle that
 uses them is uploaded.
 
+Internal testing isn't reviewed. So until a closed test release has been sent for review and
+approved, internal testers see the app as "com.eduardoflores.rolabox (unreviewed)", with no icon or
+description, and "Send app for review" stays grayed out. Play didn't generate a pre-launch report
+for the internal upload either. It runs on the first closed test upload.
+
 ### 5. Register the key fingerprints in Firebase (with launch/02)
 
 Sign in with Google checks the SHA-1 of the key that signed the installed APK. In the Firebase
@@ -117,13 +122,30 @@ npx firebase apps:android:sha:create <app-id> <sha> --project <project-id>
 npx firebase apps:android:sha:list <app-id> --project <project-id>
 ```
 
-The list should show four: the SHA-1 and SHA-256 of each key. The fingerprints are public, not
-secrets.
+The list should show the SHA-1 and SHA-256 of both keys, so at least four. If your debug key is
+registered for development sign-in, it's two more. The fingerprints are public, not secrets.
 
 Sign in with Google checks them on Google's side, so a bundle already on Play starts working once
 they're added. You don't need to rebuild it. Still, download `google-services.json` again and
 replace `app/google-services.json` before the next build: each fingerprint adds an Android OAuth
 client to it.
+
+Check the fingerprint against the app Play actually installed, because the one shown in Play
+Console may not be the key that signs the APKs. Play can sign with a newer key in a rotation
+lineage, as it did for 1.0.0. Install from Play, connect the phone, then pull the APK and print its
+certificate:
+
+```bash
+adb pull "$(adb shell pm path com.eduardoflores.rolabox | head -1 | sed 's/package://' | tr -d '\r')" base.apk
+```
+
+```bash
+apksigner verify --print-certs base.apk | grep -E "SHA-1|SHA-256"
+```
+
+If its SHA-1 isn't in the Firebase list, add its SHA-1 and SHA-256 too. Without it, Sign in with
+Google fails with `[28444] Developer console is not set up correctly` in logcat, which the app
+shows as "No account found on this device".
 
 The Play build uses the same Firebase project as development (ADR-008), and the release build reads
 the real `app/google-services.json` from your checkout, as a debug build does.
@@ -181,7 +203,8 @@ again whenever the rules change.
 
 ## Play Console declarations
 
-What Rolabox answers in Play Console → Policy and programs → **App content**. The privacy policy
+What Rolabox answers in Play Console → Monitor and improve → Policy and programs → **App
+content** (or `app-content/overview` at the end of the app's console URL). The privacy policy
 (`site/privacy/`) and the Data safety answers must say the same thing (ADR-038, rule 5). So a
 change that updates the policy also updates this section and Play Console, in the same PR.
 
@@ -248,7 +271,10 @@ for photos and videos, all files, SMS and call log, location and the like.
 - **Users can ask for their data to be deleted:** yes. In the app, and at
   `https://toomanyeduardos.github.io/rolabox/delete-account/` (ADR-037, ADR-038).
 - **Shared:** nothing. Firebase is Rolabox's service provider, which Play doesn't count as sharing.
-- **Processed ephemerally:** no, for every type.
+  A podcast search goes to Apple only because the user searches, which is Play's exemption for a
+  transfer the user starts and expects. So it's collected, but not shared.
+- **Processed ephemerally:** yes for in-app search history, which goes to Apple only to get results
+  and isn't stored. No for every other type.
 
 | Data type | Collected | Required or optional | Purpose | The policy's row |
 | --- | --- | --- | --- | --- |
@@ -257,6 +283,7 @@ for photos and videos, all files, SMS and call log, location and the like.
 | Personal info → User IDs | Yes | Optional | Account management | Account ID |
 | Personal info → Other info | Yes | Optional | Account management | Profile photo link (Google sign-in) |
 | App activity → Other actions | Yes | Optional | App functionality | Settings and the podcasts you follow, only while signed in |
+| App activity → In-app search history | Yes | Optional | App functionality | The text of a podcast search, sent to Apple's iTunes Search API |
 | App info and performance → Crash logs | Yes | Required | Analytics | Crash reports: stack trace |
 | App info and performance → Diagnostics | Yes | Required | Analytics | Crash reports: device model, Android version, app version |
 | Device or other IDs | Yes | Required | Analytics | Crash reports: installation IDs (ADR-030) |
@@ -267,8 +294,6 @@ sense:
 - **An album's title and artist, sent to MusicBrainz and the Cover Art Archive** when Online Artwork
   is on. This is catalog data about a published album, not about the user, and nothing links it
   to them.
-- **The text of a podcast search, sent to Apple's iTunes Search API.** The user sends it to search,
-  and expects that. Rolabox keeps none of it and links nothing to the user.
 - **Podcast feeds, images and audio, fetched from each show's host.** These are downloads of
   public content. The hosts see only the request and the IP address.
 - **Android backup** goes to the user's own Google account, under Android's control, not Rolabox's.
