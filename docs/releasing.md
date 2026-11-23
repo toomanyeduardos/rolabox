@@ -73,8 +73,22 @@ same values go in as `ORG_GRADLE_PROJECT_rolaboxUpload*` environment variables (
 
 ### 4. Enrol in Play App Signing (with launch/10)
 
-When the app is created in Play Console, keep the default: **let Google generate and manage the app
-signing key**. Don't upload one. The first bundle you upload registers your upload key.
+Create the app in Play Console with these settings:
+
+- **Name:** Rolabox
+- **Package:** `com.eduardoflores.rolabox`, set by the first bundle you upload
+- **Default language:** English (United States), en-US
+- **App or game:** App
+- **Price:** Free
+- **Category:** Music & Audio
+
+The developer account's public name and contact email are the ones in the privacy policy.
+
+Upload the first bundle to **internal testing**. When Play asks about app signing, keep the
+default: **let Google generate and manage the app signing key**. Don't upload one. The first
+bundle you upload registers your upload key. The App content forms are in "Play Console
+declarations" below. Play asks for the foreground service declarations only after a bundle that
+uses them is uploaded.
 
 ### 5. Register the key fingerprints in Firebase (with launch/02)
 
@@ -88,9 +102,28 @@ project of the Play build, add the SHA-1 and SHA-256 of:
 keytool -list -v -keystore <keystore> -alias <alias> | grep -E "SHA1:|SHA256:"
 ```
 
-They go in Firebase console → Project settings → the Android app → **Add fingerprint**. The
-fingerprints are public, not secrets. After adding them, download `google-services.json` again and
-replace `app/google-services.json`: each fingerprint adds an Android OAuth client to it.
+They go in Firebase console → Project settings → the Android app → **Add fingerprint**. You can
+also add them from `firebase/`:
+
+```bash
+npx firebase apps:list ANDROID --project <project-id>
+```
+
+```bash
+npx firebase apps:android:sha:create <app-id> <sha> --project <project-id>
+```
+
+```bash
+npx firebase apps:android:sha:list <app-id> --project <project-id>
+```
+
+The list should show four: the SHA-1 and SHA-256 of each key. The fingerprints are public, not
+secrets.
+
+Sign in with Google checks them on Google's side, so a bundle already on Play starts working once
+they're added. You don't need to rebuild it. Still, download `google-services.json` again and
+replace `app/google-services.json` before the next build: each fingerprint adds an Android OAuth
+client to it.
 
 The Play build uses the same Firebase project as development (ADR-008), and the release build reads
 the real `app/google-services.json` from your checkout, as a debug build does.
@@ -145,6 +178,100 @@ again whenever the rules change.
 8. **Check the build from Play:** install it from the track, and check that Google sign-in,
    email/password sign-in and preference sync work. Google sign-in failing only here means the
    app signing key's fingerprints are missing from Firebase (setup step 5).
+
+## Play Console declarations
+
+What Rolabox answers in Play Console → Policy and programs → **App content**. The privacy policy
+(`site/privacy/`) and the Data safety answers must say the same thing (ADR-038, rule 5). So a
+change that updates the policy also updates this section and Play Console, in the same PR.
+
+### Privacy policy and app access
+
+- **Privacy policy URL:** `https://toomanyeduardos.github.io/rolabox/privacy/`
+- **App access:** all functionality is available without special access. The account is optional,
+  and anyone can create one in the app.
+
+### Ads, IDs and app categories
+
+| Declaration | Answer |
+| --- | --- |
+| Ads | The app contains no ads |
+| Advertising ID | Not used. The merged release manifest has no `com.google.android.gms.permission.AD_ID` |
+| Target audience | 18 and over. Not designed to appeal to children (the policy: not directed at children under 13) |
+| News app | No |
+| Government app | No |
+| Financial features | None |
+| Health apps | None |
+
+### Content rating
+
+Questionnaire category: **All other app types**. No violence, sexual content, profanity, drugs or
+gambling. Users can't interact with each other or exchange content, the app doesn't share the user's
+location, and it sells nothing. Podcasts are shows the user picks from Apple's public directory,
+played as they are published, and Rolabox hosts none of them.
+
+### Foreground services
+
+Each declaration has a video: a YouTube (unlisted) or Google Drive link that plays without signing
+in.
+
+| Service | Type | Play's use case | What the video shows |
+| --- | --- | --- | --- |
+| `PlaybackService` (`:device:playback:impl`, ADR-023) | `mediaPlayback` | Media playback | A song playing, the app sent to the background, the media notification with playback continuing, then pausing from the notification |
+| `EpisodeDownloadService` (`:device:playback:impl`, ADR-031) | `dataSync` | Network transfer: download | A podcast episode starting to download, the app sent to the background, the download notification until it finishes |
+
+Record each on a device, for at most 3 minutes, and stop with Ctrl-C:
+
+```bash
+adb shell screenrecord /sdcard/fgs-media-playback.mp4
+```
+
+```bash
+adb pull /sdcard/fgs-media-playback.mp4
+```
+
+A new foreground service type needs a new declaration and video before the release that adds it.
+
+### Permissions
+
+`READ_MEDIA_AUDIO`, and `READ_EXTERNAL_STORAGE` up to API 32 (ADR-024), read the music library,
+which is the app's core functionality. Play has no declaration form for either. The forms are only
+for photos and videos, all files, SMS and call log, location and the like.
+
+### Data safety
+
+- **Collects or shares user data:** yes.
+- **All user data is encrypted in transit:** yes. Firebase, Crashlytics, Apple, MusicBrainz and the
+  Cover Art Archive are reached over HTTPS. The plain HTTP that ADR-034 allows reaches only podcast
+  hosts, and carries no user data.
+- **Account creation:** username and password, and OAuth (Google).
+- **Users can ask for their data to be deleted:** yes. In the app, and at
+  `https://toomanyeduardos.github.io/rolabox/delete-account/` (ADR-037, ADR-038).
+- **Shared:** nothing. Firebase is Rolabox's service provider, which Play doesn't count as sharing.
+- **Processed ephemerally:** no, for every type.
+
+| Data type | Collected | Required or optional | Purpose | The policy's row |
+| --- | --- | --- | --- | --- |
+| Personal info → Email address | Yes | Optional: only with an account | Account management | Email address … only if you create an account |
+| Personal info → Name | Yes | Optional | Account management | Name (Google sign-in) |
+| Personal info → User IDs | Yes | Optional | Account management | Account ID |
+| Personal info → Other info | Yes | Optional | Account management | Profile photo link (Google sign-in) |
+| App activity → Other actions | Yes | Optional | App functionality | Settings and the podcasts you follow, only while signed in |
+| App info and performance → Crash logs | Yes | Required | Analytics | Crash reports: stack trace |
+| App info and performance → Diagnostics | Yes | Required | Analytics | Crash reports: device model, Android version, app version |
+| Device or other IDs | Yes | Required | Analytics | Crash reports: installation IDs (ADR-030) |
+
+**Not declared, and why.** The policy describes these, but they aren't user data in Data safety's
+sense:
+
+- **An album's title and artist, sent to MusicBrainz and the Cover Art Archive** when Online Artwork
+  is on. This is catalog data about a published album, not about the user, and nothing links it
+  to them.
+- **The text of a podcast search, sent to Apple's iTunes Search API.** The user sends it to search,
+  and expects that. Rolabox keeps none of it and links nothing to the user.
+- **Podcast feeds, images and audio, fetched from each show's host.** These are downloads of
+  public content. The hosts see only the request and the IP address.
+- **Android backup** goes to the user's own Google account, under Android's control, not Rolabox's.
 
 ## Store and README screenshots
 
