@@ -37,7 +37,7 @@ class CreateAccountViewModelTest {
 
     private fun fill(
         name: String = "Eduardo",
-        email: String = "toomanyeduardos@gmail.com",
+        email: String = "rolabox.app@gmail.com",
         password: String = "kdjfhqPwzm4x!",
     ) {
         viewModel.onNameChange(name)
@@ -105,7 +105,7 @@ class CreateAccountViewModelTest {
 
     @Test
     fun submit_withMalformedEmailIsBlocked() {
-        fill(email = "toomanyeduardos@gmail")
+        fill(email = "rolabox.app@gmail")
 
         viewModel.onSubmit()
 
@@ -131,14 +131,14 @@ class CreateAccountViewModelTest {
 
     @Test
     fun submit_signsUpWithTrimmedNameAndEmailAndTheUntouchedPassword() = runTest {
-        fill(name = "  Eduardo Flores ", email = " toomanyeduardos@gmail.com ", password = " kdjfhqPwzm4x! ")
+        fill(name = "  Eduardo Flores ", email = " rolabox.app@gmail.com ", password = " kdjfhqPwzm4x! ")
 
         viewModel.onSubmit()
 
         assertEquals(
             SignUpRequest(
                 "Eduardo Flores",
-                "toomanyeduardos@gmail.com",
+                "rolabox.app@gmail.com",
                 " kdjfhqPwzm4x! ",
             ),
             signUp.lastRequest,
@@ -331,7 +331,7 @@ class CreateAccountViewModelTest {
         google(SignInStepResult.NoAccount)
 
         assertEquals("Eduardo", state.name)
-        assertEquals("toomanyeduardos@gmail.com", state.email)
+        assertEquals("rolabox.app@gmail.com", state.email)
     }
 
     @Test

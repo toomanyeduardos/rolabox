@@ -14,6 +14,10 @@ import org.gradle.kotlin.dsl.configure
  * `config/aboutlibraries/licenses/`, copied from SPDX, and matched to a library by the licence's SPDX id. A licence
  * without a text there, such as Google's SDK terms, is shown by its URL. A new dependency under a licence that has no
  * text there makes the plugin warn, and its text can be added the same way.
+ *
+ * What the app ships that isn't a dependency, the design system's fonts, is listed by hand in
+ * `config/aboutlibraries/libraries/` (card 96). Each font's licence is its own `OFL.txt` from
+ * `common/designsystem/third_party/`, with its copyright line, as the SIL Open Font License asks.
  */
 class RolaboxAndroidApplicationLicencesConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {

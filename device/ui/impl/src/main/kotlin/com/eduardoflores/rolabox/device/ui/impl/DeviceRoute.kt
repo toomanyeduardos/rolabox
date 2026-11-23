@@ -43,6 +43,7 @@ import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastShowKey
 import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastsEntries
 import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastsKey
 import com.eduardoflores.rolabox.device.settings.api.AboutKey
+import com.eduardoflores.rolabox.device.settings.api.LegalKey
 import com.eduardoflores.rolabox.device.settings.api.LicencesKey
 import com.eduardoflores.rolabox.device.settings.api.MainMenuSettingsKey
 import com.eduardoflores.rolabox.device.settings.api.PodcastSettingsKey
@@ -127,20 +128,31 @@ internal fun DeviceRoute(
                 onSearchEpisodeClick = { key -> stack.push(key) },
             )
             playbackEntries.screenStackEntries(scope = this)
-            settingsEntries.screenStackEntries(
-                scope = this,
-                onMainMenuClick = { stack.push(MainMenuSettingsKey) },
-                onPodcastsClick = { stack.push(PodcastSettingsKey) },
-                onAboutClick = { stack.push(AboutKey) },
-                onLicencesClick = { stack.push(LicencesKey) },
-                onLicenceClick = { key -> stack.push(key) },
-                onOpenFullScreen = onOpenFullScreen,
-            )
+            settingsScreens(settingsEntries, stack, onOpenFullScreen)
         },
         onPlaybackEvent = { event -> viewModel.onPlaybackEvent(event) },
         modifier = modifier,
     )
 }
+
+/**
+ * The settings screens, with each exit mapped to its key and pushed. A contributed section's row leaves the display
+ * through [onOpenFullScreen] (ADR-020, rule 17).
+ */
+private fun EntryProviderScope<NavKey>.settingsScreens(
+    settingsEntries: SettingsEntries,
+    stack: ScreenStack,
+    onOpenFullScreen: (NavKey) -> Unit,
+) = settingsEntries.screenStackEntries(
+    scope = this,
+    onMainMenuClick = { stack.push(MainMenuSettingsKey) },
+    onPodcastsClick = { stack.push(PodcastSettingsKey) },
+    onAboutClick = { stack.push(AboutKey) },
+    onLicencesClick = { stack.push(LicencesKey) },
+    onLicenceClick = { key -> stack.push(key) },
+    onLegalClick = { stack.push(LegalKey) },
+    onOpenFullScreen = onOpenFullScreen,
+)
 
 /**
  * The music screens, with each exit mapped to its key and pushed. A song click plays the list of the screen it was

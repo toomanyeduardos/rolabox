@@ -30,9 +30,13 @@
     <string name="settings_about_version">Version</string>
     <string name="settings_about_songs">Songs</string>
     <string name="settings_about_unavailable">Unavailable</string>
+    <string name="settings_about_author">Made by Eduardo Flores</string>
     <string name="settings_about_privacy_policy">Privacy Policy</string>
     <string name="settings_about_licences">Open-Source Licences</string>
     <string name="settings_about_feedback">Send Feedback</string>
+    <string name="settings_about_legal">Legal</string>
+    <!-- The author's GitHub profile, which Made By opens. -->
+    <string name="settings_about_author_url" translatable="false">https://github.com/toomanyeduardos</string>
     <!-- The privacy policy on Rolabox's public pages (ADR-038). -->
     <string name="settings_about_privacy_policy_url" translatable="false">https://toomanyeduardos.github.io/rolabox/privacy/</string>
     <!-- The address the privacy policy gives for contact. -->
@@ -41,4 +45,6 @@
     <string name="settings_about_feedback_subject">Rolabox feedback (%1$s)</string>
     <string name="settings_about_no_app">No app can open this</string>
     <string name="settings_licences_unavailable">Licences unavailable</string>
+    <!-- Legal, under About (card 96). Rolabox is drawn after a click-wheel player, so it says whose it isn't. -->
+    <string name="settings_legal_text">Rolabox is an independent app. It is not affiliated with, endorsed by or sponsored by Apple Inc.\n\niPod is a trademark of Apple Inc., registered in the U.S. and other countries.</string>
 </resources>

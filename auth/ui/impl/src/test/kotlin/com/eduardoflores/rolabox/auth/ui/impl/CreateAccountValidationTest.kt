@@ -30,23 +30,23 @@ class CreateAccountValidationTest {
     @Test
     fun email_malformedIsInvalid() {
         listOf(
-            "toomanyeduardos",
-            "toomanyeduardos@",
+            "rolabox.app",
+            "rolabox.app@",
             "@gmail.com",
-            "toomanyeduardos@gmail",
-            "toomanyeduardos@gmail.",
-            "toomanyeduardos@.com",
-            "toomanyeduardos@@gmail.com",
-            "toomanyeduardos gmail@gmail.com",
-            "toomanyeduardos@gmail..com",
+            "rolabox.app@gmail",
+            "rolabox.app@gmail.",
+            "rolabox.app@.com",
+            "rolabox.app@@gmail.com",
+            "rolabox.app gmail@gmail.com",
+            "rolabox.app@gmail..com",
         ).forEach { assertEquals("$it should be invalid", EmailError.Invalid, validateEmail(it)) }
     }
 
     @Test
     fun email_wellFormedIsValid() {
         listOf(
-            "toomanyeduardos@gmail.com",
-            "toomanyeduardos+rolabox@mail.co.uk",
+            "rolabox.app@gmail.com",
+            "rolabox.app+rolabox@mail.co.uk",
             "e@b.io",
             "EDUARDO@MAIL.COM",
         ).forEach { assertNull("$it should be valid", validateEmail(it)) }

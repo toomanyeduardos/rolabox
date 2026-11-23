@@ -71,6 +71,30 @@ class ParseLicencesTest {
         assertEquals(Licence("a:b", "a:b", null, "Custom", null), parseLicences(json).single())
     }
 
+    // The fonts are listed by hand in config/aboutlibraries/libraries/, with no version, each with its own OFL text.
+    @Test
+    fun aFont_hasNoVersion_andShowsItsOwnOflText() {
+        val json = """
+            {
+              "libraries": [{"uniqueId": "font:hanken-grotesk", "name": "Hanken Grotesk",
+                             "licenses": ["OFL-1.1-hanken-grotesk"]}],
+              "licenses": {"OFL-1.1-hanken-grotesk": {"name": "SIL Open Font License 1.1",
+                           "url": "https://openfontlicense.org", "content": "Copyright 2021 The Authors"}}
+            }
+        """.trimIndent()
+
+        assertEquals(
+            Licence(
+                id = "font:hanken-grotesk",
+                name = "Hanken Grotesk",
+                version = null,
+                licenceName = "SIL Open Font License 1.1",
+                text = "Copyright 2021 The Authors",
+            ),
+            parseLicences(json).single(),
+        )
+    }
+
     @Test(expected = JSONException::class)
     fun aDamagedList_throws_soTheReaderSaysItIsUnavailable() {
         parseLicences("{\"libraries\": ")

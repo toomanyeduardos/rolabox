@@ -13,7 +13,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
-private const val EMAIL = "toomanyeduardos@gmail.com"
+private const val EMAIL = "rolabox.app@gmail.com"
 private const val SECOND = 1_000L
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -55,7 +55,7 @@ class ResetPasswordViewModelTest {
 
     @Test
     fun send_withMalformedEmailIsBlocked() {
-        sendTo("toomanyeduardos@gmail")
+        sendTo("rolabox.app@gmail")
 
         assertEquals(EmailError.Invalid, state.emailError)
         assertNull(authRepository.lastPasswordResetEmail)

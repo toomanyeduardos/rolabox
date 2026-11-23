@@ -36,7 +36,7 @@ class SignInViewModelTest {
     private val viewModel = SignInViewModelImpl(signIn, userDataRepository, SIGN_IN_CONFIG)
     private val state get() = viewModel.uiState.value
 
-    private fun fill(email: String = "toomanyeduardos@gmail.com", password: String = "secret") {
+    private fun fill(email: String = "rolabox.app@gmail.com", password: String = "secret") {
         viewModel.onEmailChange(email)
         viewModel.onPasswordChange(password)
     }
@@ -58,7 +58,7 @@ class SignInViewModelTest {
 
     @Test
     fun submit_withMalformedEmailIsBlocked() {
-        fill(email = "toomanyeduardos@gmail")
+        fill(email = "rolabox.app@gmail")
 
         viewModel.onSubmit()
 
@@ -85,17 +85,17 @@ class SignInViewModelTest {
         viewModel.onSubmit()
 
         assertNull(state.passwordError)
-        assertEquals(SignInWithEmailRequest("toomanyeduardos@gmail.com", "a"), signIn.lastEmailRequest)
+        assertEquals(SignInWithEmailRequest("rolabox.app@gmail.com", "a"), signIn.lastEmailRequest)
     }
 
     @Test
     fun submit_signsInWithATrimmedEmailAndTheUntouchedPassword() = runTest {
-        fill(email = " toomanyeduardos@gmail.com ", password = " secret ")
+        fill(email = " rolabox.app@gmail.com ", password = " secret ")
 
         viewModel.onSubmit()
 
         assertEquals(
-            SignInWithEmailRequest("toomanyeduardos@gmail.com", " secret "),
+            SignInWithEmailRequest("rolabox.app@gmail.com", " secret "),
             signIn.lastEmailRequest,
         )
         assertTrue(state.isFinished)
@@ -110,7 +110,7 @@ class SignInViewModelTest {
 
         viewModel.onSubmit()
 
-        assertEquals(SignInWithEmailRequest("toomanyeduardos@gmail.com", "secret"), signIn.lastEmailRequest)
+        assertEquals(SignInWithEmailRequest("rolabox.app@gmail.com", "secret"), signIn.lastEmailRequest)
     }
 
     @Test
@@ -125,7 +125,7 @@ class SignInViewModelTest {
             }
         }
         val slowViewModel = SignInViewModelImpl(slowSignIn, userDataRepository, SIGN_IN_CONFIG)
-        slowViewModel.onEmailChange("toomanyeduardos@gmail.com")
+        slowViewModel.onEmailChange("rolabox.app@gmail.com")
         slowViewModel.onPasswordChange("secret")
 
         slowViewModel.onSubmit()

@@ -19,16 +19,18 @@ import com.eduardoflores.rolabox.device.host.rememberListHighlight
 
 /**
  * About, a device screen: the app's name and version and the number of songs in the library, which can't be
- * selected, and under them the rows that open something (launch/06). Turning moves the highlight over those rows
- * only, and it is saved with the entry (ADR-018, rule 7). Center on Privacy Policy opens it in the browser, on Send
- * Feedback an email to Rolabox in the email app, both through [ExternalApps], and on Open-Source Licences reports
- * [onLicencesClick]. MENU, the host's, goes back.
+ * selected, and under them the rows that open something (launch/06, card 96). Turning moves the highlight over those
+ * rows only, and it is saved with the entry (ADR-018, rule 7). Center on Made By opens the author's GitHub profile
+ * and on Privacy Policy the policy, both in the browser, and on Send Feedback an email to Rolabox in the email app,
+ * all through [ExternalApps]. Center on Open-Source Licences reports [onLicencesClick], and on Legal, which says
+ * Rolabox isn't Apple's, [onLegalClick]. MENU, the host's, goes back.
  */
 @Composable
-internal fun AboutRoute(viewModel: AboutViewModel, onLicencesClick: () -> Unit) {
+internal fun AboutRoute(viewModel: AboutViewModel, onLicencesClick: () -> Unit, onLegalClick: () -> Unit) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val highlight = rememberListHighlight()
     val externalApps = rememberExternalApps()
+    val authorUrl = stringResource(R.string.settings_about_author_url)
     val privacyPolicyUrl = stringResource(R.string.settings_about_privacy_policy_url)
     val feedbackAddress = stringResource(R.string.settings_about_feedback_address)
     val feedbackSubject = stringResource(R.string.settings_about_feedback_subject, state.version)
@@ -38,8 +40,10 @@ internal fun AboutRoute(viewModel: AboutViewModel, onLicencesClick: () -> Unit) 
             is WheelEvent.Turn -> highlight.move(event.steps, AboutAction.entries.size)
 
             WheelEvent.Center -> when (AboutAction.entries.getOrNull(highlight.index)) {
+                AboutAction.Author -> externalApps.openUrl(authorUrl)
                 AboutAction.PrivacyPolicy -> externalApps.openUrl(privacyPolicyUrl)
                 AboutAction.Licences -> onLicencesClick()
+                AboutAction.Legal -> onLegalClick()
                 AboutAction.Feedback -> externalApps.sendEmail(feedbackAddress, feedbackSubject)
                 null -> Unit
             }
@@ -65,8 +69,10 @@ internal fun AboutList(state: AboutUiState, highlighted: AboutAction?) {
     )
     val actions = AboutAction.entries.map { action ->
         when (action) {
+            AboutAction.Author -> DeviceListRow(stringResource(R.string.settings_about_author))
             AboutAction.PrivacyPolicy -> DeviceListRow(stringResource(R.string.settings_about_privacy_policy))
             AboutAction.Licences -> DeviceListRow(stringResource(R.string.settings_about_licences), opensSubmenu = true)
+            AboutAction.Legal -> DeviceListRow(stringResource(R.string.settings_about_legal), opensSubmenu = true)
             AboutAction.Feedback -> DeviceListRow(stringResource(R.string.settings_about_feedback))
         }
     }

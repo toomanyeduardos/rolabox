@@ -52,7 +52,7 @@ fun ReadOnlyField(label: String, value: String, modifier: Modifier = Modifier) {
 private fun ReadOnlyFieldPreview() {
     RolaboxTheme {
         Column(Modifier.brushedMetal().padding(22.dp)) {
-            ReadOnlyField(label = "Sent to", value = "toomanyeduardos@gmail.com")
+            ReadOnlyField(label = "Sent to", value = "rolabox.app@gmail.com")
         }
     }
 }

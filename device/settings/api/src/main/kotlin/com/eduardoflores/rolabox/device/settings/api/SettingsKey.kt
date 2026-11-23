@@ -22,8 +22,8 @@ data object MainMenuSettingsKey : NavKey
 data object PodcastSettingsKey : NavKey
 
 /**
- * The app's name and version, the number of songs in the library, and the rows that open the privacy policy, the
- * open-source licences and an email for feedback.
+ * The app's name and version, the number of songs in the library, and the rows that open the author's profile, the
+ * privacy policy, the open-source licences, the legal notice and an email for feedback.
  */
 @Serializable
 data object AboutKey : NavKey
@@ -35,3 +35,7 @@ data object LicencesKey : NavKey
 /** The licence of one open-source library, by the library's id in the list of [LicencesKey]. */
 @Serializable
 data class LicenceKey(val libraryId: String) : NavKey
+
+/** The legal notice: Rolabox isn't affiliated with Apple, and iPod is Apple's trademark. */
+@Serializable
+data object LegalKey : NavKey
