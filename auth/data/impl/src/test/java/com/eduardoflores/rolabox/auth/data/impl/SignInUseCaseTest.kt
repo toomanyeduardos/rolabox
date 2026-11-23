@@ -37,10 +37,10 @@ class SignInUseCaseTest {
 
     @Test
     fun anEmailAndPassword_signIn() = runTest {
-        val result = signIn("toomanyeduardos@gmail.com", "secret")
+        val result = signIn("rolabox.app@gmail.com", "secret")
 
         assertEquals(authRepository.signInUser, result.getOrNull())
-        assertEquals(SignInWithEmailRequest("toomanyeduardos@gmail.com", "secret"), authRepository.lastSignInWithEmail)
+        assertEquals(SignInWithEmailRequest("rolabox.app@gmail.com", "secret"), authRepository.lastSignInWithEmail)
     }
 
     @Test
@@ -77,7 +77,7 @@ class SignInUseCaseTest {
         userDataRepository.setOfflineModeChosen(true)
         authRepository.signInWithEmailError = AuthError.InvalidCredential
 
-        val result = signIn("toomanyeduardos@gmail.com", "secret")
+        val result = signIn("rolabox.app@gmail.com", "secret")
 
         assertEquals(SignInError.Auth(AuthError.InvalidCredential).left(), result)
         assertEquals(true, offlineModeChosen())

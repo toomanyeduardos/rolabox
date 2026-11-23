@@ -3,6 +3,7 @@ package com.eduardoflores.rolabox.device.settings.impl
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import com.eduardoflores.rolabox.device.settings.api.AboutKey
+import com.eduardoflores.rolabox.device.settings.api.LegalKey
 import com.eduardoflores.rolabox.device.settings.api.LicenceKey
 import com.eduardoflores.rolabox.device.settings.api.LicencesKey
 import com.eduardoflores.rolabox.device.settings.api.MainMenuSettingsKey
@@ -55,6 +56,7 @@ class SettingsSectionsTest {
                 onAboutClick = {},
                 onLicencesClick = {},
                 onLicenceClick = {},
+                onLegalClick = {},
                 onOpenFullScreen = {},
             )
         }
@@ -64,6 +66,7 @@ class SettingsSectionsTest {
         provider(AboutKey)
         provider(LicencesKey)
         provider(LicenceKey("androidx.activity:activity"))
+        provider(LegalKey)
         assertThrows(IllegalStateException::class.java) { provider(FakeKey) }
     }
 

@@ -22,17 +22,17 @@ class SignUpUseCaseTest {
 
     @Test
     fun createsTheAccount() = runTest {
-        val result = signUp("Eduardo", "toomanyeduardos@gmail.com", "Secret1!")
+        val result = signUp("Eduardo", "rolabox.app@gmail.com", "Secret1!")
 
         assertEquals("Eduardo", result.getOrNull()?.displayName)
-        assertEquals(SignUpRequest("Eduardo", "toomanyeduardos@gmail.com", "Secret1!"), authRepository.lastSignUp)
+        assertEquals(SignUpRequest("Eduardo", "rolabox.app@gmail.com", "Secret1!"), authRepository.lastSignUp)
     }
 
     @Test
     fun fromOfflineMode_leavesOfflineMode() = runTest {
         userDataRepository.setOfflineModeChosen(true)
 
-        signUp("Eduardo", "toomanyeduardos@gmail.com", "Secret1!")
+        signUp("Eduardo", "rolabox.app@gmail.com", "Secret1!")
 
         assertEquals(false, offlineModeChosen())
     }
@@ -42,7 +42,7 @@ class SignUpUseCaseTest {
         userDataRepository.setOfflineModeChosen(true)
         authRepository.signUpError = AuthError.EmailAlreadyInUse
 
-        val result = signUp("Eduardo", "toomanyeduardos@gmail.com", "Secret1!")
+        val result = signUp("Eduardo", "rolabox.app@gmail.com", "Secret1!")
 
         assertEquals(SignInError.Auth(AuthError.EmailAlreadyInUse).left(), result)
         assertEquals(true, offlineModeChosen())
@@ -53,7 +53,7 @@ class SignUpUseCaseTest {
         userDataRepository.setOfflineModeChosen(true)
         userDataRepository.writeError = StorageError.Unavailable
 
-        val result = signUp("Eduardo", "toomanyeduardos@gmail.com", "Secret1!")
+        val result = signUp("Eduardo", "rolabox.app@gmail.com", "Secret1!")
 
         assertEquals(SignInError.Storage(StorageError.Unavailable).left(), result)
         assertNull(authRepository.lastSignUp)

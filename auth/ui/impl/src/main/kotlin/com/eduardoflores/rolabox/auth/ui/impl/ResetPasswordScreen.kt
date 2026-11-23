@@ -155,7 +155,7 @@ private fun EmailError.messageRes(): Int = when (this) {
 
 private val AUTH_CONTENT_SPACING = 18.dp
 
-private const val PREVIEW_EMAIL = "toomanyeduardos@gmail.com"
+private const val PREVIEW_EMAIL = "rolabox.app@gmail.com"
 
 @PreviewLightDark
 @Composable

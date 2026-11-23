@@ -125,6 +125,7 @@ private object NoSettingsEntries : SettingsEntries {
         onAboutClick: () -> Unit,
         onLicencesClick: () -> Unit,
         onLicenceClick: (LicenceKey) -> Unit,
+        onLegalClick: () -> Unit,
         onOpenFullScreen: (NavKey) -> Unit,
     ) = Unit
 

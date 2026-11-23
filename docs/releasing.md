@@ -109,7 +109,7 @@ report, and real testers. Console paths go after the app's URL, `…/app/<app id
 4. **Create new release** and upload the bundle there, rather than adding an earlier one from the
    library. A saved release can't be edited: create a new one, which replaces the draft.
 5. **`publishing`** → **Send changes for review.** The first review covers everything at once: the
-   store listing, App content, countries and the release. Google says up to 7 days. With managed
+   store listing, App content, countries and the release. Google says up to 7 days; 1.0.1's took under an hour. Check **Submission activity** on that page for its status. With managed
    publishing off, an approved release goes live by itself.
 
 What Play reported on the first closed release (1.0.0, 2026-11-23):
@@ -333,6 +333,18 @@ sense:
 - **Podcast feeds, images and audio, fetched from each show's host.** These are downloads of
   public content. The hosts see only the request and the IP address.
 - **Android backup** goes to the user's own Google account, under Android's control, not Rolabox's.
+
+## Store listing text
+
+Rolabox is drawn after a click-wheel player, so the listing says whose it isn't, as About → Legal
+does in the app (card 96). End the full description in Play Console → Grow users → Store presence →
+Main store listing with:
+
+> Rolabox is an independent app. It is not affiliated with, endorsed by or sponsored by Apple Inc.
+> iPod is a trademark of Apple Inc., registered in the U.S. and other countries.
+
+Apart from that line, the name, short description, full description, icon and screenshots don't use
+the word "iPod", Apple's logo or any other Apple mark, so nothing suggests the app is Apple's.
 
 ## Store and README screenshots
 

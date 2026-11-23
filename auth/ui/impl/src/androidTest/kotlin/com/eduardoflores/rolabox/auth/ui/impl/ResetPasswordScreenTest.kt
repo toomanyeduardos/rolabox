@@ -21,7 +21,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
-private const val EMAIL = "toomanyeduardos@gmail.com"
+private const val EMAIL = "rolabox.app@gmail.com"
 
 class ResetPasswordScreenTest {
     @get:Rule

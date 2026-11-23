@@ -201,7 +201,7 @@ private fun EmailError.messageRes(): Int = when (this) {
 private fun SignInScreenPreview() {
     RolaboxTheme {
         SignInScreen(
-            state = SignInUiState(email = "toomanyeduardos@gmail.com", password = "secret"),
+            state = SignInUiState(email = "rolabox.app@gmail.com", password = "secret"),
             onEmailChange = {},
             onPasswordChange = {},
             onSignInClick = {},
@@ -219,7 +219,7 @@ private fun SignInScreenBadLoginPreview() {
     RolaboxTheme {
         SignInScreen(
             state = SignInUiState(
-                email = "toomanyeduardos@gmail.com",
+                email = "rolabox.app@gmail.com",
                 password = "secret",
                 passwordError = SignInPasswordError.BadLogin,
             ),

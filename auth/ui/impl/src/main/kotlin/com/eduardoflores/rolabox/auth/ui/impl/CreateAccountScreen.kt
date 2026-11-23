@@ -224,7 +224,7 @@ private fun CreateAccountScreenPreview() {
         CreateAccountScreen(
             state = CreateAccountUiState(
                 name = "Eduardo Flores",
-                email = "toomanyeduardos@gmail.com",
+                email = "rolabox.app@gmail.com",
                 password = "kdjfhqPwzm4x",
                 strength = PasswordStrength.Good,
             ),
