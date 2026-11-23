@@ -1,7 +1,9 @@
 # ADR-027: Covers missing from the phone are downloaded from the Cover Art Archive, in WorkManager, and kept as the user's data
 
 - **Status:** Accepted. Rule 6 superseded by [ADR-036](036-android-backup.md) across a backup and
-  restore: the record and the covers stay on the phone, and are downloaded again on a restored one
+  restore: the record and the covers stay on the phone, and are downloaded again on a restored one.
+  A `503` ending the run ("The source", "Retries") superseded by
+  [ADR-040](040-cover-source-busy-retries.md): it is sent again in the run after its `Retry-After`
 - **Date:** 2026-11-03
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review

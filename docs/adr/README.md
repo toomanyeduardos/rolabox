@@ -35,7 +35,7 @@ New ADR: copy [`template.md`](template.md), take the next number, and add it to 
 | [024](024-library-index.md) | The library index: MediaStore finds the files, and Rolabox's own database is what the device reads | Accepted |
 | [025](025-process-start-tasks.md) | Parts run work at process start through a set in `:common:util`, which `:app` runs | Accepted |
 | [026](026-artwork.md) | Artwork is a reference in the library, loaded from MediaStore's thumbnail of the song, with no image library | Accepted, partly superseded by ADR-031 |
-| [027](027-artwork-from-the-internet.md) | Covers missing from the phone are downloaded from the Cover Art Archive, in WorkManager, and kept as the user's data | Accepted, partly superseded by ADR-036 |
+| [027](027-artwork-from-the-internet.md) | Covers missing from the phone are downloaded from the Cover Art Archive, in WorkManager, and kept as the user's data | Accepted, partly superseded by ADR-036 and ADR-040 |
 | [028](028-shuffle-and-repeat.md) | Shuffle and repeat are two settings that the queue follows, in Media3's own modes | Accepted |
 | [029](029-sync-failures-are-logged.md) | Sync failures are logged, with the backend's reason where the exception is converted | Accepted |
 | [030](030-crash-reporting.md) | Crashlytics reports crashes, ANRs and named non-fatal errors from every user, with nothing that identifies them | Accepted |
@@ -48,3 +48,4 @@ New ADR: copy [`template.md`](template.md), take the next number, and add it to 
 | [037](037-deleting-an-account.md) | Deleting an account: the signed-in user re-authenticates, each `Syncer` deletes its data in the cloud, then the account, then Android erases the app's data | Accepted |
 | [038](038-public-web-pages.md) | Rolabox's public web pages are static files in `site/`, deployed to GitHub Pages, and the privacy policy changes with the code it describes | Accepted |
 | [039](039-store-and-readme-screenshots.md) | Store and README screenshots are rendered by Paparazzi at the device's resolution, on demand, apart from the goldens | Accepted |
+| [040](040-cover-source-busy-retries.md) | A `503` from the cover source is sent again in the same run, after its `Retry-After`, before the run ends | Accepted |
