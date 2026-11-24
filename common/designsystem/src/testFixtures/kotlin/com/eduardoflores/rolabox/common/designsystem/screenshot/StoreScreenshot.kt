@@ -9,6 +9,7 @@ import app.cash.paparazzi.Paparazzi
 import app.cash.paparazzi.Snapshot
 import app.cash.paparazzi.SnapshotHandler
 import com.android.ide.common.rendering.api.SessionParams.RenderingMode
+import com.android.resources.Density
 import com.android.resources.NightMode
 import com.android.resources.ScreenOrientation
 import com.android.resources.ScreenRatio
@@ -87,18 +88,25 @@ open class StoreScreenshot {
     /**
      * Renders [content] as one of Play's listing graphics (ADR-041): exactly [width] × [height] pixels, in one theme
      * ([night] or not), to `build/store-screenshots/play/<name>.png`. Screenshots use [shoot] instead.
+     *
+     * [dpi] is the screen density it renders at, the Pixel 6's unless given. A higher one draws everything larger
+     * and sharper in the same pixels, as a denser screen would, with the font scale left at 1.0 (ADR-017 rule 2).
      */
     protected fun shootGraphic(
         name: String,
         width: Int,
         height: Int,
         night: Boolean = false,
+        dpi: Int? = null,
         content: @Composable () -> Unit,
     ) {
         paparazzi.unsafeUpdateConfig(
             STORE_DEVICE.copy(
                 screenWidth = width,
                 screenHeight = height,
+                xdpi = dpi ?: STORE_DEVICE.xdpi,
+                ydpi = dpi ?: STORE_DEVICE.ydpi,
+                density = dpi?.let(Density::create) ?: STORE_DEVICE.density,
                 orientation = if (width > height) ScreenOrientation.LANDSCAPE else ScreenOrientation.PORTRAIT,
                 ratio = ScreenRatio.NOTLONG,
                 nightMode = if (night) NightMode.NIGHT else NightMode.NOTNIGHT,
