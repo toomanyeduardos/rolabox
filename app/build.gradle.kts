@@ -5,6 +5,8 @@ plugins {
     id("rolabox.android.compose")
     id("rolabox.hilt")
     id("rolabox.navigation")
+    // Only for the Play icon, rendered from the launcher icon by ./gradlew storeScreenshots (ADR-041).
+    id("rolabox.android.paparazzi")
 }
 
 android {

@@ -10,6 +10,8 @@ import app.cash.paparazzi.Snapshot
 import app.cash.paparazzi.SnapshotHandler
 import com.android.ide.common.rendering.api.SessionParams.RenderingMode
 import com.android.resources.NightMode
+import com.android.resources.ScreenOrientation
+import com.android.resources.ScreenRatio
 import java.awt.AlphaComposite
 import java.awt.Color
 import java.awt.GradientPaint
@@ -48,6 +50,8 @@ class CoverPixels(val width: Int, val height: Int, val pixels: IntArray)
  * screen at the Pixel 6's full resolution, in light and then in dark, and writes
  * `build/store-screenshots/<set>/<name>_Light.png` and `_Dark.png`. Nothing is compared against a golden.
  *
+ * Play's icon and feature graphic go through [shootGraphic], at their own sizes (ADR-041).
+ *
  * Its tests run only under `./gradlew storeScreenshots`. Every other run filters them out, and a run that still
  * reaches one skips it.
  */
@@ -77,6 +81,31 @@ open class StoreScreenshot {
             paparazzi.snapshot("${set.folder}/${name}_${if (night) "Dark" else "Light"}") {
                 Box(Modifier.fillMaxSize()) { content() }
             }
+        }
+    }
+
+    /**
+     * Renders [content] as one of Play's listing graphics (ADR-041): exactly [width] × [height] pixels, in one theme
+     * ([night] or not), to `build/store-screenshots/play/<name>.png`. Screenshots use [shoot] instead.
+     */
+    protected fun shootGraphic(
+        name: String,
+        width: Int,
+        height: Int,
+        night: Boolean = false,
+        content: @Composable () -> Unit,
+    ) {
+        paparazzi.unsafeUpdateConfig(
+            STORE_DEVICE.copy(
+                screenWidth = width,
+                screenHeight = height,
+                orientation = if (width > height) ScreenOrientation.LANDSCAPE else ScreenOrientation.PORTRAIT,
+                ratio = ScreenRatio.NOTLONG,
+                nightMode = if (night) NightMode.NIGHT else NightMode.NOTNIGHT,
+            ),
+        )
+        paparazzi.snapshot("${StoreSet.Play.folder}/$name") {
+            Box(Modifier.fillMaxSize()) { content() }
         }
     }
 }
