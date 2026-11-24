@@ -23,6 +23,8 @@ import com.eduardoflores.rolabox.device.podcasts.testing.FakeDirectoryNetworkDat
 import com.eduardoflores.rolabox.device.podcasts.testing.FakeFeedNetworkDataSource
 import java.time.Instant
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TestTimeSource
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -32,7 +34,8 @@ class DefaultPodcastDirectoryTest {
     private val feeds = FakeFeedNetworkDataSource()
     private val connection = FakeConnectionNetworkDataSource()
     private val audio = FakeAudioNetworkDataSource()
-    private val directory = DefaultPodcastDirectory(network, feeds, connection, audio)
+    private val time = TestTimeSource()
+    private val directory = DefaultPodcastDirectory(network, feeds, connection, audio, time)
 
     @Test
     fun audioThatIsThere_isUnit() = runTest {
@@ -198,5 +201,73 @@ class DefaultPodcastDirectoryTest {
 
         feeds.serve(rome.feedUrl, FeedAnswer.NotModified(movedTo = null))
         assertEquals(PodcastError.FeedUnreadable.left(), directory.show(rome))
+    }
+
+    @Test
+    fun aShowAskedForAgain_isAnsweredFromMemory() = runTest {
+        feeds.serve(rome.feedUrl, read(ownerName = null))
+        val first = directory.show(rome)
+        feeds.fetched.clear()
+
+        assertEquals(first, directory.show(rome))
+        assertEquals(emptyList<Pair<String, FeedValidators>>(), feeds.fetched)
+    }
+
+    @Test
+    fun aRememberedFeed_isReadAgain_after5Minutes() = runTest {
+        feeds.serve(rome.feedUrl, read(ownerName = null))
+        directory.show(rome)
+        time += FEED_MEMORY_TIME - 1.seconds
+        directory.show(rome)
+        assertEquals(1, feeds.fetched.size)
+
+        time += 1.seconds
+        directory.show(rome)
+        assertEquals(2, feeds.fetched.size)
+    }
+
+    @Test
+    fun aShowFoundByAnEpisode_andByItself_sharesOneFeed_eachWithItsOwnCreator() = runTest {
+        feeds.serve(rome.feedUrl, read(ownerName = null))
+        val fromEpisode = rome.copy(creator = null)
+
+        assertEquals(null, directory.show(fromEpisode).getOrNull()!!.ownerName)
+        val fromShow = directory.show(rome).getOrNull()!!
+
+        assertEquals(rome, fromShow.show)
+        assertEquals("Nightlight", fromShow.ownerName)
+        assertEquals(1, feeds.fetched.size)
+    }
+
+    @Test
+    fun aRememberedFeedThatMoved_stillGivesTheShowItsNewUrl() = runTest {
+        feeds.serve(rome.feedUrl, read(ownerName = null, movedTo = "https://e.com/new.xml"))
+        directory.show(rome)
+
+        assertEquals("https://e.com/new.xml", directory.show(rome).getOrNull()!!.show.feedUrl)
+        assertEquals(1, feeds.fetched.size)
+    }
+
+    @Test
+    fun aFeedThatCouldntBeRead_isntRemembered() = runTest {
+        feeds.answers = mapOf(rome.feedUrl to FeedNetworkError.Unreachable.left())
+        directory.show(rome)
+        feeds.serve(rome.feedUrl, read(ownerName = null))
+
+        assertEquals("Emperors of Rome", directory.show(rome).getOrNull()!!.show.title)
+        assertEquals(2, feeds.fetched.size)
+    }
+
+    @Test
+    fun onlyTheLast5Feeds_areRemembered() = runTest {
+        val shows = (1..REMEMBERED_FEEDS + 1).map { rome.copy(feedUrl = "https://e.com/$it.xml") }
+        shows.forEach { feeds.serve(it.feedUrl, read(ownerName = null)) }
+        shows.forEach { directory.show(it) }
+        feeds.fetched.clear()
+
+        directory.show(shows[1])
+        assertEquals(emptyList<Pair<String, FeedValidators>>(), feeds.fetched)
+        directory.show(shows[0])
+        assertEquals(listOf(shows[0].feedUrl), feeds.fetched.map { it.first })
     }
 }

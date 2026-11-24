@@ -18,7 +18,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
  * A directory that tests fill in, for the screens: set the [results] of each text and the [feeds] of each show, or
  * make every call fail with [searchError] and [showError], and an episode's audio with [audioErrors]. A text with no
  * results set answers [DirectoryResults.None], and a show with no feed set [PodcastError.FeedUnreadable]. To see a
- * search waiting, set [pending]: searches then wait for it to complete. The phone is [connected] until a test says
+ * search waiting, set [pending]: searches then wait for it to complete, and [pendingShow] and [pendingAudio] the same
+ * for a feed read and an audio check, as on a slow connection. The phone is [connected] until a test says
  * it isn't.
  */
 @Singleton
@@ -28,6 +29,8 @@ class FakePodcastDirectory @Inject constructor() : PodcastDirectory {
     var searchError: PodcastError? = null
     var showError: PodcastError? = null
     var pending: CompletableDeferred<Unit>? = null
+    var pendingShow: CompletableDeferred<Unit>? = null
+    var pendingAudio: CompletableDeferred<Unit>? = null
     val connected = MutableStateFlow(true)
 
     /** The texts searched, in order, and the searches that finished: a cancelled search isn't in [answered]. */
@@ -54,11 +57,13 @@ class FakePodcastDirectory @Inject constructor() : PodcastDirectory {
 
     override suspend fun show(show: DirectoryShow): Either<PodcastError, ShowFeed> {
         opened += show
+        pendingShow?.await()
         return showError?.left() ?: feeds[show]?.right() ?: PodcastError.FeedUnreadable.left()
     }
 
     override suspend fun checkAudio(audioUrl: String): Either<PodcastError, Unit> {
         audioChecked += audioUrl
+        pendingAudio?.await()
         return audioErrors[audioUrl]?.left() ?: Unit.right()
     }
 }

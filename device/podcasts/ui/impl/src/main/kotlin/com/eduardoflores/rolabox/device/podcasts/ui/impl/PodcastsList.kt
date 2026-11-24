@@ -2,6 +2,11 @@ package com.eduardoflores.rolabox.device.podcasts.ui.impl
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceLetterOverlay
 import com.eduardoflores.rolabox.common.designsystem.component.DeviceList
@@ -12,6 +17,9 @@ import com.eduardoflores.rolabox.common.designsystem.component.rememberQuickScro
 import com.eduardoflores.rolabox.common.designsystem.wheel.WheelEvent
 import com.eduardoflores.rolabox.device.host.HandleWheelEvents
 import com.eduardoflores.rolabox.device.host.rememberListHighlight
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.delay
 
 /**
  * A podcasts list on the display, driven by the wheel (ADR-018): turning moves the highlight, which stops at the first
@@ -53,7 +61,7 @@ internal fun PodcastsWheelList(
 
 /**
  * The stateless list that previews and screenshot tests call (ADR-021, rule 4). [letter] is shown over the rows while
- * the list is turned fast, and null shows none.
+ * the list is turned fast, and null shows none. While it loads, Loading is shown once [loadingDelay] has passed.
  */
 @Composable
 internal fun PodcastsList(
@@ -61,10 +69,10 @@ internal fun PodcastsList(
     highlightedIndex: Int,
     message: DeviceListMessage? = null,
     letter: String? = null,
+    loadingDelay: Duration = LoadingDelay,
 ) {
     when (state) {
-        // The podcasts are read from their database, so this is a frame. Nothing to say until it is slow.
-        ListUiState.Loading -> Unit
+        ListUiState.Loading -> PodcastsLoading(loadingDelay)
 
         is ListUiState.Loaded -> Box {
             val rows = state.value
@@ -85,6 +93,24 @@ internal fun PodcastsList(
         ListUiState.NotInFeed,
         -> FromSearchMessage(state)
     }
+}
+
+/**
+ * How long a screen stays empty before it says Loading. The library's screens read the database, which takes a frame or
+ * two, so they never show it. A show or an episode from search reads its feed from the network, which on a slow
+ * connection takes seconds.
+ */
+internal val LoadingDelay = 300.milliseconds
+
+/** Loading, centered, once [delay] has passed: a screen waiting for its podcasts is never blank for long. */
+@Composable
+internal fun PodcastsLoading(delay: Duration = LoadingDelay) {
+    var shown by remember { mutableStateOf(delay <= Duration.ZERO) }
+    LaunchedEffect(delay) {
+        delay(delay)
+        shown = true
+    }
+    if (shown) DeviceMessage(stringResource(R.string.podcasts_loading))
 }
 
 /** Why a show or an episode from search, read from its feed, can't be shown (ADR-031, Search). */

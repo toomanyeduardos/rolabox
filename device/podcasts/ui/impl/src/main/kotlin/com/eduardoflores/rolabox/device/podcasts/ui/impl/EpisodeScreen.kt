@@ -42,18 +42,24 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 
 /**
- * Connects an episode of the library to its ViewModel, which the entry creates (ADR-021). The title is the show's.
+ * Connects an episode of the library to its ViewModel, which the entry creates (ADR-021). The title is the show's, and
+ * [titleWhileLoading] until the episode is read, for an episode from search whose key has its show's title.
  * Turning moves between the rows, then scrolls the description, and center plays the episode as the highlighted row
  * says (frame 26). On Needs Wi-Fi, center is [onAllowMobileData], which opens the podcasts' settings (frame 36).
  */
 @Composable
-internal fun EpisodeRoute(viewModel: EpisodeViewModel, onPlaying: () -> Unit, onAllowMobileData: () -> Unit) {
+internal fun EpisodeRoute(
+    viewModel: EpisodeViewModel,
+    onPlaying: () -> Unit,
+    onAllowMobileData: () -> Unit,
+    titleWhileLoading: String? = null,
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val wheel by viewModel.wheel.collectAsStateWithLifecycle()
     val playFailure by viewModel.playFailure.collectAsStateWithLifecycle()
     val currentOnPlaying by rememberUpdatedState(onPlaying)
     val currentOnAllowMobileData by rememberUpdatedState(onAllowMobileData)
-    ScreenTitle((state as? ListUiState.Loaded)?.value?.showTitle)
+    ScreenTitle((state as? ListUiState.Loaded)?.value?.showTitle ?: titleWhileLoading)
     PlayFailureToast(playFailure, onShow = viewModel::onPlayFailureShown)
     HandleWheelEvents { event ->
         when {
@@ -87,10 +93,10 @@ internal fun EpisodeScreen(
     today: LocalDate,
     zone: ZoneId,
     onScrollableLinesChange: (Int) -> Unit,
+    loadingDelay: Duration = LoadingDelay,
 ) {
     when (state) {
-        // The episode is read from the podcasts' database, so this is a frame. Nothing to say until it is slow.
-        ListUiState.Loading -> Unit
+        ListUiState.Loading -> PodcastsLoading(loadingDelay)
 
         is ListUiState.Loaded -> {
             val content = state.value
@@ -361,3 +367,23 @@ private fun EpisodeFromSearchPreview() = EpisodePreview(foundEpisodeContent(Foun
 @Composable
 private fun EpisodeFromSearchNotAvailablePreview() =
     EpisodePreview(foundEpisodeContent(FoundShow, foundEpisode(), refused = true))
+
+/** An episode from search while its show's feed is read, or its audio checked, on a slow connection. */
+@PreviewLightDark
+@Composable
+private fun EpisodeFromSearchLoadingPreview() {
+    RolaboxTheme {
+        DeviceScreen(title = FoundShow.title, batteryLevel = 0.7f, onWheelEvent = {}) {
+            Box(Modifier.fillMaxSize()) {
+                EpisodeScreen(
+                    state = ListUiState.Loading,
+                    wheel = EpisodeWheel(),
+                    today = PreviewToday,
+                    zone = ZoneOffset.UTC,
+                    onScrollableLinesChange = {},
+                    loadingDelay = Duration.ZERO,
+                )
+            }
+        }
+    }
+}

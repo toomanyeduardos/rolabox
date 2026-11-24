@@ -17,9 +17,11 @@ import com.eduardoflores.rolabox.device.podcasts.testing.FakePodcastsRepository
 import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastSearchEpisodeKey
 import java.time.Instant
 import kotlin.time.Duration.Companion.minutes
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -66,6 +68,22 @@ class FoundEpisodeViewModelTest {
 
         assertEquals(foundEpisodeContent(show, battery), content)
         assertEquals(listOf(EpisodeRow.Play), content.rows)
+    }
+
+    @Test
+    fun whileTheFeedIsRead_andTheAudioChecked_itIsLoading() = runTest {
+        val feed = CompletableDeferred<Unit>().also { directory.pendingShow = it }
+        val audio = CompletableDeferred<Unit>().also { directory.pendingAudio = it }
+        val viewModel = observedViewModel(episodeKeyOf(show, battery))
+        assertEquals(ListUiState.Loading, viewModel.uiState.value)
+
+        feed.complete(Unit)
+        advanceUntilIdle()
+        assertEquals(ListUiState.Loading, viewModel.uiState.value)
+
+        audio.complete(Unit)
+        advanceUntilIdle()
+        assertEquals(foundEpisodeContent(show, battery), viewModel.content())
     }
 
     @Test

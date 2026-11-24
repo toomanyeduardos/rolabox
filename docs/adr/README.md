@@ -39,7 +39,7 @@ New ADR: copy [`template.md`](template.md), take the next number, and add it to 
 | [028](028-shuffle-and-repeat.md) | Shuffle and repeat are two settings that the queue follows, in Media3's own modes | Accepted |
 | [029](029-sync-failures-are-logged.md) | Sync failures are logged, with the backend's reason where the exception is converted | Accepted |
 | [030](030-crash-reporting.md) | Crashlytics reports crashes, ANRs and named non-fatal errors from every user, with nothing that identifies them | Accepted |
-| [031](031-podcasts.md) | Podcasts: Apple's directory, feeds read on the phone, downloads in playback's Media3 cache, and follows synced per show | Accepted, partly superseded by ADR-037 |
+| [031](031-podcasts.md) | Podcasts: Apple's directory, feeds read on the phone, downloads in playback's Media3 cache, and follows synced per show | Accepted, partly superseded by ADR-037 and ADR-042 |
 | [032](032-typing-on-the-device.md) | Typing on the device: the phone's keyboard over the wheel, into a field that is a row of the display | Accepted |
 | [033](033-shared-firestore-module.md) | Firestore is provided once, by `:common:firestore`, which also turns its errors into `RemoteError` | Accepted |
 | [034](034-plain-http-for-podcasts.md) | Plain HTTP is allowed for podcast feeds, images and audio, tried as HTTPS first, and HTTPS is forced for every service Rolabox talks to | Accepted |
@@ -50,3 +50,4 @@ New ADR: copy [`template.md`](template.md), take the next number, and add it to 
 | [039](039-store-and-readme-screenshots.md) | Store and README screenshots are rendered by Paparazzi at the device's resolution, on demand, apart from the goldens | Accepted, partly superseded by ADR-041 |
 | [040](040-cover-source-busy-retries.md) | A `503` from the cover source is sent again in the same run, after its `Retry-After`, before the run ends | Accepted |
 | [041](041-store-icon-and-feature-graphic.md) | The Play icon and feature graphic are rendered by the store run, the icon from the launcher icon in `:app` | Accepted |
+| [042](042-found-feeds-kept-in-memory.md) | The feeds of shows opened from search are kept in memory, the last 5 for 5 minutes, as searches are | Accepted |

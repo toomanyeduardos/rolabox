@@ -207,3 +207,16 @@ private fun FoundShowOfflinePreview() {
         }
     }
 }
+
+/** A show from search while its feed is read: a long one, on a slow connection, takes seconds. */
+@PreviewLightDark
+@Composable
+private fun FoundShowLoadingPreview() {
+    RolaboxTheme {
+        DeviceScreen(title = "The Daily", batteryLevel = 0.7f, onWheelEvent = {}) {
+            Box(Modifier.fillMaxSize()) {
+                PodcastsList(ListUiState.Loading, highlightedIndex = 0, loadingDelay = Duration.ZERO)
+            }
+        }
+    }
+}

@@ -20,7 +20,9 @@ class RolaboxDetektConventionPlugin : Plugin<Project> {
             extensions.configure<DetektExtension> {
                 buildUponDefaultConfig.set(true)
                 config.setFrom(rootProject.layout.projectDirectory.file("config/detekt/detekt.yml"))
-                parallel.set(true)
+                // Off: detekt 2.0's parallel file analysis isn't thread-safe and crashes at random
+                // on CI with ArrayIndexOutOfBoundsException inside the Kotlin analysis.
+                parallel.set(false)
             }
 
             dependencies {
