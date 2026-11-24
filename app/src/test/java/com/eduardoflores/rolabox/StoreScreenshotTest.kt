@@ -12,9 +12,9 @@ import org.junit.Test
 /** Play's 512 × 512 icon, from the launcher icon's own layers (ADR-041 rule 2). */
 class StoreScreenshotTest : StoreScreenshot() {
     // The full 108 dp canvas, edge to edge, as Android Studio's Play Store icon export draws it.
-    // Play adds its own mask.
+    // Play adds its own mask. Play asks for a 32-bit PNG, so it keeps its alpha.
     @Test
-    fun icon() = shootGraphic("icon-512", width = ICON_SIZE, height = ICON_SIZE) {
+    fun icon() = shootGraphic("icon-512", width = ICON_SIZE, height = ICON_SIZE, alpha = true) {
         Box(Modifier.fillMaxSize()) {
             Image(
                 painterResource(R.drawable.ic_launcher_background),

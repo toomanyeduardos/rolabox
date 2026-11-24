@@ -57,11 +57,13 @@ class CoverPixels(val width: Int, val height: Int, val pixels: IntArray)
  * reaches one skips it.
  */
 open class StoreScreenshot {
+    private val pngWriter = PngWriter()
+
     @get:Rule
     val paparazzi = Paparazzi(
         deviceConfig = STORE_DEVICE,
         renderingMode = RenderingMode.NORMAL,
-        snapshotHandler = PngWriter(),
+        snapshotHandler = pngWriter,
         useDeviceResolution = true,
     )
 
@@ -75,6 +77,7 @@ open class StoreScreenshot {
 
     /** Renders [content], a whole screen in its `RolaboxTheme`, as `<set>/<name>`, in light and in dark. */
     protected fun shoot(set: StoreSet, name: String, content: @Composable () -> Unit) {
+        pngWriter.keepAlpha = false
         for (night in listOf(false, true)) {
             paparazzi.unsafeUpdateConfig(
                 STORE_DEVICE.copy(nightMode = if (night) NightMode.NIGHT else NightMode.NOTNIGHT),
@@ -91,6 +94,9 @@ open class StoreScreenshot {
      *
      * [dpi] is the screen density it renders at, the Pixel 6's unless given. A higher one draws everything larger
      * and sharper in the same pixels, as a denser screen would, with the font scale left at 1.0 (ADR-017 rule 2).
+     *
+     * [alpha] keeps the alpha channel. Only the icon wants it (a 32-bit PNG); Play takes the feature graphic and
+     * the screenshots only as 24-bit PNGs, with no alpha.
      */
     protected fun shootGraphic(
         name: String,
@@ -98,8 +104,10 @@ open class StoreScreenshot {
         height: Int,
         night: Boolean = false,
         dpi: Int? = null,
+        alpha: Boolean = false,
         content: @Composable () -> Unit,
     ) {
+        pngWriter.keepAlpha = alpha
         paparazzi.unsafeUpdateConfig(
             STORE_DEVICE.copy(
                 screenWidth = width,
@@ -118,21 +126,38 @@ open class StoreScreenshot {
     }
 }
 
-/** Writes each frame as a PNG named after its snapshot, under the store run's output folder. */
+/**
+ * Writes each frame as a PNG named after its snapshot, under the store run's output folder: 24-bit RGB, unless
+ * [keepAlpha] asks for 32-bit ARGB.
+ */
 private class PngWriter : SnapshotHandler {
+    var keepAlpha = false
+
     override fun newFrameHandler(snapshot: Snapshot, frameCount: Int, fps: Int) =
         object : SnapshotHandler.FrameHandler {
             override fun handle(image: BufferedImage) {
                 val out =
                     File(checkNotNull(System.getProperty(OUT_PROPERTY)) { "No $OUT_PROPERTY" }, "${snapshot.name}.png")
                 out.parentFile.mkdirs()
-                ImageIO.write(image, "PNG", out)
+                ImageIO.write(if (keepAlpha) image else image.withoutAlpha(), "PNG", out)
             }
 
             override fun close() = Unit
         }
 
     override fun close() = Unit
+}
+
+/** The same pixels as 24-bit RGB. The screens are opaque, so nothing shows through where the alpha was. */
+private fun BufferedImage.withoutAlpha(): BufferedImage {
+    val rgb = BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
+    val graphics = rgb.createGraphics()
+    try {
+        graphics.drawImage(this, 0, 0, null)
+    } finally {
+        graphics.dispose()
+    }
+    return rgb
 }
 
 /**
