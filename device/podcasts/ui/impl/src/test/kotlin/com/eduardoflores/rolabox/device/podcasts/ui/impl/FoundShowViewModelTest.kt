@@ -13,9 +13,11 @@ import com.eduardoflores.rolabox.device.podcasts.api.ShowFeed
 import com.eduardoflores.rolabox.device.podcasts.testing.FakePodcastDirectory
 import com.eduardoflores.rolabox.device.podcasts.testing.FakePodcastsRepository
 import com.eduardoflores.rolabox.device.podcasts.testing.PodcastSamples
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -56,6 +58,18 @@ class FoundShowViewModelTest {
     private fun FoundShowViewModel.content() = (uiState.value as ListUiState.Loaded).value
 
     private fun FoundShowViewModel.rows() = foundShowRows(content(), WORDS)
+
+    @Test
+    fun whileTheFeedIsRead_itIsLoading() = runTest {
+        directory.feeds = mapOf(stranger to strangerFeed)
+        val feed = CompletableDeferred<Unit>().also { directory.pendingShow = it }
+        val viewModel = observedViewModel(stranger)
+        assertEquals(ListUiState.Loading, viewModel.uiState.value)
+
+        feed.complete(Unit)
+        advanceUntilIdle()
+        assertEquals(strangerFeed, viewModel.content().feed)
+    }
 
     @Test
     fun aShowNotInTheLibrary_isFollowOff_thenEveryEpisodeWithTheArrowAndNoDot() = runTest {

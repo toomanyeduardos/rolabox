@@ -32,6 +32,7 @@
     <!-- The time left of a partly played episode: 20 MIN LEFT. -->
     <string name="podcasts_time_left">%s LEFT</string>
     <string name="podcasts_no_longer_here">No longer in your podcasts</string>
+    <string name="podcasts_loading">Loading…</string>
     <string name="podcasts_unavailable">Can\'t read your podcasts</string>
     <!-- Search (ADR-031, Search; frames 29 to 34). The short hint replaces the hint when it doesn't fit. -->
     <string name="podcasts_search_hint">Shows, creators, episodes</string>

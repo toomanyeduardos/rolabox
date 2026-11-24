@@ -109,6 +109,8 @@ private fun EntryProviderScope<NavKey>.searchEntries(
             ),
             onPlaying = onPlaying,
             onAllowMobileData = onAllowMobileData,
+            // The show's title is in the key, so the header has it while the feed is read.
+            titleWhileLoading = key.show.title,
         )
     }
 }
