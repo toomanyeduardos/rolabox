@@ -1,6 +1,7 @@
 # ADR-039: Store and README screenshots are rendered by Paparazzi at the device's resolution, on demand, apart from the goldens
 
-- **Status:** Accepted
+- **Status:** Accepted. Rule 1 superseded by [ADR-041](041-store-icon-and-feature-graphic.md) for
+  the Play icon and feature graphic, which the same harness renders at their own sizes
 - **Date:** 2026-11-22
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review

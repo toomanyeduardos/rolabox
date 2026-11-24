@@ -336,15 +336,67 @@ sense:
 
 ## Store listing text
 
+The text of Play Console → Grow users → Store presence → Main store listing (launch/12). Change it
+here first, then paste it into Play, so the listing and the app change together. Play's limits are
+30, 80 and 4000 characters. Don't claim a feature the release doesn't have, and don't repeat
+keywords to rank.
+
 Rolabox is drawn after a click-wheel player, so the listing says whose it isn't, as About → Legal
-does in the app (card 96). End the full description in Play Console → Grow users → Store presence →
-Main store listing with:
+does in the app (card 96). The full description ends with that line. Apart from it, the name, short
+description, full description, icon, feature graphic and screenshots don't use the word "iPod",
+"Click Wheel", Apple's logo or any other Apple mark, and no other company is named, so nothing
+suggests the app is anyone else's.
 
-> Rolabox is an independent app. It is not affiliated with, endorsed by or sponsored by Apple Inc.
-> iPod is a trademark of Apple Inc., registered in the U.S. and other countries.
+**App name** (29):
 
-Apart from that line, the name, short description, full description, icon and screenshots don't use
-the word "iPod", Apple's logo or any other Apple mark, so nothing suggests the app is Apple's.
+```text
+Rolabox: Offline Music Player
+```
+
+**Short description** (79):
+
+```text
+A music player with a scroll wheel, for the music you own. Offline, no account.
+```
+
+**Full description** (1298):
+
+```text
+Rolabox plays the music you already have: the audio files on your phone. There's no catalog to browse, no subscription and no ads.
+
+It looks like a hardware player, not a streaming app: a brushed aluminum body, a backlit LCD-style display, and a wheel you turn to move through lists and press to choose. Turn on the clicker and every step of the wheel clicks.
+
+YOUR MUSIC
+• Browse by artist, album, song or genre
+• Shuffle all your songs from the main menu
+• Shuffle and repeat, for a song or the whole queue
+• Missing album covers can be downloaded from an open online archive, or turned off in Settings
+
+PODCASTS
+• Search for shows and follow them
+• Episodes download to your phone before they play
+
+WORKS WITHOUT AN ACCOUNT
+Rolabox works fully without an account. If you add one, your settings and the shows you follow sync between your devices, and you can delete the account and its data from the app at any time.
+
+MAKE IT YOURS
+• Light or dark, or follow the system
+• Choose which rows the main menu shows
+
+OPEN SOURCE
+Rolabox is open source, under the Apache 2.0 license: https://github.com/toomanyeduardos/rolabox
+
+Rolabox is an independent app. It is not affiliated with, endorsed by or sponsored by Apple Inc. iPod is a trademark of Apple Inc., registered in the U.S. and other countries.
+```
+
+## Store icon and feature graphic
+
+Play's 512 × 512 icon and 1024 × 500 feature graphic are rendered with the screenshots (ADR-041),
+by `./gradlew storeScreenshots`, as `build/store-screenshots/play/icon-512.png` and
+`feature-graphic.png`. The icon is the launcher icon's two layers, edge to edge; Play rounds the
+corners itself. The feature graphic has its own aluminum background, so it reads on Play's light
+and dark themes. Upload both in Main store listing → Graphics, and redo them when the launcher
+icon or the device's look changes.
 
 ## Store and README screenshots
 

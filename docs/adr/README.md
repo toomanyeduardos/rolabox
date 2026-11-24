@@ -47,5 +47,6 @@ New ADR: copy [`template.md`](template.md), take the next number, and add it to 
 | [036](036-android-backup.md) | Android backs up only the preferences and the podcasts' database, by an include-list, the same for cloud backup and device transfer | Accepted |
 | [037](037-deleting-an-account.md) | Deleting an account: the signed-in user re-authenticates, each `Syncer` deletes its data in the cloud, then the account, then Android erases the app's data | Accepted |
 | [038](038-public-web-pages.md) | Rolabox's public web pages are static files in `site/`, deployed to GitHub Pages, and the privacy policy changes with the code it describes | Accepted |
-| [039](039-store-and-readme-screenshots.md) | Store and README screenshots are rendered by Paparazzi at the device's resolution, on demand, apart from the goldens | Accepted |
+| [039](039-store-and-readme-screenshots.md) | Store and README screenshots are rendered by Paparazzi at the device's resolution, on demand, apart from the goldens | Accepted, partly superseded by ADR-041 |
 | [040](040-cover-source-busy-retries.md) | A `503` from the cover source is sent again in the same run, after its `Retry-After`, before the run ends | Accepted |
+| [041](041-store-icon-and-feature-graphic.md) | The Play icon and feature graphic are rendered by the store run, the icon from the launcher icon in `:app` | Accepted |

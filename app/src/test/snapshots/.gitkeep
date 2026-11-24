@@ -1,0 +1,2 @@
+# Kept so Paparazzi's verify task finds its input folder. :app has no previews, so no goldens; its only
+# screenshot case is the Play icon, which ./gradlew storeScreenshots renders to build/ (ADR-041).
