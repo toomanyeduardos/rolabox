@@ -12,6 +12,8 @@ Offline first, account optional, and dressed like the hi-fi you wanted in the ea
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.4-7F52FF?logo=kotlin&logoColor=white)
 ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?logo=jetpackcompose&logoColor=white)
 
+<a href="https://play.google.com/store/apps/details?id=com.eduardoflores.rolabox"><img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" height="80" alt="Get it on Google Play"></a>
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://media.githubusercontent.com/media/toomanyeduardos/rolabox/main/docs/images/readme/main-menu_Dark.png">
   <img src="https://media.githubusercontent.com/media/toomanyeduardos/rolabox/main/docs/images/readme/main-menu_Light.png" width="200" alt="The main menu: Now Playing, Music, Podcasts, Shuffle Songs and Settings, over the click wheel">
@@ -725,3 +727,5 @@ Test and lint reports are uploaded as the `reports` artifact on each run.
 ## License
 
 Rolabox is licensed under the [Apache License 2.0](LICENSE).
+
+Google Play and the Google Play logo are trademarks of Google LLC.

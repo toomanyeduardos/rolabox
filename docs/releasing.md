@@ -236,6 +236,50 @@ again whenever the rules change.
 8. **Check the build from Play:** install it from the track, and check that Google sign-in,
    email/password sign-in and preference sync work. Google sign-in failing only here means the
    app signing key's fingerprints are missing from Firebase (setup step 5).
+9. **Promote it to production** (next section) once the smoke test passes on the build from Play.
+
+## Promote to production
+
+Production gets the same release that was tested on the closed track, promoted, never a new
+upload. That way the build users install is the one the smoke test (launch/15) passed. The
+developer account is personal and older than November 2023, so production needs no closed-test
+period first. Console paths go after the app's URL, `…/app/<app id>/`.
+
+1. **Check the closed release is the one you tested:** on **`closed-testing`**, the release on
+   "Closed testing – Alpha" shows the version you installed from Play, for example `1.0.2 (10002)`,
+   and its status is **Available to selected testers**.
+2. **Countries, the first time only:** **`tracks/production`** → **Countries / regions** → add
+   them. Later releases keep the list.
+3. **Promote:** on **`closed-testing`**, open the release → **Promote release** → **Production**.
+   This creates a production release with the same bundle, without uploading it again.
+4. **Release notes:** write what changed for users, in plain words, inside the language tag Play
+   pre-fills:
+
+   ```text
+   <en-US>
+   First release.
+   </en-US>
+   ```
+
+5. **Rollout:** choose a staged rollout percentage (for example 20%) to reach a share of users
+   first, or 100%. A staged rollout can be raised, or halted if Crashlytics shows a new crash, from
+   `tracks/production`. A halted rollout keeps its users on that build, and the fix is a new version.
+6. **Save → Review release.** Fix every error. Warnings that only repeat ones the closed release
+   had (missing native debug symbols, see section 4b) can be ignored.
+7. **`publishing`** → **Send changes for review.** Store listing changes waiting in the console go
+   into the same review. Check **Submission activity** for its status. Google says up to 7 days, and
+   a first production review can take longer than a test one. Managed publishing is off, so an
+   approved release goes live by itself.
+8. **When it's live:** the listing at
+   `https://play.google.com/store/apps/details?id=com.eduardoflores.rolabox` opens when logged out
+   (search can take a few hours to show it), and the README's "Get it on Google Play" badge
+   works. Watch Crashlytics and **`vitals/overview`** for the first days, and raise a staged rollout
+   once they look clean.
+
+**If the review rejects it,** Play emails the policy and the reason, which also shows under
+**`policy-status`** (Policy status). Fix it. If the fix is in the code, ship a new version through
+the closed track and the smoke test again. If it's a console answer or the listing, edit it and
+send the changes again. Record what Play rejected, and how it was fixed, in this file.
 
 ## Play Console declarations
 
@@ -336,7 +380,7 @@ sense:
 
 ## Store listing text
 
-The text of Play Console → Grow users → Store presence → Main store listing (launch/12). Change it
+The text of Play Console → Grow users → Store presence → Default store listing (launch/12). Change it
 here first, then paste it into Play, so the listing and the app change together. Play's limits are
 30, 80 and 4000 characters. Don't claim a feature the release doesn't have, and don't repeat
 keywords to rank.
@@ -395,8 +439,12 @@ Play's 512 × 512 icon and 1024 × 500 feature graphic are rendered with the scr
 by `./gradlew storeScreenshots`, as `build/store-screenshots/play/icon-512.png` and
 `feature-graphic.png`. The icon is the launcher icon's two layers, edge to edge; Play rounds the
 corners itself. The feature graphic has its own aluminum background, so it reads on Play's light
-and dark themes. Upload both in Main store listing → Graphics, and redo them when the launcher
+and dark themes. Upload both in Default store listing → Graphics, and redo them when the launcher
 icon or the device's look changes.
+
+The icon is a 32-bit PNG, with alpha, as Play asks. The feature graphic and every screenshot are
+24-bit PNGs, with no alpha, because Play takes them only that way. `shootGraphic(alpha = true)` is
+the icon's switch, and nothing else sets it.
 
 ## Store and README screenshots
 
@@ -427,7 +475,7 @@ release whose listing should show it.
    The images are in `build/store-screenshots/play/` and `build/store-screenshots/readme/`, each
    screen as `<name>_Light.png` and `<name>_Dark.png`.
 
-3. **Upload the Play set** in Play Console → Grow users → Store presence → Main store listing →
+3. **Upload the Play set** in Play Console → Grow users → Store presence → Default store listing →
    Phone screenshots. Play takes 2 to 8, each side between 320 and 3840 px, at most 2:1; four or
    more at 1080 px or more make the app eligible for Play's recommendations. There are 9 screens,
    so leave one out. The suggested 8, in this order, are `01` to `04` and `06` to `09`: main menu,
