@@ -3,12 +3,14 @@ package com.eduardoflores.rolabox.device.podcasts.network.impl.di
 import com.eduardoflores.rolabox.device.podcasts.network.api.AudioNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.api.ConnectionNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.api.DirectoryNetworkDataSource
+import com.eduardoflores.rolabox.device.podcasts.network.api.EpisodeOrdersNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.api.FeedNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.api.FollowsNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.api.ImageNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.impl.ConnectivityConnectionNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.impl.DeviceCountry
 import com.eduardoflores.rolabox.device.podcasts.network.impl.DirectorySearchUrl
+import com.eduardoflores.rolabox.device.podcasts.network.impl.FirestoreEpisodeOrdersNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.impl.FirestoreFollowsNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.impl.HttpsFirstInterceptor
 import com.eduardoflores.rolabox.device.podcasts.network.impl.ITunesDirectoryNetworkDataSource
@@ -49,6 +51,11 @@ abstract class PodcastsNetworkModule {
     internal abstract fun bindsFollowsNetworkDataSource(
         dataSource: FirestoreFollowsNetworkDataSource,
     ): FollowsNetworkDataSource
+
+    @Binds
+    internal abstract fun bindsEpisodeOrdersNetworkDataSource(
+        dataSource: FirestoreEpisodeOrdersNetworkDataSource,
+    ): EpisodeOrdersNetworkDataSource
 
     @Binds
     internal abstract fun bindsImageNetworkDataSource(dataSource: OkHttpImageNetworkDataSource): ImageNetworkDataSource

@@ -1,6 +1,7 @@
 package com.eduardoflores.rolabox.device.podcasts.ui.impl
 
 import android.widget.Toast
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -23,6 +24,7 @@ import com.eduardoflores.rolabox.device.podcasts.api.DirectoryId
 import com.eduardoflores.rolabox.device.podcasts.api.DownloadState
 import com.eduardoflores.rolabox.device.podcasts.api.Episode
 import com.eduardoflores.rolabox.device.podcasts.api.EpisodeId
+import com.eduardoflores.rolabox.device.podcasts.api.EpisodeOrder
 import com.eduardoflores.rolabox.device.podcasts.api.OwnerId
 import com.eduardoflores.rolabox.device.podcasts.api.PlayedState
 import com.eduardoflores.rolabox.device.podcasts.api.Show
@@ -31,43 +33,61 @@ import kotlin.time.Duration
 
 /**
  * Connects a show to its ViewModel, which the entry creates (ADR-021). The title is the show's. Follow is the first
- * row, with On or Off, and center turns it in place. Then the episodes, newest first, with their dots and downloads
- * (frame 25). Center on an episode reports [onEpisodeClick] with its id.
+ * row, with On or Off, and center turns it in place. Order is the second, with Newest or Oldest, and center flips it
+ * in place (ADR-043). Then the episodes in that order, with their dots and downloads (frame 25). A show listed oldest
+ * first opens on its next episode. Center on an episode reports [onEpisodeClick] with its id.
  */
 @Composable
 internal fun ShowRoute(viewModel: ShowViewModel, onEpisodeClick: (episodeId: Long) -> Unit) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val followFailed by viewModel.followFailed.collectAsStateWithLifecycle()
+    val orderFailed by viewModel.orderFailed.collectAsStateWithLifecycle()
     val words = ShowWords(
         follow = stringResource(R.string.podcasts_follow),
         on = stringResource(R.string.podcasts_on),
         off = stringResource(R.string.podcasts_off),
         unknownEpisode = stringResource(R.string.podcasts_unknown_episode),
     )
-    val rows = remember(state, words) { state.map { showRows(it, words) } }
-    FollowFailureToast(followFailed, onShow = viewModel::onFollowFailureShown)
-    ScreenTitle((state as? ListUiState.Loaded)?.value?.show?.title)
+    val orderWords = orderWords()
+    val rows = remember(state, words, orderWords) { state.map { showRows(it, words, orderWords) } }
+    val content = (state as? ListUiState.Loaded)?.value
+    ChangeFailedToast(followFailed, R.string.podcasts_follow_failed, onShow = viewModel::onFollowFailureShown)
+    ChangeFailedToast(orderFailed, R.string.podcasts_order_failed, onShow = viewModel::onOrderFailureShown)
+    ScreenTitle(content?.show?.title)
     PodcastsWheelList(
         state = rows,
         onCenter = { index ->
-            if (index == FOLLOW_INDEX) {
-                viewModel.onFollowClick()
-            } else {
-                (state as? ListUiState.Loaded)?.value?.episodes?.getOrNull(index - 1)?.let {
-                    onEpisodeClick(it.id.value)
-                }
+            when (index) {
+                FOLLOW_INDEX -> viewModel.onFollowClick()
+                ORDER_INDEX -> viewModel.onOrderClick()
+                else -> content?.episodes?.getOrNull(index - FIRST_EPISODE_INDEX)?.let { onEpisodeClick(it.id.value) }
             }
         },
+        startIndex = content?.let { it.startingEpisode?.plus(FIRST_EPISODE_INDEX) ?: FOLLOW_INDEX },
     )
 }
 
 /** The screen's words, read once from the resources so that the rows can be built outside composition. */
 internal data class ShowWords(val follow: String, val on: String, val off: String, val unknownEpisode: String)
 
-/** Follow with its value, then a row for each episode. */
-internal fun showRows(content: ShowContent, words: ShowWords): List<DeviceListRow> =
-    listOf(DeviceListRow(words.follow, value = if (content.show.isFollowed) words.on else words.off)) +
-        content.episodes.map { episodeRow(it, words.unknownEpisode) }
+/** The Order row's words (ADR-043). */
+internal data class OrderWords(val order: String, val newest: String, val oldest: String)
+
+@Composable
+internal fun orderWords() = OrderWords(
+    order = stringResource(R.string.podcasts_order),
+    newest = stringResource(R.string.podcasts_order_newest),
+    oldest = stringResource(R.string.podcasts_order_oldest),
+)
+
+/** Follow with its value, Order with the show's, then a row for each episode, in that order. */
+internal fun showRows(content: ShowContent, words: ShowWords, orderWords: OrderWords): List<DeviceListRow> = listOf(
+    DeviceListRow(words.follow, value = if (content.show.isFollowed) words.on else words.off),
+    DeviceListRow(
+        orderWords.order,
+        value = if (content.show.episodeOrder == EpisodeOrder.Oldest) orderWords.oldest else orderWords.newest,
+    ),
+) + content.episodes.map { episodeRow(it, words.unknownEpisode) }
 
 /**
  * An episode's row: a full dot for unplayed, a half dot for partly played and none for played, and after the title
@@ -92,21 +112,24 @@ private fun percentOf(fraction: Float): Int =
     (fraction.toDouble() * PERCENT + ROUNDING_SLACK).toInt().coerceIn(0, PERCENT)
 
 /**
- * Follow that couldn't be changed says so, once, in a toast, and then calls [onShow]: the row keeps its value, and a
- * failed action is never silent (ADR-007). A toast is the system's, drawn over the device (ADR-018).
+ * A row such as Follow or Order that couldn't be changed says so, once, in a toast with [message], and then calls
+ * [onShow]: the row keeps its value, and a failed action is never silent (ADR-007). A toast is the system's, drawn over
+ * the device (ADR-018).
  */
 @Composable
-internal fun FollowFailureToast(failed: Boolean, onShow: () -> Unit) {
+internal fun ChangeFailedToast(failed: Boolean, @StringRes message: Int, onShow: () -> Unit) {
     val context = LocalContext.current
     val currentOnShow by rememberUpdatedState(onShow)
     LaunchedEffect(failed) {
         if (!failed) return@LaunchedEffect
-        Toast.makeText(context, R.string.podcasts_follow_failed, Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         currentOnShow()
     }
 }
 
 private const val FOLLOW_INDEX = 0
+private const val ORDER_INDEX = 1
+private const val FIRST_EPISODE_INDEX = 2
 private const val PERCENT = 100
 
 // A fraction such as 0.38f is a hair under it as a float, and is still 38%.
@@ -151,7 +174,7 @@ private fun showWords() = ShowWords(
     unknownEpisode = stringResource(R.string.podcasts_unknown_episode),
 )
 
-/** Frame 25: Follow On, then the episodes newest first, the highlight on the half dot. */
+/** Frame 25: Follow On, Order Newest, then the episodes newest first, the highlight on the half dot. */
 @PreviewLightDark
 @Composable
 private fun ShowPreview() {
@@ -159,8 +182,29 @@ private fun ShowPreview() {
         DeviceScreen(title = "The Daily", batteryLevel = 0.7f, onWheelEvent = {}) {
             Box(Modifier.fillMaxSize()) {
                 PodcastsList(
-                    ListUiState.Loaded(showRows(ShowContent(TheDaily, TheDailyEpisodes), showWords())),
-                    highlightedIndex = 4,
+                    ListUiState.Loaded(showRows(ShowContent(TheDaily, TheDailyEpisodes), showWords(), orderWords())),
+                    highlightedIndex = 5,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * A serial show, Order Oldest: the episodes oldest first, the played ones above, and the highlight on the next one,
+ * where it opens (ADR-043).
+ */
+@PreviewLightDark
+@Composable
+private fun ShowOldestFirstPreview() {
+    RolaboxTheme {
+        DeviceScreen(title = "The Daily", batteryLevel = 0.7f, onWheelEvent = {}) {
+            Box(Modifier.fillMaxSize()) {
+                val content =
+                    ShowContent(TheDaily.copy(episodeOrder = EpisodeOrder.Oldest), TheDailyEpisodes.reversed())
+                PodcastsList(
+                    ListUiState.Loaded(showRows(content, showWords(), orderWords())),
+                    highlightedIndex = checkNotNull(content.startingEpisode) + FIRST_EPISODE_INDEX,
                 )
             }
         }
@@ -176,7 +220,7 @@ private fun ShowFollowOffPreview() {
             Box(Modifier.fillMaxSize()) {
                 val downloaded = TheDailyEpisodes.filter { it.download != DownloadState.NotDownloaded }
                 val content = ShowContent(TheDaily.copy(isFollowed = false), downloaded)
-                PodcastsList(ListUiState.Loaded(showRows(content, showWords())), highlightedIndex = 0)
+                PodcastsList(ListUiState.Loaded(showRows(content, showWords(), orderWords())), highlightedIndex = 0)
             }
         }
     }

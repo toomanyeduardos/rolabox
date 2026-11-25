@@ -8,11 +8,14 @@ import com.eduardoflores.rolabox.common.testing.MainDispatcherRule
 import com.eduardoflores.rolabox.device.podcasts.api.DirectoryEpisode
 import com.eduardoflores.rolabox.device.podcasts.api.DirectoryId
 import com.eduardoflores.rolabox.device.podcasts.api.DirectoryShow
+import com.eduardoflores.rolabox.device.podcasts.api.EpisodeOrder
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastError
 import com.eduardoflores.rolabox.device.podcasts.api.ShowFeed
+import com.eduardoflores.rolabox.device.podcasts.api.ShowKind
 import com.eduardoflores.rolabox.device.podcasts.testing.FakePodcastDirectory
 import com.eduardoflores.rolabox.device.podcasts.testing.FakePodcastsRepository
 import com.eduardoflores.rolabox.device.podcasts.testing.PodcastSamples
+import java.time.Instant
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -58,6 +61,50 @@ class FoundShowViewModelTest {
     private fun FoundShowViewModel.content() = (uiState.value as ListUiState.Loaded).value
 
     private fun FoundShowViewModel.rows() = foundShowRows(content(), WORDS)
+
+    // A feed's episodes are newest first, as the parser gives them: each a day older than the one before.
+    private fun ShowFeed.dated(kind: ShowKind) = copy(
+        kind = kind,
+        episodes = episodes.mapIndexed { index, episode ->
+            episode.copy(publishedAt = Instant.ofEpochSecond((episodes.size - index) * DAY))
+        },
+    )
+
+    // ADR-043: a serial feed from search is listed oldest first, and center goes to the episode its row shows.
+    @Test
+    fun serialFeed_isListedOldestFirst() = runTest {
+        val feed = strangerFeed.dated(ShowKind.Serial)
+        directory.feeds = mapOf(stranger to feed)
+        val viewModel = observedViewModel(stranger)
+
+        assertEquals(listOf("Follow", "First", "Second"), viewModel.rows().map { it.label })
+        assertEquals(FoundEpisodeTarget.Search(stranger, feed.episodes.last()), viewModel.episodeTarget(0))
+        assertEquals(0, viewModel.content().startingEpisode)
+    }
+
+    @Test
+    fun episodicFeed_isListedNewestFirst() = runTest {
+        directory.feeds = mapOf(stranger to strangerFeed.dated(ShowKind.Episodic))
+
+        assertEquals(listOf("Follow", "Second", "First"), observedViewModel(stranger).rows().map { it.label })
+    }
+
+    // The library's order, with the user's choice, wins over the feed's for a show the library has.
+    @Test
+    fun showInTheLibrary_isListedInTheLibrarysOrder() = runTest {
+        podcasts.shows = podcasts.shows.map {
+            if (it.id == PodcastSamples.hardFork.id) it.copy(episodeOrder = EpisodeOrder.Oldest) else it
+        }
+        podcasts.episodes = podcasts.episodes + hardForkInLibrary
+        directory.feeds = mapOf(hardFork to hardForkFeed.dated(ShowKind.Episodic))
+
+        assertEquals(
+            listOf("Follow", hardForkInLibrary.title, "New"),
+            observedViewModel(hardFork).rows().map {
+                it.label
+            },
+        )
+    }
 
     @Test
     fun whileTheFeedIsRead_itIsLoading() = runTest {
@@ -182,6 +229,7 @@ class FoundShowViewModelTest {
     }
 
     private companion object {
+        const val DAY = 86_400L
         val WORDS = ShowWords(follow = "Follow", on = "On", off = "Off", unknownEpisode = "Unknown episode")
     }
 }

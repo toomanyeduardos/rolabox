@@ -2,7 +2,6 @@ package com.eduardoflores.rolabox.device.podcasts.impl.follow
 
 import arrow.core.Either
 import arrow.core.raise.either
-import com.eduardoflores.rolabox.common.storage.api.StorageError
 import com.eduardoflores.rolabox.common.sync.api.LastWriteWins
 import com.eduardoflores.rolabox.common.sync.api.RemoteError
 import com.eduardoflores.rolabox.common.sync.api.SyncError
@@ -58,7 +57,3 @@ internal class FollowsSyncer @Inject constructor(
             checkNotNull(lastWriteWins.resolve(this[directoryId], remote[directoryId])) { "$directoryId is on a side" }
         }
 }
-
-// The follows' reads and writes fail only with the database's error.
-private fun PodcastError.toSyncError(): SyncError =
-    SyncError.Local((this as? PodcastError.Storage)?.cause ?: StorageError.Unavailable)

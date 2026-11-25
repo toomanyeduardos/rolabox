@@ -13,8 +13,9 @@ dependencies {
     implementation(project(":device:podcasts:network:api"))
     implementation(project(":common:util"))
     implementation(project(":common:sync:api"))
-    // The follows sync through Firestore (ADR-031, Syncing follows): its one provider, and the conversion of its
-    // exceptions (ADR-033). Firestore is a dependency of :network:impl modules and :common:firestore only.
+    // The follows (ADR-031, Syncing follows) and the choices of episode order (ADR-043) sync through Firestore: its
+    // one provider, and the conversion of its exceptions (ADR-033). Firestore is a dependency of :network:impl modules
+    // and :common:firestore only.
     implementation(project(":common:firestore"))
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.firestore)

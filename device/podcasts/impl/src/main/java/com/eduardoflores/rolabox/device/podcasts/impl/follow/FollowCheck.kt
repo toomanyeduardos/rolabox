@@ -99,6 +99,7 @@ internal class FollowCheck @Inject constructor(
                 ownerKey = ownerIdOf(owner),
                 titleSortKey = sortKeyOf(title),
                 ownerSortKey = owner?.let(::sortKeyOf),
+                kind = feed.kind,
             ),
             imageUrl = feed.imageUrl,
             etag = validators.etag,

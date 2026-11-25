@@ -2,16 +2,21 @@ package com.eduardoflores.rolabox.device.podcasts.impl
 
 import arrow.core.left
 import com.eduardoflores.rolabox.common.storage.api.StorageError
+import com.eduardoflores.rolabox.common.sync.api.SyncTimestamp
+import com.eduardoflores.rolabox.common.sync.api.SyncedValue
 import com.eduardoflores.rolabox.device.podcasts.api.DirectoryEpisode
 import com.eduardoflores.rolabox.device.podcasts.api.DirectoryId
 import com.eduardoflores.rolabox.device.podcasts.api.DirectoryShow
 import com.eduardoflores.rolabox.device.podcasts.api.DownloadState
 import com.eduardoflores.rolabox.device.podcasts.api.EpisodeId
+import com.eduardoflores.rolabox.device.podcasts.api.EpisodeOrder
+import com.eduardoflores.rolabox.device.podcasts.api.EpisodeOrderChoice
 import com.eduardoflores.rolabox.device.podcasts.api.Owner
 import com.eduardoflores.rolabox.device.podcasts.api.OwnerId
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastError
 import com.eduardoflores.rolabox.device.podcasts.api.ShowFeed
 import com.eduardoflores.rolabox.device.podcasts.api.ShowId
+import com.eduardoflores.rolabox.device.podcasts.api.ShowKind
 import com.eduardoflores.rolabox.device.podcasts.impl.follow.FakeFollowCheckScheduler
 import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeWrite
 import com.eduardoflores.rolabox.device.podcasts.local.api.FeedWrite
@@ -44,6 +49,42 @@ class DefaultPodcastsRepositoryTest {
         repository.addEpisode(show, episode).getOrNull()!!
 
     private suspend fun showOf(episodeId: EpisodeId): ShowId = repository.getEpisode(episodeId).getOrNull()!!.showId
+
+    // ADR-043, The user's choice: the feed's order clears it, any other is stored, each with when it was made.
+    @Test
+    fun anOrderOtherThanTheFeeds_isStored_andTheFeedsClearsIt() = runTest {
+        val showId = showOf(repository.addEpisode(daily, episode("g1"), ShowKind.Serial).getOrNull()!!)
+
+        repository.setEpisodeOrder(showId, EpisodeOrder.Newest)
+
+        assertEquals(
+            mapOf(daily.directoryId to SyncedValue(EpisodeOrderChoice.Newest, SyncTimestamp(NOW))),
+            local.episodeOrders,
+        )
+        assertEquals(EpisodeOrder.Newest, repository.observeShow(showId).first().getOrNull()?.episodeOrder)
+
+        repository.setEpisodeOrder(showId, EpisodeOrder.Oldest)
+
+        assertEquals(EpisodeOrderChoice.Feed, local.episodeOrders[daily.directoryId]?.value)
+        assertEquals(EpisodeOrder.Oldest, repository.observeShow(showId).first().getOrNull()?.episodeOrder)
+    }
+
+    @Test
+    fun anOrderOfAShowThatIsntThere_isShowNotFound() = runTest {
+        assertEquals(
+            PodcastError.ShowNotFound(ShowId(9)).left(),
+            repository.setEpisodeOrder(ShowId(9), EpisodeOrder.Oldest),
+        )
+    }
+
+    @Test
+    fun followingFromSearch_keepsTheFeedsKind() = runTest {
+        val showId = repository.follow(
+            ShowFeed(daily, "NY Times", listOf(episode("g1")), ShowKind.Serial),
+        ).getOrNull()!!
+
+        assertEquals(EpisodeOrder.Oldest, repository.observeShow(showId).first().getOrNull()?.episodeOrder)
+    }
 
     @Test
     fun addingTheSameEpisodeTwice_givesTheSameEpisode() = runTest {

@@ -14,6 +14,7 @@ import com.eduardoflores.rolabox.device.podcasts.impl.PlaybackEpisodeDownloads
 import com.eduardoflores.rolabox.device.podcasts.impl.artwork.DefaultPodcastArtworkRepository
 import com.eduardoflores.rolabox.device.podcasts.impl.artwork.PodcastArtworkScheduler
 import com.eduardoflores.rolabox.device.podcasts.impl.artwork.WorkManagerPodcastArtworkScheduler
+import com.eduardoflores.rolabox.device.podcasts.impl.follow.EpisodeOrdersSyncer
 import com.eduardoflores.rolabox.device.podcasts.impl.follow.FollowCheckLog
 import com.eduardoflores.rolabox.device.podcasts.impl.follow.FollowCheckOnProcessStart
 import com.eduardoflores.rolabox.device.podcasts.impl.follow.FollowCheckScheduler
@@ -72,9 +73,9 @@ abstract class FollowCheckModule {
 }
 
 /**
- * Adds the follows to what sync runs (ADR-022, rule 5), with the scheduler the `Syncer` requests feed reads from. It's
- * apart from [PodcastsModule] so that a test that replaces the repositories keeps the `Syncer` in the graph, as the
- * preferences' is kept (ADR-022, rule 8).
+ * Adds the follows, and the choices of episode order (ADR-043), to what sync runs (ADR-022, rule 5), with the
+ * scheduler the follows' `Syncer` requests feed reads from. It's apart from [PodcastsModule] so that a test that
+ * replaces the repositories keeps the `Syncer`s in the graph, as the preferences' is kept (ADR-022, rule 8).
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -82,6 +83,11 @@ abstract class FollowsSyncerModule {
     @Binds
     @IntoSet
     internal abstract fun bindsFollowsSyncer(syncer: FollowsSyncer): Syncer
+
+    /** The choices of episode order sync apart from the follows (ADR-043, Syncing the choice). */
+    @Binds
+    @IntoSet
+    internal abstract fun bindsEpisodeOrdersSyncer(syncer: EpisodeOrdersSyncer): Syncer
 
     @Binds
     internal abstract fun bindsFollowCheckScheduler(scheduler: WorkManagerFollowCheckScheduler): FollowCheckScheduler

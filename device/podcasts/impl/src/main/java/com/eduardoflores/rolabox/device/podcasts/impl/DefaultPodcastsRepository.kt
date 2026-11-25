@@ -9,6 +9,8 @@ import com.eduardoflores.rolabox.device.podcasts.api.DirectoryShow
 import com.eduardoflores.rolabox.device.podcasts.api.DownloadState
 import com.eduardoflores.rolabox.device.podcasts.api.Episode
 import com.eduardoflores.rolabox.device.podcasts.api.EpisodeId
+import com.eduardoflores.rolabox.device.podcasts.api.EpisodeOrder
+import com.eduardoflores.rolabox.device.podcasts.api.EpisodeOrderChoice
 import com.eduardoflores.rolabox.device.podcasts.api.Owner
 import com.eduardoflores.rolabox.device.podcasts.api.OwnerId
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastError
@@ -17,6 +19,7 @@ import com.eduardoflores.rolabox.device.podcasts.api.Show
 import com.eduardoflores.rolabox.device.podcasts.api.ShowFeed
 import com.eduardoflores.rolabox.device.podcasts.api.ShowId
 import com.eduardoflores.rolabox.device.podcasts.api.ShowInLibrary
+import com.eduardoflores.rolabox.device.podcasts.api.ShowKind
 import com.eduardoflores.rolabox.device.podcasts.impl.follow.FollowCheckScheduler
 import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeRecord
 import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeWrite
@@ -87,12 +90,32 @@ internal class DefaultPodcastsRepository @Inject constructor(
             if (followed) local.getShow(showId).getOrNull()?.let { show -> followCheck.checkShow(show.directoryId) }
         }
 
-    override suspend fun addEpisode(show: DirectoryShow, episode: DirectoryEpisode): Either<PodcastError, EpisodeId> =
-        // Until its feed is read, a show's owner is the directory's creator (ADR-031, The directory).
-        local.addEpisode(show.toWrite(owner = show.creator), episode.toWrite(), clock.instant())
+    // The feed's order clears the choice, so a show whose feed changes its kind follows it (ADR-043). Either is a
+    // choice the user made now, to sync.
+    override suspend fun setEpisodeOrder(showId: ShowId, order: EpisodeOrder): Either<PodcastError, Unit> =
+        local.getShow(showId).flatMap { show ->
+            if (show == null) return@flatMap PodcastError.ShowNotFound(showId).left()
+            val choice = when {
+                order == show.feedEpisodeOrder -> EpisodeOrderChoice.Feed
+                order == EpisodeOrder.Oldest -> EpisodeOrderChoice.Oldest
+                else -> EpisodeOrderChoice.Newest
+            }
+            local.setEpisodeOrder(showId, choice, clock.instant())
+        }
 
-    override suspend fun follow(feed: ShowFeed): Either<PodcastError, ShowId> =
-        local.follow(feed.show.toWrite(owner = feed.ownerName), feed.episodes.map { it.toWrite() }, clock.instant())
+    override suspend fun addEpisode(
+        show: DirectoryShow,
+        episode: DirectoryEpisode,
+        kind: ShowKind?,
+    ): Either<PodcastError, EpisodeId> =
+        // Until its feed is read, a show's owner is the directory's creator (ADR-031, The directory).
+        local.addEpisode(show.toWrite(owner = show.creator, kind = kind), episode.toWrite(), clock.instant())
+
+    override suspend fun follow(feed: ShowFeed): Either<PodcastError, ShowId> = local.follow(
+        feed.show.toWrite(owner = feed.ownerName, kind = feed.kind),
+        feed.episodes.map { it.toWrite() },
+        clock.instant(),
+    )
 
     override suspend fun findShow(show: DirectoryShow): Either<PodcastError, Show?> =
         local.observeShowByDirectoryId(show.directoryId).first()
@@ -123,7 +146,7 @@ internal class DefaultPodcastsRepository @Inject constructor(
         PodcastError.EpisodeNotFound(episodeId).left()
 }
 
-private fun DirectoryShow.toWrite(owner: String?): ShowWrite {
+private fun DirectoryShow.toWrite(owner: String?, kind: ShowKind?): ShowWrite {
     val name = cleanedName(owner)
     return ShowWrite(
         directoryId = directoryId,
@@ -133,6 +156,7 @@ private fun DirectoryShow.toWrite(owner: String?): ShowWrite {
         ownerKey = ownerIdOf(name),
         titleSortKey = sortKeyOf(title),
         ownerSortKey = name?.let(::sortKeyOf),
+        kind = kind,
     )
 }
 

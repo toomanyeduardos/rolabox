@@ -3,11 +3,13 @@ package com.eduardoflores.rolabox.device.podcasts.local.api
 import arrow.core.Either
 import com.eduardoflores.rolabox.device.podcasts.api.DirectoryId
 import com.eduardoflores.rolabox.device.podcasts.api.EpisodeId
+import com.eduardoflores.rolabox.device.podcasts.api.EpisodeOrderChoice
 import com.eduardoflores.rolabox.device.podcasts.api.Owner
 import com.eduardoflores.rolabox.device.podcasts.api.OwnerId
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastError
 import com.eduardoflores.rolabox.device.podcasts.api.Show
 import com.eduardoflores.rolabox.device.podcasts.api.ShowId
+import com.eduardoflores.rolabox.device.podcasts.api.SyncedEpisodeOrders
 import com.eduardoflores.rolabox.device.podcasts.api.SyncedFollows
 import java.time.Instant
 import kotlinx.coroutines.flow.Flow
@@ -34,7 +36,10 @@ interface PodcastsLocalDataSource {
     /** The id of the episode with [itemKey] in the show with [directoryId], or `null` when the library hasn't it. */
     suspend fun getEpisodeId(directoryId: DirectoryId, itemKey: String): Either<PodcastError, EpisodeId?>
 
-    /** Every episode stored for the show, newest first, and those with no date last. */
+    /**
+     * Every episode stored for the show, in its [Show.episodeOrder]: newest or oldest first, and those with no date
+     * last (ADR-043).
+     */
     fun observeEpisodesByShow(showId: ShowId): Flow<Either<PodcastError, List<EpisodeRecord>>>
 
     fun observeEpisode(episodeId: EpisodeId): Flow<Either<PodcastError, EpisodeRecord?>>
@@ -48,6 +53,16 @@ interface PodcastsLocalDataSource {
     suspend fun setFollow(showId: ShowId, followed: Boolean, updatedAt: Instant): Either<PodcastError, Unit>
 
     /**
+     * Stores the user's choice of the show's episode order, by its directory id, as sync keeps it (ADR-043). Returns
+     * [PodcastError.ShowNotFound] when there is no such show.
+     */
+    suspend fun setEpisodeOrder(
+        showId: ShowId,
+        choice: EpisodeOrderChoice,
+        updatedAt: Instant,
+    ): Either<PodcastError, Unit>
+
+    /**
      * Adds the show, unless one with its directory id is there, and the episode, unless its show has one with its
      * item key, in one transaction. What is already there is kept as it is. Returns the episode's id.
      */
@@ -56,7 +71,8 @@ interface PodcastsLocalDataSource {
     /**
      * Follows the show, as following it from search does (ADR-031, Search): in one transaction, adds the show unless
      * one with its directory id is there, each of [episodes] its show hasn't by item key, and its follow On at
-     * [followedAt]. What is already there is kept as it is. Returns the show's id.
+     * [followedAt]. What is already there is kept as it is, but the show's kind, which the feed just read says
+     * (ADR-043). Returns the show's id.
      */
     suspend fun follow(show: ShowWrite, episodes: List<EpisodeWrite>, followedAt: Instant): Either<PodcastError, ShowId>
 
@@ -111,4 +127,16 @@ interface PodcastsLocalDataSource {
      * of the follows that weren't On and now are, whose feeds are to be read.
      */
     suspend fun applySyncedFollows(follows: SyncedFollows): Either<PodcastError, Set<DirectoryId>>
+
+    /** Every choice of episode order, with when each was made, as sync reads them (ADR-043, Syncing the choice). */
+    fun observeSyncedEpisodeOrders(): Flow<Either<PodcastError, SyncedEpisodeOrders>>
+
+    suspend fun getSyncedEpisodeOrders(): Either<PodcastError, SyncedEpisodeOrders>
+
+    /**
+     * Applies the choices a sync merged, in one transaction, resolving each with last-write-wins against the choice
+     * stored at that moment, so a choice the user makes while a sync runs is never overwritten by an older one
+     * (ADR-011, rule 3). A choice of a show the library hasn't is kept, for when it joins. Nothing is deleted.
+     */
+    suspend fun applySyncedEpisodeOrders(orders: SyncedEpisodeOrders): Either<PodcastError, Unit>
 }

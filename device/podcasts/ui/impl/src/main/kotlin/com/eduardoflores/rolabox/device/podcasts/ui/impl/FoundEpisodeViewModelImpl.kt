@@ -11,6 +11,7 @@ import com.eduardoflores.rolabox.device.podcasts.api.DirectoryShow
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastDirectory
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastError
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastsRepository
+import com.eduardoflores.rolabox.device.podcasts.api.ShowKind
 import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastSearchEpisodeKey
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
@@ -30,7 +31,7 @@ import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.launch
 
 /** An episode from search, found in its show's feed: what Play adds to the library. */
-private data class FoundInFeed(val show: DirectoryShow, val episode: DirectoryEpisode)
+private data class FoundInFeed(val show: DirectoryShow, val episode: DirectoryEpisode, val kind: ShowKind?)
 
 /**
  * The Episode screen (frame 26) of an episode from search that isn't in the library (ADR-031, Search). It reads the
@@ -68,7 +69,7 @@ internal class FoundEpisodeViewModelImpl @AssistedInject constructor(
                     if (episode == null) {
                         flowOf(ListUiState.NotInFeed)
                     } else {
-                        found = FoundInFeed(feed.show, episode)
+                        found = FoundInFeed(feed.show, episode, feed.kind)
                         playableState(feed.show, episode)
                     }
                 },
@@ -125,7 +126,7 @@ internal class FoundEpisodeViewModelImpl @AssistedInject constructor(
     // (ADR-031, The layout).
     private fun play(found: FoundInFeed, onPlaying: () -> Unit) {
         viewModelScope.launch {
-            val episodeId = podcastsRepository.addEpisode(found.show, found.episode).getOrNull()
+            val episodeId = podcastsRepository.addEpisode(found.show, found.episode, found.kind).getOrNull()
             if (episodeId == null) {
                 playFailureState.value = EpisodePlayFailure.EpisodeUnavailable
                 return@launch
