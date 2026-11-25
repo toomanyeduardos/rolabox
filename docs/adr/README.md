@@ -26,7 +26,7 @@ New ADR: copy [`template.md`](template.md), take the next number, and add it to 
 | [015](015-design-system-owns-visual-language.md) | The design system is the only home of Rolabox's visual language | Accepted |
 | [016](016-screenshot-testing.md) | Screenshot tests with Paparazzi, run on the JVM with goldens in Git LFS | Accepted |
 | [017](017-accessibility.md) | Accessibility is an architectural rule, starting with large text | Accepted |
-| [018](018-device-navigation.md) | Device navigation: a linear screen stack driven by the wheel | Accepted, partly superseded by ADR-020, ADR-031 and ADR-032 |
+| [018](018-device-navigation.md) | Device navigation: a linear screen stack driven by the wheel | Accepted, partly superseded by ADR-020, ADR-031, ADR-032 and ADR-044 |
 | [019](019-device-host-module.md) | The device is a host module, `:core:device`, that receives its screens from `:app` | Accepted, partly superseded by ADR-020 and ADR-032 |
 | [020](020-modules-by-product-area.md) | Modules grouped by product area, with the device assembling its own screens | Accepted, partly superseded by ADR-033 |
 | [021](021-data-flow-through-layers.md) | Every layer is reached through an abstraction, from the screen to the data source | Accepted |
@@ -39,7 +39,7 @@ New ADR: copy [`template.md`](template.md), take the next number, and add it to 
 | [028](028-shuffle-and-repeat.md) | Shuffle and repeat are two settings that the queue follows, in Media3's own modes | Accepted |
 | [029](029-sync-failures-are-logged.md) | Sync failures are logged, with the backend's reason where the exception is converted | Accepted |
 | [030](030-crash-reporting.md) | Crashlytics reports crashes, ANRs and named non-fatal errors from every user, with nothing that identifies them | Accepted |
-| [031](031-podcasts.md) | Podcasts: Apple's directory, feeds read on the phone, downloads in playback's Media3 cache, and follows synced per show | Accepted, partly superseded by ADR-037, ADR-042 and ADR-043 |
+| [031](031-podcasts.md) | Podcasts: Apple's directory, feeds read on the phone, downloads in playback's Media3 cache, and follows synced per show | Accepted, partly superseded by ADR-037, ADR-042, ADR-043 and ADR-044 |
 | [032](032-typing-on-the-device.md) | Typing on the device: the phone's keyboard over the wheel, into a field that is a row of the display | Accepted |
 | [033](033-shared-firestore-module.md) | Firestore is provided once, by `:common:firestore`, which also turns its errors into `RemoteError` | Accepted |
 | [034](034-plain-http-for-podcasts.md) | Plain HTTP is allowed for podcast feeds, images and audio, tried as HTTPS first, and HTTPS is forced for every service Rolabox talks to | Accepted |
@@ -52,3 +52,4 @@ New ADR: copy [`template.md`](template.md), take the next number, and add it to 
 | [041](041-store-icon-and-feature-graphic.md) | The Play icon and feature graphic are rendered by the store run, the icon from the launcher icon in `:app` | Accepted |
 | [042](042-found-feeds-kept-in-memory.md) | The feeds of shows opened from search are kept in memory, the last 5 for 5 minutes, as searches are | Accepted |
 | [043](043-episode-order.md) | A show's episodes are in the order its feed asks for, the user can set it per show, synced in a document of its own, and the list opens on the next episode | Accepted |
+| [044](044-episode-skips-are-equal.md) | During an episode, ⏮ and ⏭ both skip 15 s | Accepted |

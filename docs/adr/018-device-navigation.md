@@ -2,7 +2,8 @@
 
 - **Status:** Accepted. Rules 1, 5 and 12 superseded by [ADR-020](020-modules-by-product-area.md),
   in the parts that name `:app`. Rule 17 superseded for episodes by [ADR-031](031-podcasts.md).
-  Rule 11 superseded for the keyboard by [ADR-032](032-typing-on-the-device.md)
+  Rule 11 superseded for the keyboard by [ADR-032](032-typing-on-the-device.md). Rule 17's "forward
+  30 s" for an episode superseded by [ADR-044](044-episode-skips-are-equal.md): ⏭ skips forward 15 s
 - **Date:** 2026-10-01
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review

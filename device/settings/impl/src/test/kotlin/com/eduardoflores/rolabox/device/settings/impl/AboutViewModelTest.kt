@@ -41,6 +41,13 @@ class AboutViewModelTest {
     }
 
     @Test
+    fun protectedSongs_areNotCounted() {
+        library.songs = listOf(song(1), song(2).copy(isProtected = true), song(3))
+
+        assertEquals(SongCount.Loaded(2), viewModel().uiState.value.songs)
+    }
+
+    @Test
     fun aLibraryThatCannotBeRead_saysSo_andStillShowsTheVersion() {
         library.setReadError(StorageError.Corrupted)
 

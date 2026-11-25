@@ -18,11 +18,11 @@ import com.eduardoflores.rolabox.device.host.ScreenTitle
 import com.eduardoflores.rolabox.device.host.rememberListHighlight
 
 /**
- * About, a device screen: the app's name and version and the number of songs in the library, which can't be
- * selected, and under them the rows that open something (launch/06, card 96). Turning moves the highlight over those
- * rows only, and it is saved with the entry (ADR-018, rule 7). Center on Made By opens the author's GitHub profile
- * and on Privacy Policy the policy, both in the browser, and on Send Feedback an email to Rolabox in the email app,
- * all through [ExternalApps]. Center on Open-Source Licences reports [onLicencesClick], and on Legal, which says
+ * About, a device screen: the app's name and version and the number of songs in the library that can be played, which
+ * can't be selected, and under them the rows that open something (launch/06, card 96). Turning moves the highlight over
+ * those rows only, and it is saved with the entry (ADR-018, rule 7). Center on Made By opens the author's GitHub
+ * profile and on Privacy Policy the policy, both in the browser, and on Send Feedback an email to Rolabox in the email
+ * app, all through [ExternalApps]. Center on Open-Source Licences reports [onLicencesClick], and on Legal, which says
  * Rolabox isn't Apple's, [onLegalClick]. MENU, the host's, goes back.
  */
 @Composable

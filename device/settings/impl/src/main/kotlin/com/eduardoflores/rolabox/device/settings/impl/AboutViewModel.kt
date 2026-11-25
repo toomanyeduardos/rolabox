@@ -3,7 +3,10 @@ package com.eduardoflores.rolabox.device.settings.impl
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.StateFlow
 
-/** How many songs the library has, as About shows it. */
+/**
+ * How many songs the library has that can be played, as About shows it: a FairPlay song is listed but can't be played
+ * (ADR-024), so it isn't counted.
+ */
 internal sealed interface SongCount {
     data object Loading : SongCount
 

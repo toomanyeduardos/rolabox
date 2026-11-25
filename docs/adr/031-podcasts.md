@@ -5,7 +5,9 @@
   `show(show)` reading the network on each call ("The directory and a show from search")
   superseded by [ADR-042](042-found-feeds-kept-in-memory.md): the last 5 feeds read are kept in memory for 5 minutes.
   "Newest first" (The database, Search) and the database's table superseded by [ADR-043](043-episode-order.md):
-  episodes follow the feed's `itunes:type` or the user's choice, synced in a document of its own
+  episodes follow the feed's `itunes:type` or the user's choice, synced in a document of its own.
+  ⏭'s "forward 30 s" (Context, Episodes in playback, rule 11) superseded by
+  [ADR-044](044-episode-skips-are-equal.md): ⏮ and ⏭ both skip 15 s
 - **Date:** 2026-11-16
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review

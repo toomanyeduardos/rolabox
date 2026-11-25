@@ -18,7 +18,10 @@ internal class AboutViewModelImpl @Inject constructor(library: LibraryRepository
         .map { result ->
             AboutUiState(
                 version = version,
-                songs = result.fold(ifLeft = { SongCount.Unavailable }, ifRight = { SongCount.Loaded(it.size) }),
+                songs = result.fold(
+                    ifLeft = { SongCount.Unavailable },
+                    ifRight = { songs -> SongCount.Loaded(songs.count { !it.isProtected }) },
+                ),
             )
         }
         .stateIn(

@@ -7,11 +7,11 @@ import androidx.media3.common.util.UnstableApi
 import com.google.common.util.concurrent.ListenableFuture
 import kotlin.time.Duration.Companion.seconds
 
-/** How far ⏮ skips back during an episode (ADR-031, rule 11): the player's seek-back increment. */
+/** How far ⏮ skips back during an episode (ADR-031, rule 11; ADR-044): the player's seek-back increment. */
 internal val SkipBack = 15.seconds
 
-/** How far ⏭ skips forward during an episode (ADR-031, rule 11): the player's seek-forward increment. */
-internal val SkipForward = 30.seconds
+/** How far ⏭ skips forward during an episode, as far as ⏮ goes back (ADR-044): the seek-forward increment. */
+internal val SkipForward = 15.seconds
 
 /**
  * The session's player: the service's `ExoPlayer`, with previous and next turned into skip back and skip forward while
