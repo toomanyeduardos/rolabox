@@ -1,5 +1,6 @@
 package com.eduardoflores.rolabox.device.podcasts.network.impl
 
+import com.eduardoflores.rolabox.device.podcasts.api.ShowKind
 import com.eduardoflores.rolabox.device.podcasts.network.api.FeedEpisode
 import java.io.ByteArrayInputStream
 import java.time.Instant
@@ -110,6 +111,34 @@ class RssFeedParserTest {
         assertNull(undated.description)
     }
 
+    // ADR-043: the channel's itunes:type is the show's kind. A feed with none, or a value the spec hasn't, has none.
+    @Test
+    fun itunesType_isTheShowsKind() {
+        assertEquals(ShowKind.Episodic, parse("feeds/emperors-of-rome.xml").feed.kind)
+        assertNull(parse("feeds/edge-cases.xml").feed.kind)
+        assertEquals(ShowKind.Serial, kindOf("serial"))
+        assertEquals(ShowKind.Serial, kindOf(" Serial "))
+        assertEquals(ShowKind.Episodic, kindOf("episodic"))
+        assertNull(kindOf("seasonal"))
+        assertNull(kindOf(""))
+    }
+
+    // Only the channel's tag is the show's: one inside an item isn't.
+    @Test
+    fun anItemsType_isntTheShowsKind() {
+        val feed = "<rss xmlns:itunes=\"$ITUNES\"><channel><title>T</title>" +
+            "<item><itunes:type>serial</itunes:type>" +
+            "<enclosure url=\"https://e.com/1.mp3\" type=\"audio/mpeg\"/></item></channel></rss>"
+
+        assertNull(parseFeed(ByteArrayInputStream(feed.toByteArray())).feed.kind)
+    }
+
+    private fun kindOf(type: String): ShowKind? {
+        val feed = "<rss xmlns:itunes=\"$ITUNES\"><channel><title>T</title><itunes:type>$type</itunes:type>" +
+            "<item><enclosure url=\"https://e.com/1.mp3\" type=\"audio/mpeg\"/></item></channel></rss>"
+        return parseFeed(ByteArrayInputStream(feed.toByteArray())).feed.kind
+    }
+
     @Test
     fun aFeedThatEndsEarly_isUnreadable() {
         assertThrows(UnreadableFeedException::class.java) { parse("feeds/ends-early.xml") }
@@ -134,5 +163,9 @@ class RssFeedParserTest {
         assertThrows(UnreadableFeedException::class.java) {
             parseFeed(ByteArrayInputStream("<rss version=\"2.0\"></rss>".toByteArray()))
         }
+    }
+
+    private companion object {
+        const val ITUNES = "http://www.itunes.com/dtds/podcast-1.0.dtd"
     }
 }

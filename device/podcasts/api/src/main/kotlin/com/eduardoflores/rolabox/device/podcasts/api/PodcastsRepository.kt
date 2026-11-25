@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.Flow
  * (ADR-031, rule 4).
  *
  * Owners and shows are sorted A to Z without a leading "The", ignoring case, and the owner with no name last. A
- * show's episodes are newest first. Any read can fail, and a `Left` ends the flow.
+ * show's episodes are in its [Show.episodeOrder] (ADR-043). Any read can fail, and a `Left` ends the flow.
  */
 @Suppress("TooManyFunctions") // One for each question the screens ask of the library, and each change they make.
 interface PodcastsRepository {
@@ -21,10 +21,10 @@ interface PodcastsRepository {
     fun observeShow(showId: ShowId): Flow<Either<PodcastError, Show>>
 
     /**
-     * The episodes the show lists, newest first: with Follow On, every episode its feed has listed since it was
-     * followed or added, but those that left it. With Follow Off, only the episodes with a download, done or in
-     * progress, and an episode that left the feed only with one too (ADR-031, The database). Emits
-     * [PodcastError.ShowNotFound] and ends when there is no such show.
+     * The episodes the show lists, in its [Show.episodeOrder] (ADR-043): with Follow On, every episode its feed has
+     * listed since it was followed or added, but those that left it. With Follow Off, only the episodes with a
+     * download, done or in progress, and an episode that left the feed only with one too (ADR-031, The database).
+     * Emits [PodcastError.ShowNotFound] and ends when there is no such show.
      */
     fun observeEpisodesByShow(showId: ShowId): Flow<Either<PodcastError, List<Episode>>>
 
@@ -41,10 +41,22 @@ interface PodcastsRepository {
     suspend fun setFollowed(showId: ShowId, followed: Boolean): Either<PodcastError, Unit>
 
     /**
-     * Adds the show, with Follow Off, and that one of its episodes, as playing from search does (ADR-031). A show or
-     * an episode already in the library is kept as it is. Returns the id of the episode, to play it.
+     * Lists the show's episodes in [order] (ADR-043, The user's choice). An [order] that is the one the show's feed
+     * asks for clears the user's choice, so the show follows its feed again; any other is stored as the choice. Either
+     * is kept with when it was made, to sync.
      */
-    suspend fun addEpisode(show: DirectoryShow, episode: DirectoryEpisode): Either<PodcastError, EpisodeId>
+    suspend fun setEpisodeOrder(showId: ShowId, order: EpisodeOrder): Either<PodcastError, Unit>
+
+    /**
+     * Adds the show, with Follow Off, and that one of its episodes, as playing from search does (ADR-031). A show or
+     * an episode already in the library is kept as it is. [kind] is the feed's `itunes:type`, when the feed was read
+     * (ADR-043). Returns the id of the episode, to play it.
+     */
+    suspend fun addEpisode(
+        show: DirectoryShow,
+        episode: DirectoryEpisode,
+        kind: ShowKind? = null,
+    ): Either<PodcastError, EpisodeId>
 
     /**
      * Follows a show opened from search (ADR-031, Search): adds it, unless it is there, with the feed's owner and every

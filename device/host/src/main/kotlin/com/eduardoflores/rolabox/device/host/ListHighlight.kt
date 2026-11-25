@@ -13,9 +13,23 @@ import androidx.compose.runtime.setValue
  * screen that remembers it, and never leaves it (ADR-018, rule 7).
  */
 @Stable
-class ListHighlight internal constructor(index: Int) {
+class ListHighlight internal constructor(index: Int, started: Boolean = false) {
     var index by mutableIntStateOf(index)
         internal set
+
+    /** Whether the highlight has been put where its list opens: once, and never again, even after process death. */
+    private var started = started
+
+    /**
+     * Puts the highlight on [index], where the list opens, such as a show's next episode (ADR-043), the first time its
+     * rows are known. Afterwards it does nothing: coming back to the list keeps the row the user left (ADR-018,
+     * rule 7).
+     */
+    fun startAt(index: Int) {
+        if (started) return
+        started = true
+        this.index = index
+    }
 
     /**
      * Moves the highlight by the [steps] of a turn, and stops at the first and last of [rowCount] rows.
@@ -40,7 +54,18 @@ class ListHighlight internal constructor(index: Int) {
     }
 
     internal companion object {
-        val Saver = Saver<ListHighlight, Int>(save = { it.index }, restore = { ListHighlight(it) })
+        // Saved as the index and whether it started. A version before ADR-043 saved the index alone: that list was
+        // already shown, so it has started.
+        val Saver = Saver<ListHighlight, Any>(
+            save = { intArrayOf(it.index, if (it.started) 1 else 0) },
+            restore = { saved ->
+                when (saved) {
+                    is IntArray -> ListHighlight(saved[0], started = saved[1] == 1)
+                    is Int -> ListHighlight(saved, started = true)
+                    else -> null
+                }
+            },
+        )
     }
 }
 

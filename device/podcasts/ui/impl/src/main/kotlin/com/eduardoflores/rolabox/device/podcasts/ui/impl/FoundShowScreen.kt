@@ -32,9 +32,9 @@ import kotlin.time.Duration
 /**
  * Connects a show opened from search to its ViewModel, which the entry creates (ADR-021; frame 32). The title is the
  * show's, from the key, while its feed is read. Follow is the first row, Off until it is turned On, which adds the show
- * to the library. Then every episode of the feed, newest first: one the library has with its dots and download, and
- * any other with the download arrow and no dot. Center on one the library has is [onEpisodeClick], and on any other
- * [onSearchEpisodeClick].
+ * to the library. Then every episode of the feed, in its order (ADR-043): one the library has with its dots and
+ * download, and any other with the download arrow and no dot. A show listed oldest first opens on its next episode.
+ * Center on one the library has is [onEpisodeClick], and on any other [onSearchEpisodeClick].
  */
 @Composable
 internal fun FoundShowRoute(
@@ -52,7 +52,7 @@ internal fun FoundShowRoute(
         unknownEpisode = stringResource(R.string.podcasts_unknown_episode),
     )
     val rows = remember(state, words) { state.map { foundShowRows(it, words) } }
-    FollowFailureToast(followFailed, onShow = viewModel::onFollowFailureShown)
+    ChangeFailedToast(followFailed, R.string.podcasts_follow_failed, onShow = viewModel::onFollowFailureShown)
     ScreenTitle(title)
     PodcastsWheelList(
         state = rows,
@@ -67,15 +67,19 @@ internal fun FoundShowRoute(
                 }
             }
         },
+        startIndex = (state as? ListUiState.Loaded)?.value?.let { it.startingEpisode?.plus(1) ?: 0 },
     )
 }
 
-/** Follow with its value, then a row for each episode of the feed (frame 32). */
+/** Follow with its value, then a row for each episode of the feed, in its order (frame 32; ADR-043). */
 internal fun foundShowRows(content: FoundShowContent, words: ShowWords): List<DeviceListRow> {
     val follow = DeviceListRow(words.follow, value = if (content.isFollowed) words.on else words.off)
-    val episodes = content.feed.episodes.mapIndexed { index, episode ->
+    val episodes = content.listed.map { index ->
         content.inLibrary?.episodes?.getOrNull(index)?.let { episodeRow(it, words.unknownEpisode) }
-            ?: DeviceListRow(episode.title ?: words.unknownEpisode, download = DeviceListDownload.NotDownloaded)
+            ?: DeviceListRow(
+                content.feed.episodes[index].title ?: words.unknownEpisode,
+                download = DeviceListDownload.NotDownloaded,
+            )
     }
     return listOf(follow) + episodes
 }

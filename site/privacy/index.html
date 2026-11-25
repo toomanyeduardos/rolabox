@@ -39,7 +39,7 @@
           <td>To sign you in</td>
         </tr>
         <tr>
-          <td>Settings and the podcasts you follow</td>
+          <td>Settings, the podcasts you follow, and the episode order you choose for a podcast</td>
           <td>Only while you're signed in</td>
           <td>Google Cloud Firestore</td>
           <td>To sync them between your devices</td>
@@ -93,7 +93,7 @@
   <h2 id="without-an-account">Using Rolabox without an account</h2>
   <p>
     You can use Rolabox without an account. Then nothing is sent to Firebase Authentication or
-    Firestore, and your settings and follows exist only on your phone. These still apply:
+    Firestore, and your settings, follows and episode orders exist only on your phone. These still apply:
     <a href="#crash-reports">crash reports</a>, <a href="#album-covers">album covers</a>,
     <a href="#podcasts">podcasts</a> and <a href="#backup">Android backup</a>.
   </p>
@@ -116,6 +116,10 @@
       the main menu shows.
     </li>
     <li><strong>The podcasts you follow,</strong> each with when you followed or unfollowed it.</li>
+    <li>
+      <strong>The episode order you chose for a podcast,</strong> newest or oldest first, each with when you
+      chose it.
+    </li>
   </ul>
   <p>
     This data is stored by Google Firebase (Authentication and Cloud Firestore), which may store it on
@@ -172,7 +176,7 @@
   <h2 id="backup">Android backup</h2>
   <p>
     If Android backup is on for your phone, Android saves Rolabox's settings and podcasts data
-    (follows, episodes and positions) to your own Google account's backup, and copies them when you set
+    (follows, episode orders, episodes and positions) to your own Google account's backup, and copies them when you set
     up a new phone. Nothing else of Rolabox's is backed up. Android and Google control this, and you can
     turn it off in your phone's settings.
   </p>

@@ -501,6 +501,138 @@ describe('users/{uid}/podcastFollows last-write-wins', () => {
   });
 });
 
+// ADR-043 (Syncing the choice, rule 4): users/{uid}/podcastEpisodeOrders/{showKey}, one document per show.
+const orderDoc = (db, uid, showKey = DAILY) => doc(db, 'users', uid, 'podcastEpisodeOrders', showKey);
+const order = (value, date) => ({ value, updatedAt: Timestamp.fromDate(date) });
+
+async function seedOrder(uid, data, showKey = DAILY) {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await setDoc(orderDoc(context.firestore(), uid, showKey), data);
+  });
+}
+
+describe('users/{uid}/podcastEpisodeOrders access', () => {
+  it('lets the owner write, read and list their choices', async () => {
+    const db = firestoreAs(ALICE);
+    await assertSucceeds(setDoc(orderDoc(db, ALICE), order('Oldest', OLDER)));
+    await assertSucceeds(getDoc(orderDoc(db, ALICE)));
+    await assertSucceeds(getDocs(collection(db, 'users', ALICE, 'podcastEpisodeOrders')));
+  });
+
+  it("denies reading and listing another user's choices", async () => {
+    await seedOrder(BOB, order('Oldest', OLDER));
+    const db = firestoreAs(ALICE);
+    await assertFails(getDoc(orderDoc(db, BOB)));
+    await assertFails(getDocs(collection(db, 'users', BOB, 'podcastEpisodeOrders')));
+  });
+
+  it("denies writing another user's choices", async () => {
+    await assertFails(setDoc(orderDoc(firestoreAs(ALICE), BOB), order('Oldest', OLDER)));
+  });
+
+  it('denies reading and writing when signed out', async () => {
+    await seedOrder(ALICE, order('Oldest', OLDER));
+    const db = firestoreAs(null);
+    await assertFails(getDoc(orderDoc(db, ALICE)));
+    await assertFails(setDoc(orderDoc(db, ALICE), order('Newest', NEWER)));
+  });
+
+  // ADR-037: deleting the account deletes every choice. Sync itself never deletes one: a cleared choice is kept as
+  // Feed (ADR-043).
+  it('lets the owner delete their choices', async () => {
+    await seedOrder(ALICE, order('Oldest', OLDER));
+    await assertSucceeds(deleteDoc(orderDoc(firestoreAs(ALICE), ALICE)));
+  });
+
+  it("denies deleting another user's choices", async () => {
+    await seedOrder(BOB, order('Oldest', OLDER));
+    await assertFails(deleteDoc(orderDoc(firestoreAs(ALICE), BOB)));
+  });
+
+  it('denies deleting a choice when signed out', async () => {
+    await seedOrder(ALICE, order('Oldest', OLDER));
+    await assertFails(deleteDoc(orderDoc(firestoreAs(null), ALICE)));
+  });
+});
+
+describe('users/{uid}/podcastEpisodeOrders validation', () => {
+  const write = (data, showKey = DAILY) => setDoc(orderDoc(firestoreAs(ALICE), ALICE, showKey), data);
+
+  it('accepts each of Newest, Oldest and Feed', async () => {
+    await assertSucceeds(write(order('Newest', OLDER)));
+    await assertSucceeds(write(order('Oldest', OLDER), 'itunes-1'));
+    await assertSucceeds(write(order('Feed', OLDER), 'itunes-2'));
+  });
+
+  it('rejects any other value, and a value that is not a string', async () => {
+    await assertFails(write(order('Auto', OLDER)));
+    await assertFails(write(order('oldest', OLDER)));
+    await assertFails(write(order('', OLDER)));
+    await assertFails(write({ ...order('Oldest', OLDER), value: 1 }));
+  });
+
+  it('accepts only a show key of itunes- and digits', async () => {
+    await assertFails(write(order('Oldest', OLDER), 'itunes-'));
+    await assertFails(write(order('Oldest', OLDER), 'itunes-12a'));
+    await assertFails(write(order('Oldest', OLDER), 'podcastindex-12'));
+    await assertFails(write(order('Oldest', OLDER), '1200361736'));
+  });
+
+  it('rejects unknown fields, and a missing one', async () => {
+    await assertFails(write({ ...order('Oldest', OLDER), followed: true }));
+    const { value, ...withoutValue } = order('Oldest', OLDER);
+    await assertFails(write(withoutValue));
+    const { updatedAt, ...withoutUpdatedAt } = order('Oldest', OLDER);
+    await assertFails(write(withoutUpdatedAt));
+  });
+
+  it('rejects an updatedAt that is not a timestamp', async () => {
+    await assertFails(write({ ...order('Oldest', OLDER), updatedAt: 1767225600000 }));
+  });
+
+  it('accepts an updatedAt a little ahead of the server clock', async () => {
+    await assertSucceeds(write(order('Oldest', hoursFromNow(1))));
+  });
+
+  it('rejects an updatedAt more than a day ahead of the server clock', async () => {
+    await assertFails(write(order('Oldest', hoursFromNow(25))));
+  });
+});
+
+describe('users/{uid}/podcastEpisodeOrders last-write-wins', () => {
+  beforeEach(async () => {
+    await seedOrder(ALICE, order('Oldest', NEWER));
+  });
+
+  const update = (data) => setDoc(orderDoc(firestoreAs(ALICE), ALICE), data);
+
+  it('accepts a newer choice, and a newer clear after it', async () => {
+    await assertSucceeds(update(order('Newest', hoursFromNow(1))));
+    await assertSucceeds(update(order('Feed', hoursFromNow(2))));
+  });
+
+  it('accepts rewriting the choice with the same timestamp', async () => {
+    await assertSucceeds(update(order('Oldest', NEWER)));
+  });
+
+  it('rejects moving the choice back in time', async () => {
+    await assertFails(update(order('Newest', OLDER)));
+  });
+
+  it('rejects removing a field', async () => {
+    await assertFails(update({ value: 'Newest' }));
+    await assertFails(updateDoc(orderDoc(firestoreAs(ALICE), ALICE), { updatedAt: deleteField() }));
+  });
+});
+
+// The follow document is unchanged by the choices: a phone that doesn't know them keeps writing it as before.
+describe('users/{uid}/podcastFollows without the choice', () => {
+  it('rejects a choice written into the follow document', async () => {
+    const db = firestoreAs(ALICE);
+    await assertFails(setDoc(followDoc(db, ALICE), { ...follow(true, OLDER), order: order('Oldest', OLDER) }));
+  });
+});
+
 describe('deny by default', () => {
   it('denies subcollections under the owner document', async () => {
     const db = firestoreAs(ALICE);

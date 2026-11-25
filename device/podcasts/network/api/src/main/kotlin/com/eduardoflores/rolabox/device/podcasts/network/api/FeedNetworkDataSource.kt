@@ -1,6 +1,7 @@
 package com.eduardoflores.rolabox.device.podcasts.network.api
 
 import arrow.core.Either
+import com.eduardoflores.rolabox.device.podcasts.api.ShowKind
 import java.time.Instant
 import kotlin.time.Duration
 
@@ -37,9 +38,16 @@ sealed interface FeedAnswer {
 /**
  * A show as its feed has it. [ownerName] is `itunes:author`, then `itunes:owner`'s `itunes:name`, or `null`.
  * [imageUrl] is `itunes:image`, then `image/url`. [episodes] are the items with an audio enclosure, newest first, and
- * those with no date last, in the feed's order.
+ * those with no date last, in the feed's order: the order a show is listed in is applied where it is read (ADR-043).
+ * [kind] is `itunes:type`, or `null` when the feed says none, or a value Apple's spec hasn't.
  */
-data class Feed(val title: String?, val ownerName: String?, val imageUrl: String?, val episodes: List<FeedEpisode>)
+data class Feed(
+    val title: String?,
+    val ownerName: String?,
+    val imageUrl: String?,
+    val episodes: List<FeedEpisode>,
+    val kind: ShowKind? = null,
+)
 
 /**
  * An item of a feed with an audio enclosure. [guid] is `null` when the item has none: it is then known by

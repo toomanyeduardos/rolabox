@@ -9,6 +9,7 @@ import com.eduardoflores.rolabox.device.podcasts.api.DirectoryShow
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastDirectory
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastError
 import com.eduardoflores.rolabox.device.podcasts.api.ShowFeed
+import com.eduardoflores.rolabox.device.podcasts.api.ShowKind
 import com.eduardoflores.rolabox.device.podcasts.network.api.AudioNetworkDataSource
 import com.eduardoflores.rolabox.device.podcasts.network.api.AudioNetworkError
 import com.eduardoflores.rolabox.device.podcasts.network.api.ConnectionNetworkDataSource
@@ -95,6 +96,7 @@ internal class DefaultPodcastDirectory @Inject constructor(
                 ownerName = answer.feed.ownerName,
                 movedTo = answer.movedTo,
                 episodes = answer.feed.episodes.map { it.toDirectoryEpisode() },
+                kind = answer.feed.kind,
                 readAt = timeSource.markNow(),
             )
         }
@@ -109,6 +111,7 @@ private data class FeedRead(
     val ownerName: String?,
     val movedTo: String?,
     val episodes: List<DirectoryEpisode>,
+    val kind: ShowKind?,
     val readAt: ComparableTimeMark,
 ) {
     fun feedOf(show: DirectoryShow) = ShowFeed(
@@ -116,6 +119,7 @@ private data class FeedRead(
         // The feed's owner, then the directory's creator (ADR-031, Feeds).
         ownerName = ownerName ?: show.creator,
         episodes = episodes,
+        kind = kind,
     )
 }
 

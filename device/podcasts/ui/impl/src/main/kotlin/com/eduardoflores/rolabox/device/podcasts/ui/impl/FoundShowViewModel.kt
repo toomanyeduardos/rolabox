@@ -5,11 +5,14 @@ import androidx.lifecycle.viewModelScope
 import arrow.core.Either
 import com.eduardoflores.rolabox.device.podcasts.api.DirectoryEpisode
 import com.eduardoflores.rolabox.device.podcasts.api.DirectoryShow
+import com.eduardoflores.rolabox.device.podcasts.api.EpisodeOrder
+import com.eduardoflores.rolabox.device.podcasts.api.PlayedState
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastDirectory
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastError
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastsRepository
 import com.eduardoflores.rolabox.device.podcasts.api.ShowFeed
 import com.eduardoflores.rolabox.device.podcasts.api.ShowInLibrary
+import com.eduardoflores.rolabox.device.podcasts.api.episodeOrder
 import com.eduardoflores.rolabox.device.podcasts.ui.api.PodcastSearchShowKey
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
@@ -29,9 +32,23 @@ import kotlinx.coroutines.launch
 /**
  * A show opened from search (frame 32): its whole [feed], and the show as the library has it, [inLibrary], when it
  * does, with Follow Off, since one with Follow On opens the library's own screen (ADR-031, Search).
+ *
+ * Its episodes are listed in [order]: the library's, with the user's choice, when the library has the show, else the
+ * one the feed asks for (ADR-043). [listed] is that order, as indices into the feed's episodes, and
+ * [startingEpisode] the position in it of the episode the list opens on, or `null` to open on its first row.
  */
 internal data class FoundShowContent(val feed: ShowFeed, val inLibrary: ShowInLibrary?) {
     val isFollowed: Boolean get() = inLibrary?.show?.isFollowed == true
+
+    val order: EpisodeOrder = inLibrary?.show?.episodeOrder ?: feed.kind.episodeOrder
+
+    val listed: List<Int> = listedIndices(feed.episodes.map { it.publishedAt }, order)
+
+    // An episode the library hasn't was never played.
+    val startingEpisode: Int? = startingEpisodeOf(
+        listed.map { inLibrary?.episodes?.getOrNull(it)?.playedState ?: PlayedState.Unplayed },
+        order,
+    )
 }
 
 /** Where center on an episode of a show from search goes: the library's own Episode screen, or one from search. */
@@ -42,7 +59,8 @@ internal sealed interface FoundEpisodeTarget {
 }
 
 /**
- * What a show opened from search shows (frame 32): Follow, then every episode of its feed, newest first (ADR-021).
+ * What a show opened from search shows (frame 32): Follow, then every episode of its feed, in its order (ADR-021,
+ * ADR-043).
  * [FoundShowViewModelImpl] implements it.
  */
 internal abstract class FoundShowViewModel : ViewModel() {
@@ -59,7 +77,7 @@ internal abstract class FoundShowViewModel : ViewModel() {
 
     abstract fun onFollowFailureShown()
 
-    /** Where center on the episode at [index] of the feed goes, or `null` when there is none. */
+    /** Where center on the episode at [index] of the list goes, in its order, or `null` when there is none. */
     abstract fun episodeTarget(index: Int): FoundEpisodeTarget?
 }
 
@@ -110,8 +128,9 @@ internal class FoundShowViewModelImpl @AssistedInject constructor(
 
     override fun episodeTarget(index: Int): FoundEpisodeTarget? {
         val content = loaded()
-        val episode = content?.feed?.episodes?.getOrNull(index) ?: return null
-        val inLibrary = content.inLibrary?.episodes?.getOrNull(index)
+        val inFeed = content?.listed?.getOrNull(index) ?: return null
+        val episode = content.feed.episodes[inFeed]
+        val inLibrary = content.inLibrary?.episodes?.getOrNull(inFeed)
         return inLibrary?.let { FoundEpisodeTarget.Library(it.id.value) }
             ?: FoundEpisodeTarget.Search(content.feed.show, episode)
     }

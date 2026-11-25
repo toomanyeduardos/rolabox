@@ -115,5 +115,28 @@ service cloud.firestore {
         && isValidFollow(request.resource.data)
         && request.resource.data.updatedAt >= resource.data.updatedAt;
     }
+
+    // The user's choice of a show's episode order (ADR-043): one document per show, named by its directory id, apart
+    // from its follow, so a phone that doesn't know the choice never writes over it. value is the choice's name, and
+    // Feed is a choice cleared, kept as the record that wins over an older one: sync never deletes a choice. Only
+    // deleting the account does, and then it deletes every one (ADR-037). Devices resolve conflicts with
+    // last-write-wins on updatedAt, checked as ADR-011 rule 6 says.
+    function isValidEpisodeOrder(data) {
+      return data.keys().hasOnly(['value', 'updatedAt'])
+        && data.keys().hasAll(['value', 'updatedAt'])
+        && data.value in ['Newest', 'Oldest', 'Feed']
+        && data.updatedAt is timestamp
+        && data.updatedAt <= request.time + duration.value(1, 'd');
+    }
+
+    match /users/{uid}/podcastEpisodeOrders/{showKey} {
+      allow read, delete: if isOwner(uid);
+      allow create: if isOwner(uid)
+        && showKey.matches('itunes-[0-9]+')
+        && isValidEpisodeOrder(request.resource.data);
+      allow update: if isOwner(uid)
+        && isValidEpisodeOrder(request.resource.data)
+        && request.resource.data.updatedAt >= resource.data.updatedAt;
+    }
   }
 }

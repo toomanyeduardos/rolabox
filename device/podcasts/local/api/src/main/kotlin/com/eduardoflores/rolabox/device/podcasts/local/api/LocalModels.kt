@@ -5,12 +5,14 @@ import com.eduardoflores.rolabox.device.podcasts.api.EpisodeId
 import com.eduardoflores.rolabox.device.podcasts.api.OwnerId
 import com.eduardoflores.rolabox.device.podcasts.api.Show
 import com.eduardoflores.rolabox.device.podcasts.api.ShowId
+import com.eduardoflores.rolabox.device.podcasts.api.ShowKind
 import java.time.Instant
 import kotlin.time.Duration
 
 /**
  * A show to add. [ownerKey] is the grouping key of [ownerName], and [titleSortKey] and [ownerSortKey] what the title
  * and the owner sort by, all of which the part's `:impl` decides (ADR-031). [ownerSortKey] is `null` with no owner.
+ * [kind] is the feed's `itunes:type`, `null` when it says none or it wasn't read (ADR-043).
  */
 data class ShowWrite(
     val directoryId: DirectoryId,
@@ -20,6 +22,7 @@ data class ShowWrite(
     val ownerKey: OwnerId,
     val titleSortKey: String,
     val ownerSortKey: String?,
+    val kind: ShowKind? = null,
 )
 
 /**

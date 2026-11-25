@@ -123,4 +123,38 @@ class ListHighlightTest {
 
         assertEquals(3, restored?.index)
     }
+
+    // ADR-043: a list opens on its starting row, such as a show's next episode, once.
+    @Test
+    fun startAt_putsTheHighlightThere_once() {
+        highlight.startAt(5)
+        highlight.move(steps = -2, rowCount = 8)
+
+        highlight.startAt(7)
+
+        assertEquals(3, highlight.index)
+    }
+
+    // A highlight saved by a version before ADR-043, as its index alone, comes back where it was, already started.
+    @Test
+    fun saver_restoresAnIndexSavedAlone_asStarted() {
+        val restored = checkNotNull(ListHighlight.Saver.restore(4))
+        restored.startAt(1)
+
+        assertEquals(4, restored.index)
+    }
+
+    // ADR-018, rule 7: coming back after process death keeps the row the user left, not the starting one.
+    @Test
+    fun saver_keepsThatTheHighlightStarted() {
+        highlight.startAt(5)
+        highlight.move(steps = 1, rowCount = 8)
+        val scope = SaverScope { true }
+
+        val saved = with(ListHighlight.Saver) { scope.save(highlight) }
+        val restored = checkNotNull(ListHighlight.Saver.restore(checkNotNull(saved)))
+        restored.startAt(2)
+
+        assertEquals(6, restored.index)
+    }
 }

@@ -30,6 +30,9 @@ import kotlinx.coroutines.delay
  * [sortedFrom] is the index of the first row of a list sorted by its labels, after the rows that come first, such as
  * Search: while it is turned fast, the first letter of the highlighted row is shown over it. `null` for a list that
  * isn't sorted by name, such as a show's episodes.
+ *
+ * [startIndex] is the row the list opens on, such as a show's next episode (ADR-043), `null` while its rows aren't
+ * known. The first one given moves the highlight, once: coming back to the list keeps the row the user left.
  */
 @Composable
 internal fun PodcastsWheelList(
@@ -37,8 +40,10 @@ internal fun PodcastsWheelList(
     onCenter: (index: Int) -> Unit,
     sortedFrom: Int? = null,
     message: DeviceListMessage? = null,
+    startIndex: Int? = null,
 ) {
     val highlight = rememberListHighlight()
+    LaunchedEffect(startIndex) { startIndex?.let(highlight::startAt) }
     val quickScroll = rememberQuickScroll()
     val rows = (state as? ListUiState.Loaded)?.value.orEmpty()
     val rowCount = rows.size

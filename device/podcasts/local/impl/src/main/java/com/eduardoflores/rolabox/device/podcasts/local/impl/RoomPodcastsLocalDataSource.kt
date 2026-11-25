@@ -15,11 +15,13 @@ import com.eduardoflores.rolabox.common.util.RolaboxDispatchers.IO
 import com.eduardoflores.rolabox.common.util.catchNamed
 import com.eduardoflores.rolabox.device.podcasts.api.DirectoryId
 import com.eduardoflores.rolabox.device.podcasts.api.EpisodeId
+import com.eduardoflores.rolabox.device.podcasts.api.EpisodeOrderChoice
 import com.eduardoflores.rolabox.device.podcasts.api.Owner
 import com.eduardoflores.rolabox.device.podcasts.api.OwnerId
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastError
 import com.eduardoflores.rolabox.device.podcasts.api.Show
 import com.eduardoflores.rolabox.device.podcasts.api.ShowId
+import com.eduardoflores.rolabox.device.podcasts.api.SyncedEpisodeOrders
 import com.eduardoflores.rolabox.device.podcasts.api.SyncedFollows
 import com.eduardoflores.rolabox.device.podcasts.local.api.ArtworkSource
 import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeRecord
@@ -72,6 +74,14 @@ internal class RoomPodcastsLocalDataSource @Inject constructor(
 
     override suspend fun setFollow(showId: ShowId, followed: Boolean, updatedAt: Instant): Either<PodcastError, Unit> =
         catchNamed(::toError) { dao.setFollow(showId.value, followed, updatedAt.toEpochMilli()) }
+            .flatMap { found -> if (found) Unit.right() else PodcastError.ShowNotFound(showId).left() }
+
+    override suspend fun setEpisodeOrder(
+        showId: ShowId,
+        choice: EpisodeOrderChoice,
+        updatedAt: Instant,
+    ): Either<PodcastError, Unit> =
+        catchNamed(::toError) { dao.setEpisodeOrder(showId.value, choice.name, updatedAt.toEpochMilli()) }
             .flatMap { found -> if (found) Unit.right() else PodcastError.ShowNotFound(showId).left() }
 
     override suspend fun addEpisode(
@@ -156,6 +166,24 @@ internal class RoomPodcastsLocalDataSource @Inject constructor(
             dao.applySyncedFollows(entities) { stored, merged ->
                 checkNotNull(lastWriteWins.resolve(stored?.toSynced(), merged.toSynced())).toEntity(merged.directoryId)
             }.mapTo(mutableSetOf(), ::DirectoryId)
+        }
+
+    override fun observeSyncedEpisodeOrders(): Flow<Either<PodcastError, SyncedEpisodeOrders>> =
+        dao.observeEpisodeOrders().map { it.toSyncedEpisodeOrders() }.asRead()
+
+    override suspend fun getSyncedEpisodeOrders(): Either<PodcastError, SyncedEpisodeOrders> =
+        catchNamed(::toError) { dao.getEpisodeOrders().toSyncedEpisodeOrders() }
+
+    // Resolved inside the transaction, against what is stored at that moment (ADR-011, rule 3). A stored value this
+    // version doesn't know is older than any it does: a newer version's, which its own sync keeps.
+    override suspend fun applySyncedEpisodeOrders(orders: SyncedEpisodeOrders): Either<PodcastError, Unit> =
+        catchNamed(::toError) {
+            val entities = orders.map { (directoryId, choice) -> choice.toEntity(directoryId.value) }
+            dao.applySyncedEpisodeOrders(entities) { stored, merged ->
+                val known = stored?.let { entity -> episodeOrderChoiceOf(entity.value)?.let(entity::toSynced) }
+                val mergedChoice = EpisodeOrderChoice.valueOf(merged.value)
+                checkNotNull(lastWriteWins.resolve(known, merged.toSynced(mergedChoice))).toEntity(merged.directoryId)
+            }
         }
 
     private fun <T> Flow<T>.asRead(): Flow<Either<PodcastError, T>> = flowOn(ioDispatcher).catchNamed(::toError)

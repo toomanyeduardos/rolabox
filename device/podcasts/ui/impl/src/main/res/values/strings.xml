@@ -9,6 +9,11 @@
     <string name="podcasts_on">On</string>
     <string name="podcasts_off">Off</string>
     <string name="podcasts_follow_failed">Couldn\'t change Follow. Try again.</string>
+    <!-- The order of a show's episodes, a row under Follow that center flips (ADR-043). -->
+    <string name="podcasts_order">Order</string>
+    <string name="podcasts_order_newest">Newest</string>
+    <string name="podcasts_order_oldest">Oldest</string>
+    <string name="podcasts_order_failed">Couldn\'t change Order. Try again.</string>
     <!-- Toasts when center on Play, Resume or Play from Start couldn't play the episode (ADR-018, rule 18). -->
     <string name="podcasts_play_episode_unavailable">Can\'t read this episode</string>
     <string name="podcasts_play_player_unavailable">Couldn\'t start the player. Try again.</string>

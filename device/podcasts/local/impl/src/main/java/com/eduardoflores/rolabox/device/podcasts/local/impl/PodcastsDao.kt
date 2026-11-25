@@ -8,10 +8,15 @@ import androidx.room.Transaction
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 
-// A show and its Follow switch, Off when it has none.
+// A show, its Follow switch, Off when it has none, its feed's kind and the user's choice of order (ADR-043).
 private const val SHOWS = "SELECT s.id AS id, s.directoryId AS directoryId, s.title AS title, " +
-    "s.ownerKey AS ownerKey, s.ownerName AS ownerName, COALESCE(f.followed, 0) AS followed " +
-    "FROM shows s LEFT JOIN follows f ON f.directoryId = s.directoryId"
+    "s.ownerKey AS ownerKey, s.ownerName AS ownerName, COALESCE(f.followed, 0) AS followed, s.kind AS kind, " +
+    "o.value AS orderChoice " +
+    "FROM shows s LEFT JOIN follows f ON f.directoryId = s.directoryId " +
+    "LEFT JOIN episodeOrders o ON o.directoryId = s.directoryId"
+
+// Whether the show s, with its choice o, is listed oldest first: the user's choice, else its feed's (ADR-043, rule 1).
+private const val OLDEST_FIRST = "(o.value = 'Oldest' OR (COALESCE(o.value, 'Feed') = 'Feed' AND s.kind = 'Serial'))"
 
 // An episode and its progress, null when it was never started.
 private const val EPISODES = "SELECT e.id AS id, e.showId AS showId, e.itemKey AS itemKey, e.title AS title, " +
@@ -52,7 +57,15 @@ internal interface PodcastsDao {
     )
     suspend fun episodeIdOf(directoryId: String, itemKey: String): Long?
 
-    @Query("$EPISODES WHERE e.showId = :showId ORDER BY e.publishedAt IS NULL, e.publishedAt DESC, e.id DESC")
+    // In the show's order: the dated episodes newest or oldest first, the same date in the order they were added or
+    // its reverse, and the undated ones last, as newest first lists them in either order (ADR-043).
+    @Query(
+        "$EPISODES JOIN shows s ON s.id = e.showId LEFT JOIN episodeOrders o ON o.directoryId = s.directoryId " +
+            "WHERE e.showId = :showId ORDER BY e.publishedAt IS NULL, " +
+            "CASE WHEN $OLDEST_FIRST THEN e.publishedAt END, " +
+            "CASE WHEN $OLDEST_FIRST AND e.publishedAt IS NOT NULL THEN e.id END, " +
+            "e.publishedAt DESC, e.id DESC",
+    )
     fun observeEpisodesByShow(showId: Long): Flow<List<EpisodeRow>>
 
     @Query("$EPISODES WHERE e.id = :id")
@@ -104,6 +117,45 @@ internal interface PodcastsDao {
         return true
     }
 
+    @Upsert
+    suspend fun upsertEpisodeOrder(order: EpisodeOrderEntity)
+
+    @Query("SELECT * FROM episodeOrders WHERE directoryId = :directoryId")
+    suspend fun getEpisodeOrder(directoryId: String): EpisodeOrderEntity?
+
+    @Query("SELECT * FROM episodeOrders ORDER BY directoryId")
+    fun observeEpisodeOrders(): Flow<List<EpisodeOrderEntity>>
+
+    @Query("SELECT * FROM episodeOrders ORDER BY directoryId")
+    suspend fun getEpisodeOrders(): List<EpisodeOrderEntity>
+
+    /** Stores the user's choice of the show's order, and returns whether the show is there. */
+    @Transaction
+    suspend fun setEpisodeOrder(showId: Long, value: String, updatedAt: Long): Boolean {
+        val show = getShowEntity(showId) ?: return false
+        upsertEpisodeOrder(EpisodeOrderEntity(show.directoryId, value, updatedAt))
+        return true
+    }
+
+    /**
+     * Applies choices a sync merged: each is [resolve]d against the choice stored now, and only what changed is
+     * written.
+     */
+    @Transaction
+    suspend fun applySyncedEpisodeOrders(
+        orders: List<EpisodeOrderEntity>,
+        resolve: (stored: EpisodeOrderEntity?, merged: EpisodeOrderEntity) -> EpisodeOrderEntity,
+    ) {
+        orders.forEach { merged ->
+            val stored = getEpisodeOrder(merged.directoryId)
+            val winner = resolve(stored, merged)
+            if (winner != stored) upsertEpisodeOrder(winner)
+        }
+    }
+
+    @Query("UPDATE shows SET kind = :kind WHERE id = :showId")
+    suspend fun setShowKind(showId: Long, kind: String?)
+
     @Query("SELECT id FROM shows WHERE directoryId = :directoryId")
     suspend fun showIdOf(directoryId: String): Long?
 
@@ -143,10 +195,13 @@ internal interface PodcastsDao {
         return episodeIdOf(showId, episode.itemKey) ?: insertEpisode(episode.copy(showId = showId))
     }
 
-    /** Adds the show and the episodes that aren't there yet, turns its follow On, and returns the show's id. */
+    /**
+     * Adds the show and the episodes that aren't there yet, turns its follow On, and returns the show's id. The feed
+     * was just read whole, so a show already there takes its kind (ADR-043).
+     */
     @Transaction
     suspend fun follow(show: ShowEntity, episodes: List<EpisodeEntity>, follow: FollowEntity): Long {
-        val showId = showIdOf(show.directoryId) ?: insertShow(show)
+        val showId = showIdOf(show.directoryId)?.also { setShowKind(it, show.kind) } ?: insertShow(show)
         episodes.forEach { episode ->
             if (episodeIdOf(showId, episode.itemKey) == null) insertEpisode(episode.copy(showId = showId))
         }
@@ -165,7 +220,7 @@ internal interface PodcastsDao {
     @Query(
         "UPDATE shows SET feedUrl = :feedUrl, title = :title, titleSortKey = :titleSortKey, ownerName = :ownerName, " +
             "ownerKey = :ownerKey, ownerSortKey = :ownerSortKey, imageUrl = COALESCE(:imageUrl, imageUrl), " +
-            "etag = :etag, lastModified = :lastModified, feedReadAt = :feedReadAt WHERE id = :id",
+            "etag = :etag, lastModified = :lastModified, feedReadAt = :feedReadAt, kind = :kind WHERE id = :id",
     )
     @Suppress("LongParameterList") // One for each column the feed writes.
     suspend fun updateShowFromFeed(
@@ -180,6 +235,7 @@ internal interface PodcastsDao {
         etag: String?,
         lastModified: String?,
         feedReadAt: Long,
+        kind: String?,
     )
 
     @Query(
@@ -230,6 +286,7 @@ internal interface PodcastsDao {
                 etag = show.etag,
                 lastModified = show.lastModified,
                 feedReadAt = readAt,
+                kind = show.kind,
             )
         } ?: insertShow(show.copy(feedReadAt = readAt, joinedAt = readAt))
         // The move isn't the user's choice: updatedAt stays, so it can't win over a newer Follow from another phone.
@@ -288,6 +345,8 @@ internal data class ShowRow(
     val ownerKey: String,
     val ownerName: String?,
     val followed: Boolean,
+    val kind: String?,
+    val orderChoice: String?,
 )
 
 internal data class EpisodeRow(

@@ -6,11 +6,14 @@ import com.eduardoflores.rolabox.common.sync.api.SyncTimestamp
 import com.eduardoflores.rolabox.common.sync.api.SyncedValue
 import com.eduardoflores.rolabox.device.podcasts.api.DirectoryId
 import com.eduardoflores.rolabox.device.podcasts.api.EpisodeId
+import com.eduardoflores.rolabox.device.podcasts.api.EpisodeOrder
+import com.eduardoflores.rolabox.device.podcasts.api.EpisodeOrderChoice
 import com.eduardoflores.rolabox.device.podcasts.api.Follow
 import com.eduardoflores.rolabox.device.podcasts.api.Owner
 import com.eduardoflores.rolabox.device.podcasts.api.OwnerId
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastError
 import com.eduardoflores.rolabox.device.podcasts.api.ShowId
+import com.eduardoflores.rolabox.device.podcasts.api.ShowKind
 import com.eduardoflores.rolabox.device.podcasts.local.api.ArtworkSource
 import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeProgressLocalDataSource
 import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeWrite
@@ -551,6 +554,139 @@ abstract class PodcastsLocalContract {
         )
 
         assertEquals(emptySet<DirectoryId>().right(), turnedOn)
+    }
+
+    // ADR-043: the order of a show's episodes is the user's choice, else its feed's.
+    private suspend fun titlesOf(showId: ShowId) = episodesOf(showId).map { it.title }
+
+    private suspend fun showWithDatedEpisodes(kind: ShowKind?): ShowId {
+        val daily = show(1, "The Daily", "NY Times").copy(kind = kind)
+        val showId = local.getEpisode(add(daily, episode("old", publishedAt = 100))).getOrNull()!!.showId
+        add(daily, episode("undated"))
+        add(daily, episode("new", publishedAt = 300))
+        add(daily, episode("middle", publishedAt = 200))
+        add(daily, episode("middle, added later", publishedAt = 200))
+        return showId
+    }
+
+    @Test
+    fun aSerialShowsEpisodes_areOldestFirst_andThoseWithNoDateLast() = runTest {
+        val showId = showWithDatedEpisodes(ShowKind.Serial)
+
+        assertEquals(listOf("old", "middle", "middle, added later", "new", "undated"), titlesOf(showId))
+        val show = local.getShow(showId).getOrNull()!!
+        assertEquals(EpisodeOrder.Oldest, show.episodeOrder)
+        assertEquals(EpisodeOrder.Oldest, show.feedEpisodeOrder)
+    }
+
+    @Test
+    fun anEpisodicShow_isNewestFirst() = runTest {
+        val showId = showWithDatedEpisodes(ShowKind.Episodic)
+
+        assertEquals(listOf("new", "middle, added later", "middle", "old", "undated"), titlesOf(showId))
+        assertEquals(EpisodeOrder.Newest, local.getShow(showId).getOrNull()?.episodeOrder)
+    }
+
+    @Test
+    fun theUsersChoice_winsOverTheFeeds_andFeedGivesItBack() = runTest {
+        val showId = showWithDatedEpisodes(ShowKind.Serial)
+
+        local.setEpisodeOrder(showId, EpisodeOrderChoice.Newest, NOW)
+
+        assertEquals(listOf("new", "middle, added later", "middle", "old", "undated"), titlesOf(showId))
+        val chosen = local.getShow(showId).getOrNull()!!
+        assertEquals(EpisodeOrder.Newest, chosen.episodeOrder)
+        assertEquals(EpisodeOrder.Oldest, chosen.feedEpisodeOrder)
+
+        local.setEpisodeOrder(showId, EpisodeOrderChoice.Feed, LATER)
+
+        assertEquals(listOf("old", "middle", "middle, added later", "new", "undated"), titlesOf(showId))
+        assertEquals(EpisodeOrder.Oldest, local.observeShow(showId).first().getOrNull()?.episodeOrder)
+    }
+
+    @Test
+    fun aChoiceOfAShowThatIsntThere_isShowNotFound() = runTest {
+        assertEquals(
+            PodcastError.ShowNotFound(ShowId(9)).left(),
+            local.setEpisodeOrder(ShowId(9), EpisodeOrderChoice.Oldest, NOW),
+        )
+    }
+
+    @Test
+    fun aFeedRead_setsTheShowsKind() = runTest {
+        val daily = show(1, "The Daily", "NY Times")
+        val showId = local.follow(daily, listOf(episode("a", 10), episode("b", 20)), NOW).getOrNull()!!
+        assertEquals(EpisodeOrder.Newest, local.getShow(showId).getOrNull()?.episodeOrder)
+
+        local.applyFeed(feed(daily.copy(kind = ShowKind.Serial), episode("a", 10), episode("b", 20)), LATER)
+
+        assertEquals(EpisodeOrder.Oldest, local.getShow(showId).getOrNull()?.feedEpisodeOrder)
+        assertEquals(listOf("a", "b"), episodesOf(showId).map { it.itemKey })
+    }
+
+    // Following from search just read the feed whole, so a show the library has takes its kind.
+    @Test
+    fun following_aShowInTheLibrary_takesTheFeedsKind() = runTest {
+        val daily = show(1, "The Daily", "NY Times")
+        val showId = local.getEpisode(add(daily, episode("a", 10))).getOrNull()!!.showId
+
+        local.follow(daily.copy(kind = ShowKind.Serial), listOf(episode("a", 10)), LATER)
+
+        assertEquals(EpisodeOrder.Oldest, local.getShow(showId).getOrNull()?.episodeOrder)
+    }
+
+    private fun syncedChoice(choice: EpisodeOrderChoice, at: Instant) =
+        SyncedValue(choice, SyncTimestamp(at.toEpochMilli()))
+
+    @Test
+    fun syncedEpisodeOrders_areEveryChoice_withWhenEachWasMade() = runTest {
+        val daily = addShow(1)
+        local.setEpisodeOrder(daily, EpisodeOrderChoice.Oldest, NOW)
+        local.setEpisodeOrder(daily, EpisodeOrderChoice.Feed, LATER)
+        val serial = addShow(2, title = "Serial")
+        local.setEpisodeOrder(serial, EpisodeOrderChoice.Newest, NOW)
+
+        val expected = mapOf(
+            DirectoryId.itunes(1) to syncedChoice(EpisodeOrderChoice.Feed, LATER),
+            DirectoryId.itunes(2) to syncedChoice(EpisodeOrderChoice.Newest, NOW),
+        )
+        assertEquals(expected, local.getSyncedEpisodeOrders().getOrNull())
+        assertEquals(expected, local.observeSyncedEpisodeOrders().first().getOrNull())
+    }
+
+    @Test
+    fun applyingChoices_keepsTheNewerOfWhatIsStoredAndWhatIsApplied_andTheAppliedOneOnATie() = runTest {
+        val daily = addShow(1)
+        val serial = addShow(2, title = "Serial")
+        val hardFork = addShow(3, title = "Hard Fork")
+        local.setEpisodeOrder(daily, EpisodeOrderChoice.Oldest, LATER)
+        local.setEpisodeOrder(serial, EpisodeOrderChoice.Oldest, NOW)
+        local.setEpisodeOrder(hardFork, EpisodeOrderChoice.Oldest, NOW)
+
+        local.applySyncedEpisodeOrders(
+            mapOf(
+                // Older than this phone's choice, made while the sync ran.
+                DirectoryId.itunes(1) to syncedChoice(EpisodeOrderChoice.Newest, NOW),
+                // Newer: cleared on another phone.
+                DirectoryId.itunes(2) to syncedChoice(EpisodeOrderChoice.Feed, LATER),
+                // A tie goes to the applied one, the remote one, as LastWriteWins resolves it on every phone.
+                DirectoryId.itunes(3) to syncedChoice(EpisodeOrderChoice.Newest, NOW),
+            ),
+        )
+
+        assertEquals(EpisodeOrder.Oldest, local.getShow(daily).getOrNull()?.episodeOrder)
+        assertEquals(EpisodeOrder.Newest, local.getShow(serial).getOrNull()?.episodeOrder)
+        assertEquals(EpisodeOrder.Newest, local.getShow(hardFork).getOrNull()?.episodeOrder)
+    }
+
+    // A choice can arrive by sync before its show: it is kept, and the show follows it once it joins the library.
+    @Test
+    fun aChoiceOfAShowNotInTheLibrary_isKept_andAppliedWhenTheShowJoins() = runTest {
+        val choice = mapOf(DirectoryId.itunes(1) to syncedChoice(EpisodeOrderChoice.Oldest, NOW))
+        local.applySyncedEpisodeOrders(choice)
+
+        assertEquals(choice, local.getSyncedEpisodeOrders().getOrNull())
+        assertEquals(EpisodeOrder.Oldest, local.getShow(addShow(1)).getOrNull()?.episodeOrder)
     }
 
     /** That the follow keeps [feedUrl] for sync, with its `updatedAt` as it was set. */

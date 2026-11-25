@@ -3,7 +3,9 @@
 - **Status:** Accepted. "Follows are never deleted" (Syncing follows) superseded by
   [ADR-037](037-deleting-an-account.md) for deleting an account: sync still never deletes a follow.
   `show(show)` reading the network on each call ("The directory and a show from search")
-  superseded by [ADR-042](042-found-feeds-kept-in-memory.md): the last 5 feeds read are kept in memory for 5 minutes
+  superseded by [ADR-042](042-found-feeds-kept-in-memory.md): the last 5 feeds read are kept in memory for 5 minutes.
+  "Newest first" (The database, Search) and the database's table superseded by [ADR-043](043-episode-order.md):
+  episodes follow the feed's `itunes:type` or the user's choice, synced in a document of its own
 - **Date:** 2026-11-16
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review

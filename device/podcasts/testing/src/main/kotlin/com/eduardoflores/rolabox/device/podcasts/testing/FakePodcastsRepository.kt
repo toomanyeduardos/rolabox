@@ -9,6 +9,7 @@ import com.eduardoflores.rolabox.device.podcasts.api.DirectoryShow
 import com.eduardoflores.rolabox.device.podcasts.api.DownloadState
 import com.eduardoflores.rolabox.device.podcasts.api.Episode
 import com.eduardoflores.rolabox.device.podcasts.api.EpisodeId
+import com.eduardoflores.rolabox.device.podcasts.api.EpisodeOrder
 import com.eduardoflores.rolabox.device.podcasts.api.Owner
 import com.eduardoflores.rolabox.device.podcasts.api.OwnerId
 import com.eduardoflores.rolabox.device.podcasts.api.PlayedState
@@ -18,6 +19,7 @@ import com.eduardoflores.rolabox.device.podcasts.api.Show
 import com.eduardoflores.rolabox.device.podcasts.api.ShowFeed
 import com.eduardoflores.rolabox.device.podcasts.api.ShowId
 import com.eduardoflores.rolabox.device.podcasts.api.ShowInLibrary
+import com.eduardoflores.rolabox.device.podcasts.api.ShowKind
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.Duration
@@ -46,6 +48,9 @@ class FakePodcastsRepository @Inject constructor() : PodcastsRepository {
 
     /** What [addEpisode] was called with, in order. */
     val added = mutableListOf<Pair<DirectoryShow, DirectoryEpisode>>()
+
+    /** The feed's kind each call of [addEpisode] was given, in order. */
+    val addedKinds = mutableListOf<ShowKind?>()
 
     /** What [follow] was called with, in order. */
     val followed = mutableListOf<ShowFeed>()
@@ -84,8 +89,8 @@ class FakePodcastsRepository @Inject constructor() : PodcastsRepository {
     }
 
     /**
-     * Makes [setFollowed], [addEpisode] and [follow] return `Left(Storage(error))` and change nothing, or stops it with
-     * `null`.
+     * Makes [setFollowed], [setEpisodeOrder], [addEpisode] and [follow] return `Left(Storage(error))` and change
+     * nothing, or stops it with `null`.
      */
     fun setWriteError(error: StorageError?) {
         writeError = error
@@ -126,11 +131,22 @@ class FakePodcastsRepository @Inject constructor() : PodcastsRepository {
         Unit.right()
     }
 
-    override suspend fun addEpisode(show: DirectoryShow, episode: DirectoryEpisode): Either<PodcastError, EpisodeId> =
-        write {
-            added += show to episode
-            addedEpisodeId.right()
-        }
+    // The order is the show's, as set: the episodes aren't sorted by it, as nothing in this fake is.
+    override suspend fun setEpisodeOrder(showId: ShowId, order: EpisodeOrder): Either<PodcastError, Unit> = write {
+        if (shows.none { it.id == showId }) return@write PodcastError.ShowNotFound(showId).left()
+        showsState.update { all -> all.map { if (it.id == showId) it.copy(episodeOrder = order) else it } }
+        Unit.right()
+    }
+
+    override suspend fun addEpisode(
+        show: DirectoryShow,
+        episode: DirectoryEpisode,
+        kind: ShowKind?,
+    ): Either<PodcastError, EpisodeId> = write {
+        added += show to episode
+        addedKinds += kind
+        addedEpisodeId.right()
+    }
 
     override suspend fun follow(feed: ShowFeed): Either<PodcastError, ShowId> = write {
         followed += feed

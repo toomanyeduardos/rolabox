@@ -42,10 +42,10 @@ class StoreScreenshotTest : StoreScreenshot() {
                             off = stringResource(R.string.podcasts_off),
                             unknownEpisode = stringResource(R.string.podcasts_unknown_episode),
                         )
-                        // The first row is Follow, so episode n is row n.
+                        // The first rows are Follow and Order, so episode n is row n + 1.
                         PodcastsList(
-                            ListUiState.Loaded(showRows(ShowContent(show, episodes), words)),
-                            highlightedIndex = highlighted,
+                            ListUiState.Loaded(showRows(ShowContent(show, episodes), words, orderWords())),
+                            highlightedIndex = highlighted + 1,
                         )
                     }
                 }

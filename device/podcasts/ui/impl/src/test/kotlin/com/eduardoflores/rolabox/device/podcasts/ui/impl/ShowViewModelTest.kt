@@ -2,6 +2,8 @@ package com.eduardoflores.rolabox.device.podcasts.ui.impl
 
 import com.eduardoflores.rolabox.common.storage.api.StorageError
 import com.eduardoflores.rolabox.common.testing.MainDispatcherRule
+import com.eduardoflores.rolabox.device.podcasts.api.EpisodeOrder
+import com.eduardoflores.rolabox.device.podcasts.api.PlayedState
 import com.eduardoflores.rolabox.device.podcasts.testing.FakePodcastsRepository
 import com.eduardoflores.rolabox.device.podcasts.testing.PodcastSamples
 import kotlinx.coroutines.flow.collect
@@ -10,6 +12,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -84,6 +87,58 @@ class ShowViewModelTest {
         viewModel.onFollowFailureShown()
 
         assertFalse(viewModel.followFailed.value)
+    }
+
+    // ADR-043: center on Order flips it, and the list follows the show's new order.
+    @Test
+    fun orderNewest_flipsToOldest_andBack() = runTest {
+        podcasts.fillWithSamples()
+        val viewModel = observedViewModel()
+
+        viewModel.onOrderClick()
+
+        assertEquals(EpisodeOrder.Oldest, (viewModel.uiState.value as ListUiState.Loaded).value.show.episodeOrder)
+
+        viewModel.onOrderClick()
+
+        assertEquals(EpisodeOrder.Newest, (viewModel.uiState.value as ListUiState.Loaded).value.show.episodeOrder)
+        assertFalse(viewModel.orderFailed.value)
+    }
+
+    @Test
+    fun orderThatCantBeSaved_keepsItsValue_andIsToldOnce() = runTest {
+        podcasts.fillWithSamples()
+        podcasts.setWriteError(StorageError.Unavailable)
+        val viewModel = observedViewModel()
+
+        viewModel.onOrderClick()
+
+        assertTrue(viewModel.orderFailed.value)
+        assertEquals(EpisodeOrder.Newest, (viewModel.uiState.value as ListUiState.Loaded).value.show.episodeOrder)
+
+        viewModel.onOrderFailureShown()
+
+        assertFalse(viewModel.orderFailed.value)
+    }
+
+    // ADR-043, Where the list opens: oldest first opens on the episode after the last one played.
+    @Test
+    fun oldestFirst_opensOnTheEpisodeAfterTheLastPlayed() = runTest {
+        val show = PodcastSamples.theDaily.copy(episodeOrder = EpisodeOrder.Oldest)
+        podcasts.shows = listOf(show)
+        podcasts.episodes = PodcastSamples.theDailyEpisodes.reversed()
+
+        val content = (observedViewModel().uiState.value as ListUiState.Loaded).value
+
+        val lastPlayed = content.episodes.indexOfLast { it.playedState == PlayedState.Played }
+        assertEquals(lastPlayed + 1, content.startingEpisode)
+    }
+
+    @Test
+    fun newestFirst_opensOnTheFirstRow() = runTest {
+        podcasts.fillWithSamples()
+
+        assertNull((observedViewModel().uiState.value as ListUiState.Loaded).value.startingEpisode)
     }
 
     @Test

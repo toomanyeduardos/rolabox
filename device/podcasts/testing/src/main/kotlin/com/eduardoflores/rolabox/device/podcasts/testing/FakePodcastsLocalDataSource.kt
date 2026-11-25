@@ -9,13 +9,18 @@ import com.eduardoflores.rolabox.common.sync.api.SyncTimestamp
 import com.eduardoflores.rolabox.common.sync.api.SyncedValue
 import com.eduardoflores.rolabox.device.podcasts.api.DirectoryId
 import com.eduardoflores.rolabox.device.podcasts.api.EpisodeId
+import com.eduardoflores.rolabox.device.podcasts.api.EpisodeOrder
+import com.eduardoflores.rolabox.device.podcasts.api.EpisodeOrderChoice
 import com.eduardoflores.rolabox.device.podcasts.api.Follow
 import com.eduardoflores.rolabox.device.podcasts.api.Owner
 import com.eduardoflores.rolabox.device.podcasts.api.OwnerId
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastError
 import com.eduardoflores.rolabox.device.podcasts.api.Show
 import com.eduardoflores.rolabox.device.podcasts.api.ShowId
+import com.eduardoflores.rolabox.device.podcasts.api.SyncedEpisodeOrders
 import com.eduardoflores.rolabox.device.podcasts.api.SyncedFollows
+import com.eduardoflores.rolabox.device.podcasts.api.episodeOrder
+import com.eduardoflores.rolabox.device.podcasts.api.order
 import com.eduardoflores.rolabox.device.podcasts.local.api.ArtworkSource
 import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeProgressLocalDataSource
 import com.eduardoflores.rolabox.device.podcasts.local.api.EpisodeRecord
@@ -36,9 +41,10 @@ import kotlinx.coroutines.flow.update
 
 /**
  * The podcasts' database in memory, for the tests of the part's `:impl`. It keeps what the Room database keeps, with
- * the progress apart from the episodes and the follows apart from the shows, gives the ids in the order things are
- * added, and lists them in the database's orders. The contract test in `:device:podcasts:local:impl` runs the same
- * checks against this fake and the Room database. [readError] makes every call fail with `Left(Storage(error))`.
+ * the progress apart from the episodes, and the follows and the choices of episode order apart from the shows, gives
+ * the ids in the order things are added, and lists them in the database's orders. The contract test in
+ * `:device:podcasts:local:impl` runs the same checks against this fake and the Room database. [readError] makes every
+ * call fail with `Left(Storage(error))`.
  */
 @Suppress("TooManyFunctions") // One for each function of the two sources it fakes.
 @Singleton
@@ -115,14 +121,22 @@ class FakePodcastsLocalDataSource @Inject constructor() :
 
     override fun observeEpisodesByShow(showId: ShowId): Flow<Either<PodcastError, List<EpisodeRecord>>> =
         read { stored ->
-            // Newest first, those with no date last, and the last added first among the same date.
-            stored.episodes.filter { it.showId == showId }
+            // Newest first, those with no date last, and the last added first among the same date. Oldest first is
+            // its reverse for the dated ones, and the undated ones stay last, as newest first lists them (ADR-043).
+            val newestFirst = stored.episodes.filter { it.showId == showId }
                 .sortedWith(
                     compareBy<StoredEpisode> { it.write.publishedAt == null }
                         .thenByDescending { it.write.publishedAt }
                         .thenByDescending { it.id.value },
                 )
-                .map(stored::recordOf)
+            val show = stored.shows.firstOrNull { it.id == showId }?.let(stored::showOf)
+            val listed = if (show?.episodeOrder == EpisodeOrder.Oldest) {
+                val (dated, undated) = newestFirst.partition { it.write.publishedAt != null }
+                dated.reversed() + undated
+            } else {
+                newestFirst
+            }
+            listed.map(stored::recordOf)
         }
 
     override fun observeEpisode(episodeId: EpisodeId): Flow<Either<PodcastError, EpisodeRecord?>> =
@@ -137,6 +151,27 @@ class FakePodcastsLocalDataSource @Inject constructor() :
             storeFollow(show.write.directoryId, show.write.feedUrl, followed, updatedAt)
             Unit.right()
         }
+
+    override suspend fun setEpisodeOrder(
+        showId: ShowId,
+        choice: EpisodeOrderChoice,
+        updatedAt: Instant,
+    ): Either<PodcastError, Unit> = now { stored -> stored.shows.firstOrNull { it.id == showId } }.flatMap { show ->
+        if (show == null) return@flatMap PodcastError.ShowNotFound(showId).left()
+        storeEpisodeOrder(show.write.directoryId, choice, updatedAt)
+        Unit.right()
+    }
+
+    /** Stores a choice of a show's order that may not be in the library, as sync would (ADR-043). */
+    fun storeEpisodeOrder(directoryId: DirectoryId, choice: EpisodeOrderChoice, updatedAt: Instant) {
+        state.update {
+            it.copy(orders = it.orders + (directoryId to SyncedValue(choice, SyncTimestamp(updatedAt.toEpochMilli()))))
+        }
+    }
+
+    /** The choices of episode order as stored, by directory id, with when each was made. */
+    val episodeOrders: SyncedEpisodeOrders
+        get() = state.value.orders
 
     override suspend fun addEpisode(
         show: ShowWrite,
@@ -175,7 +210,9 @@ class FakePodcastsLocalDataSource @Inject constructor() :
         var followed = ShowId(0)
         state.update { stored ->
             val existingShow = stored.shows.firstOrNull { it.write.directoryId == show.directoryId }
-            val storedShow = existingShow ?: StoredShow(ShowId(stored.shows.size + 1L), show)
+            // The feed was just read whole, so a show already there takes its kind (ADR-043).
+            val storedShow = existingShow?.let { it.copy(write = it.write.copy(kind = show.kind)) }
+                ?: StoredShow(ShowId(stored.shows.size + 1L), show)
             followed = storedShow.id
             var all = stored.episodes
             episodes.forEach { episode ->
@@ -184,7 +221,11 @@ class FakePodcastsLocalDataSource @Inject constructor() :
                 }
             }
             stored.copy(
-                shows = if (existingShow == null) stored.shows + storedShow else stored.shows,
+                shows = if (existingShow == null) {
+                    stored.shows + storedShow
+                } else {
+                    stored.shows.map { if (it.id == storedShow.id) storedShow else it }
+                },
                 episodes = all,
                 follows = stored.follows + (show.directoryId to (true to followedAt)),
                 followFeedUrls = stored.followFeedUrls + (show.directoryId to show.feedUrl),
@@ -345,6 +386,26 @@ class FakePodcastsLocalDataSource @Inject constructor() :
         return turnedOn.toSet().right()
     }
 
+    override fun observeSyncedEpisodeOrders(): Flow<Either<PodcastError, SyncedEpisodeOrders>> =
+        read { stored -> stored.orders }.distinctUntilChanged()
+
+    override suspend fun getSyncedEpisodeOrders(): Either<PodcastError, SyncedEpisodeOrders> = now { it.orders }
+
+    // Resolved as LastWriteWins does, the later change winning and the merged one on a tie, against what is stored
+    // when it is applied.
+    override suspend fun applySyncedEpisodeOrders(orders: SyncedEpisodeOrders): Either<PodcastError, Unit> {
+        readError?.let { return PodcastError.Storage(it).left() }
+        state.update { stored ->
+            stored.copy(
+                orders = stored.orders + orders.filter { (directoryId, merged) ->
+                    val was = stored.orders[directoryId]
+                    was == null || was.updatedAt <= merged.updatedAt
+                },
+            )
+        }
+        return Unit.right()
+    }
+
     /** The episode as a feed read at [readAt] leaves it: updated from [read], or marked as left when it is `null`. */
     private fun StoredEpisode.readFrom(read: EpisodeWrite?, readAt: Instant): StoredEpisode = when {
         read != null -> copy(write = read, imageUrl = read.imageUrl ?: imageUrl, leftFeedAt = null)
@@ -385,6 +446,7 @@ class FakePodcastsLocalDataSource @Inject constructor() :
         val progress: Map<EpisodeId, ProgressRecord> = emptyMap(),
         val follows: Map<DirectoryId, Pair<Boolean, Instant>> = emptyMap(),
         val followFeedUrls: Map<DirectoryId, String> = emptyMap(),
+        val orders: SyncedEpisodeOrders = emptyMap(),
     ) {
         fun syncedFollows(): SyncedFollows = follows.mapValues { (directoryId, follow) ->
             SyncedValue(
@@ -393,14 +455,19 @@ class FakePodcastsLocalDataSource @Inject constructor() :
             )
         }
 
-        fun showOf(show: StoredShow) = Show(
-            id = show.id,
-            directoryId = show.write.directoryId,
-            title = show.write.title,
-            ownerId = show.write.ownerKey,
-            ownerName = show.write.ownerName,
-            isFollowed = follows[show.write.directoryId]?.first == true,
-        )
+        fun showOf(show: StoredShow): Show {
+            val feedOrder = show.write.kind.episodeOrder
+            return Show(
+                id = show.id,
+                directoryId = show.write.directoryId,
+                title = show.write.title,
+                ownerId = show.write.ownerKey,
+                ownerName = show.write.ownerName,
+                isFollowed = follows[show.write.directoryId]?.first == true,
+                episodeOrder = orders[show.write.directoryId]?.value?.order ?: feedOrder,
+                feedEpisodeOrder = feedOrder,
+            )
+        }
 
         fun recordOf(episode: StoredEpisode) = EpisodeRecord(
             id = episode.id,

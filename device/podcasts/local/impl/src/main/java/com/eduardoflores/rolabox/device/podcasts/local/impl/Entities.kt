@@ -12,7 +12,8 @@ import androidx.room.PrimaryKey
  * A show of the library. [directoryId] is its identity across phones, and [ownerKey] the grouping key of
  * [ownerName], empty for a show with no owner. [titleSortKey] and [ownerSortKey] are what the lists sort by, ignoring
  * case and accents, as the part's `:impl` gives them. The feed's [etag], [lastModified] and [feedReadAt] are written
- * by the follow check (podcasts/09), and [imageUrl] by the feed.
+ * by the follow check (podcasts/09), and [imageUrl] by the feed. [kind] is the feed's `itunes:type`, the name of a
+ * `ShowKind`, or `null` when it says none (ADR-043).
  */
 @Entity(tableName = "shows", indices = [Index(value = ["directoryId"], unique = true), Index("ownerKey")])
 internal data class ShowEntity(
@@ -29,6 +30,7 @@ internal data class ShowEntity(
     val lastModified: String? = null,
     val feedReadAt: Long? = null,
     val joinedAt: Long,
+    val kind: String? = null,
 )
 
 /**
@@ -85,3 +87,11 @@ internal data class FollowEntity(
     val followed: Boolean,
     val updatedAt: Long,
 )
+
+/**
+ * The user's choice of a show's episode order, by its directory id, apart from the shows and the follows: a choice can
+ * arrive by sync before its show, and is synced apart from the follow (ADR-043). [value] is the name of an
+ * `EpisodeOrderChoice`, `Feed` for a choice cleared, kept as the record that wins over an older one.
+ */
+@Entity(tableName = "episodeOrders")
+internal data class EpisodeOrderEntity(@PrimaryKey val directoryId: String, val value: String, val updatedAt: Long)

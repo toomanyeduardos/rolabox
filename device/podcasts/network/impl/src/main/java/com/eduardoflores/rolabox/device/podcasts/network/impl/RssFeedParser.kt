@@ -1,6 +1,7 @@
 package com.eduardoflores.rolabox.device.podcasts.network.impl
 
 import android.util.Xml
+import com.eduardoflores.rolabox.device.podcasts.api.ShowKind
 import com.eduardoflores.rolabox.device.podcasts.network.api.Feed
 import com.eduardoflores.rolabox.device.podcasts.network.api.FeedEpisode
 import java.io.IOException
@@ -58,6 +59,7 @@ private class ChannelFields {
     var itunesImage: String? = null
     var rssImage: String? = null
     var newFeedUrl: String? = null
+    var kind: String? = null
     val episodes = mutableListOf<FeedEpisode>()
 }
 
@@ -72,6 +74,7 @@ private fun XmlPullParser.readChannel(): ParsedFeed {
             isItunes("owner") -> fields.ownerName = readOwnerName()
             isItunes("image") -> fields.itunesImage = attribute("href").also { skip() }
             isItunes("new-feed-url") -> fields.newFeedUrl = readText()
+            isItunes("type") -> fields.kind = readText()
             else -> skip()
         }
     }
@@ -81,8 +84,16 @@ private fun XmlPullParser.readChannel(): ParsedFeed {
         imageUrl = fields.itunesImage ?: fields.rssImage,
         // Newest first, and the undated last in the feed's order: the sort is stable.
         episodes = fields.episodes.sortedWith(compareBy(nullsLast(reverseOrder())) { it.publishedAt }),
+        kind = fields.kind?.let(::showKindOf),
     )
     return ParsedFeed(feed, fields.newFeedUrl)
+}
+
+// Apple's spec has two values. Any other, as some hosts write, says nothing: the show is listed newest first.
+private fun showKindOf(text: String): ShowKind? = when (text.trim().lowercase(Locale.ROOT)) {
+    "serial" -> ShowKind.Serial
+    "episodic" -> ShowKind.Episodic
+    else -> null
 }
 
 private fun XmlPullParser.readOwnerName(): String? {

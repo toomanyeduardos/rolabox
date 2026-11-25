@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import arrow.core.Either
 import arrow.core.raise.either
 import com.eduardoflores.rolabox.device.podcasts.api.Episode
+import com.eduardoflores.rolabox.device.podcasts.api.EpisodeOrder
 import com.eduardoflores.rolabox.device.podcasts.api.PodcastsRepository
 import com.eduardoflores.rolabox.device.podcasts.api.Show
 import com.eduardoflores.rolabox.device.podcasts.api.ShowId
@@ -21,13 +22,17 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
- * A show of the library and the episodes it lists, newest first: every one with Follow On, and only those with a
- * download, done or in progress, with Follow Off (ADR-031). The repository decides which.
+ * A show of the library and the episodes it lists, in its order: every one with Follow On, and only those with a
+ * download, done or in progress, with Follow Off (ADR-031, ADR-043). The repository decides which, and in what order.
+ * [startingEpisode] is the index of the episode the list opens on, or `null` to open on its first row (ADR-043).
  */
-internal data class ShowContent(val show: Show, val episodes: List<Episode>)
+internal data class ShowContent(val show: Show, val episodes: List<Episode>) {
+    val startingEpisode: Int? = startingEpisodeOf(episodes.map { it.playedState }, show.episodeOrder)
+}
 
 /**
- * What a show's screen shows (frame 25): Follow, then its episodes (ADR-021). [ShowViewModelImpl] implements it.
+ * What a show's screen shows (frame 25): Follow, Order, then its episodes (ADR-021, ADR-043). [ShowViewModelImpl]
+ * implements it.
  */
 internal abstract class ShowViewModel : ViewModel() {
     abstract val uiState: StateFlow<ListUiState<ShowContent>>
@@ -35,10 +40,18 @@ internal abstract class ShowViewModel : ViewModel() {
     /** Follow couldn't be changed. The row keeps its value, and the screen says so once (ADR-007). */
     abstract val followFailed: StateFlow<Boolean>
 
+    /** Order couldn't be changed. The row keeps its value, and the screen says so once (ADR-007). */
+    abstract val orderFailed: StateFlow<Boolean>
+
     /** Center on Follow: it turns On or Off in place, like a setting. */
     abstract fun onFollowClick()
 
     abstract fun onFollowFailureShown()
+
+    /** Center on Order: it flips between Newest and Oldest in place, and the episodes are listed again (ADR-043). */
+    abstract fun onOrderClick()
+
+    abstract fun onOrderFailureShown()
 }
 
 /**
@@ -71,6 +84,21 @@ internal class ShowViewModelImpl @AssistedInject constructor(
 
     override fun onFollowFailureShown() {
         followFailedState.value = false
+    }
+
+    private val orderFailedState = MutableStateFlow(false)
+    override val orderFailed: StateFlow<Boolean> = orderFailedState.asStateFlow()
+
+    override fun onOrderClick() {
+        val show = (uiState.value as? ListUiState.Loaded)?.value?.show ?: return
+        val flipped = if (show.episodeOrder == EpisodeOrder.Newest) EpisodeOrder.Oldest else EpisodeOrder.Newest
+        viewModelScope.launch {
+            podcastsRepository.setEpisodeOrder(showId, flipped).onLeft { orderFailedState.value = true }
+        }
+    }
+
+    override fun onOrderFailureShown() {
+        orderFailedState.value = false
     }
 
     @AssistedFactory

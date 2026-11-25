@@ -36,6 +36,9 @@ data class Owner(val id: OwnerId, val name: String?)
  * A show of the library. [ownerName] is the show's own spelling of its owner, or `null` when it has none. [isFollowed]
  * is its Follow switch, Off for a show added by playing one of its episodes (ADR-031). No model holds an image or an
  * image URL: artwork comes from the podcasts' artwork repository.
+ *
+ * [episodeOrder] is the order its episodes are listed in: the user's choice, else the one its feed asks for, which is
+ * [feedEpisodeOrder] (ADR-043).
  */
 data class Show(
     val id: ShowId,
@@ -44,7 +47,28 @@ data class Show(
     val ownerId: OwnerId,
     val ownerName: String?,
     val isFollowed: Boolean,
+    val episodeOrder: EpisodeOrder = EpisodeOrder.Newest,
+    val feedEpisodeOrder: EpisodeOrder = EpisodeOrder.Newest,
 )
+
+/** The order of a show's episodes (ADR-043). In both, the episodes with no date are last. */
+enum class EpisodeOrder {
+    /** Newest first, for a show whose latest episode matters most. */
+    Newest,
+
+    /** Oldest first, for a story told in order. */
+    Oldest,
+}
+
+/** What a feed's `itunes:type` says a show is (ADR-043). */
+enum class ShowKind {
+    Episodic,
+    Serial,
+}
+
+/** The order a show's feed asks for: [EpisodeOrder.Oldest] for a serial show, else [EpisodeOrder.Newest] (ADR-043). */
+val ShowKind?.episodeOrder: EpisodeOrder
+    get() = if (this == ShowKind.Serial) EpisodeOrder.Oldest else EpisodeOrder.Newest
 
 /** Where the user is in an episode (ADR-031, Played, partly played and unplayed). */
 enum class PlayedState {
@@ -127,9 +151,15 @@ data class DirectoryResults(val shows: List<DirectoryShow>, val episodes: List<F
 /**
  * A show opened from search, as its feed has it (frame 32). [show] is the one opened, with the feed URL the feed moved
  * to, if it did. [ownerName] is the feed's owner, else the directory's creator, else `null`. [episodes] are every
- * episode of the feed with audio, newest first.
+ * episode of the feed with audio, newest first, and those with no date last: a screen lists them in the order in
+ * effect (ADR-043). [kind] is the feed's `itunes:type`, or `null` when it says none.
  */
-data class ShowFeed(val show: DirectoryShow, val ownerName: String?, val episodes: List<DirectoryEpisode>)
+data class ShowFeed(
+    val show: DirectoryShow,
+    val ownerName: String?,
+    val episodes: List<DirectoryEpisode>,
+    val kind: ShowKind? = null,
+)
 
 /**
  * A show opened from search that is in the library (ADR-031, Search): the library's [show], with its Follow switch, and
