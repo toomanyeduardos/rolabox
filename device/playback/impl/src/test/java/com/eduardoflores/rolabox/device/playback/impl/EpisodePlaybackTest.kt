@@ -219,7 +219,7 @@ class EpisodePlaybackTest {
     }
 
     @Test
-    fun next_skipsForward30s_andPrevious_skipsBack15s() = scope.runTest {
+    fun next_skipsForward15s_andPrevious_skipsBack15s() = scope.runTest {
         playback.play(source, item)
         ready()
         playback.pause()
@@ -227,11 +227,11 @@ class EpisodePlaybackTest {
 
         playback.next()
         idle()
-        assertNear(35.seconds, player.currentPosition.milliseconds)
+        assertNear(20.seconds, player.currentPosition.milliseconds)
 
         playback.previous()
         idle()
-        assertNear(20.seconds, player.currentPosition.milliseconds)
+        assertNear(5.seconds, player.currentPosition.milliseconds)
         assertEquals(item, playback.currentItem.first()?.id)
     }
 
@@ -253,7 +253,7 @@ class EpisodePlaybackTest {
     }
 
     @Test
-    fun next_inTheLast30s_endsTheEpisode_whichIsPlayed() = scope.runTest {
+    fun next_inTheLast15s_endsTheEpisode_whichIsPlayed() = scope.runTest {
         playback.play(source, item)
         ready()
         playback.seekTo(LENGTH_MS.milliseconds - 10.seconds)

@@ -47,8 +47,8 @@ interface PlaybackController {
 
     /**
      * What ⏭ does: starts the next item at 0:00, and does nothing on the last item. During an episode it skips
-     * forward 30 s instead, and in its last 30 s goes to its end, which ends it (ADR-031, rule 11). Does nothing when
-     * nothing is loaded.
+     * forward 15 s instead, and in its last 15 s goes to its end, which ends it (ADR-031, rule 11; ADR-044). Does
+     * nothing when nothing is loaded.
      */
     suspend fun next()
 
@@ -56,7 +56,7 @@ interface PlaybackController {
      * What ⏮ does: starts the loaded item again at 0:00 when it is past its first seconds, and the previous
      * item at 0:00 otherwise. The first item has no previous one, and starts again wherever it is. The
      * threshold is the playback area's (ADR-018, rule 17). During an episode it skips back 15 s instead, and stops at
-     * 0:00 (ADR-031, rule 11). Does nothing when nothing is loaded.
+     * 0:00 (ADR-031, rule 11; ADR-044). Does nothing when nothing is loaded.
      */
     suspend fun previous()
 

@@ -19,6 +19,7 @@ import com.eduardoflores.rolabox.device.playback.api.PlaybackItemId
 import com.eduardoflores.rolabox.device.podcasts.api.EpisodeId
 import java.io.File
 import kotlin.math.abs
+import kotlin.time.Duration.Companion.seconds
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -90,6 +91,13 @@ class EpisodeSkipsTest {
     }
 
     @Test
+    fun skipBack_andSkipForward_areTheSame15s() {
+        // ADR-044: ⏭ then ⏮ comes back to the same place.
+        assertEquals(15.seconds, SkipBack)
+        assertEquals(SkipBack, SkipForward)
+    }
+
+    @Test
     fun songs_moveBetweenItems_asThePlayerDoes() {
         load(song(1), song(2))
 
@@ -133,7 +141,7 @@ class EpisodeSkipsTest {
 
     private companion object {
         const val LENGTH_MS = 45_000
-        const val START_MS = 5_000L
+        const val START_MS = 20_000L
         const val NEAR_MS = 150
     }
 }
