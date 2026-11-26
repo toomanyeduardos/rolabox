@@ -31,7 +31,7 @@ New ADR: copy [`template.md`](template.md), take the next number, and add it to 
 | [020](020-modules-by-product-area.md) | Modules grouped by product area, with the device assembling its own screens | Accepted, partly superseded by ADR-033 |
 | [021](021-data-flow-through-layers.md) | Every layer is reached through an abstraction, from the screen to the data source | Accepted |
 | [022](022-data-source-sub-parts.md) | A data part's local and network sides are sub-parts, and the part that owns synced data syncs it | Accepted, partly superseded by ADR-031, ADR-033 and ADR-037 |
-| [023](023-playback-engine.md) | Playback with Media3, in a session service that the playback area owns | Accepted |
+| [023](023-playback-engine.md) | Playback with Media3, in a session service that the playback area owns | Accepted, partly superseded by ADR-045 |
 | [024](024-library-index.md) | The library index: MediaStore finds the files, and Rolabox's own database is what the device reads | Accepted |
 | [025](025-process-start-tasks.md) | Parts run work at process start through a set in `:common:util`, which `:app` runs | Accepted |
 | [026](026-artwork.md) | Artwork is a reference in the library, loaded from MediaStore's thumbnail of the song, with no image library | Accepted, partly superseded by ADR-031 |
@@ -53,3 +53,4 @@ New ADR: copy [`template.md`](template.md), take the next number, and add it to 
 | [042](042-found-feeds-kept-in-memory.md) | The feeds of shows opened from search are kept in memory, the last 5 for 5 minutes, as searches are | Accepted |
 | [043](043-episode-order.md) | A show's episodes are in the order its feed asks for, the user can set it per show, synced in a document of its own, and the list opens on the next episode | Accepted |
 | [044](044-episode-skips-are-equal.md) | During an episode, ⏮ and ⏭ both skip 15 s | Accepted |
+| [045](045-restore-when-the-app-comes-to-the-front.md) | The stored queue is loaded when the app comes to the front, not when its process starts | Accepted |

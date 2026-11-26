@@ -8,7 +8,7 @@ import com.eduardoflores.rolabox.device.playback.api.PlaybackController
 import com.eduardoflores.rolabox.device.playback.api.PlaybackState
 import com.eduardoflores.rolabox.device.playback.impl.MediaPlayback
 import com.eduardoflores.rolabox.device.playback.impl.PlayerConnection
-import com.eduardoflores.rolabox.device.playback.impl.RestoreOnProcessStart
+import com.eduardoflores.rolabox.device.playback.impl.RestoreOnForeground
 import com.eduardoflores.rolabox.device.playback.impl.SessionConnection
 import com.eduardoflores.rolabox.device.playback.impl.SessionResumption
 import com.eduardoflores.rolabox.device.playback.impl.downloads.ConnectivityPhoneNetwork
@@ -42,10 +42,10 @@ abstract class PlaybackModule {
     @Binds
     internal abstract fun bindsSessionResumption(playback: MediaPlayback): SessionResumption
 
-    /** Each start of the process loads what was stored (ADR-023, ADR-025). */
+    /** The app coming to the front loads what was stored (ADR-045, ADR-025). */
     @Binds
     @IntoSet
-    internal abstract fun bindsRestoreOnProcessStart(task: RestoreOnProcessStart): ProcessStartTask
+    internal abstract fun bindsRestoreOnForeground(task: RestoreOnForeground): ProcessStartTask
 
     /** Episodes download into the cache the player reads (ADR-031, Downloads). */
     @Binds

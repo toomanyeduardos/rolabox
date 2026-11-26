@@ -1,6 +1,7 @@
 package com.eduardoflores.rolabox.device.playback.impl
 
 import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.eduardoflores.rolabox.common.util.ApplicationScope
@@ -10,17 +11,23 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /**
- * Loads what was stored at each start of the process, and again each time the app comes back: dismissing it while
- * paused releases the session, and the process may outlive that. Going to the background stores where it is (ADR-023).
+ * Loads what was stored each time the app comes to the front, and stores where it is each time it goes to the
+ * background (ADR-023). Never at the start of the process alone: a process the system starts in the background, for a
+ * bind of the session, a job or a media button, leaves the player empty, so no media notification shows with the app
+ * never opened (ADR-045, rule 1). A play with nothing loaded gets the stored point through the session's resumption.
  */
-internal class RestoreOnProcessStart @Inject constructor(
+internal class RestoreOnForeground(
     private val playback: MediaPlayback,
-    @ApplicationScope private val scope: CoroutineScope,
+    private val scope: CoroutineScope,
+    private val lifecycle: () -> Lifecycle,
 ) : ProcessStartTask {
+    @Inject
+    constructor(playback: MediaPlayback, @ApplicationScope scope: CoroutineScope) :
+        this(playback, scope, { ProcessLifecycleOwner.get().lifecycle })
+
     override fun onProcessStart() {
-        scope.launch { playback.restore() }
         // The process lifecycle must be observed from the main thread, which a task runs on.
-        ProcessLifecycleOwner.get().lifecycle.addObserver(
+        lifecycle().addObserver(
             object : DefaultLifecycleObserver {
                 override fun onStart(owner: LifecycleOwner) {
                     scope.launch { playback.restore() }
