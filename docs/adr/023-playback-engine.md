@@ -1,6 +1,8 @@
 # ADR-023: Playback with Media3, in a session service that the playback area owns
 
-- **Status:** Accepted
+- **Status:** Accepted. "It is restored at each start of the process" and the paused notification after a process
+  started by background work (Permissions and the service's lifetime, Consequences) superseded by
+  [ADR-045](045-restore-when-the-app-comes-to-the-front.md): the stored queue is loaded when the app comes to the front
 - **Date:** 2026-10-28
 - **Author:** Eduardo Flores
 - **Reviewers:** AI-assisted review

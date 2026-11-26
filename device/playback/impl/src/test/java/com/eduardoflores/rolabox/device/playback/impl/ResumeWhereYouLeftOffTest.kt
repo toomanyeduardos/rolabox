@@ -3,6 +3,9 @@ package com.eduardoflores.rolabox.device.playback.impl
 import android.content.Context
 import android.net.Uri
 import androidx.annotation.OptIn
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LifecycleRegistry
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.test.utils.FakeClock
@@ -138,6 +141,32 @@ class ResumeWhereYouLeftOffTest {
         assertFalse(playback.isPlaying.first())
         assertFalse(player.playWhenReady)
         assertEquals(starts, playback.startCount.first())
+    }
+
+    @Test
+    fun aProcessStartedInTheBackground_loadsNothing_soNoNotificationShows() = scope.runTest {
+        local.point = point(song = 3, index = 2, position = 4.seconds)
+        val app = LifecycleRegistry.createUnsafe(TestLifecycleOwner)
+
+        RestoreOnForeground(playback, scope.backgroundScope) { app }.onProcessStart()
+        app.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
+        runCurrent()
+
+        assertNull(playback.currentItem.first())
+        assertEquals(0, player.mediaItemCount)
+    }
+
+    @Test
+    fun theAppComingToTheFront_loadsWhatWasStored() = scope.runTest {
+        local.point = point(song = 3, index = 2, position = 4.seconds)
+        val app = LifecycleRegistry.createUnsafe(TestLifecycleOwner)
+        RestoreOnForeground(playback, scope.backgroundScope) { app }.onProcessStart()
+
+        app.handleLifecycleEvent(Lifecycle.Event.ON_START)
+        runCurrent()
+
+        assertEquals(songId(3), playback.currentItem.first()?.id)
+        assertFalse(player.playWhenReady)
     }
 
     @Test
@@ -421,3 +450,8 @@ class ResumeWhereYouLeftOffTest {
 
 /** The player stops a little around the position it is told to reach. */
 private val StoredAtLeast = 1.5.seconds
+
+/** What owns the test's process lifecycle, which only drives its events. */
+private object TestLifecycleOwner : LifecycleOwner {
+    override val lifecycle: Lifecycle get() = error("The registry is the lifecycle")
+}
